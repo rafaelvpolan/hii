@@ -12,6 +12,9 @@ Thumbs.db
 .claude/worktrees/
 cards/runs/
 cards/previews/
+cards/urls/
+cards/sessions/
+cards/*.md
 
 # Nuxt
 panel/.nuxt/
