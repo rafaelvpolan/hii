@@ -26,7 +26,7 @@ async function chamar(prompt: string, timeoutMs: number, id: string): Promise<{ 
   const res = await runProvider(id, provider, {
     prompt, cwd: ROOT, dirs: [], mode: 'readonly',
     useAgents: false, model: modelFor('verify'), timeoutMs,
-  })
+  }, 'ideacao')
   return { texto: res.text, cost: res.cost, tokens: sumTokens(res.usage), ok: res.ok }
 }
 

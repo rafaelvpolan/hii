@@ -178,7 +178,7 @@ test('REGRESSAO pushOwnedBranch: com a ancora do push anterior DESTE card, force
 
   const wt = join(BASE, 'wt-push-2')
   await ensureWorktree(c.clone, wt, branch, 'main')
-  writeFileSync(join(wt, 'novo.txt'), 'trabalho atual, aprovado no preview\n')
+  writeFileSync(join(wt, 'novo.txt'), 'trabalho atual, aprovado no url\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: trabalho atual'])
 

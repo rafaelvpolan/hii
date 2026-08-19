@@ -73,7 +73,7 @@ test('REGRESSAO: finish bem-sucedido (PR_OPEN) limpa wait_attempts residual de u
   const wt = join(BASE, 'wt')
   const id = createCard({
     title: 'ajuste apos incidente ja recuperado',
-    status: 'PREVIEW_OK',
+    status: 'URL_OK',
     repo: 'org/repo',
     surface: 'none',
     clarified: 'true',

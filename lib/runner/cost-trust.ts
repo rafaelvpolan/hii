@@ -5,6 +5,11 @@ import { COST_UNKNOWN } from '../ai/cost'
 import { emptyUsage } from '../ai/usage'
 import { patchCard, patchCardWith, readCard } from './card-store'
 import { addProvider, classifyCostGap, floorProviders, formatProviders, parseProviders, removeProvider } from './cost-gap'
+import { registrarChamada, sessaoDoCard } from './ias-da-sessao'
+import type { PapelDeChamada } from './ias-da-sessao'
+import { sessaoAtual } from './sessao'
+import { sumTokens } from '../ai/usage'
+import { atualizarRegistroDeConversa } from './runs'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -74,7 +79,39 @@ export function recusaPorLimite(provider: AiProvider, req: AgentRequest): string
   return ''
 }
 
-export async function runProvider(id: string, provider: AiProvider, req: AgentRequest): Promise<AgentResult> {
+export function sessaoParaChamada(id: string): string {
+  return id ? sessaoDoCard(id) : `conversa-${sessaoAtual()}`
+}
+
+function semPropagarFalhaDeRegistro(registro: () => void): void {
+  try {
+    registro()
+  } catch {
+    return
+  }
+}
+
+function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
+  semPropagarFalhaDeRegistro(() => {
+    registrarChamada(sessaoParaChamada(id), {
+      ts: isoNow(),
+      papel,
+      provedor: provider.name,
+      modelo: req.model ?? '',
+      custoUsd: Number(res.cost) || 0,
+      custoMedido: classifyCostGap(res) === 'measured',
+      tokens: sumTokens(res.usage),
+      tokensEntrada: res.usage.tokens_in || 0,
+      tokensSaida: res.usage.tokens_out || 0,
+      tokensCache: res.usage.tokens_cache_create || 0,
+      duracaoS: Math.round((Date.now() - t0) / 1000),
+      ok: res.ok === true,
+    })
+    if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
+  })
+}
+
+export async function runProvider(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {
   const recusa = recusaPorLimite(provider, req)
   if (recusa) {
     return {
@@ -88,8 +125,10 @@ export async function runProvider(id: string, provider: AiProvider, req: AgentRe
       usage: emptyUsage(),
     }
   }
+  const t0 = Date.now()
   const res = await provider.run(req)
   recordCostTrust(id, provider.name, res)
+  anotarChamada(id, provider, req, papel, res, t0)
   return res
 }
 

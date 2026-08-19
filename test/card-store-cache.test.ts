@@ -32,10 +32,10 @@ test('REGRESSAO: allCards() enxerga edicao feita por fora do processo (nao serve
 })
 
 test('REGRESSAO: cardsByStatus() nao mistura card que mudou de fila por fora', () => {
-  const id = createCard({ title: 'muda de fila', status: 'PREVIEW_OK', repo: 'org/repo' }, '## Objetivo\nalgo\n')
-  expect(cardsByStatus('PREVIEW_OK').map(c => c.id)).toContain(id)
-  editarPorFora(id, 'status: PREVIEW_OK', 'status: CORRECTING')
-  expect(cardsByStatus('PREVIEW_OK').map(c => c.id)).not.toContain(id)
+  const id = createCard({ title: 'muda de fila', status: 'URL_OK', repo: 'org/repo' }, '## Objetivo\nalgo\n')
+  expect(cardsByStatus('URL_OK').map(c => c.id)).toContain(id)
+  editarPorFora(id, 'status: URL_OK', 'status: CORRECTING')
+  expect(cardsByStatus('URL_OK').map(c => c.id)).not.toContain(id)
   expect(cardsByStatus('CORRECTING').map(c => c.id)).toContain(id)
 })
 

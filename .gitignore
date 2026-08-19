@@ -12,6 +12,9 @@ Thumbs.db
 .claude/worktrees/
 cards/runs/
 cards/previews/
+cards/urls/
+cards/sessions/
+cards/*.md
 
 # Nuxt
 panel/.nuxt/
@@ -19,10 +22,11 @@ panel/.output/
 panel/.data/
 
 # Dependências / segredos
-node_modules/
+node_modules
 .env
 .env.*
 cards/refs/
+cards/tmp/
 
 # Configuração local da máquina (caminhos do clone-alvo) — nunca versionar.
 # Template versionado: config/repos.example.json
@@ -30,3 +34,4 @@ config/repos.json
 
 # preferencia de IA em tempo de execucao (por maquina)
 config/ia.json
+config/*.tmp.*

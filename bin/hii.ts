@@ -7,6 +7,11 @@ import { initHicodeHome } from '../lib/runner/hicode-home'
 import { installPrePush, uninstallPrePush } from '../lib/runner/hooks'
 import { runSync } from '../lib/tasks/sync'
 import { taskSyncName } from '../lib/tasks/registry'
+import { limparTmpAntigo, usoDeDisco } from '../lib/runner/estado-em-disco'
+import { linhasDoDisco } from '../lib/core/render/disco'
+import { snapshotDoMotor, revisaoDoEstado } from '../lib/core/estado-json'
+import { executarAcao } from '../lib/core/comandos-de-tarefa'
+import type { AcaoDeTarefa } from '../lib/core/comandos-de-tarefa'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -17,22 +22,71 @@ function daemon(sub: string): number {
   return spawnSync(DAEMON, [sub], { stdio: 'inherit' }).status ?? 1
 }
 
-function doPainel(comando: string): number {
-  process.stderr.write(`"${comando}" e comando do painel, nao do motor — use o hicode.\n`)
-  process.stderr.write('o hii executa: start, stop, restart, status, watch, run, once, sync, init, hooks\n')
+function semBoard(): number {
+  process.stderr.write('o board saiu do terminal — navegar cards e do painel web (hicode)\n')
+  process.stderr.write('no terminal: hii (abre a TUI) para trabalhar, hii watch para acompanhar\n')
   return 2
+}
+
+function script(name: string, extra: string[]): number {
+  return spawnSync('bun', [join(ROOT, 'scripts', 'setup', `${name}.mjs`), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
 function runnerBun(extra: string[]): number {
   return spawnSync('bun', [join(ROOT, 'runner.ts'), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
+function disco(extra: string[]): number {
+  const limpar = extra.includes('--limpar')
+  if (limpar) {
+    const r = limparTmpAntigo(0)
+    process.stdout.write(`transitorio limpo: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes liberados\n`)
+  }
+  const uso = usoDeDisco()
+  process.stdout.write(`${linhasDoDisco(uso, { color: process.stdout.isTTY === true }).join('\n')}\n`)
+  return uso.nivel === 'teto' ? 1 : 0
+}
+
+function valorDaFlag(extra: string[], flag: string): string {
+  const i = extra.indexOf(flag)
+  return i >= 0 ? (extra[i + 1] ?? '') : ''
+}
+
+function estado(extra: string[]): number {
+  if (extra.includes('--revisao')) {
+    process.stdout.write(`${revisaoDoEstado()}\n`)
+    return 0
+  }
+  const snapshot = snapshotDoMotor({ repo: valorDaFlag(extra, '--repo') })
+  const espacos = extra.includes('--compacto') ? 0 : 2
+  process.stdout.write(`${JSON.stringify(snapshot, null, espacos)}\n`)
+  return 0
+}
+
+function semIdDeTarefa(acao: string): number {
+  process.stderr.write(`uso: hii ${acao} <id> [texto] [--json]\n`)
+  return 2
+}
+
+function tarefa(acao: AcaoDeTarefa, extra: string[]): number {
+  const argumentos = extra.filter(a => !a.startsWith('--'))
+  const id = argumentos[0] ?? ''
+  if (!id) return semIdDeTarefa(acao)
+  const r = executarAcao(acao, id, argumentos.slice(1).join(' '))
+  if (extra.includes('--json')) process.stdout.write(`${JSON.stringify(r)}\n`)
+  else process.stdout.write(`${r.mensagem}\n`)
+  return r.ok ? 0 : 1
+}
+
 function usage(): void {
   process.stdout.write([
     'hii — motor de execucao autonoma',
     '',
-    'Uso: hii <comando>        o motor executa; quem autora e julga e o painel (hicode)',
+    'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
+    '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
+    '     hii estado [--json]  snapshot do motor em JSON (para o painel); --revisao so o token',
+    '     hii responder <id> <texto>   responde a pergunta aberta da tarefa',
     '',
 
     'O motor nunca faz merge: ele abre o PR e para.',
@@ -49,27 +103,21 @@ function usage(): void {
     '  watch                    progresso dos cards ao vivo (atualiza sozinho)',
     '',
     'Portas humanas do card:',
-    '  approve <id>             aprova o preview (PREVIEW -> PREVIEW_OK)',
+    '  approve <id>             aprova a url entregue (URL -> URL_OK)',
     '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
-    '  reject <id> [o que]      rejeita o preview; com motivo, pede correcao',
+    '  reject <id> [o que]      rejeita; com motivo, pede correcao',
     '  halt <id> [motivo]       para o card',
     '',
     'Repo-alvo (deterministico, 0 token):',
-    '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/ e gera o contrato',
-    '  repo rm <owner/nome>     remove do registro (nao toca no clone)',
-    '  repo ls                  lista os alvos e o estado de cada clone',
-    '  contract [caminho]       redetecta o contrato do alvo (stack, comandos, pacotes)',
-    '  doctor                   confere gh, IA, daemon, push e contrato de cada alvo',
+    '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/',
+    '  repo rm|ls               remove do registro | lista alvos e clones',
+    '  contract [caminho]       redetecta o contrato do alvo (stack, comandos)',
+    '  doctor                   confere gh, IA, daemon, push e contrato',
     '',
-    'Arquivo de cards (teto de 10 por projeto):',
-    '  board [repo] [--watch]   mostra o board das tarefas no terminal',
-    '  teclas                   mostra o que o seu terminal manda em cada tecla',
-    '  teclas --corrigir        ensina o Windows Terminal a mandar shift+enter',
-    '  rm <id> [id...] --yes    apaga os cards e limpa worktree, preview e runs',
-    '  archive                  arquiva os entregues mais antigos acima do teto',
-    '  archive --dry-run        mostra o que faria, sem mover',
-    '  archive ls               lista o que esta arquivado',
-    '  archive restore <id>     traz um card de volta',
+    'Arquivo de cards:',
+    '  rm <id> [id...] --yes    apaga cards e limpa worktree, url e runs',
+    '  archive [--dry-run|ls|restore <id>]',
+    '  teclas [--corrigir]      diagnostica/ensina shift+enter no terminal',
     '',
     'Tarefas e integracao:',
     '  sync                     sincroniza tarefas externas (HICODE_TASK_SYNC)',
@@ -80,7 +128,7 @@ function usage(): void {
     'Ajuda:',
     '  --help, -h, ajuda        mostra esta ajuda',
     '',
-    'Fluxo de um card: executar -> preview (link vivo) -> aprovar -> polir -> PR.',
+    'Fluxo de um card: executar -> url (link vivo) -> aprovar -> polir -> PR.',
     'Merge e SEMPRE humano: o motor para em PR_OPEN e nunca da merge.',
     '',
   ].join('\n'))
@@ -144,21 +192,42 @@ async function main(): Promise<number> {
     case 'hooks':
       return hooks()
     case 'repo':
+      return script('repo', args.slice(1))
     case 'approve':
+    case 'aprovar':
+      return tarefa(args.includes('--plan') || args.includes('--plano') ? 'aprovar-plano' : 'aprovar-url', args.slice(1))
     case 'reject':
+    case 'recusar':
+      return tarefa('recusar', args.slice(1))
     case 'halt':
+    case 'parar':
+      return tarefa('parar', args.slice(1))
+    case 'answer':
+    case 'responder':
+      return tarefa('responder', args.slice(1))
+    case 'estado':
+    case 'state':
+      return estado(args.slice(1))
     case 'contract':
+      return script('contract', args.slice(1))
     case 'doctor':
+      return script('doctor', args.slice(1))
     case 'teclas':
-    case 'board':
-    case 'quadro':
+      return args[1] === '--corrigir'
+        ? script('wt-shift-enter', args.slice(2))
+        : script('teclas', args.slice(1))
     case 'rm':
     case 'apagar':
+      return script('rm', args.slice(1))
     case 'archive':
-      return doPainel(String(args[0]))
+      return script('archive', args.slice(1))
+    case 'disco':
+      return disco(args.slice(1))
+    case 'board':
+    case 'quadro':
+      return semBoard()
     case undefined:
-      usage()
-      return 0
+      return spawnSync('bun', [join(ROOT, 'bin', 'repl.ts')], { stdio: 'inherit', cwd: ROOT }).status ?? 0
     default:
       usage()
       return 1

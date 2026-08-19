@@ -1,6 +1,6 @@
-import { readFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { cardsDir } from './config'
+import { garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from './estado-em-disco'
 import { downloadToFile } from './download'
 import { clip, refuse } from './url-guard'
 import type { Refusal } from './url-guard'
@@ -12,20 +12,12 @@ function isInRefsDir(p: string, id: string): boolean {
   return resolve(p).startsWith(`${resolve(refsDir(id))}/`)
 }
 
-function refsFile(id: string): string {
-  return join(cardsDir(), 'refs', `${id}.json`)
-}
-
-function refsDir(id: string): string {
-  return join(cardsDir(), 'refs', id)
-}
-
 export function readRefSources(id: string): string[] {
   const f = refsFile(id)
   if (!existsSync(f)) return []
   try {
     const parsed = JSON.parse(readFileSync(f, 'utf8')) as string[]
-    return Array.isArray(parsed) ? parsed.map(s => String(s)).filter(Boolean).slice(0, 8) : []
+    return Array.isArray(parsed) ? parsed.map(s => String(s)).filter(Boolean).slice(0, MAX_REFS_POR_TAREFA) : []
   } catch {
     return []
   }
@@ -61,8 +53,7 @@ export interface RefOutcome {
 export async function resolveRefs(id: string): Promise<RefOutcome[]> {
   const sources = readRefSources(id)
   if (!sources.length) return []
-  const dir = refsDir(id)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  const dir = garantirDir(refsDir(id))
   const out: RefOutcome[] = []
   for (let i = 0; i < sources.length; i++) {
     const s = sources[i] ?? ''

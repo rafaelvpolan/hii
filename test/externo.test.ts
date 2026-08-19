@@ -62,7 +62,7 @@ test('REGRESSAO #023: o conteudo do card nao arrasta a tarefa para backend/dados
   expect(p.profile).toBe('externo')
 })
 
-test('acao externa nao levanta preview — nao ha superficie para renderizar', () => {
+test('acao externa nao levanta url — nao ha superficie para renderizar', () => {
   const v = classifySurface('criar nova tarefa no notion', 'Titulo: Ordenacao de trilha', true)
   expect(v.surface).toBe('none')
 })

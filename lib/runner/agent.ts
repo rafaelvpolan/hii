@@ -150,7 +150,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools,
     agentsJson: injetaAgentes ? agentesNexusJsonPor(AGENTES_IMPLEMENT, navegacao) : '',
-  })
+  }, 'implement')
   const cost = res.cost ? res.cost.toFixed(4) : ''
   if (!res.ok) {
     const reason = res.isError
@@ -163,7 +163,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
 }
 
 export async function verifyVisual(card: Card, shotPath: string): Promise<VerifyResult> {
-  if (!existsSync(shotPath)) return { ok: false, conclusive: false, reason: 'sem screenshot — preview nao renderizou (inconclusivo)', cost: 0, tokens: 0 }
+  if (!existsSync(shotPath)) return { ok: false, conclusive: false, reason: 'sem screenshot — url nao renderizou (inconclusivo)', cost: 0, tokens: 0 }
   const provider = providerFor('verify')
   if (!provider.supportsVision) return { ok: false, conclusive: false, reason: `provider ${provider.name} nao le imagem — verify visual inconclusivo`, cost: 0, tokens: 0 }
   const desc = extractObjetivo(card.body) || card.fm.title
@@ -182,7 +182,7 @@ export async function verifyVisual(card: Card, shotPath: string): Promise<Verify
     model: modelFor('verify'),
     effort: effortFor('verify', card.fm.effort),
     timeoutMs: 120000,
-  })
+  }, 'verify')
   const tokens = sumTokens(res.usage)
   const inner = res.text.match(/\{[\s\S]*?\}/)
   if (inner && inner[0]) {
@@ -224,7 +224,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools: navegacao,
     agentsJson: provider.supportsAgents ? agentesNexusJsonPor([agent], navegacao) : '',
-  })
+  }, 'step')
   const time = Math.round((Date.now() - t) / 1000)
   const tokens = sumTokens(res.usage)
   if (!res.ok) {

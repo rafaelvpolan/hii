@@ -141,7 +141,7 @@ test('extraFields (custo/tokens acumulados) sao gravados junto com a transicao',
 test('resumeStep, quando informado, e gravado como resume_from para o polimento retomar do passo certo', () => {
   const id = card()
   applyFailurePolicy({
-    id, fromStatus: 'Testes', resumeStatus: 'PREVIEW_OK', resumeStep: 'Testes', provider: 'claude',
+    id, fromStatus: 'Testes', resumeStatus: 'URL_OK', resumeStep: 'Testes', provider: 'claude',
     failureClass: 'transient', failureReason: 'x', technicalDetail: 'x',
   })
   expect(readCard(id)?.fm.resume_from).toBe('Testes')

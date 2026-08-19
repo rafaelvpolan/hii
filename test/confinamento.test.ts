@@ -14,7 +14,7 @@ const SHOTS = join(BASE, 'shots')
 mkdirSync(WT, { recursive: true })
 mkdirSync(BIN, { recursive: true })
 mkdirSync(SHOTS, { recursive: true })
-writeFileSync(join(SHOTS, 'preview.png'), 'png-falso')
+writeFileSync(join(SHOTS, 'url.png'), 'png-falso')
 
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
@@ -220,7 +220,7 @@ test('o prompt de implement so roteia para agente que ele mesmo injeta', async (
 
 test('modo readonly (verifyVisual) fica no ROOT de proposito, sem tools do omc e sem --agents', async () => {
   limpar()
-  await verifyVisual(CARTAO, join(SHOTS, 'preview.png'))
+  await verifyVisual(CARTAO, join(SHOTS, 'url.png'))
   expect(cwdDoDisco()).toBe(realpathSync(ROOT))
   const a = argvDoDisco()
   expect(a).not.toContain('--agents')

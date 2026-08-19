@@ -22,8 +22,8 @@ export function quantosEmVoo(): number {
 export function reconcileStranded(): void {
   for (const s of FINISH_STATES) {
     for (const c of cardsByStatus(s)) {
-      patchCard(c.id ?? '', { status: 'PREVIEW_OK' }, `${isoNow()} ${s}->PREVIEW_OK recuperado apos reinicio do daemon (finish reiniciado)`)
-      process.stdout.write(`[runner] #${c.id}: recuperado ${s}->PREVIEW_OK\n`)
+      patchCard(c.id ?? '', { status: 'URL_OK' }, `${isoNow()} ${s}->URL_OK recuperado apos reinicio do daemon (finish reiniciado)`)
+      process.stdout.write(`[runner] #${c.id}: recuperado ${s}->URL_OK\n`)
     }
   }
   for (const s of RERUN_STATES) {
@@ -35,7 +35,7 @@ export function reconcileStranded(): void {
     }
   }
   for (const c of cardsByStatus('EXECUTED')) {
-    patchCard(c.id ?? '', { status: 'EXECUTING' }, `${isoNow()} EXECUTED->EXECUTING recuperado (preview nao concluido ou rejeitado sem worktree — nao havia consumidor de EXECUTED)`)
+    patchCard(c.id ?? '', { status: 'EXECUTING' }, `${isoNow()} EXECUTED->EXECUTING recuperado (url nao concluido ou rejeitado sem worktree — nao havia consumidor de EXECUTED)`)
     process.stdout.write(`[runner] #${c.id}: recuperado EXECUTED->EXECUTING\n`)
   }
 }
@@ -44,7 +44,7 @@ export function pending(): Job[] {
   const cards = allCards()
   const porStatus = (status: string): Array<Fields & { file: string }> => cards.filter(c => c.status === status)
   const ex: Job[] = porStatus('EXECUTING').map(c => ({ kind: 'execute', id: c.id ?? '' }))
-  const fi: Job[] = porStatus('PREVIEW_OK').map(c => ({ kind: 'finish', id: c.id ?? '' }))
+  const fi: Job[] = porStatus('URL_OK').map(c => ({ kind: 'finish', id: c.id ?? '' }))
   const co: Job[] = porStatus('CORRECTING').map(c => ({ kind: 'correct', id: c.id ?? '' }))
   const sp: Job[] = porStatus('SPECCED').map(c => ({ kind: 'spec', id: c.id ?? '' }))
   return [...sp, ...ex, ...fi, ...co].filter(j => !emVoo.has(j.id))

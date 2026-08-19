@@ -6,7 +6,7 @@ import { MAX_CONFLICT } from './config'
 import { patchCard } from './card-store'
 import { runGit, withGitLock } from './git'
 import { runStep } from './agent'
-import { ensurePreview, hasDevServer, httpOk, inspectPreview, previewPort, waitHttp } from './preview'
+import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from './url-vivo'
 import { isNonVisual } from './classify'
 import { addMetric } from './finish-metrics'
 
@@ -74,20 +74,20 @@ export async function revalidate(id: string, card: Card, wt: string, target: str
   let reason = 'sem dev server (revalidacao pulada)'
   const rt = Date.now()
   if (hasDevServer(target)) {
-    const rport = previewPort(id)
+    const rport = urlPort(id)
     const rurl = `http://localhost:${rport}`
     let up = await httpOk(rurl)
     if (!up) {
-      await ensurePreview(wt, rport, target)
+      await ensureUrl(wt, rport, target)
       up = await waitHttp(rurl, 25)
     }
     if (up) {
-      const h = await inspectPreview(id, rurl, true)
+      const h = await inspectUrl(id, rurl, true)
       if (!h.conclusive) {
-        reason = `preview no ar apos merge — verificacao humana (inspecao automatica indisponivel${h.detail ? ': ' + h.detail : ''})`
+        reason = `url no ar apos merge — verificacao humana (inspecao automatica indisponivel${h.detail ? ': ' + h.detail : ''})`
       } else {
         ok = h.ok
-        reason = h.ok ? 'preview no ar apos merge — confira pelo link' : `preview com erro: ${h.detail}`
+        reason = h.ok ? 'url no ar apos merge — confira pelo link' : `url com erro: ${h.detail}`
       }
     } else {
       reason = 'dev server nao respondeu (revalidacao pulada)'

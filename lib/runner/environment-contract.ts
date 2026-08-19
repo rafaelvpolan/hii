@@ -26,5 +26,5 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_RUNNER_LOCK, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/runner/instance-lock.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOG, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['scripts/runner-daemon.sh'], lado: 'motor' },
   { nome: ENV_IA_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/ai/preferencias.ts'], lado: 'ambos' },
-  { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/catalogo.ts'], lado: 'painel' },
+  { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/catalogo.ts'], lado: 'motor' },
 ]

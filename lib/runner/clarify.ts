@@ -102,7 +102,7 @@ export async function clarify(card: Card): Promise<ClarifyResult> {
     '',
     `TAREFA: ${desc}`,
   ].join('\n')
-  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 })
+  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 }, 'clarify')
   if (!res.ok) {
     return {
       questions: [],

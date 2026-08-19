@@ -6,7 +6,7 @@ import { CARD_BUDGET_USD } from './config'
 import { readCard, patchCard, repoPath } from './card-store'
 import { warnBudgetWithoutGuarantee } from './cost-trust'
 import { runGit, stageAll } from './git'
-import { ensurePreview, hasDevServer, previewPort, httpOk, inspectPreview, waitHttp } from './preview'
+import { ensureUrl, hasDevServer, urlPort, httpOk, inspectUrl, waitHttp } from './url-vivo'
 import { implement, runStep } from './agent'
 import { appendAttempt, readAttempts } from './attempts'
 import { applyFailurePolicy } from './failure-policy'
@@ -42,19 +42,19 @@ function scopedInstruction(instruction: string, file: string, line: string, line
 
 async function revalidate(id: string, wt: string, target: string): Promise<VerifyResult> {
   if (!hasDevServer(target)) return { ok: true, reason: 'sem dev server', cost: 0, tokens: 0 }
-  const port = previewPort(id)
+  const port = urlPort(id)
   const url = `http://localhost:${port}`
   let up = await httpOk(url)
   if (!up) {
-    await ensurePreview(wt, port, target)
+    await ensureUrl(wt, port, target)
     up = await waitHttp(url, 25)
   }
   if (!up) return { ok: true, reason: 'dev server nao respondeu', cost: 0, tokens: 0 }
-  const health = await inspectPreview(id, url, true)
-  if (!health.conclusive) return { ok: true, reason: `preview no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`, cost: 0, tokens: 0 }
+  const health = await inspectUrl(id, url, true)
+  if (!health.conclusive) return { ok: true, reason: `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`, cost: 0, tokens: 0 }
   return health.ok
-    ? { ok: true, reason: 'preview no ar — confira pelo link', cost: 0, tokens: 0 }
-    : { ok: false, reason: `preview com erro: ${health.detail}`, cost: 0, tokens: 0 }
+    ? { ok: true, reason: 'url no ar — confira pelo link', cost: 0, tokens: 0 }
+    : { ok: false, reason: `url com erro: ${health.detail}`, cost: 0, tokens: 0 }
 }
 
 async function commit(wt: string, message: string): Promise<void> {
@@ -71,8 +71,8 @@ function attemptHistory(id: string): string {
   return `Historico de tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta):\n${lines}\n\n`
 }
 
-async function redoPreview(card: NonNullable<ReturnType<typeof readCard>>, wt: string, instruction: string, implementar: typeof implement): Promise<StepOutcome> {
-  const r = await implementar(card, wt, `${attemptHistory(card.fm.id ?? '')}O preview anterior foi REJEITADO pelo revisor. Refaça a tarefa atendendo exatamente: "${instruction}".`, card.fm.surface === 'visual')
+async function redoUrl(card: NonNullable<ReturnType<typeof readCard>>, wt: string, instruction: string, implementar: typeof implement): Promise<StepOutcome> {
+  const r = await implementar(card, wt, `${attemptHistory(card.fm.id ?? '')}O url anterior foi REJEITADO pelo revisor. Refaça a tarefa atendendo exatamente: "${instruction}".`, card.fm.surface === 'visual')
   return { ok: r.ok, text: r.resultText ?? r.reason ?? '', fullText: r.fullText ?? r.resultText ?? r.reason ?? '', cost: parseFloat(r.cost) || 0, tokens: tokensOf(r.usage), failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
 }
 
@@ -100,8 +100,8 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   }
   const target = repoPath(card.fm.repo ?? '')
   const redo = !file
-  process.stdout.write(`[runner] #${id}: ${redo ? 'refazendo preview (rejeitado)' : 'aplicando correção'} em ${wt}\n`)
-  const r = redo ? await redoPreview(card, wt, instruction, deps.implement) : await scopedFix(wt, instruction, file, line, lineText, id, deps.runStep)
+  process.stdout.write(`[runner] #${id}: ${redo ? 'refazendo url (rejeitado)' : 'aplicando correção'} em ${wt}\n`)
+  const r = redo ? await redoUrl(card, wt, instruction, deps.implement) : await scopedFix(wt, instruction, file, line, lineText, id, deps.runStep)
   appendAttempt(id, redo ? 'reprovacao' : 'correcao', instruction, r.fullText)
   if (!r.ok) {
     const outcome = applyFailurePolicy({
@@ -116,17 +116,17 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
     if (outcome === 'halt') patchCard(id, { correction: '', correction_file: '', correction_line: '', correction_line_text: '' })
     return
   }
-  await commit(wt, redo ? `feat: refaz preview apos rejeicao (#${id})` : `fix: correção humana (#${id})`)
+  await commit(wt, redo ? `feat: refaz url apos rejeicao (#${id})` : `fix: correção humana (#${id})`)
   patchCard(id, {
-    status: 'PREVIEW',
+    status: 'URL',
     correction: '',
     correction_file: '',
     correction_line: '',
     correction_line_text: '',
     verify: 'inconclusivo',
     wait_attempts: '',
-  }, `${isoNow()} CORRECTING->PREVIEW ${redo ? 'preview refeito' : 'correção aplicada'}: ${r.text || 'ok'} (verificando…) (custo $${r.cost.toFixed(4)} · ${r.tokens} tokens)`)
-  process.stdout.write(`[runner] #${id}: PREVIEW apos ${redo ? 'refação' : 'correção'} (verificando)\n`)
+  }, `${isoNow()} CORRECTING->URL ${redo ? 'url refeito' : 'correção aplicada'}: ${r.text || 'ok'} (verificando…) (custo $${r.cost.toFixed(4)} · ${r.tokens} tokens)`)
+  process.stdout.write(`[runner] #${id}: URL apos ${redo ? 'refação' : 'correção'} (verificando)\n`)
   const reval = await revalidate(id, wt, target)
   patchCard(id, { verify: reval.ok ? 'ok' : 'falhou' }, `${isoNow()} inspecao pos-${redo ? 'refação' : 'correção'}: ${reval.ok ? 'ok' : 'revisar'} — ${reval.reason}`)
 }

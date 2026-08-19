@@ -28,7 +28,7 @@ export async function evaluate(card: Card, wt: string, base: string): Promise<Ev
     'DIFF:',
     diff || '(sem diff vs a base)',
   ].join('\n')
-  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 })
+  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 }, 'avaliacao')
   if (!res.ok) {
     return { score: -1, meets: false, notes: `eval NAO rodou: ${String(res.detail || 'provedor falhou').slice(0, 120)}`, cost: res.cost, tokens: sumTokens(res.usage) }
   }
