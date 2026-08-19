@@ -48,28 +48,9 @@ function usage(): void {
     '  status                   estado do daemon + progresso dos cards',
     '  watch                    progresso dos cards ao vivo (atualiza sozinho)',
     '',
-    'Portas humanas do card:',
-    '  approve <id>             aprova o preview (PREVIEW -> PREVIEW_OK)',
-    '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
-    '  reject <id> [o que]      rejeita o preview; com motivo, pede correcao',
-    '  halt <id> [motivo]       para o card',
-    '',
-    'Repo-alvo (deterministico, 0 token):',
-    '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/ e gera o contrato',
-    '  repo rm <owner/nome>     remove do registro (nao toca no clone)',
-    '  repo ls                  lista os alvos e o estado de cada clone',
-    '  contract [caminho]       redetecta o contrato do alvo (stack, comandos, pacotes)',
-    '  doctor                   confere gh, IA, daemon, push e contrato de cada alvo',
-    '',
-    'Arquivo de cards (teto de 10 por projeto):',
-    '  board [repo] [--watch]   mostra o board das tarefas no terminal',
-    '  teclas                   mostra o que o seu terminal manda em cada tecla',
-    '  teclas --corrigir        ensina o Windows Terminal a mandar shift+enter',
-    '  rm <id> [id...] --yes    apaga os cards e limpa worktree, preview e runs',
-    '  archive                  arquiva os entregues mais antigos acima do teto',
-    '  archive --dry-run        mostra o que faria, sem mover',
-    '  archive ls               lista o que esta arquivado',
-    '  archive restore <id>     traz um card de volta',
+    'Portas humanas e governanca do card (nao sao do motor):',
+    '  approve, reject, halt, repo, contract, doctor, board, rm, archive, teclas',
+    '  vivem no painel (hicode) — o motor recusa esses comandos com codigo 2',
     '',
     'Tarefas e integracao:',
     '  sync                     sincroniza tarefas externas (HICODE_TASK_SYNC)',
@@ -102,6 +83,20 @@ function hooks(): number {
   }
   process.stdout.write('uso: hii hooks <install|uninstall> [caminho]\n')
   return 1
+}
+
+function orientar(): number {
+  for (const l of [
+    '',
+    'hii — motor de execucao autonoma (sem TUI: o motor nao tem tela)',
+    '',
+    '  hicode          abre o painel de tarefas (a TUI: escrever card, aprovar, acompanhar)',
+    '  hii status      estado do daemon + progresso dos cards',
+    '  hii start       sobe o motor para executar a fila',
+    '  hii --help      todos os comandos do motor',
+    '',
+  ]) console.log(l)
+  return 0
 }
 
 async function main(): Promise<number> {
@@ -157,8 +152,7 @@ async function main(): Promise<number> {
     case 'archive':
       return doPainel(String(args[0]))
     case undefined:
-      usage()
-      return 0
+      return orientar()
     default:
       usage()
       return 1
