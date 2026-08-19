@@ -235,7 +235,7 @@ Comandos de barra dentro da TUI:
 | `/new-session` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
-| `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço |
+| `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço — inclusive do papel `classificacao` (a leitura de intenção), que é o candidato natural à IA local |
 | `/rm <id>` | apaga card |
 | `/stop <id>` | para card |
 | `/exit` | sai |

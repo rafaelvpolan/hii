@@ -1,6 +1,6 @@
 import type { Usage } from '../card'
 
-export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
+export type AgentRole = 'implement' | 'verify' | 'gate' | 'step' | 'classificacao'
 
 export type AiProviderName = 'claude' | 'codex' | 'ollama' | 'kimi'
 

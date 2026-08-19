@@ -145,3 +145,26 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
   expect(t).toContain('motor nao rodou aqui')
   expect(t).toContain('GASTO DO MOTOR')
 })
+
+test('classificacao e papel do roteador: da para apontar para a ia local e persistir', async () => {
+  const { agentRoles, providerNameFor } = await import('../lib/ai/registry')
+  const { aplicar } = await import('../lib/core/escolher-ia')
+  process.env.HICODE_IA_FILE = join(estado, 'ia.json')
+  expect(agentRoles()).toContain('classificacao')
+  aplicar({ papeis: ['classificacao'], provider: 'ollama' })
+  expect(providerNameFor('classificacao')).toBe('ollama')
+  expect(providerNameFor('implement')).not.toBe('ollama')
+  delete process.env.HICODE_IA_FILE
+})
+
+test('a env antiga HICODE_CLASSIFY_PROVIDER continua valendo como o env do papel', async () => {
+  const { roleProviderEnv } = await import('../lib/ai/registry')
+  expect(roleProviderEnv('classificacao')).toBe('HICODE_CLASSIFY_PROVIDER')
+})
+
+test('o papel novo aparece nos ajustes da TUI, com rotulo legivel', async () => {
+  const { itensDeAjuste } = await import('../lib/core/ajustes')
+  const item = itensDeAjuste().find(i => i.chave === 'classificacao:ia')
+  expect(item).toBeTruthy()
+  expect(item?.rotulo).toContain('le a intencao')
+})

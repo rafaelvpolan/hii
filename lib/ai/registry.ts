@@ -20,6 +20,7 @@ const ROLE_PROVIDER_ENV: Record<AgentRole, string> = {
   verify: 'HICODE_VERIFY_PROVIDER',
   gate: 'HICODE_GATE_PROVIDER',
   step: 'HICODE_STEP_PROVIDER',
+  classificacao: 'HICODE_CLASSIFY_PROVIDER',
 }
 
 const PROVIDER_MODEL_ENV: Record<Exclude<AiProviderName, 'claude'>, string> = {

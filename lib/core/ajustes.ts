@@ -21,6 +21,7 @@ const PAPEL_ROTULO: Record<string, string> = {
   verify: 'verifica',
   gate: 'revisa',
   step: 'poli',
+  classificacao: 'le a intencao',
 }
 
 export function itensDeAjuste(): ItemDeAjuste[] {

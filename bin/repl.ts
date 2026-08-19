@@ -22,6 +22,7 @@ import { cabecalhoDaTarefa, planoDe } from './lib/tela-tarefa'
 import { dicaDaNavegacao, pintarComando, rodapeDa } from './lib/rodape-tui'
 import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from './lib/board-tui'
 import { ensureDaemon, fleet } from './lib/comandos'
+import { definirEstadoDoOllama, sondarOllama } from '../lib/ai/ollama-estado'
 import { etiquetaDoProjeto } from '../lib/core/render/projeto'
 import { renderSugestoes, prefixoComum } from '../lib/core/render/sugestoes'
 import { aplicar as aplicarIa } from '../lib/core/escolher-ia'
@@ -180,6 +181,7 @@ async function main(): Promise<void> {
   say(`  ${color ? ACC : ''}hii${color ? RESET : ''} — motor de execucao   ${dim('/help para os comandos')}`)
   await ensureDaemon(ask)
   let state = newSession(await escolherProjeto(ask))
+  definirEstadoDoOllama(await sondarOllama())
   avisoRepos(state)
   if (color) {
     rl.close()

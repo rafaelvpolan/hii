@@ -149,3 +149,20 @@ test('plano nao descoberto e dito, nao chutado', () => {
     { color: false, largura: 104, altura: 34 }).join('\n')
   expect(t).toContain('plano nao descoberto')
 })
+
+test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
+  const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
+  const { habilitadoDe } = await import('../lib/core/config-snapshot')
+  const conectado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
+
+  definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
+  expect(habilitadoDe('ollama', conectado)).toBe(false)
+
+  definirEstadoDoOllama({ habilitado: true, modelos: ['qwen3:4b'], verificadoEm: Date.now() })
+  expect(habilitadoDe('ollama', conectado)).toBe(true)
+})
+
+test('REGRESSAO: a TUI aquece a sonda do ollama antes de desenhar, senao o 1o quadro mente', async () => {
+  const fonte = await Bun.file('bin/repl.ts').text()
+  expect(fonte).toContain('definirEstadoDoOllama(await sondarOllama())')
+})
