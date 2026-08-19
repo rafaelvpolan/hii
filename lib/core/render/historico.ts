@@ -1,5 +1,6 @@
 import { larguraDeTexto } from '../tui/largura'
 import { pintar, type Tom } from '../tui/paleta'
+import { chaveDaSessao } from '../historico'
 import type { HistoricoDeSessoes, Sessao } from '../historico'
 
 export interface OpcoesDoHistorico {
@@ -65,7 +66,7 @@ function modeloCurto(s: Sessao): string {
 }
 
 function linhaDaSessao(s: Sessao, o: OpcoesDoHistorico, agoraMs: number): string {
-  const marca = o.selecionado === s.card ? tinta('▸', 'destaque', o) : ' '
+  const marca = o.selecionado === chaveDaSessao(s) ? tinta('▸', 'destaque', o) : ' '
   const sinal = s.ok ? tinta('✓', 'sucesso', o) : tinta('✗', 'falha', o)
   const partes = [
     marca,

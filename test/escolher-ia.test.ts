@@ -281,7 +281,8 @@ test('REGRESSAO rodape e motor leem a MESMA fonte de esforco', async () => {
   const { esforcoAtual } = await import('../bin/lib/rodape-tui')
   const { effortFor } = await import('../lib/ai/registry')
   const { newSession } = await import('../lib/core/session')
-  expect(esforcoAtual(newSession('org/app'))).toBe(effortFor('implement') ?? '(padrao do CLI)')
+  const { ESFORCO_PADRAO } = await import('../lib/core/ajustes')
+  expect(esforcoAtual(newSession('org/app'))).toBe(effortFor('implement') ?? ESFORCO_PADRAO)
 })
 
 test('REGRESSAO o rodape nao pode chutar um esforco fixo', async () => {

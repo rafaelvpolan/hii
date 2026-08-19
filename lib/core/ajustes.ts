@@ -1,9 +1,11 @@
 import { agentRoles, providerNames, providerNameFor, modelFor, effortFor } from '../ai/registry'
 import { ESFORCOS } from '../ai/preferencias'
-import { aplicar } from './escolher-ia'
+import { aplicar, limparEsforco } from './escolher-ia'
 import type { AgentRole } from '../ai/types'
 
 export type TipoDeAjuste = 'ia' | 'esforco'
+
+export const ESFORCO_PADRAO = '(padrao da IA)'
 
 export interface ItemDeAjuste {
   chave: string
@@ -23,7 +25,7 @@ const PAPEL_ROTULO: Record<string, string> = {
 
 export function itensDeAjuste(): ItemDeAjuste[] {
   const provedores = providerNames() as string[]
-  const esforcos = [...ESFORCOS] as string[]
+  const esforcos = [...ESFORCOS, ESFORCO_PADRAO] as string[]
   return agentRoles().flatMap((papel): ItemDeAjuste[] => {
     const rotulo = PAPEL_ROTULO[papel] ?? papel
     const modelo = modelFor(papel)
@@ -41,7 +43,7 @@ export function itensDeAjuste(): ItemDeAjuste[] {
         papel,
         tipo: 'esforco',
         rotulo: `${rotulo} · esforco`,
-        valor: effortFor(papel) ?? '(padrao)',
+        valor: effortFor(papel) ?? ESFORCO_PADRAO,
         opcoes: esforcos,
       },
     ]
@@ -62,14 +64,16 @@ export function ciclarAjuste(chave: string, dir: -1 | 1): ResultadoDeCiclo {
   if (!item) return { ok: false, mensagem: 'nada selecionado para trocar' }
   if (item.opcoes.length < 2) return { ok: false, mensagem: `so ha uma opcao de ${item.tipo}` }
 
-  const atual = item.tipo === 'ia' ? providerNameFor(item.papel) : (effortFor(item.papel) ?? '')
+  const atual = item.tipo === 'ia' ? providerNameFor(item.papel) : (effortFor(item.papel) ?? ESFORCO_PADRAO)
   const i = item.opcoes.indexOf(atual)
-  const proximo = item.opcoes[((i < 0 ? 0 : i) + dir + item.opcoes.length) % item.opcoes.length]
+  const proximo = i < 0
+    ? item.opcoes[0]
+    : item.opcoes[(i + dir + item.opcoes.length) % item.opcoes.length]
   if (!proximo) return { ok: false, mensagem: 'nao consegui trocar' }
 
-  aplicar(item.tipo === 'ia'
-    ? { papeis: [item.papel], provider: proximo, model: '' }
-    : { papeis: [item.papel], effort: proximo })
+  if (proximo === ESFORCO_PADRAO) limparEsforco([item.papel])
+  else if (item.tipo === 'ia') aplicar({ papeis: [item.papel], provider: proximo, model: '' })
+  else aplicar({ papeis: [item.papel], effort: proximo })
 
   return { ok: true, mensagem: `${item.rotulo}: ${proximo} — vale na proxima instrucao` }
 }

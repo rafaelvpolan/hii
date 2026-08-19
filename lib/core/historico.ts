@@ -15,6 +15,14 @@ export interface HistoricoDeSessoes {
   janelaMs: number
 }
 
+export function chaveDaSessao(s: Sessao): string {
+  return s.arquivo
+}
+
+export function sessaoPorChave(chave: string, h: HistoricoDeSessoes): Sessao | null {
+  return h.sessoes.find(s => chaveDaSessao(s) === chave) ?? null
+}
+
 function porMaisRecente(a: RegistroDeRun, b: RegistroDeRun): number {
   return b.concluidoEmMs - a.concluidoEmMs
 }

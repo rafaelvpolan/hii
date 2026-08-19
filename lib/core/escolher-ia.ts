@@ -98,6 +98,18 @@ export function limpar(papeis: AgentRole[]): ResultadoEscolha {
   return { ok: true, mensagem: `voltou ao padrao: ${papeis.join(', ')}` }
 }
 
+export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
+  const prefs = ler()
+  for (const papel of papeis) {
+    const atual = prefs[papel]
+    if (!atual) continue
+    delete atual.effort
+    prefs[papel] = atual
+  }
+  gravar(prefs)
+  return { ok: true, mensagem: `esforco volta ao padrao da IA: ${papeis.join(', ')}` }
+}
+
 export function ciclarIa(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
   const nomes = providerNames()
   if (nomes.length < 2) return { ok: false, mensagem: 'so ha um provedor configurado' }
@@ -184,10 +196,8 @@ export function definirEsforco(partes: string[]): ResultadoEscolha {
     return { ok: false, mensagem: `esforco: ${ESFORCOS.join(' · ')} · padrao — use /effort <nivel>` }
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
-    const prefs = ler()
-    const atual = prefs[papel]
-    if (atual) { delete atual.effort; prefs[papel] = atual; gravar(prefs) }
-    return { ok: true, mensagem: `${papel}: esforco volta ao padrao do CLI` }
+    limparEsforco([papel])
+    return { ok: true, mensagem: `${papel}: esforco volta ao padrao da IA` }
   }
   if (!ehEsforco(escolhido)) {
     return { ok: false, mensagem: `"${escolhido}" nao e esforco valido — use: ${ESFORCOS.join(' · ')}` }

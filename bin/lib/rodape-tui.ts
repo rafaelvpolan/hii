@@ -3,10 +3,11 @@ import { dailySpend } from '../../lib/runner/cost-gap'
 import type { DailySpend } from '../../lib/runner/cost-gap'
 import { effortFor, modelFor, providerNameFor } from '../../lib/ai/registry'
 import { emExecucao, esperandoEmOutrosProjetos, esperandoVoce, linhaDeOutrosProjetos, linhaPropriedades, linhasAjustes, linhasEspera, linhasExecucao } from '../../lib/core/render/rodape'
-import { itensDeAjuste } from '../../lib/core/ajustes'
+import { ESFORCO_PADRAO, itensDeAjuste } from '../../lib/core/ajustes'
 import { cardsPerguntando } from '../../lib/core/responder'
 import { ultimoAgente } from '../../lib/core/activity'
 import type { SessionState } from '../../lib/core/session'
+import type { CorpoContexto } from '../../lib/core/tui/app'
 import { ACC, DIM, RESET, color } from './saida'
 import { atividadeDe, todosOsCards } from './dados'
 import { modoAtual, selecionado } from './estado'
@@ -19,7 +20,7 @@ export function custoDoDia(repo: string): DailySpend {
 export function esforcoAtual(state: SessionState): string {
   const alvo = state.seguindo || state.pendingPlan
   const doCard = alvo ? readCard(alvo)?.fm.effort : undefined
-  return effortFor('implement', doCard) ?? '(padrao do CLI)'
+  return effortFor('implement', doCard) ?? ESFORCO_PADRAO
 }
 
 export function papeisDivergentes(): string[] {
@@ -83,4 +84,11 @@ export function dicaDa(state: SessionState, sugerindo = false): string {
     return 'shift+tab ajusta a ia · ctrl+j quebra linha · /help para tudo'
   })()
   return color ? `${DIM}${texto}${RESET}` : texto
+}
+
+export function dicaDaNavegacao(ctx: CorpoContexto, state: SessionState): string {
+  if (ctx.navegando === 'board') return '↑↓ escolhe a sessao · enter abre a tarefa · ← ou → volta'
+  if (ctx.navegando === 'ajustes') return dicaDa(state, ctx.sugerindo)
+  if (ctx.navegando) return '↑↓ move · enter abre · → volta · ← sessoes'
+  return dicaDa(state, ctx.sugerindo)
 }

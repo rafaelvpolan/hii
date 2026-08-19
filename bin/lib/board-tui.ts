@@ -1,26 +1,40 @@
 import { existsSync } from 'node:fs'
 import { reposFile } from '../../lib/runner/config'
 import { repoPath, repoRegistered } from '../../lib/runner/card-store'
-import { historicoDeSessoes } from '../../lib/core/historico'
+import { chaveDaSessao, historicoDeSessoes, sessaoPorChave } from '../../lib/core/historico'
 import { avisoDeEstadoVazio, lerEstadoVazio } from '../../lib/core/estado-vazio'
 import { renderHistorico } from '../../lib/core/render/historico'
+import { renderConfig } from '../../lib/core/render/config'
+import { seguimento } from './tela-tarefa'
 import { daemonStatus } from '../../lib/core/daemon'
 import { emExecucao, esperandoVoce } from '../../lib/core/render/rodape'
 import { pendencia } from '../../lib/core/responder'
 import { ordemDosAjustes } from '../../lib/core/ajustes'
 import { complete } from '../../lib/core/complete'
-import { ordemDaConfig } from '../../lib/core/config-snapshot'
+import { lerConfig, ordemDaConfig } from '../../lib/core/config-snapshot'
 import { agentRoles, providerNameFor, providerNames } from '../../lib/ai/registry'
 import { modelosDe } from '../../lib/ai/catalogo'
 import { ESFORCOS } from '../../lib/ai/preferencias'
 import type { SessionState } from '../../lib/core/session'
 import type { ModoNavegacao } from '../../lib/core/tui/input'
 import { ACC, RESET, color, dim, say } from './saida'
-import { passosDe, reposRegistrados, todosOsCards } from './dados'
-import { selecionado, selecionar } from './estado'
+import { larguraUtil, passosDe, reposRegistrados, todosOsCards } from './dados'
+import { definirSessoesVisiveis, selecionado, selecionar, sessoesVisiveis } from './estado'
+
+export function ordemDasSessoes(): string[] {
+  const visiveis = sessoesVisiveis()
+  if (visiveis.length) return visiveis
+  return historicoDeSessoes().sessoes.map(chaveDaSessao)
+}
+
+export function cardDaSessao(chave: string): string {
+  if (!chave) return ''
+  return sessaoPorChave(chave, historicoDeSessoes())?.card ?? ''
+}
 
 export function ordemDoRodape(state: SessionState, modo: ModoNavegacao = 'rodape'): string[] {
   if (modo === 'ajustes') return ordemDosAjustes()
+  if (modo === 'board') return ordemDasSessoes()
   if (state.aprovando) return ['op:1', 'op:2', 'op:3']
   if (state.perguntando) {
     const p = pendencia(state.perguntando)
@@ -44,6 +58,7 @@ export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): 
 
 export function historicoDaTela(state: SessionState, altura = 0): string[] {
   const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0)
+  definirSessoesVisiveis(h.sessoes.map(chaveDaSessao))
   return renderHistorico(h, {
     color, width: Number(process.stdout.columns) || 78, selecionado: selecionado(),
     avisoDeVazio: avisoDeEstadoVazio(lerEstadoVazio()),
@@ -91,4 +106,43 @@ export function navegarConfig(dir: -1 | 1): boolean {
   if (proximo < 0) { selecionar(''); return false }
   selecionar(ordem[Math.min(proximo, ordem.length - 1)] ?? '')
   return true
+}
+
+export interface ContextoDoCorpo {
+  navegando: ModoNavegacao
+  altura: number
+}
+
+export function corpoDaTela(state: SessionState, ctx: ContextoDoCorpo): string[] {
+  if (state.tela === 'config') {
+    return renderConfig(lerConfig(state.repo, selecionado()), {
+      color, largura: larguraUtil(), altura: ctx.altura,
+    })
+  }
+  if (ctx.navegando === 'board') return historicoDaTela(state, ctx.altura)
+  return state.seguindo ? seguimento(state) : historicoDaTela(state, ctx.altura)
+}
+
+export type Entrada =
+  | { kind: 'nada' }
+  | { kind: 'provedor'; nome: string }
+  | { kind: 'opcao'; escolha: string }
+  | { kind: 'tarefa'; id: string }
+
+export function alvoDeEntrada(modo: ModoNavegacao, state: SessionState): Entrada {
+  if (modo === 'ajustes') return { kind: 'nada' }
+  const escolha = selecionado()
+  if (state.tela === 'config') return escolha ? { kind: 'provedor', nome: escolha } : { kind: 'nada' }
+  if (modo === 'board') {
+    const id = cardDaSessao(escolha)
+    return id ? { kind: 'tarefa', id } : { kind: 'nada' }
+  }
+  if (escolha.startsWith('op:')) return { kind: 'opcao', escolha: escolha.slice(3) }
+  return escolha ? { kind: 'tarefa', id: escolha } : { kind: 'nada' }
+}
+
+export function navegarNaTela(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): boolean {
+  if (modo === 'ajustes') return navegar(state, dir, modo)
+  if (state.tela === 'config') return navegarConfig(dir)
+  return navegar(state, dir, modo)
 }

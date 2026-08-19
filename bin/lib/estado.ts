@@ -18,3 +18,13 @@ export function modoAtual(): ModoNavegacao {
 export function definirModo(novo: ModoNavegacao): void {
   modo = novo
 }
+
+let sessoesNaTela: string[] = []
+
+export function sessoesVisiveis(): string[] {
+  return sessoesNaTela
+}
+
+export function definirSessoesVisiveis(chaves: string[]): void {
+  sessoesNaTela = chaves
+}

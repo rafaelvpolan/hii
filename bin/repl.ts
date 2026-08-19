@@ -17,14 +17,12 @@ import { nodeTerminal } from '../lib/core/tui/screen'
 import { ACC, RESET, color, dim, say, escolherProjeto } from './lib/saida'
 import { larguraUtil, reposRegistrados, todosOsCards } from './lib/dados'
 import { definirModo, modoAtual, selecionado, selecionar } from './lib/estado'
-import { cabecalhoDaTarefa, planoDe, seguimento } from './lib/tela-tarefa'
-import { dicaDa, pintarComando, rodapeDa } from './lib/rodape-tui'
-import { avisoRepos, completer, historicoDaTela, navegar, navegarConfig } from './lib/board-tui'
+import { cabecalhoDaTarefa, planoDe } from './lib/tela-tarefa'
+import { dicaDa, dicaDaNavegacao, pintarComando, rodapeDa } from './lib/rodape-tui'
+import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from './lib/board-tui'
 import { ensureDaemon, fleet } from './lib/comandos'
 import { etiquetaDoProjeto } from '../lib/core/render/projeto'
 import { renderSugestoes, prefixoComum } from '../lib/core/render/sugestoes'
-import { renderConfig } from '../lib/core/render/config'
-import { lerConfig } from '../lib/core/config-snapshot'
 import { aplicar as aplicarIa } from '../lib/core/escolher-ia'
 import { renderAprovacao } from '../lib/core/render/aprovacao'
 import { renderOpcoesRodape } from '../lib/core/render/clarify'
@@ -70,12 +68,7 @@ async function tui(state0: SessionState): Promise<void> {
     header: () => `${color ? ACC : ''}hii${color ? RESET : ''}${dim(`   daemon ${daemonStatus()}`)}`,
     corpo: (ctx) => {
       definirModo(ctx.navegando)
-      if (state.tela === 'config') {
-        return renderConfig(lerConfig(state.repo, selecionado()), {
-          color, largura: larguraUtil(), altura: ctx.altura,
-        })
-      }
-      return state.seguindo ? seguimento(state) : historicoDaTela(state, ctx.altura)
+      return corpoDaTela(state, ctx)
     },
     fixo: (ctx) => (state.seguindo && state.tela !== 'config' && ctx.navegando !== 'board' ? cabecalhoDaTarefa(state) : []),
     logPrimeiro: () => !!state.seguindo,
@@ -94,7 +87,7 @@ async function tui(state0: SessionState): Promise<void> {
         url: String(readCard(state.aprovando)?.fm.url ?? ''),
       })
     },
-    dica: (ctx) => (ctx.navegando ? '↑↓ move · enter abre · → volta · ← board' : dicaDa(state, ctx.sugerindo)),
+    dica: (ctx) => dicaDaNavegacao(ctx, state),
     prompt: () => '› ',
     legenda: () => etiquetaDoProjeto(state.repo, {
       color,
@@ -127,7 +120,7 @@ async function tui(state0: SessionState): Promise<void> {
       })) app.log(l)
       return false
     },
-    onNav: (dir, modo) => (state.tela === 'config' ? navegarConfig(dir) : navegar(state, dir, modo)),
+    onNav: (dir, modo) => navegarNaTela(state, dir, modo),
     onCiclarIa: (dir) => {
       const r = ciclarAjuste(selecionado(), dir)
       app.log(`  ${r.mensagem}`)
@@ -147,23 +140,21 @@ async function tui(state0: SessionState): Promise<void> {
       return `${ids} em execucao — a area so limpa quando terminar`
     },
     onEntrar: (modo) => {
-      if (state.tela === 'config') {
-        const escolha = selecionado()
-        if (escolha) app.log(`  ${aplicarIa({ papeis: ['implement'], provider: escolha }).mensagem}`)
+      const alvo = alvoDeEntrada(modo, state)
+      if (alvo.kind === 'nada') return
+      if (alvo.kind === 'provedor') {
+        app.log(`  ${aplicarIa({ papeis: ['implement'], provider: alvo.nome }).mensagem}`)
         return
       }
-      if (selecionado().startsWith('op:')) {
-        const escolha = selecionado().slice(3)
+      if (alvo.kind === 'opcao') {
         selecionar('')
-        void processar(escolha)
+        void processar(alvo.escolha)
         return
       }
-      if (!selecionado()) return
-      const alvo = selecionado()
       selecionar('')
-      state = seguir(state, alvo)
-      if (pendencia(alvo)) state = perguntando(state, alvo)
-      state = sincronizarAprovacao(state, String(readCard(alvo)?.fm.status ?? ''))
+      state = seguir(state, alvo.id)
+      if (pendencia(alvo.id)) state = perguntando(state, alvo.id)
+      state = sincronizarAprovacao(state, String(readCard(alvo.id)?.fm.status ?? ''))
       app.limparLog()
     },
     onLine: processar,
