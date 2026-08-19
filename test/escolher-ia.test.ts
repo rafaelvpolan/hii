@@ -382,3 +382,22 @@ test('autocompletar de /ia, /model e /effort oferece as opcoes certas', async ()
   expect(complete('/effort ', ctx)[0]).toContain('xhigh')
   expect(complete('/effort h', ctx)[0]).toEqual(['high'])
 })
+
+test('gravar a preferencia e ATOMICO e nao deixa .tmp para tras — writeFileSync no lugar de rename truncava o ia.json', async () => {
+  const { mkdtempSync, readdirSync, rmSync, existsSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const { tmpdir } = await import('node:os')
+  const raiz = mkdtempSync(join(tmpdir(), 'hii-ia-'))
+  const antes = process.env.HICODE_IA_FILE
+  process.env.HICODE_IA_FILE = join(raiz, 'ia.json')
+  try {
+    const { aplicar } = await import('../lib/core/escolher-ia')
+    aplicar({ papeis: ['implement'], provider: 'claude' })
+    expect(existsSync(join(raiz, 'ia.json'))).toBe(true)
+    expect(readdirSync(raiz).filter(f => f.includes('.tmp.'))).toEqual([])
+  } finally {
+    if (antes === undefined) delete process.env.HICODE_IA_FILE
+    else process.env.HICODE_IA_FILE = antes
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})

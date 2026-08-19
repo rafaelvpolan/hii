@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { reposFile } from '../../lib/runner/config'
 import { repoPath, repoRegistered } from '../../lib/runner/card-store'
 import { historicoDeSessoes } from '../../lib/core/historico'
+import { avisoDeEstadoVazio, lerEstadoVazio } from '../../lib/core/estado-vazio'
 import { renderHistorico } from '../../lib/core/render/historico'
 import { daemonStatus } from '../../lib/core/daemon'
 import { emExecucao, esperandoVoce } from '../../lib/core/render/rodape'
@@ -43,7 +44,10 @@ export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): 
 
 export function historicoDaTela(state: SessionState, altura = 0): string[] {
   const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0)
-  return renderHistorico(h, { color, width: Number(process.stdout.columns) || 78, selecionado: selecionado() })
+  return renderHistorico(h, {
+    color, width: Number(process.stdout.columns) || 78, selecionado: selecionado(),
+    avisoDeVazio: avisoDeEstadoVazio(lerEstadoVazio()),
+  })
 }
 
 export function avisoRepos(state: SessionState): void {

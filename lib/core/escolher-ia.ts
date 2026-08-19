@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { arquivoDePreferencias, ehEsforco, ESFORCOS } from '../ai/preferencias'
 import type { PreferenciasDeIa } from '../ai/preferencias'
@@ -32,9 +32,13 @@ function gravar(prefs: PreferenciasDeIa): void {
   const dir = dirname(f)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const tmp = `${f}.tmp.${process.pid}`
-  writeFileSync(tmp, `${JSON.stringify(prefs, null, 2)}\n`)
-  writeFileSync(f, readFileSync(tmp, 'utf8'))
-  try { writeFileSync(tmp, '') } catch { void 0 }
+  try {
+    writeFileSync(tmp, `${JSON.stringify(prefs, null, 2)}\n`)
+    renameSync(tmp, f)
+  } catch (erro) {
+    rmSync(tmp, { force: true })
+    throw erro
+  }
 }
 
 export interface Ajuste {

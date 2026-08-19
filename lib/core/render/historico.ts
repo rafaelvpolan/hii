@@ -7,6 +7,7 @@ export interface OpcoesDoHistorico {
   width?: number
   now?: number
   selecionado?: string
+  avisoDeVazio?: string[]
 }
 
 const CABECALHO = 'historico de sessoes'
@@ -96,11 +97,10 @@ function resumo(h: HistoricoDeSessoes, o: OpcoesDoHistorico): string {
 export function renderHistorico(h: HistoricoDeSessoes, opts: OpcoesDoHistorico = {}): string[] {
   const agoraMs = opts.now ?? Date.now()
   if (!h.sessoes.length) {
-    return [
-      resumo(h, opts),
-      '',
-      '  ' + tinta('nenhuma sessao na janela — escreva uma tarefa para o motor executar', 'apagado', opts),
-    ]
+    const aviso = opts.avisoDeVazio?.length
+      ? opts.avisoDeVazio.map(l => '  ' + tinta(l, 'atencao', opts))
+      : ['  ' + tinta('nenhuma sessao na janela — escreva uma tarefa para o motor executar', 'apagado', opts)]
+    return [resumo(h, opts), '', ...aviso]
   }
   return [resumo(h, opts), '', ...h.sessoes.map(s => linhaDaSessao(s, opts, agoraMs))]
 }

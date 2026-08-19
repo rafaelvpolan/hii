@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { splitFrontMatter, serializeCard, appendLog, isoNow } from '../card'
 import type { Card, Fields } from '../card'
@@ -77,6 +77,12 @@ const parseCardFile = memoArquivo(
   (caminho: string): Fields & { file: string } => ({ ...splitFrontMatter(readFileSync(caminho, 'utf8')).fm, file: basename(caminho) }),
 )
 
+export function garantirCardsDir(): string {
+  const dir = cardsDir()
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  return dir
+}
+
 export function allCards(): Array<Fields & { file: string }> {
   return cardFiles()
     .map(f => parseCardFile(join(cardsDir(), f)))
@@ -98,6 +104,7 @@ export function createCard(fields: Fields, body: string): string {
   const slug = fields.slug || slugify(fields.title || '')
   const fm: Fields = { id, slug, status: 'READY', ...fields, updated: isoNow() }
   const order = Object.keys(fm)
+  garantirCardsDir()
   writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n')
   return id
 }
