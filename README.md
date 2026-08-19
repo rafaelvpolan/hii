@@ -13,6 +13,8 @@ hii <comando>    # CLI direta: subir daemon, ver status, governar cards
 
 ---
 
+> O que ficou em aberto (com o porquê e onde mexer) está em **[PENDENCIAS.md](PENDENCIAS.md)**.
+
 ## Onde clonar e como instalar
 
 O motor não precisa morar perto do repo que ele modifica — o alvo é registrado depois, por caminho.
