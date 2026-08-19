@@ -18,8 +18,15 @@ test('refatorar componente -> visual (visual vence empate)', () => {
   expect(classifySurface('refatora o componente do header', '', true).surface).toBe('visual')
 })
 
-test('ajustes de backend/endpoint -> nao-visual', () => {
-  expect(classifySurface('cria endpoint de login na api', '', true).surface).toBe('none')
+test('backend/endpoint -> api: nao tem tela, mas tem url para chamar', () => {
+  expect(classifySurface('cria endpoint de login na api', '', true).surface).toBe('api')
+  expect(classifySurface('corrige a rota de autenticacao', '', true).surface).toBe('api')
+})
+
+test('sem url nenhuma continua none — migration, lint e refactor nao abrem nada', () => {
+  for (const t of ['roda a migration de schema', 'ajusta o lint', 'refatora o cliente']) {
+    expect(classifySurface(t, '', true).surface, t).toBe('none')
+  }
 })
 
 test('ambiguo sem sinais -> visual (default seguro)', () => {

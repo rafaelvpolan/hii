@@ -26,6 +26,7 @@ export interface RegistroDeRun {
   tokensEntrada: number
   tokensSaida: number
   tokensCache: number
+  duracaoS: number
   provedor: string
   provedorIdentificado: boolean
   modelo: string
@@ -44,6 +45,7 @@ interface RunEmDisco {
   ts?: string
   ok?: boolean
   cost_usd?: string
+  duration_s?: number
   tokens_total?: number
   tokens_in?: number
   tokens_out?: number
@@ -111,6 +113,7 @@ function normalizar(caminho: string, bruto: RunEmDisco): RegistroDeRun | null {
     concluidoEmMs: quando,
     ok,
     custoUsd: parseFloat(String(bruto.cost_usd ?? '')) || 0,
+    duracaoS: Number(bruto.duration_s) || 0,
     tokens: tokensDe(bruto, porTipo),
     tokensEntrada: porTipo.entrada,
     tokensSaida: porTipo.saida,

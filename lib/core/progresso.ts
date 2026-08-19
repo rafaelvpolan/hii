@@ -22,7 +22,7 @@ function feitoPorEstado(statusCard: string, statusPasso: string): boolean {
 
 export function passosDoCard(card: Fields, planejados: PipelineStep[], gravados: StepMap | null): Passo[] {
   const status = String(card.status ?? 'INBOX')
-  const rodando = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED', 'PREVIEW_OK'].includes(status)
+  const rodando = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED', 'URL_OK'].includes(status)
   let primeiroPendente = true
   return planejados.map((p) => {
     const registrado = gravados?.[p.label]

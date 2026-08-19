@@ -184,7 +184,7 @@ test('falha de provedor num step de polimento carimba o run que ja estava gravad
   applyFailurePolicy({
     id,
     fromStatus: 'TESTS_GREEN',
-    resumeStatus: 'PREVIEW_OK',
+    resumeStatus: 'URL_OK',
     provider: 'claude',
     failureClass: 'transient',
     failureReason: 'rede indisponivel',
@@ -220,7 +220,7 @@ test('REGRESSAO cota de um provedor nao e carimbada no registro de outro provedo
   applyFailurePolicy({
     id,
     fromStatus: 'TESTS_GREEN',
-    resumeStatus: 'PREVIEW_OK',
+    resumeStatus: 'URL_OK',
     provider: 'codex',
     failureClass: 'quota',
     failureReason: 'cota do codex esgotada',
@@ -247,7 +247,7 @@ test('provedor conhecido so no carimbo preenche o registro sem provedor', () => 
   applyFailurePolicy({
     id,
     fromStatus: 'TESTS_GREEN',
-    resumeStatus: 'PREVIEW_OK',
+    resumeStatus: 'URL_OK',
     provider: 'codex',
     failureClass: 'quota',
     failureReason: 'cota do codex esgotada',

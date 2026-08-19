@@ -1,6 +1,6 @@
 import { lerAcaoExterna } from './externo'
 
-export type Surface = 'visual' | 'none'
+export type Surface = 'visual' | 'api' | 'none'
 
 export interface SurfaceVerdict {
   surface: Surface
@@ -15,10 +15,18 @@ const NON_VISUAL = [
   'pipeline', 'workflow', 'deploy\\w*', 'ci', 'cd',
   'lint', 'typecheck', 'tsconfig', 'eslint', 'tipagem',
   'test\\w*', 'cobertura', 'coverage', 'mock\\w*',
-  'backend', 'endpoint\\w*', 'api', 'servidor\\w*',
   'migration\\w*', 'migracao', 'migracoes', 'schema\\w*', 'query\\w*', 'indice\\w*', 'sql',
   'readme', 'changelog', 'docstring\\w*', 'comentario\\w*', 'documentacao',
   'renomear', 'script\\w*', 'cron', 'hook\\w*',
+]
+
+const API = [
+  'api', 'apis', 'endpoint\\w*', 'rota', 'rotas', 'route\\w*',
+  'rest', 'graphql', 'grpc', 'webhook\\w*',
+  'swagger', 'openapi', 'contrato-de-api',
+  'servidor\\w*', 'server', 'backend',
+  'handler\\w*', 'controller\\w*', 'middleware\\w*',
+  'autenticacao', 'auth', 'login', 'token\\w*', 'sessao',
 ]
 
 const VISUAL = [
@@ -38,11 +46,16 @@ export function isNonVisual(surface: string | undefined): boolean {
   return (surface ?? '') === 'none'
 }
 
+export function pedeUrl(surface: Surface): boolean {
+  return surface === 'visual' || surface === 'api'
+}
+
 function buildRe(stems: string[]): RegExp {
   return new RegExp('\\b(?:' + stems.join('|') + ')\\b')
 }
 
 const NON_VISUAL_RE = buildRe(NON_VISUAL)
+const API_RE = buildRe(API)
 const VISUAL_RE = buildRe(VISUAL)
 
 function norm(s: string): string {
@@ -56,7 +69,9 @@ export function classifySurface(title: string, objetivo: string, hasSurface: boo
   const text = ` ${norm(title)} ${norm(objetivo)} `
   const vis = text.match(VISUAL_RE)
   if (vis) return { surface: 'visual', reason: `sinal visual: "${vis[0]}"` }
+  const api = text.match(API_RE)
+  if (api) return { surface: 'api', reason: `sinal de api: "${api[0]}" — url para chamar` }
   const nv = text.match(NON_VISUAL_RE)
-  if (nv) return { surface: 'none', reason: `sinal nao-visual: "${nv[0]}"` }
-  return { surface: 'visual', reason: 'ambiguo — assume visual (mostra o preview)' }
+  if (nv) return { surface: 'none', reason: `sinal sem url: "${nv[0]}"` }
+  return { surface: 'visual', reason: 'ambiguo — assume visual (mostra a url)' }
 }

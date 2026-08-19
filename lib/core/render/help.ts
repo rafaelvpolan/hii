@@ -43,17 +43,16 @@ const SECOES: Secao[] = [
   {
     titulo: 'acompanhar',
     itens: [
-      { chave: '/board', arg: '', texto: 'quadro do projeto, ao vivo — ↑↓ e enter entram na tarefa' },
+      { chave: '/historico', arg: '', texto: 'historico de sessoes do motor — sai da tarefa aberta' },
       { chave: '/config', arg: '', texto: 'ias conectadas, uso da janela e gasto' },
     ],
   },
   {
     titulo: 'decidir',
     itens: [
-      { chave: '/ask', arg: '[id]', texto: 'responde a pergunta que travou a tarefa' },
       { chave: '1 2 3', arg: '', texto: 'dentro da tarefa: aprova, refaz, ou diz o que ajustar' },
       { chave: '/stop', arg: '<id> [motivo]', texto: 'para a tarefa em execucao' },
-      { chave: '/rm', arg: '<id> [id...]', texto: 'apaga tarefas e limpa worktree e preview' },
+      { chave: '/rm', arg: '<id> [id...]', texto: 'apaga tarefas e limpa worktree e url' },
     ],
   },
   {
@@ -69,7 +68,7 @@ const SECOES: Secao[] = [
   {
     titulo: 'teclas',
     itens: [
-      { chave: '↓ enter', arg: '', texto: 'seleciona no board e entra na tarefa' },
+      { chave: '↓ enter', arg: '', texto: 'seleciona a tarefa no rodape e entra nela' },
       { chave: 'ctrl+j', arg: '', texto: 'quebra linha sem enviar' },
       { chave: 'ctrl+bksp', arg: '', texto: 'apaga a palavra inteira' },
       { chave: 'tab', arg: '', texto: 'campo vazio troca a ia · com texto completa' },

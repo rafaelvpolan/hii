@@ -1,5 +1,5 @@
 import { test, expect, afterAll } from 'bun:test'
-import { httpOk, waitHttp, probeArgs } from '../lib/runner/preview'
+import { httpOk, waitHttp, probeArgs } from '../lib/runner/url-vivo'
 import { isLoopbackUrl, noProxyArgs } from '../lib/runner/loopback'
 import { probeProviderHealth } from '../lib/ai/health-probe'
 
@@ -8,7 +8,7 @@ let acessosAoProxy = 0
 const app = Bun.serve({
   port: 0,
   fetch(): Response {
-    return new Response('preview vivo', { status: 200 })
+    return new Response('url vivo', { status: 200 })
   },
 })
 
@@ -48,13 +48,13 @@ afterAll(() => {
   proxy.stop(true)
 })
 
-test('REGRESSAO: com http_proxy exportado, httpOk contra o preview local devolve TRUE e o proxy nao ve nada', async () => {
+test('REGRESSAO: com http_proxy exportado, httpOk contra o url local devolve TRUE e o proxy nao ve nada', async () => {
   const marca = acessosAoProxy
   expect(await httpOk(URL_LOCAL)).toBe(true)
   expect(acessosAoProxy).toBe(marca)
 })
 
-test('REGRESSAO: waitHttp reconhece o preview vivo em vez de queimar as tentativas contra o proxy', async () => {
+test('REGRESSAO: waitHttp reconhece o url vivo em vez de queimar as tentativas contra o proxy', async () => {
   const marca = acessosAoProxy
   expect(await waitHttp(URL_LOCAL, 2)).toBe(true)
   expect(acessosAoProxy).toBe(marca)
@@ -73,7 +73,7 @@ test('a sonda pede --noproxy so no loopback; para a internet o proxy segue sendo
   expect(noProxyArgs('http://gateway-pago.exemplo.com/api/generate')).toEqual([])
 })
 
-test('loopback reconhecido nas formas que preview e ollama usam; rede alheia fica de fora', () => {
+test('loopback reconhecido nas formas que url e ollama usam; rede alheia fica de fora', () => {
   for (const url of ['http://localhost:5222', 'http://127.0.0.1:11434', 'http://127.1/', 'http://[::1]:3000', 'http://0.0.0.0:8080', 'http://app.localhost/']) {
     expect(isLoopbackUrl(url)).toBe(true)
   }

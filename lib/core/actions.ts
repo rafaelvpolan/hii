@@ -53,8 +53,8 @@ export function transition(id: string, status: string, note?: string): ActionRes
 
 export function resumeFrom(id: string, step: string): ActionResult {
   return updateCard(id, {
-    fields: { resume_from: step, status: 'PREVIEW_OK' },
-    log: fm => `${isoNow()} ${fm.status || 'INBOX'}->PREVIEW_OK replay a partir de ${step}`,
+    fields: { resume_from: step, status: 'URL_OK' },
+    log: fm => `${isoNow()} ${fm.status || 'INBOX'}->URL_OK replay a partir de ${step}`,
   })
 }
 
@@ -66,30 +66,30 @@ export interface GuardedResult {
   card?: Fields
 }
 
-export function approvePreview(id: string): GuardedResult {
+export function approveUrl(id: string): GuardedResult {
   const card = readCard(id)
   if (!card) return { ok: false, reason: `card #${id} nao encontrado` }
   const status = card.fm.status ?? 'INBOX'
-  if (status !== 'PREVIEW') {
-    return { ok: false, reason: `#${id} esta em ${status} — so da para aprovar preview de card em PREVIEW` }
+  if (status !== 'URL') {
+    return { ok: false, reason: `#${id} esta em ${status} — so da para aprovar url de card em URL` }
   }
-  const r = transition(id, 'PREVIEW_OK', 'preview aprovado pelo humano')
+  const r = transition(id, 'URL_OK', 'url aprovado pelo humano')
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado` }
 }
 
-export function rejectPreview(id: string, motivo: string): GuardedResult {
+export function rejectUrl(id: string, motivo: string): GuardedResult {
   const card = readCard(id)
   if (!card) return { ok: false, reason: `card #${id} nao encontrado` }
   const status = card.fm.status ?? 'INBOX'
-  if (status !== 'PREVIEW') {
-    return { ok: false, reason: `#${id} esta em ${status} — so da para rejeitar preview de card em PREVIEW` }
+  if (status !== 'URL') {
+    return { ok: false, reason: `#${id} esta em ${status} — so da para rejeitar url de card em URL` }
   }
   const wt = card.fm.worktree ?? ''
   const temWorktree = !!wt && existsSync(join(wt, '.git'))
   const razao = motivo.trim()
   const r = razao && temWorktree
     ? requestCorrection(id, '', razao)
-    : transition(id, 'EXECUTING', razao ? `preview rejeitado: ${razao} — reexecutando` : 'preview rejeitado — reexecutando')
+    : transition(id, 'EXECUTING', razao ? `url rejeitado: ${razao} — reexecutando` : 'url rejeitado — reexecutando')
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `nao foi possivel rejeitar #${id}` }
 }
 
@@ -115,7 +115,7 @@ export function halt(id: string, reason: string): ActionResult {
 export function requestCorrection(id: string, file: string, instruction: string, line = '', lineText = ''): ActionResult {
   const card = readCard(id)
   if (!card) return null
-  if (card.fm.status !== 'PREVIEW') return null
+  if (card.fm.status !== 'URL') return null
   if (!card.fm.worktree || !existsSync(join(card.fm.worktree, '.git'))) return null
   const anchor = file ? `${file}${line ? ':' + line : ''}` : '(geral)'
   return updateCard(id, {
@@ -166,10 +166,10 @@ export function edit(id: string, fields: EditInput): ActionResult {
   })
 }
 
-export function setPreviewPid(id: string, pid: number, hard = false): ActionResult {
+export function setUrlPid(id: string, pid: number, hard = false): ActionResult {
   return updateCard(id, {
-    fields: { preview_pid: String(pid) },
-    log: `${isoNow()} RESET preview reiniciado (pid ${pid}${hard ? ', cache limpo' : ''})`,
+    fields: { url_pid: String(pid) },
+    log: `${isoNow()} RESET url reiniciado (pid ${pid}${hard ? ', cache limpo' : ''})`,
   })
 }
 
@@ -177,7 +177,7 @@ export function remove(id: string): boolean {
   const f = findCardFile(id)
   if (!f) return false
   rmSync(join(cardsDir(), f))
-  const prev = join(cardsDir(), 'previews', String(id))
+  const prev = join(cardsDir(), 'urls', String(id))
   if (existsSync(prev)) rmSync(prev, { recursive: true, force: true })
   return true
 }

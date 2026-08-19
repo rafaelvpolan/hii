@@ -7,40 +7,11 @@ import { daemonPid, daemonStatus, readPrefs, writePrefs } from '../../lib/core/d
 import type { SessionState } from '../../lib/core/session'
 import { DIM, RESET, color, dim, say } from './saida'
 import { todosOsCards } from './dados'
-import { board } from './board-tui'
 
 export function fleet(state: SessionState): void {
   say('')
   say(renderFleet(todosOsCards().filter(c => !state.repo || c.repo === state.repo), { color, repo: state.repo, daemon: daemonStatus() }))
   say('')
-}
-
-export async function boardAoVivo(state: SessionState): Promise<void> {
-  if (!color) {
-    say('\n' + board(state) + '\n')
-    return
-  }
-  await new Promise<void>((resolve) => {
-    const sessao = startLive({
-      dir: cardsDir(),
-      intervalMs: 1000,
-      render: () => `${board(state)}\n\n  ${DIM}q ou esc volta ao prompt · atualiza sozinho${RESET}`,
-      write: (s) => process.stdout.write(s),
-    }, resolve)
-    const stdin = process.stdin
-    const antes = stdin.isRaw === true
-    stdin.setRawMode?.(true)
-    stdin.resume()
-    const onKey = (buf: Buffer): void => {
-      const k = buf.toString()
-      if (k === 'q' || k === '\x1b' || k === '\x03') {
-        stdin.off('data', onKey)
-        stdin.setRawMode?.(antes)
-        sessao.stop()
-      }
-    }
-    stdin.on('data', onKey)
-  })
 }
 
 export async function ensureDaemon(ask: (q: string) => Promise<string | null>): Promise<void> {

@@ -89,7 +89,7 @@ const CASOS: [string, 'task' | 'ask'][] = [
   ['qual modelo o gate usa?', 'ask'],
   ['como funciona o worktree?', 'ask'],
   ['e possivel usar dois provedores ao mesmo tempo?', 'ask'],
-  ['da pra ver o preview sem subir o daemon?', 'ask'],
+  ['da pra ver o url sem subir o daemon?', 'ask'],
   ['voce sabe se o push passou?', 'ask'],
   ['por que o card 22 parou?', 'ask'],
   ['remove o selo beta do header', 'task'],

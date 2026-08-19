@@ -6,7 +6,7 @@ import { appendFailureAttempt } from './attempts'
 import type { FailureOutcome } from './attempts'
 import { stampRunFailure } from './runs'
 
-export type ResumeStatus = 'EXECUTING' | 'PREVIEW_OK' | 'CORRECTING' | 'SPECCED'
+export type ResumeStatus = 'EXECUTING' | 'URL_OK' | 'CORRECTING' | 'SPECCED'
 
 export type PolicyOutcome = FailureOutcome
 

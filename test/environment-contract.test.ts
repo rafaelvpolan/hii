@@ -28,10 +28,14 @@ test('nenhuma variavel do contrato se repete', () => {
   expect(new Set(nomes).size).toBe(nomes.length)
 })
 
+function ladoDesteRepo(): 'motor' | 'painel' {
+  const pkg: unknown = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+  const nome = typeof pkg === 'object' && pkg !== null ? String((pkg as { name?: unknown }).name ?? '') : ''
+  return nome === 'hii' ? 'motor' : 'painel'
+}
+
 function moraNesteRepo(variavel: { lado: string }): boolean {
-  const temPainel = existsSync(join(ROOT, 'bin', 'repl.ts'))
-  if (variavel.lado === 'ambos') return true
-  return variavel.lado === 'painel' ? temPainel : !temPainel || existsSync(join(ROOT, 'runner.ts'))
+  return variavel.lado === 'ambos' || variavel.lado === ladoDesteRepo()
 }
 
 test('todo resolvedor do lado DESTE repo existe de verdade — o do outro lado nao e cobrado aqui', () => {
@@ -39,6 +43,18 @@ test('todo resolvedor do lado DESTE repo existe de verdade — o do outro lado n
     if (!moraNesteRepo(variavel)) continue
     for (const caminho of variavel.resolvidoPor) {
       expect(existsSync(join(ROOT, caminho)), `${variavel.nome} → ${caminho}`).toBe(true)
+    }
+  }
+})
+
+test('variavel declarada do OUTRO lado nao pode ter o resolvedor morando aqui — a transferencia mente calada', () => {
+  for (const variavel of CONTRATO_MOTOR_PAINEL) {
+    if (moraNesteRepo(variavel)) continue
+    for (const caminho of variavel.resolvidoPor) {
+      expect(
+        existsSync(join(ROOT, caminho)),
+        `${variavel.nome} diz lado="${variavel.lado}" mas ${caminho} existe neste repo — corrija o lado`,
+      ).toBe(false)
     }
   }
 })

@@ -79,7 +79,7 @@ test('REGRESSAO: pushed_sha gravado pelo push anterior DESTE card ancora o push 
   const wt = worktreeParaTeste()
   const id = createCard({
     title: 'ajuste de round trip do pushed_sha',
-    status: 'PREVIEW_OK',
+    status: 'URL_OK',
     repo: 'org/repo',
     surface: 'none',
     clarified: 'true',
@@ -104,7 +104,7 @@ test('REGRESSAO: pushed_sha gravado pelo push anterior DESTE card ancora o push 
 
   await realGit.ensureWorktree(clone, wt, branch, 'main')
   commitar(wt, 'mudanca2.txt', 'segunda tentativa (worktree recriado do zero em cima da base)\n', 'feat: segunda tentativa')
-  patchCard(id, { status: 'PREVIEW_OK' }, 'retomado pelo humano (teste) — worktree foi recriado do zero pela reexecucao')
+  patchCard(id, { status: 'URL_OK' }, 'retomado pelo humano (teste) — worktree foi recriado do zero pela reexecucao')
 
   await handleFinish(id, agenteFinish)
   const apos2 = readCard(id)

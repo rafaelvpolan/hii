@@ -76,7 +76,7 @@ test('FLUXO REAL: /rm de card inexistente avisa', async () => {
 test('nenhum efeito da sessao pode sumir em silencio', async () => {
   const { dispatch } = await import('../lib/core/dispatch')
   const kinds = ['submit', 'approve-plan', 'halt', 'plan',
-    'help', 'error', 'approve-preview', 'reject-preview', 'ask', 'answer', 'rm', 'confirm-rm']
+    'help', 'error', 'approve-url', 'reject-url', 'answer', 'rm', 'confirm-rm']
   for (const kind of kinds) {
     saida = []
     const r = await dispatch({ kind } as never, newSession('org/app'), io)
@@ -94,7 +94,7 @@ test('efeito desconhecido grita em vez de sumir', async () => {
 
 test('quit e board ficam para quem chamou; o resto o despachante trata', async () => {
   const { dispatch } = await import('../lib/core/dispatch')
-  for (const kind of ['quit', 'board']) {
+  for (const kind of ['quit', 'historico']) {
     expect((await dispatch({ kind } as never, newSession(''), io)).tratado).toBe(false)
   }
   expect((await dispatch({ kind: 'reopen-repo' } as never, newSession(''), io)).tratado).toBe(true)
@@ -237,9 +237,9 @@ test('retomar so vale para tarefa parada', async () => {
 test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
   const { readCard } = await import('../lib/runner/card-store')
   const { retomando } = await import('../lib/core/session')
-  card('022', { status: 'PREVIEW' })
+  card('022', { status: 'URL' })
   await digitar([''], retomando(newSession('org/app'), '022'))
-  expect(readCard('022')?.fm.status).toBe('PREVIEW')
+  expect(readCard('022')?.fm.status).toBe('URL')
   expect(saida.join(' ')).toContain('nao ha o que retomar')
 })
 
@@ -307,28 +307,28 @@ test('sem projeto registrado, ensina a registrar', async () => {
   expect(saida.join(' ')).toContain('nenhum projeto registrado')
 })
 
-test('FLUXO: aprovar pelo numero 1 aprova o preview', async () => {
+test('FLUXO: aprovar pelo numero 1 aprova o url', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
   const { readCard } = await import('../lib/runner/card-store')
-  card('022', { status: 'PREVIEW' })
+  card('022', { status: 'URL' })
   const inicial = aprovando(seguir(newSession('org/app'), '022'), '022')
   const state = await digitar(['1'], inicial)
-  expect(readCard('022')?.fm.status).toBe('PREVIEW_OK')
+  expect(readCard('022')?.fm.status).toBe('URL_OK')
   expect(state.aprovando).toBe('')
 })
 
 test('FLUXO: recusar pelo 2 manda refazer', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
   const { readCard } = await import('../lib/runner/card-store')
-  card('022', { status: 'PREVIEW' })
+  card('022', { status: 'URL' })
   await digitar(['2'], aprovando(seguir(newSession('org/app'), '022'), '022'))
-  expect(readCard('022')?.fm.status).not.toBe('PREVIEW_OK')
+  expect(readCard('022')?.fm.status).not.toBe('URL_OK')
 })
 
 test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
   const { readCard } = await import('../lib/runner/card-store')
-  card('022', { status: 'PREVIEW', worktree: dir })
+  card('022', { status: 'URL', worktree: dir })
   let state = aprovando(seguir(newSession('org/app'), '022'), '022')
   state = await digitar(['3'], state)
   expect(state.comentando).toBe('022')
@@ -343,18 +343,18 @@ test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async (
 test('FLUXO: enter vazio desiste do comentario sem recusar', async () => {
   const { comentando, seguir } = await import('../lib/core/session')
   const { readCard } = await import('../lib/runner/card-store')
-  card('022', { status: 'PREVIEW' })
+  card('022', { status: 'URL' })
   const state = await digitar([''], comentando(seguir(newSession('org/app'), '022'), '022'))
   expect(state.comentando).toBe('')
-  expect(readCard('022')?.fm.status).toBe('PREVIEW')
+  expect(readCard('022')?.fm.status).toBe('URL')
 })
 
 test('FLUXO: enter dentro da tarefa faz a acao obvia de cada estado', async () => {
   const { seguir } = await import('../lib/core/session')
   const { readCard } = await import('../lib/runner/card-store')
-  card('030', { status: 'PREVIEW' })
+  card('030', { status: 'URL' })
   await digitar([''], seguir(newSession('org/app'), '030'))
-  expect(readCard('030')?.fm.status).toBe('PREVIEW_OK')
+  expect(readCard('030')?.fm.status).toBe('URL_OK')
 
   card('031', { status: 'HALTED' })
   await digitar([''], seguir(newSession('org/app'), '031'))
@@ -374,33 +374,33 @@ test('FLUXO: enter em tarefa rodando nao mexe em nada', async () => {
   expect(saida.join(' ')).toContain('nada para aprovar agora')
 })
 
-test('COMPATIBILIDADE: card velho com preview_url/preview_pid continua legivel e nao perde os campos', async () => {
+test('COMPATIBILIDADE: card velho com url/url_pid continua legivel e nao perde os campos', async () => {
   const { readCard } = await import('../lib/runner/card-store')
   const { renderCabecalhoTarefa } = await import('../lib/core/render/tarefa')
   const { seguir } = await import('../lib/core/session')
-  card('040', { status: 'EXECUTED', worktree: dir, preview_url: 'http://localhost:5240', preview_pid: '4242' })
+  card('040', { status: 'EXECUTED', worktree: dir, url: 'http://localhost:5240', url_pid: '4242' })
   await digitar(['tira tambem o selo'], seguir(newSession('org/app'), '040'))
   const c = readCard('040')
-  expect(c?.fm.preview_url).toBe('http://localhost:5240')
-  expect(c?.fm.preview_pid).toBe('4242')
+  expect(c?.fm.url).toBe('http://localhost:5240')
+  expect(c?.fm.url_pid).toBe('4242')
   if (!c) throw new Error('card velho deixou de ser legivel')
   expect(renderCabecalhoTarefa(c, { width: 78 }).join('\n')).toContain('http://localhost:5240')
 })
 
-test('FLUXO REAL: a dica do rodape para card em PREVIEW leva mesmo a aprovacao', async () => {
+test('FLUXO REAL: a dica do rodape para card em URL leva mesmo a aprovacao', async () => {
   const { esperandoVoce } = await import('../lib/core/render/rodape')
   const { allCards, readCard } = await import('../lib/runner/card-store')
-  card('033', { status: 'PREVIEW' })
+  card('033', { status: 'URL' })
   const dica = esperandoVoce(allCards(), 'org/app')[0]?.comando ?? ''
   expect(dica).toBe('33')
   const armado = await digitar([dica])
   expect(armado.seguindo).toBe('033')
   expect(armado.aprovando).toBe('033')
   await digitar(['1'], armado)
-  expect(readCard('033')?.fm.status).toBe('PREVIEW_OK')
+  expect(readCard('033')?.fm.status).toBe('URL_OK')
 })
 
-test('FLUXO REAL: numero de card que nao esta em PREVIEW continua abrindo o plano', async () => {
+test('FLUXO REAL: numero de card que nao esta em URL continua abrindo o plano', async () => {
   card('034', { status: 'READY' })
   const state = await digitar(['34'])
   expect(state.pendingPlan).toBe('34')
@@ -410,7 +410,7 @@ test('FLUXO REAL: numero de card que nao esta em PREVIEW continua abrindo o plan
 
 test('FLUXO REAL: /new-session limpa a sessao de verdade, nao so o texto da tela', async () => {
   const { seguir, comConversa } = await import('../lib/core/session')
-  card('035', { status: 'PREVIEW' })
+  card('035', { status: 'URL' })
   const sujo = comConversa(seguir(newSession('org/app'), '035'), 'p', 'r')
   const limpo = await digitar(['/new-session'], sujo)
   expect(limpo.seguindo).toBe('')
@@ -422,7 +422,7 @@ test('FLUXO REAL: /new-session limpa a sessao de verdade, nao so o texto da tela
 
 test('FLUXO REAL: trocar de projeto fecha a ask de aprovacao do projeto anterior', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
-  card('036', { status: 'PREVIEW' })
+  card('036', { status: 'URL' })
   card('037', { repo: 'outra/app' })
   const armado = aprovando(seguir(newSession('org/app'), '036'), '036')
   const trocado = await digitar(['/repo outra/app'], armado)

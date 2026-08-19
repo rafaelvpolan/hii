@@ -1,8 +1,8 @@
 export type EffectKind =
-  | 'none' | 'submit' | 'approve-plan' | 'board'
+  | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
-  | 'approve-preview' | 'reject-preview' | 'reopen-repo'
-  | 'ask' | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'confirmar-tarefa' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'config'
+  | 'approve-url' | 'reject-url' | 'reopen-repo'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'confirmar-tarefa' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'config'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -33,7 +33,6 @@ export const ALIASES: Record<string, string[]> = {
   '/repo': ['/project', '/projeto'],
   '/stop': ['/halt', '/parar'],
   '/exit': ['/quit', '/q'],
-  '/ask': ['/responder'],
   '/rm': ['/apagar'],
   '/ia': ['/provedor'],
   '/model': ['/modelo'],
@@ -42,7 +41,7 @@ export const ALIASES: Record<string, string[]> = {
   '/new-ask': ['/nova-pergunta'],
   '/new-session': ['/nova-sessao'],
   '/help': ['/h', '/?'],
-  '/board': ['/quadro'],
+  '/historico': ['/history'],
   '/config': ['/configuracao'],
 }
 
@@ -53,7 +52,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/board', '/config', '/ask', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/exit'] as const
+export const COMMANDS = ['/help', '/config', '/historico', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/exit'] as const
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
@@ -89,7 +88,7 @@ function ocupado(state: SessionState): boolean {
 }
 
 export function sincronizarAprovacao(state: SessionState, status: string): SessionState {
-  if (!state.seguindo || status !== 'PREVIEW' || ocupado(state)) return state
+  if (!state.seguindo || status !== 'URL' || ocupado(state)) return state
   return aprovando(state, state.seguindo)
 }
 
@@ -126,9 +125,9 @@ function command(line: string, state: SessionState): Reply {
     case 'h':
     case '?':
       return reply({ kind: 'help' }, state)
-    case 'board':
-    case 'quadro':
-      return reply({ kind: 'board' }, { ...foraDaTarefa(state), tela: '' })
+    case 'historico':
+    case 'history':
+      return reply({ kind: 'historico' }, { ...foraDaTarefa(state), tela: '' })
     case 'config':
     case 'configuracao':
       return reply({ kind: 'config' }, { ...foraDaTarefa(state), tela: 'config' })
@@ -143,7 +142,7 @@ function command(line: string, state: SessionState): Reply {
       const alvos = rest.filter(a => !a.startsWith('-'))
       return alvos.length
         ? reply({ kind: 'rm', id: alvos.join(' '), text: rest.includes('--force') ? 'force' : '' }, cleared)
-        : reply({ kind: 'error', text: 'uso: /rm <id> [id...] — apaga os cards e limpa worktree e preview' }, state)
+        : reply({ kind: 'error', text: 'uso: /rm <id> [id...] — apaga os cards e limpa worktree e url' }, state)
     case 'new-task':
     case 'nova-tarefa':
       return arg
@@ -166,11 +165,6 @@ function command(line: string, state: SessionState): Reply {
     case 'effort':
     case 'esforco':
       return reply({ kind: 'esforco', text: arg }, state)
-    case 'ask':
-    case 'responder':
-      return arg
-        ? reply({ kind: 'ask', id: rest[0], text: rest.slice(1).join(' ') }, state)
-        : reply({ kind: 'ask' }, state)
     case 'repo':
     case 'project':
     case 'projeto':
@@ -200,7 +194,7 @@ export function handle(raw: string, state: SessionState): Reply {
   }
   if (line.startsWith('/')) return command(line, state)
   if (state.comentando) {
-    return reply({ kind: 'reject-preview', id: state.comentando, text: line }, semAprovacao(state))
+    return reply({ kind: 'reject-url', id: state.comentando, text: line }, semAprovacao(state))
   }
   if (state.aprovando && /^[123]$/.test(line)) {
     return reply({ kind: 'aprovacao', id: state.aprovando, text: line }, state)

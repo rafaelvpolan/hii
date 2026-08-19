@@ -10,8 +10,9 @@ import { evaluate } from './eval'
 import { readCard, patchCard, repoPath, repoBase } from './card-store'
 import { ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from './git'
 import type { WorktreeFate } from './git'
-import { ensurePreview, hasDevServer, inspectPreview, previewPort, stopPreview, waitHttp } from './preview'
-import { classifySurface, type SurfaceVerdict } from './classify'
+import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl, waitHttp } from './url-vivo'
+import { classifySurface, pedeUrl, type SurfaceVerdict } from './classify'
+import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from './url-ajuste'
 import { implement, verifyVisual } from './agent'
 import { resolvedFailure, writeRun } from './runs'
 import { warnBudgetWithoutGuarantee } from './cost-trust'
@@ -27,7 +28,7 @@ interface ExecuteSteps {
   Fila: StepMetric
   Executando: StepMetric
   Feito: StepMetric
-  Preview: StepMetric
+  Url: StepMetric
   Aprovado: StepMetric
   Arquitetura: StepMetric
   Testes: StepMetric
@@ -55,7 +56,7 @@ function initialSteps(): ExecuteSteps {
     Fila: zeroMetric(),
     Executando: zeroMetric(),
     Feito: zeroMetric(),
-    Preview: zeroMetric(),
+    Url: zeroMetric(),
     Aprovado: zeroMetric(),
     Arquitetura: zeroMetric(),
     Testes: zeroMetric(),
@@ -73,7 +74,7 @@ function asStepMap(steps: ExecuteSteps): StepMap {
 
 function resolveSurface(card: Card, target: string): SurfaceVerdict {
   const explicit = card.fm.surface
-  if (explicit === 'visual' || explicit === 'none') return { surface: explicit, reason: 'definido no card' }
+  if (explicit === 'visual' || explicit === 'api' || explicit === 'none') return { surface: explicit, reason: 'definido no card' }
   return classifySurface(card.fm.title ?? '', extractObjetivo(card.body), hasDevServer(target))
 }
 
@@ -85,7 +86,7 @@ async function commitAndRecord(id: string, wt: string, card: Card, steps: Execut
     throw new Error(`commit da implementacao falhou: ${String(cm.stderr || cm.stdout || '').split('\n')[0] ?? ''}`)
   }
   steps.Feito.time = toSeconds(Date.now() - tf)
-  const costSum = steps.Executando.cost + steps.Preview.cost
+  const costSum = steps.Executando.cost + steps.Url.cost
   const rec = writeRun(id, { ...res, cost: costSum.toFixed(4) }, toSeconds(Date.now() - t0), asStepMap(steps))
   return { costSum, tokensTotal: rec.tokens_total }
 }
@@ -111,7 +112,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   }
   const surface = resolveSurface(card, target)
   if (card.fm.surface !== surface.surface) {
-    patchCard(id, { surface: surface.surface }, `${isoNow()} classificacao previa: tarefa ${surface.surface === 'visual' ? 'VISUAL' : 'NAO-VISUAL'} (${surface.reason})`)
+    patchCard(id, { surface: surface.surface }, `${isoNow()} classificacao previa: tarefa ${surface.surface.toUpperCase()} (${surface.reason})`)
   }
   if (CLARIFY && card.fm.clarified !== 'true') {
     const perfilPrevio = planSteps(
@@ -175,16 +176,16 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     return
   }
   process.stdout.write(`[runner] #${id}: implementando em worktree ${wt}\n`)
-  const port = previewPort(id)
-  let previewPid = 0
-  if (surface.surface === 'visual' && hasDevServer(target)) {
-    const h = await ensurePreview(wt, port, target, card.fm.preview_pid)
-    previewPid = h.pid
-    patchCard(id, { preview_url: `http://localhost:${port}`, preview_pid: String(previewPid) }, `${isoNow()} preview ${h.reused ? 'reaproveitado (ja estava no ar)' : 'subindo'} em http://localhost:${port} — acompanhe pelo link enquanto a IA trabalha`)
-    process.stdout.write(`[runner] #${id}: preview ${h.reused ? 'reaproveitado' : 'ao vivo'} em http://localhost:${port}\n`)
+  const port = urlPort(id)
+  let urlPid = 0
+  if (pedeUrl(surface.surface) && hasDevServer(target)) {
+    const h = await ensureUrl(wt, port, target, card.fm.url_pid)
+    urlPid = h.pid
+    patchCard(id, { url: `http://localhost:${port}`, url_pid: String(urlPid) }, `${isoNow()} url ${h.reused ? 'reaproveitado (ja estava no ar)' : 'subindo'} em http://localhost:${port} — acompanhe pelo link enquanto a IA trabalha`)
+    process.stdout.write(`[runner] #${id}: url ${h.reused ? 'reaproveitado' : 'ao vivo'} em http://localhost:${port}\n`)
   }
   const t0 = Date.now()
-  const shotPath = join(cardsDir(), 'previews', String(id), 'preview.png')
+  const shotPath = join(cardsDir(), 'urls', String(id), 'url.png')
   const steps = initialSteps()
   const tx = Date.now()
   const res = await deps.implement(card, wt, '', surface.surface === 'visual')
@@ -218,7 +219,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     })
     if (outcome === 'waiting') return
     const fate: WorktreeFate = failureClass === 'transient' ? 'keep-for-inspection' : 'discard'
-    if (fate === 'discard' && previewPid) stopPreview(String(previewPid))
+    if (fate === 'discard' && urlPid) stopUrl(String(urlPid))
     await settleWorktree(target, wt, fate)
     return
   }
@@ -226,38 +227,49 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {
-      status: 'PREVIEW_OK',
+      status: 'URL_OK',
       verify: 'n/a',
       cost_usd: (baseCost + costSum + auxCost).toFixed(4),
       tokens_total: String(baseTokens + tokensTotal + auxTokens),
-    }, `${isoNow()} EXECUTED->PREVIEW_OK auto — tarefa nao-visual (${surface.reason}); preview pulado`)
-    process.stdout.write(`[runner] #${id}: PREVIEW_OK auto (nao-visual) — preview pulado\n`)
+    }, `${isoNow()} EXECUTED->URL_OK auto — tarefa nao-visual (${surface.reason}); url pulado`)
+    process.stdout.write(`[runner] #${id}: URL_OK auto (nao-visual) — url pulado\n`)
     return
   }
   const tpv = Date.now()
-  const pid = previewPid || (hasDevServer(target) ? (await ensurePreview(wt, port, target, card.fm.preview_pid)).pid : 0)
+  const tentativa = hasDevServer(target)
+    ? await subirUrlComAjuste({
+      subir: subirNoWorktree(wt, port, target),
+      responde: esperarPorPid(port),
+      ajustar: async (motivo, n) => {
+        process.stdout.write(`[runner] #${id}: url ${motivo} — ajustando (${n})\n`)
+        const r = await deps.implement(card, wt, instrucaoDeAjuste(port, n), false)
+        return r.ok ? `ajuste ${n} aplicado` : `ajuste ${n} falhou`
+      },
+    }, urlPid ? String(urlPid) : card.fm.url_pid)
+    : { pid: 0, noAr: false, tentativas: 0, ajustes: [] }
+  const pid = tentativa.pid
   const url = pid ? `http://localhost:${port}` : ''
-  const up = pid ? await waitHttp(url, 30) : false
-  steps.Preview.time = toSeconds(Date.now() - tpv)
+  const up = tentativa.noAr
+  steps.Url.time = toSeconds(Date.now() - tpv)
   const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
-  const auxAtPreview = auxCost
+  const auxAtUrl = auxCost
   const initState = !pid ? 'inconclusivo' : (up ? 'inconclusivo' : 'falhou')
   const initReason = !pid
     ? 'repo sem dev server — verificacao humana pelo link'
-    : (up ? 'preview no ar — abra o link (verificando…)' : 'dev server nao subiu — preview nao respondeu')
+    : relatoDoAjuste(tentativa)
   patchCard(id, {
-    status: 'PREVIEW',
-    preview_url: url,
-    preview_pid: String(pid || ''),
+    status: 'URL',
+    url: url,
+    url_pid: String(pid || ''),
     verify: initState,
     cost_usd: (baseCost + costSum + auxCost).toFixed(4),
     tokens_total: String(baseTokens + tokensTotal + auxTokens),
-  }, `${isoNow()} EXECUTED->PREVIEW ${url || '(sem dev server)'} (${initReason})`)
-  process.stdout.write(`[runner] #${id}: PREVIEW ${url} (${initReason})\n`)
+  }, `${isoNow()} EXECUTED->URL ${url || '(sem dev server)'} (${initReason})`)
+  process.stdout.write(`[runner] #${id}: URL ${url} (${initReason})\n`)
   if (up) {
-    const health = await inspectPreview(id, url, true)
+    const health = await inspectUrl(id, url, true)
     let vstate = 'inconclusivo'
-    let vreason = `preview no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`
+    let vreason = `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`
     if (VISUAL_AI && health.ok) {
       const v = await deps.verifyVisual(card, shotPath)
       auxCost += v.cost || 0
@@ -266,9 +278,9 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       vreason = `check visual (IA, ${VERIFY_MODEL}): ${v.reason}`
     } else if (health.conclusive) {
       vstate = health.ok ? 'ok' : 'falhou'
-      vreason = health.ok ? 'preview no ar — abra o link para conferir' : `preview subiu com erro: ${health.detail}`
+      vreason = health.ok ? 'url no ar — abra o link para conferir' : `url subiu com erro: ${health.detail}`
     }
-    patchCard(id, { verify: vstate }, `${isoNow()} inspecao do preview: ${vstate} — ${vreason}`)
+    patchCard(id, { verify: vstate }, `${isoNow()} inspecao do url: ${vstate} — ${vreason}`)
     process.stdout.write(`[runner] #${id}: inspecao ${vstate}\n`)
   }
   if (EVAL) {
@@ -282,7 +294,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     }
     process.stdout.write(`[runner] #${id}: eval ${e.score}/5\n`)
   }
-  if (auxCost !== auxAtPreview) {
+  if (auxCost !== auxAtUrl) {
     const total = baseCost + costSum + auxCost
     patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens) }, `${isoNow()} custo atualizado (verificacao/eval): $${total.toFixed(4)}`)
   }

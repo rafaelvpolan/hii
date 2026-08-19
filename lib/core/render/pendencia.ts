@@ -30,7 +30,7 @@ export function pendenciaDoStatus(status: string, id: string): PendenciaDaTarefa
           { tecla: 'numero', texto: 'responde direto' },
         ],
       }
-    case 'PREVIEW':
+    case 'URL':
       return {
         titulo: 'resultado pronto — veja e decida',
         urgente: true,

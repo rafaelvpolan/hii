@@ -20,7 +20,7 @@ function resolveImportsSemExecutar(nome: string): ResolucaoDeImports {
 }
 
 test('scripts/setup/ tem pelo menos os scripts que bin/hii.ts dispara por caminho', () => {
-  const DISPARADOS_POR_HII_TS = ['archive.mjs', 'board.mjs', 'card.mjs', 'contract.mjs', 'doctor.mjs', 'repo.mjs', 'rm.mjs', 'teclas.mjs', 'wt-shift-enter.mjs']
+  const DISPARADOS_POR_HII_TS = ['archive.mjs', 'card.mjs', 'contract.mjs', 'doctor.mjs', 'repo.mjs', 'rm.mjs', 'teclas.mjs', 'wt-shift-enter.mjs']
   const achados = scriptsDeSetup()
   for (const nome of DISPARADOS_POR_HII_TS) expect(achados).toContain(nome)
 })

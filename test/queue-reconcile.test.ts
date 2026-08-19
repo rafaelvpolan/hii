@@ -19,10 +19,10 @@ function statusOf(id: string): string {
   return readCard(id)?.fm.status ?? ''
 }
 
-test('reconcile: estados de polimento voltam para PREVIEW_OK', () => {
+test('reconcile: estados de polimento voltam para URL_OK', () => {
   const ids = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED'].map(s => card(s))
   reconcileStranded()
-  for (const id of ids) expect(statusOf(id)).toBe('PREVIEW_OK')
+  for (const id of ids) expect(statusOf(id)).toBe('URL_OK')
 })
 
 test('reconcile: EXECUTED volta para EXECUTING (nao havia consumidor)', () => {
@@ -39,7 +39,7 @@ test('reconcile: estados reexecutaveis mantem o status', () => {
 })
 
 test('reconcile: estados terminais e de espera nao sao tocados', () => {
-  const intocaveis = ['READY', 'CLARIFY', 'PREVIEW', 'PREVIEW_OK', 'PR_OPEN', 'MERGED', 'HALTED', 'PAUSED']
+  const intocaveis = ['READY', 'CLARIFY', 'URL', 'URL_OK', 'PR_OPEN', 'MERGED', 'HALTED', 'PAUSED']
   const ids = intocaveis.map(s => card(s))
   reconcileStranded()
   expect(ids.map(statusOf)).toEqual(intocaveis)
@@ -89,7 +89,7 @@ test('REGRESSAO: card que muda de estado volta a registrar o interrompido', asyn
 test('pending: spec vem antes de execute, finish e correct', () => {
   const sp = card('SPECCED')
   const ex = card('EXECUTING')
-  const fi = card('PREVIEW_OK')
+  const fi = card('URL_OK')
   const co = card('CORRECTING')
   const jobs = pending()
   const pos = (id: string): number => jobs.findIndex(j => j.id === id)
@@ -101,7 +101,7 @@ test('pending: spec vem antes de execute, finish e correct', () => {
 
 test('pending: mapeia cada status para o job correto', () => {
   const ex = card('EXECUTING')
-  const fi = card('PREVIEW_OK')
+  const fi = card('URL_OK')
   const co = card('CORRECTING')
   const sp = card('SPECCED')
   const kind = (id: string): string => pending().find(j => j.id === id)?.kind ?? ''
@@ -113,7 +113,7 @@ test('pending: mapeia cada status para o job correto', () => {
 
 test('pending: status sem job nao entra na fila', () => {
   const parado = card('HALTED')
-  const esperando = card('PREVIEW')
+  const esperando = card('URL')
   const ids = pending().map(j => j.id)
   expect(ids).not.toContain(parado)
   expect(ids).not.toContain(esperando)

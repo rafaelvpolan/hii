@@ -59,7 +59,7 @@ test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', a
   const { instruir } = await import('../lib/core/instruir')
   const { readCard } = await import('../lib/runner/card-store')
   card('022', { status: 'HALTED', worktree: '/caminho/que/nao/existe' })
-  const r = instruir('022', 'retome e me mostre o preview')
+  const r = instruir('022', 'retome e me mostre o url')
   expect(r.refaz).toBe(true)
   const c = readCard('022')
   expect(c?.fm.status).toBe('EXECUTING')

@@ -38,7 +38,7 @@ test('sem projeto e sem gasto, omite os campos em vez de mostrar vazio', () => {
 test('emExecucao pega so os ativos do projeto', () => {
   const r = emExecucao([
     card({ id: '1', status: 'EXECUTING' }),
-    card({ id: '2', status: 'PREVIEW' }),
+    card({ id: '2', status: 'URL' }),
     card({ id: '3', status: 'EXECUTING', repo: 'org/outro' }),
   ], 'org/app', Date.now(), () => 'vitro')
   expect(r.length).toBe(1)
@@ -100,16 +100,16 @@ function c(over: Partial<Fields>): Fields {
 test('lista quem espera voce, com o que digitar para destravar', () => {
   const e = esperandoVoce([
     c({ id: '22', status: 'CLARIFY' }),
-    c({ id: '23', status: 'PREVIEW' }),
+    c({ id: '23', status: 'URL' }),
     c({ id: '24', status: 'READY' }),
     c({ id: '25', status: 'EXECUTING' }),
   ], 'org/app')
-  expect(e.map(x => x.comando)).toEqual(['/ask 22', '23', '24'])
+  expect(e.map(x => x.comando)).toEqual(['22', '23', '24'])
 })
 
 test('REGRESSAO a dica nunca manda digitar comando que nao existe mais', async () => {
   const { handle, newSession } = await import('../lib/core/session')
-  const estados = ['CLARIFY', 'PREVIEW', 'READY', 'INBOX', 'SPECCED', 'HALTED', 'PR_OPEN']
+  const estados = ['CLARIFY', 'URL', 'READY', 'INBOX', 'SPECCED', 'HALTED', 'PR_OPEN']
   const dicas = esperandoVoce(estados.map((status, i) => c({ id: String(i + 1), status })), 'org/app')
   expect(dicas.length).toBe(estados.length)
   for (const d of dicas) {
@@ -146,7 +146,7 @@ test('faixa sem cor nao emite escape ANSI', () => {
 })
 
 test('linha selecionada do rodape ganha barra na margem', () => {
-  const lista = esperandoVoce([c({ id: '22', status: 'CLARIFY' }), c({ id: '23', status: 'PREVIEW' })], 'org/app')
+  const lista = esperandoVoce([c({ id: '22', status: 'CLARIFY' }), c({ id: '23', status: 'URL' })], 'org/app')
   const linhas = linhasEspera(lista, { selecionado: '23' })
   expect(linhas[0]?.startsWith('▌')).toBe(false)
   expect(linhas[1]?.startsWith('▌')).toBe(true)
@@ -159,7 +159,7 @@ test('a linha selecionada diz que e a que esta aberta', () => {
 })
 
 test('com cor, so a selecionada fica em negrito', () => {
-  const lista = esperandoVoce([c({ id: '22', status: 'CLARIFY', title: 'alvo' }), c({ id: '23', status: 'PREVIEW', title: 'outra' })], 'org/app')
+  const lista = esperandoVoce([c({ id: '22', status: 'CLARIFY', title: 'alvo' }), c({ id: '23', status: 'URL', title: 'outra' })], 'org/app')
   const linhas = linhasEspera(lista, { selecionado: '22', color: true })
   expect(linhas[0]).toContain('\x1b[1malvo')
   expect(linhas[1]).not.toContain('\x1b[1m')
@@ -233,8 +233,9 @@ test('uma definicao so de "esperando voce" — rodape e abas concordam', async (
   expect(abasDe(['org/site'], cards)[0]?.esperando).toBe(esperandoVoce(cards, 'org/site').length)
 })
 
-test('estado que espera humano tem motivo e comando', () => {
-  expect(esperaHumano('CLARIFY')?.comando).toBe('/ask')
+test('CLARIFY manda digitar o id — a pergunta e respondida no proprio prompt', () => {
+  expect(esperaHumano('CLARIFY')?.comando).toBe('')
+  expect(esperaHumano('CLARIFY')?.motivo).toContain('responda no proprio prompt')
   expect(esperaHumano('EXECUTING')).toBe(null)
 })
 
@@ -249,7 +250,7 @@ test('REGRESSAO tarefa esperando em OUTRO projeto nao fica invisivel', () => {
   expect(fora.map(e => e.id)).toEqual(['23'])
   const linha = linhaDeOutrosProjetos(fora, { width: 78 }).join('')
   expect(linha).toContain('1 tarefa esperando em outro')
-  expect(linha).toContain('/ask 23')
+  expect(linha).toContain('23')
 })
 
 test('sem projeto escolhido, nada e classificado como "outro"', () => {

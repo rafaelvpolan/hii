@@ -2,7 +2,7 @@ import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { readCard, listRepos, findCardFile, normalizeId } from '../runner/card-store'
 import { cardsDir } from '../runner/config'
-import { stopPreview } from '../runner/preview'
+import { stopUrl } from '../runner/url-vivo'
 import { removeWorktree } from '../runner/git'
 import { remove } from './actions'
 import { floorProviders, formatProviders } from '../runner/cost-gap'
@@ -16,7 +16,7 @@ export interface PlanoRemocao {
   repo: string
   branch: string
   worktree: string
-  previewPid: string
+  urlPid: string
   runs: string[]
   bloqueio: string
   avisos: string[]
@@ -45,7 +45,7 @@ export function planejarRemocao(id: string): PlanoRemocao | null {
     repo: fm.repo ?? '',
     branch: fm.branch ?? '',
     worktree: fm.worktree ?? '',
-    previewPid: fm.preview_pid ?? '',
+    urlPid: fm.url_pid ?? '',
     runs: runsDoCard(id),
     custo: fm.cost_usd ?? '',
     piso: formatProviders(floorProviders(fm)),
@@ -69,9 +69,9 @@ export async function remover(id: string, force = false): Promise<ResultadoRemoc
   if (!plano) return { ok: false, reason: `card #${id} nao encontrado`, limpou: [] }
   if (plano.bloqueio && !force) return { ok: false, reason: plano.bloqueio, limpou: [] }
   const limpou: string[] = []
-  if (plano.previewPid) {
-    stopPreview(plano.previewPid)
-    limpou.push(`preview parado (pid ${plano.previewPid})`)
+  if (plano.urlPid) {
+    stopUrl(plano.urlPid)
+    limpou.push(`url parado (pid ${plano.urlPid})`)
   }
   const alvo = caminhoDoAlvo(plano.repo)
   if (plano.worktree && alvo && existsSync(plano.worktree)) {

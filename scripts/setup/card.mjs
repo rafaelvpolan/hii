@@ -10,9 +10,9 @@ const out = (s = '') => process.stdout.write(s + '\n')
 
 function uso(code) {
   out('')
-  out('  hii approve <id>              aprova o preview (PREVIEW -> PREVIEW_OK)')
+  out('  hii approve <id>              aprova o url (URL -> URL_OK)')
   out('  hii approve <id> --plan       aprova o plano e enfileira (READY -> EXECUTING)')
-  out('  hii reject <id> [o que]       rejeita o preview; com motivo, pede correcao')
+  out('  hii reject <id> [o que]       rejeita o url; com motivo, pede correcao')
   out('  hii halt <id> [motivo]        para o card')
   out('')
   out(paint('  o merge continua sendo humano, no GitHub — nem o motor nem o CLI mergeiam', DIM))
@@ -28,9 +28,9 @@ const resto = argv.slice(2).filter((a) => a !== '--plan').join(' ')
 
 let r
 if (acao === 'approve') {
-  r = argv.includes('--plan') ? core.approvePlan(id) : core.approvePreview(id)
+  r = argv.includes('--plan') ? core.approvePlan(id) : core.approveUrl(id)
 } else if (acao === 'reject') {
-  r = core.rejectPreview(id, resto)
+  r = core.rejectUrl(id, resto)
 } else if (acao === 'halt') {
   const feito = core.halt(id, resto || 'parado pelo humano')
   r = feito ? { ok: true, reason: '' } : { ok: false, reason: `card #${id} nao encontrado` }

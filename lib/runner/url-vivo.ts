@@ -7,13 +7,13 @@ import { readContract } from '../contract/store'
 import { devCommand, devCwd, hasCommand } from './commands'
 import { noProxyArgs } from './loopback'
 
-export interface PreviewHealth {
+export interface UrlHealth {
   ok: boolean
   conclusive: boolean
   detail: string
 }
 
-export function previewPort(id: string): number {
+export function urlPort(id: string): number {
   return PREVIEW_BASE_PORT + (Number(id) || 0)
 }
 
@@ -26,7 +26,7 @@ export async function freePort(port: number): Promise<void> {
   await new Promise(r => setTimeout(r, 400))
 }
 
-export function startPreview(wt: string, port: number, target: string): number {
+export function startUrl(wt: string, port: number, target: string): number {
   const contract = readContract(target)
   if (!contract) return 0
   const cmd = devCommand(contract, port)
@@ -47,20 +47,20 @@ export function pidAlive(pid: string | undefined): boolean {
   }
 }
 
-export interface PreviewHandle {
+export interface UrlHandle {
   pid: number
   reused: boolean
 }
 
-export async function ensurePreview(wt: string, port: number, target: string, knownPid?: string): Promise<PreviewHandle> {
+export async function ensureUrl(wt: string, port: number, target: string, knownPid?: string): Promise<UrlHandle> {
   if (pidAlive(knownPid) && await httpOk(`http://localhost:${port}`)) {
     return { pid: Number(knownPid), reused: true }
   }
   await freePort(port)
-  return { pid: startPreview(wt, port, target), reused: false }
+  return { pid: startUrl(wt, port, target), reused: false }
 }
 
-export function stopPreview(pid: string | undefined): void {
+export function stopUrl(pid: string | undefined): void {
   const n = Number(pid)
   if (!n) return
   try {
@@ -88,15 +88,15 @@ export async function waitHttp(url: string, tries: number): Promise<boolean> {
   return false
 }
 
-export async function inspectPreview(id: string, url: string, capture: boolean): Promise<PreviewHealth> {
-  const dir = join(cardsDir(), 'previews', String(id))
+export async function inspectUrl(id: string, url: string, capture: boolean): Promise<UrlHealth> {
+  const dir = join(cardsDir(), 'urls', String(id))
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  const out = capture ? join(dir, 'preview.png') : ''
-  const r = await run('bun', [join(ROOT, 'scripts', 'inspect-preview.mjs'), url, out], { cwd: ROOT, timeout: 60000 })
+  const out = capture ? join(dir, 'url.png') : ''
+  const r = await run('bun', [join(ROOT, 'scripts', 'inspect-url.mjs'), url, out], { cwd: ROOT, timeout: 60000 })
   try {
     const j = JSON.parse(String(r.stdout || '')) as { ok?: boolean; conclusive?: boolean; detail?: string }
     return { ok: !!j.ok, conclusive: !!j.conclusive, detail: String(j.detail || '') }
   } catch {
-    return { ok: false, conclusive: false, detail: 'inspecao do preview nao concluida (playwright ausente ou pagina inacessivel)' }
+    return { ok: false, conclusive: false, detail: 'inspecao do url nao concluida (playwright ausente ou pagina inacessivel)' }
   }
 }

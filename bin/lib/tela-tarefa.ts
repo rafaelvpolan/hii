@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readCard, repoPath } from '../../lib/runner/card-store'
-import { hasDevServer } from '../../lib/runner/preview'
+import { hasDevServer } from '../../lib/runner/url-vivo'
 import { buildPlan } from '../../lib/core/plan'
 import { renderPlan } from '../../lib/core/render/plan'
 import { renderCabecalhoTarefa } from '../../lib/core/render/tarefa'

@@ -40,8 +40,8 @@ export function renderCabecalhoTarefa(card: Card, opts: Partial<TarefaOptions> =
   if (base > 0) out.push(campo('depois', paint(`(${base} instrucao(oes) anterior(es))`, DIM, o), o))
   mostrar.forEach((s, i) => out.push(campo(base === 0 && i === 0 ? 'depois' : '', `${base + i + 1}. ${s}`, o)))
 
-  const url = String(fm.preview_url ?? '')
-  if (url) out.push(campo('preview', url, o))
+  const url = String(fm.url ?? '')
+  if (url) out.push(campo('url', url, o))
 
   const custo = parseFloat(String(fm.cost_usd ?? '0')) || 0
   const tokens = Number(fm.tokens_total ?? 0)

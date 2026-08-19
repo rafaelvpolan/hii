@@ -230,7 +230,7 @@ test('link no log vira clicavel sem quebrar o quadro', () => {
   const t = fakeTerminal(12, 60)
   const a = app(t)
   void a.run()
-  a.log('preview → http://localhost:5220')
+  a.log('url → http://localhost:5220')
   expect(t.saida.join('')).toContain('\x1b]8;;http://localhost:5220')
   expect(t.tela()).toContain('localhost:5220')
   delete process.env.HICODE_HYPERLINKS

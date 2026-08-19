@@ -29,7 +29,7 @@ test('nenhum EffectKind repetido na uniao — TypeScript deduplica em silencio',
 test('todo efeito que o parser produz tem um case que o trate', () => {
   const produzidos = new Set([...fonteSession.matchAll(/kind: '([^']+)'/g)].map(m => m[1] ?? ''))
   const tratados = new Set(casesDoSwitch(fonteDispatch))
-  const foraDoDispatch = new Set(['quit', 'board', 'none'])
+  const foraDoDispatch = new Set(['quit', 'historico', 'none'])
   const orfaos = [...produzidos].filter(k => !tratados.has(k) && !foraDoDispatch.has(k))
   expect(orfaos).toEqual([])
 })
@@ -59,16 +59,27 @@ test('nenhum apelido serve a dois comandos, e apelido nao repete o principal', (
   expect(vistos.size).toBeGreaterThan(0)
 })
 
-test('/ask e /new-ask sao efeitos DISTINTOS — colidiram e quebraram o /ask', () => {
-  const responder = handle('/ask 022 sim, pode seguir', newSession('org/app'))
+test('/new-ask e /new-task sao efeitos DISTINTOS — a colisao dessa classe ja quebrou o parser', () => {
   const perguntar = handle('/new-ask tem ntn-cli instalada?', newSession('org/app'))
-  expect(responder.effect.kind).toBe('ask')
+  const tarefa = handle('/new-task trocar o selo do header', newSession('org/app'))
   expect(perguntar.effect.kind).toBe('consultar')
-  expect(responder.effect.kind).not.toBe(perguntar.effect.kind)
+  expect(tarefa.effect.kind).toBe('submit')
+  expect(perguntar.effect.kind).not.toBe(tarefa.effect.kind)
 })
 
-test('/ask sem argumento continua abrindo a pergunta pendente do card', () => {
-  expect(handle('/ask', newSession('org/app')).effect.kind).toBe('ask')
+test('/board e /ask sairam da TUI — navegar cards e do painel web', () => {
+  for (const morto of ['/board', '/quadro', '/ask', '/responder']) {
+    expect(COMMANDS as readonly string[]).not.toContain(morto)
+    expect(handle(`${morto} 022 x`, newSession('org/app')).effect.kind, `${morto} ainda parseia`).toBe('error')
+  }
+})
+
+test('/historico sai da tarefa aberta sem encerrar a sessao', () => {
+  const dentro = { ...newSession('org/app'), seguindo: '022' }
+  const r = handle('/historico', dentro)
+  expect(r.effect.kind).toBe('historico')
+  expect(r.state.seguindo).toBe('')
+  expect(handle('/history', dentro).effect.kind).toBe('historico')
 })
 
 test('todo comando anunciado no /help e no autocompletar existe no parser', () => {

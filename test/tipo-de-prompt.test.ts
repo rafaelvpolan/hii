@@ -21,7 +21,7 @@ test('perguntas sao reconhecidas como perguntas', () => {
     'qual e o modelo usado no gate?',
     'como funciona o worktree?',
     'da pra rodar isso local?',
-    'voce sabe se o preview subiu?',
+    'voce sabe se o url subiu?',
     'e possivel usar dois provedores?',
     'existe teste para isso?',
     'por que o card parou?',
@@ -48,7 +48,7 @@ test('pergunta que pede mudanca ainda e tarefa', () => {
 })
 
 test('acento nao muda a leitura', () => {
-  expect(tarefa('é possível ver o preview?')).toBe(false)
+  expect(tarefa('é possível ver o url?')).toBe(false)
   expect(tarefa('atualizá a versão do node')).toBe(true)
 })
 
@@ -73,7 +73,7 @@ test('a distincao que importa: consulta versus pedido', () => {
 
 test('pedido sem verbo de mudanca e pergunta de viabilidade', () => {
   expect(tarefa('da pra rodar isso local?')).toBe(false)
-  expect(tarefa('consegue ver o preview?')).toBe(false)
+  expect(tarefa('consegue ver o url?')).toBe(false)
 })
 
 test('quero e gostaria contam como pedido', () => {

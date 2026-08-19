@@ -117,14 +117,14 @@ test('REGRESSAO colunas alinham com e sem cor (escape nao conta como largura)', 
   expect(linha(comCor, 'Pilha')).toBe(linha(semCor, 'Pilha'))
 })
 
-test('o plano nao promete preview: o motor nao sobe dev server', () => {
+test('o plano nao promete url: o motor nao sobe dev server', () => {
   const c = card({ id: '022', title: 'x', repo: 'org/app', status: 'EXECUTED', worktree: '/wt' })
   const t = renderPlan(buildPlan({ card: c, hasDevServer: true }))
-  expect(t).not.toContain('Preview')
+  expect(t).not.toContain('Url')
   expect(t).not.toContain('localhost')
 })
 
 test('o plano nao ensina comando que nao existe mais', () => {
   const t = renderPlan(buildPlan({ card: card({ title: 'x', repo: 'org/app' }), hasDevServer: true }))
-  for (const morto of ['/preview', '/ok', '/plan', '/watch', '/cards']) expect(t).not.toContain(morto)
+  for (const morto of ['/url', '/ok', '/plan', '/watch', '/cards']) expect(t).not.toContain(morto)
 })

@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process'
 const RAIZ = process.env.HICODE_ROOT || dirname(dirname(fileURLToPath(import.meta.url)))
 const CARDS = process.env.HICODE_CARDS_DIR || join(RAIZ, 'cards')
 const RUNS = join(CARDS, 'runs')
-const PREVIEWS = join(CARDS, 'previews')
+const PREVIEWS = join(CARDS, 'urls')
 
 const args = process.argv.slice(2)
 const sim = args.includes('--yes') || args.includes('-y')
@@ -39,7 +39,7 @@ function frontmatter(caminho) {
   return campos
 }
 
-function pararPreview(pid) {
+function pararUrl(pid) {
   const n = Number(pid)
   if (!n) return false
   try {
@@ -130,7 +130,7 @@ console.log('')
 for (const p of planos) {
   console.log(`  #${p.id} ${(p.fm.status ?? '?').padEnd(10)} ${(p.fm.title ?? '').slice(0, 46)}`)
   if (p.fm.worktree) console.log(`      worktree  ${p.fm.worktree}`)
-  if (p.fm.preview_pid) console.log(`      preview   pid ${p.fm.preview_pid}`)
+  if (p.fm.url_pid) console.log(`      url   pid ${p.fm.url_pid}`)
   if (p.runs.length) console.log(`      execucao  ${p.runs.length} arquivo(s)`)
   if (p.fm.branch) console.log(`      branch    ${p.fm.branch}  (fica — o commit nao se perde)`)
 }
@@ -145,14 +145,14 @@ if (!sim) {
 let apagados = 0
 for (const p of planos) {
   const limpou = []
-  if (p.fm.preview_pid && pararPreview(p.fm.preview_pid)) limpou.push('preview parado')
+  if (p.fm.url_pid && pararUrl(p.fm.url_pid)) limpou.push('url parado')
   if (removerWorktree(caminhoDoRepo(p.fm.repo), p.fm.worktree)) limpou.push('worktree removido')
   for (const f of p.runs) rmSync(join(RUNS, f), { force: true })
   if (p.runs.length) limpou.push(`${p.runs.length} arquivo(s) de execucao`)
-  const preview = join(PREVIEWS, p.id)
-  if (existsSync(preview) && statSync(preview).isDirectory()) {
-    rmSync(preview, { recursive: true, force: true })
-    limpou.push('preview salvo')
+  const url = join(PREVIEWS, p.id)
+  if (existsSync(url) && statSync(url).isDirectory()) {
+    rmSync(url, { recursive: true, force: true })
+    limpou.push('url salvo')
   }
   rmSync(join(CARDS, p.arquivo), { force: true })
   limpou.push('card apagado')

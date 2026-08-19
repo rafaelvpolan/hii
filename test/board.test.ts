@@ -23,7 +23,7 @@ test('board so mostra os cards do repo escolhido', () => {
 
 test('board separa esperando voce, parados, rodando, fila e entregues', () => {
   const t = renderBoard([
-    card({ id: '1', status: 'PREVIEW' }),
+    card({ id: '1', status: 'URL' }),
     card({ id: '2', status: 'HALTED' }),
     card({ id: '3', status: 'EXECUTING' }),
     card({ id: '4', status: 'READY' }),
@@ -86,14 +86,14 @@ function steps(labels: string[]): StepMap {
 }
 
 test('passos: registrado no run conta como feito', () => {
-  const p = passosDoCard(card({ status: 'PREVIEW_OK' }), DEFAULT_STEPS, steps(['Arquitetura', 'Testes']))
+  const p = passosDoCard(card({ status: 'URL_OK' }), DEFAULT_STEPS, steps(['Arquitetura', 'Testes']))
   const porLabel = Object.fromEntries(p.map(x => [x.label, x.estado]))
   expect(porLabel.Arquitetura).toBe('feito')
   expect(porLabel.Testes).toBe('feito')
 })
 
 test('passos: o primeiro pendente durante o polimento e o "agora"', () => {
-  const p = passosDoCard(card({ status: 'PREVIEW_OK' }), DEFAULT_STEPS, steps(['Arquitetura']))
+  const p = passosDoCard(card({ status: 'URL_OK' }), DEFAULT_STEPS, steps(['Arquitetura']))
   expect(p.find(x => x.estado === 'agora')?.label).toBe('Testes')
   expect(p.filter(x => x.estado === 'agora').length).toBe(1)
 })
@@ -125,7 +125,7 @@ test('resumo de projetos conta esperando, rodando e parados por repo', () => {
   const r = resumirProjetos(
     [{ name: 'org/app', cloneOk: true }, { name: 'org/api', cloneOk: false }],
     [
-      card({ id: '1', repo: 'org/app', status: 'PREVIEW' }),
+      card({ id: '1', repo: 'org/app', status: 'URL' }),
       card({ id: '2', repo: 'org/app', status: 'EXECUTING' }),
       card({ id: '3', repo: 'org/app', status: 'HALTED', cost_usd: '2.00' }),
       card({ id: '4', repo: 'org/api', status: 'READY' }),
@@ -187,7 +187,7 @@ test('legenda nomeia cada passo ao lado da sua bolinha', () => {
 })
 
 test('board mostra a legenda quando ha passos', () => {
-  const t = renderBoard([card({ id: '1', status: 'PREVIEW_OK' })], {
+  const t = renderBoard([card({ id: '1', status: 'URL_OK' })], {
     repo: 'org/app',
     passosDe: () => [{ label: 'Testes', estado: 'feito' }, { label: 'Review', estado: 'pendente' }],
   })
@@ -205,7 +205,7 @@ test('ordem do board e a mesma que aparece na tela', () => {
   const cards = [
     card({ id: '5', status: 'MERGED' }),
     card({ id: '3', status: 'EXECUTING' }),
-    card({ id: '1', status: 'PREVIEW' }),
+    card({ id: '1', status: 'URL' }),
     card({ id: '4', status: 'READY' }),
     card({ id: '2', status: 'HALTED' }),
   ]
@@ -324,7 +324,7 @@ test('aba mostra o nome curto do repo, nao o owner', () => {
 })
 
 test('aba com tarefa esperando mostra a contagem', () => {
-  const cards = [card({ id: '1', repo: 'org/site', status: 'PREVIEW' })]
+  const cards = [card({ id: '1', repo: 'org/site', status: 'URL' })]
   expect(renderAbas(abasDe(['org/site', 'org/api'], cards), 'org/api')[0]).toContain('·1')
 })
 

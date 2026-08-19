@@ -163,7 +163,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
 }
 
 export async function verifyVisual(card: Card, shotPath: string): Promise<VerifyResult> {
-  if (!existsSync(shotPath)) return { ok: false, conclusive: false, reason: 'sem screenshot — preview nao renderizou (inconclusivo)', cost: 0, tokens: 0 }
+  if (!existsSync(shotPath)) return { ok: false, conclusive: false, reason: 'sem screenshot — url nao renderizou (inconclusivo)', cost: 0, tokens: 0 }
   const provider = providerFor('verify')
   if (!provider.supportsVision) return { ok: false, conclusive: false, reason: `provider ${provider.name} nao le imagem — verify visual inconclusivo`, cost: 0, tokens: 0 }
   const desc = extractObjetivo(card.body) || card.fm.title

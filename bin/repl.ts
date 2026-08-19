@@ -19,8 +19,8 @@ import { larguraUtil, reposRegistrados, todosOsCards } from './lib/dados'
 import { definirModo, modoAtual, selecionado, selecionar } from './lib/estado'
 import { cabecalhoDaTarefa, planoDe, seguimento } from './lib/tela-tarefa'
 import { dicaDa, pintarComando, rodapeDa } from './lib/rodape-tui'
-import { avisoRepos, board, boardNavegavel, completer, navegar, navegarConfig } from './lib/board-tui'
-import { boardAoVivo, ensureDaemon, fleet } from './lib/comandos'
+import { avisoRepos, completer, historicoDaTela, navegar, navegarConfig } from './lib/board-tui'
+import { ensureDaemon, fleet } from './lib/comandos'
 import { etiquetaDoProjeto } from '../lib/core/render/projeto'
 import { renderSugestoes, prefixoComum } from '../lib/core/render/sugestoes'
 import { renderConfig } from '../lib/core/render/config'
@@ -63,10 +63,7 @@ async function tui(state0: SessionState): Promise<void> {
     const r = await dispatch(effect, state, ioDo(app, diga, state.repo))
     state = r.state
     if (effect.kind === 'nova-sessao') { selecionar(''); app.limparLog() }
-    if (!r.tratado && effect.kind === 'board') {
-      state = { ...state, seguindo: '' }
-      app.abrirBoard()
-    }
+    if (!r.tratado && effect.kind === 'historico') state = { ...state, seguindo: '' }
   }
 
   const app = createApp(term, {
@@ -78,8 +75,7 @@ async function tui(state0: SessionState): Promise<void> {
           color, largura: larguraUtil(), altura: ctx.altura,
         })
       }
-      if (ctx.navegando === 'board') return boardNavegavel(state, ctx.altura)
-      return state.seguindo ? seguimento(state) : board(state).split('\n')
+      return state.seguindo ? seguimento(state) : historicoDaTela(state, ctx.altura)
     },
     fixo: (ctx) => (state.seguindo && state.tela !== 'config' && ctx.navegando !== 'board' ? cabecalhoDaTarefa(state) : []),
     logPrimeiro: () => !!state.seguindo,
@@ -95,7 +91,7 @@ async function tui(state0: SessionState): Promise<void> {
         color,
         width: larguraUtil(),
         selecionado: selecionado(),
-        url: String(readCard(state.aprovando)?.fm.preview_url ?? ''),
+        url: String(readCard(state.aprovando)?.fm.url ?? ''),
       })
     },
     dica: (ctx) => (ctx.navegando ? '↑↓ move · enter abre · → volta · ← board' : dicaDa(state, ctx.sugerindo)),
@@ -185,7 +181,7 @@ async function main(): Promise<void> {
     return done ? null : String(value)
   }
   say('')
-  say(`  ${color ? ACC : ''}hicode${color ? RESET : ''} — motor de tarefas   ${dim('/help para os comandos')}`)
+  say(`  ${color ? ACC : ''}hii${color ? RESET : ''} — motor de execucao   ${dim('/help para os comandos')}`)
   await ensureDaemon(ask)
   let state = newSession(await escolherProjeto(ask))
   avisoRepos(state)
@@ -202,7 +198,6 @@ async function main(): Promise<void> {
     const { effect, state: next } = handle(line, state)
     state = next
     if (effect.kind === 'quit') break
-    if (effect.kind === 'board') { await boardAoVivo(state); continue }
     if (effect.kind === 'reopen-repo') {
       state = { ...state, repo: await escolherProjeto(ask) }
       fleet(state)

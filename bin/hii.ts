@@ -17,10 +17,14 @@ function daemon(sub: string): number {
   return spawnSync(DAEMON, [sub], { stdio: 'inherit' }).status ?? 1
 }
 
-function doPainel(comando: string): number {
-  process.stderr.write(`"${comando}" e comando do painel, nao do motor — use o hicode.\n`)
-  process.stderr.write('o hii executa: start, stop, restart, status, watch, run, once, sync, init, hooks\n')
+function semBoard(): number {
+  process.stderr.write('o board saiu do terminal — navegar cards e do painel web (hicode)\n')
+  process.stderr.write('no terminal: hii (abre a TUI) para trabalhar, hii watch para acompanhar\n')
   return 2
+}
+
+function script(name: string, extra: string[]): number {
+  return spawnSync('bun', [join(ROOT, 'scripts', 'setup', `${name}.mjs`), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
 function runnerBun(extra: string[]): number {
@@ -31,7 +35,7 @@ function usage(): void {
   process.stdout.write([
     'hii — motor de execucao autonoma',
     '',
-    'Uso: hii <comando>        o motor executa; quem autora e julga e o painel (hicode)',
+    'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
     '',
 
@@ -48,9 +52,22 @@ function usage(): void {
     '  status                   estado do daemon + progresso dos cards',
     '  watch                    progresso dos cards ao vivo (atualiza sozinho)',
     '',
-    'Portas humanas e governanca do card (nao sao do motor):',
-    '  approve, reject, halt, repo, contract, doctor, board, rm, archive, teclas',
-    '  vivem no painel (hicode) — o motor recusa esses comandos com codigo 2',
+    'Portas humanas do card:',
+    '  approve <id>             aprova a url entregue (URL -> URL_OK)',
+    '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
+    '  reject <id> [o que]      rejeita; com motivo, pede correcao',
+    '  halt <id> [motivo]       para o card',
+    '',
+    'Repo-alvo (deterministico, 0 token):',
+    '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/',
+    '  repo rm|ls               remove do registro | lista alvos e clones',
+    '  contract [caminho]       redetecta o contrato do alvo (stack, comandos)',
+    '  doctor                   confere gh, IA, daemon, push e contrato',
+    '',
+    'Arquivo de cards:',
+    '  rm <id> [id...] --yes    apaga cards e limpa worktree, url e runs',
+    '  archive [--dry-run|ls|restore <id>]',
+    '  teclas [--corrigir]      diagnostica/ensina shift+enter no terminal',
     '',
     'Tarefas e integracao:',
     '  sync                     sincroniza tarefas externas (HICODE_TASK_SYNC)',
@@ -61,7 +78,7 @@ function usage(): void {
     'Ajuda:',
     '  --help, -h, ajuda        mostra esta ajuda',
     '',
-    'Fluxo de um card: executar -> preview (link vivo) -> aprovar -> polir -> PR.',
+    'Fluxo de um card: executar -> url (link vivo) -> aprovar -> polir -> PR.',
     'Merge e SEMPRE humano: o motor para em PR_OPEN e nunca da merge.',
     '',
   ].join('\n'))
@@ -83,20 +100,6 @@ function hooks(): number {
   }
   process.stdout.write('uso: hii hooks <install|uninstall> [caminho]\n')
   return 1
-}
-
-function orientar(): number {
-  for (const l of [
-    '',
-    'hii — motor de execucao autonoma (sem TUI: o motor nao tem tela)',
-    '',
-    '  hicode          abre o painel de tarefas (a TUI: escrever card, aprovar, acompanhar)',
-    '  hii status      estado do daemon + progresso dos cards',
-    '  hii start       sobe o motor para executar a fila',
-    '  hii --help      todos os comandos do motor',
-    '',
-  ]) console.log(l)
-  return 0
 }
 
 async function main(): Promise<number> {
@@ -139,20 +142,29 @@ async function main(): Promise<number> {
     case 'hooks':
       return hooks()
     case 'repo':
+      return script('repo', args.slice(1))
     case 'approve':
     case 'reject':
     case 'halt':
+      return runnerBun([cmd, ...args.slice(1)])
     case 'contract':
+      return script('contract', args.slice(1))
     case 'doctor':
+      return script('doctor', args.slice(1))
     case 'teclas':
-    case 'board':
-    case 'quadro':
+      return args[1] === '--corrigir'
+        ? script('wt-shift-enter', args.slice(2))
+        : script('teclas', args.slice(1))
     case 'rm':
     case 'apagar':
+      return script('rm', args.slice(1))
     case 'archive':
-      return doPainel(String(args[0]))
+      return script('archive', args.slice(1))
+    case 'board':
+    case 'quadro':
+      return semBoard()
     case undefined:
-      return orientar()
+      return spawnSync('bun', [join(ROOT, 'bin', 'repl.ts')], { stdio: 'inherit', cwd: ROOT }).status ?? 0
     default:
       usage()
       return 1

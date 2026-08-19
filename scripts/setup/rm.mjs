@@ -15,7 +15,7 @@ const ids = args.filter((a) => !a.startsWith('-'))
 if (!ids.length) {
   out('')
   out('  uso: hii rm <id> [id...] [--force] [--yes]')
-  out(dim('  apaga o card e limpa worktree, preview e arquivos de execucao'))
+  out(dim('  apaga o card e limpa worktree, url e arquivos de execucao'))
   out('')
   process.exit(1)
 }

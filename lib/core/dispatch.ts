@@ -32,7 +32,7 @@ export interface DispatchResult {
   tratado: boolean
 }
 
-const FORA = ['quit', 'board', 'none']
+const FORA = ['quit', 'historico', 'none']
 
 async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Promise<SessionState> {
   const id = effect.id ?? ''
@@ -57,7 +57,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
       const st = card.fm.status ?? 'INBOX'
-      if (st === 'PREVIEW') {
+      if (st === 'URL') {
         const alvo = card.fm.id ?? id
         io.log(`#${alvo} — resultado pronto: 1 aprova · 2 refaz do zero · 3 diz o que ajustar`)
         return aprovando(seguir(state, alvo), alvo)
@@ -70,16 +70,16 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'approve-plan': {
       const r = core.approvePlan(id)
       if (!r.ok) { io.log(r.reason); return state }
-      io.log(`#${id} aprovado e na fila — seguindo a execucao (/board volta)`)
+      io.log(`#${id} aprovado e na fila — seguindo a execucao (/historico sai)`)
       return seguir(state, id)
     }
-    case 'approve-preview': {
-      const r = core.approvePreview(id)
-      io.log(r.ok ? `#${id} preview aprovado — segue para o polimento` : r.reason)
+    case 'approve-url': {
+      const r = core.approveUrl(id)
+      io.log(r.ok ? `#${id} url aprovado — segue para o polimento` : r.reason)
       return state
     }
-    case 'reject-preview': {
-      const r = core.rejectPreview(id, texto)
+    case 'reject-url': {
+      const r = core.rejectUrl(id, texto)
       io.log(r.ok ? `#${id} ${texto ? 'vai corrigir' : 'vai refazer'}` : r.reason)
       return state
     }
@@ -160,8 +160,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return { ...foraDaTarefa(state), repo: alvo, perguntando: '', removendo: '', retomando: '' }
     }
     case 'aprovacao': {
-      if (texto === '1') return aplicar({ kind: 'approve-preview', id }, semAprovacao(state), io)
-      if (texto === '2') return aplicar({ kind: 'reject-preview', id, text: '' }, semAprovacao(state), io)
+      if (texto === '1') return aplicar({ kind: 'approve-url', id }, semAprovacao(state), io)
+      if (texto === '2') return aplicar({ kind: 'reject-url', id, text: '' }, semAprovacao(state), io)
       io.log('escreva o que precisa ajustar')
       return comentando(state, id)
     }
@@ -169,7 +169,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
       const status = card.fm.status ?? ''
-      if (status === 'PREVIEW') return aplicar({ kind: 'approve-preview', id }, semAprovacao(state), io)
+      if (status === 'URL') return aplicar({ kind: 'approve-url', id }, semAprovacao(state), io)
       if (status === 'HALTED' || status === 'PAUSED') return aplicar({ kind: 'resume', id }, state, io)
       if (core.canApprovePlan(status)) return aplicar({ kind: 'approve-plan', id }, state, io)
       io.log(`#${id} esta em ${status} — nada para aprovar agora`)
@@ -247,17 +247,6 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       io.log(aplicarIa(ajuste).mensagem)
       return state
     }
-    case 'ask': {
-      const alvo = id || cardsPerguntando(allCards(), state.repo)[0] || ''
-      if (!alvo) { io.log('nenhum card esperando resposta'); return state }
-      const p = pendencia(alvo)
-      if (!p) {
-        for (const l of renderRespondidas(alvo, readClarify(alvo), { color: io.color })) io.log(l)
-        return state
-      }
-      for (const l of renderPergunta(p, { color: io.color })) io.log(l)
-      return perguntando(state, alvo)
-    }
     case 'answer': {
       const r = responder(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
@@ -267,7 +256,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         if (proxima) for (const l of renderPergunta(proxima, { color: io.color })) io.log(l)
         return state
       }
-      io.log(`#${id} retomado — seguindo a execucao (/board volta)`)
+      io.log(`#${id} retomado — seguindo a execucao (/historico sai)`)
       return seguir(respondido(state), id)
     }
     default:

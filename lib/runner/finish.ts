@@ -8,7 +8,7 @@ import { warnBudgetWithoutGuarantee } from './cost-trust'
 import { pushOwnedBranch, removeWorktree, run, runGit, stageAll, worktreePath } from './git'
 import { pularCriacaoDePr } from './finish-pr'
 import type { PushResult } from './git'
-import { stopPreview } from './preview'
+import { stopUrl } from './url-vivo'
 import { activeSteps } from './pipeline/config'
 import { planSteps } from './analyze'
 import { runGatedStep } from './gated'
@@ -48,7 +48,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const card = readCard(id)
   if (!card) return
   if (CARD_BUDGET_USD > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > CARD_BUDGET_USD) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} PREVIEW_OK->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${CARD_BUDGET_USD}) antes do polimento — decida se continua`)
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${CARD_BUDGET_USD}) antes do polimento — decida se continua`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, CARD_BUDGET_USD)
@@ -60,7 +60,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const wt = card.fm.worktree || worktreePath(target, id, slug)
   const msg = `feat: ${card.fm.title ?? ''} (#${id})`
   if (!existsSync(wt)) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} PREVIEW_OK->HALTED worktree ausente: ${wt}`)
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED worktree ausente: ${wt}`)
     return
   }
   const resumeFrom = card.fm.resume_from ?? ''
@@ -68,7 +68,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const desc = extractObjetivo(card.body) || card.fm.title
   const preflight = podeAbrirPr(target, repoName)
   if (preflight.severidade === 'erro') {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} PREVIEW_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
     process.stdout.write(`[runner] #${id}: HALTED preflight — ${preflight.detalhe}\n`)
     return
   }
@@ -95,7 +95,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         if (g.failureClass) {
           applyStepFailurePolicy(id, card, fsteps, {
             fromStatus: step.label,
-            resumeStatus: 'PREVIEW_OK',
+            resumeStatus: 'URL_OK',
             resumeStep: step.label,
             provider: g.provider ?? '',
             failureClass: g.failureClass,
@@ -113,7 +113,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         fsteps[step.label] = { time: sr.time, cost: sr.cost, tokens: sr.tokens, costMeasured: sr.costMeasured }
         applyStepFailurePolicy(id, card, fsteps, {
           fromStatus: step.label,
-          resumeStatus: 'PREVIEW_OK',
+          resumeStatus: 'URL_OK',
           resumeStep: step.label,
           provider: sr.provider ?? '',
           failureClass: sr.failureClass ?? 'terminal',
@@ -151,7 +151,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     await commitAll(wt, `chore: integra ${base} (#${id})`)
   }
   if (!(await revalidate(id, card, wt, target, fsteps))) {
-    haltForInspection(id, card, fsteps, `${isoNow()} CLEANED->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + preview mantidos p/ inspecao)`)
+    haltForInspection(id, card, fsteps, `${isoNow()} CLEANED->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + url mantidos p/ inspecao)`)
     process.stdout.write(`[runner] #${id}: HALTED revalidacao (pos-merge)\n`)
     return
   }
@@ -165,7 +165,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     if (!gate.ok && gate.failureClass) {
       applyStepFailurePolicy(id, card, fsteps, {
         fromStatus: 'REVIEWED',
-        resumeStatus: 'PREVIEW_OK',
+        resumeStatus: 'URL_OK',
         resumeStep: RESUME_POST_STEPS,
         provider: gate.provider ?? '',
         failureClass: gate.failureClass,
@@ -204,7 +204,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     patchCard(id, { status: 'HALTED', ...totalsFields }, `${isoNow()} CLEANED->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${String(pr.stderr || '').slice(0, 120)}`)
     return
   }
-  stopPreview(card.fm.preview_pid)
+  stopUrl(card.fm.url_pid)
   await removeWorktree(target, wt)
   patchCard(id, {
     status: 'PR_OPEN',

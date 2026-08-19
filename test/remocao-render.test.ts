@@ -6,7 +6,7 @@ import type { PlanoLote, PlanoRemocao } from '../lib/core/remover'
 function plano(over: Partial<PlanoRemocao> = {}): PlanoRemocao {
   return {
     id: '023', titulo: 'tarefa qualquer', status: 'READY', repo: 'org/app',
-    branch: '', worktree: '', previewPid: '', runs: [], bloqueio: '', avisos: [], custo: '', piso: '',
+    branch: '', worktree: '', urlPid: '', runs: [], bloqueio: '', avisos: [], custo: '', piso: '',
     ...over,
   }
 }
@@ -18,7 +18,7 @@ function lote(over: Partial<PlanoLote> = {}): PlanoLote {
 test('cabe em qualquer largura, do estreito ao largo', () => {
   const l = lote({
     removiveis: [
-      plano({ id: '023', titulo: 'a'.repeat(120), custo: '2.3665', worktree: '/x', previewPid: '9', runs: ['a', 'b'] }),
+      plano({ id: '023', titulo: 'a'.repeat(120), custo: '2.3665', worktree: '/x', urlPid: '9', runs: ['a', 'b'] }),
       plano({ id: '037', titulo: 'outra bem longa tambem para testar', status: 'PR_OPEN', branch: 'hicode/037' }),
     ],
     bloqueados: [plano({ id: '041', status: 'EXECUTING', bloqueio: 'em voo' })],
@@ -33,10 +33,10 @@ test('cabe em qualquer largura, do estreito ao largo', () => {
 
 test('mostra o que sera limpo por card', () => {
   const t = renderRemocao(lote({
-    removiveis: [plano({ worktree: '/x', previewPid: '9', runs: ['a', 'b', 'c'] })],
+    removiveis: [plano({ worktree: '/x', urlPid: '9', runs: ['a', 'b', 'c'] })],
   }), false, { width: 78 }).join('\n')
   expect(t).toContain('worktree')
-  expect(t).toContain('preview')
+  expect(t).toContain('url')
   expect(t).toContain('3 logs')
 })
 

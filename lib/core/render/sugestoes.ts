@@ -7,9 +7,8 @@ const INVERSO = '\x1b[7m'
 
 export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/help': 'todos os comandos e teclas',
-  '/board': 'quadro do projeto, navegavel',
+  '/historico': 'historico de sessoes do motor — sai da tarefa aberta',
   '/config': 'ias conectadas, uso de 5h e da semana, tokens e loop',
-  '/ask': 'responde a pergunta que travou a tarefa',
   '/stop': 'para a tarefa em execucao',
   '/rm': 'apaga tarefas e limpa o que fica atras',
   '/new-task': 'cria a tarefa direto, sem leitura de intencao',

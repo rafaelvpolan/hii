@@ -133,7 +133,7 @@ test('linkificar nao mexe em texto sem url', () => {
 })
 
 test('REGRESSAO moldura continua alinhada com link no corpo', () => {
-  const f = quadro({ cols: 60, corpo: [linkificar('preview → http://localhost:5220'), 'linha normal'] })
+  const f = quadro({ cols: 60, corpo: [linkificar('url → http://localhost:5220'), 'linha normal'] })
   expect(new Set(f.lines.map(l => visibleLen(l))).size).toBe(1)
 })
 
@@ -207,7 +207,7 @@ test('REGRESSAO linkificar NAO embrulha url que ja esta dentro de um link', () =
 
 test('REGRESSAO linha do plano com link nao repete a url', () => {
   process.env.HICODE_HYPERLINKS = 'on'
-  const linha = `    Preview    ${link('http://localhost:5222')}  sobe quando executar`
+  const linha = `    Url    ${link('http://localhost:5222')}  sobe quando executar`
   const visivel = stripAnsi(linkificar(linha))
   expect(visivel.match(/localhost:5222/g)?.length).toBe(1)
   expect(visivel).not.toContain(']8;;')
@@ -233,9 +233,9 @@ test('deteccao por variavel de ambiente do terminal', () => {
 
 test('url no meio de texto ainda vira link quando suportado', () => {
   process.env.HICODE_HYPERLINKS = 'on'
-  const t = linkificar('preview → http://localhost:5222 agora')
+  const t = linkificar('url → http://localhost:5222 agora')
   expect(t).toContain('\x1b]8;;http://localhost:5222')
-  expect(visibleLen(t)).toBe('preview → http://localhost:5222 agora'.length)
+  expect(visibleLen(t)).toBe('url → http://localhost:5222 agora'.length)
   delete process.env.HICODE_HYPERLINKS
 })
 

@@ -38,18 +38,18 @@ test('convida a escrever mais instrucoes', () => {
   expect(t).toContain('/board volta')
 })
 
-test('preview so aparece se o card tiver URL — quem sobe e o humano ou o painel', () => {
-  const com = renderCabecalhoTarefa(card({ preview_url: 'http://localhost:5222' }), { width: 78 }).join('\n')
+test('url so aparece se o card tiver URL — quem sobe e o humano ou o painel', () => {
+  const com = renderCabecalhoTarefa(card({ url: 'http://localhost:5222' }), { width: 78 }).join('\n')
   expect(com).toContain('http://localhost:5222')
 
   const sem = renderCabecalhoTarefa(card({ worktree: '/wt' }), { width: 78 }).join('\n')
-  expect(sem).not.toContain('preview')
+  expect(sem).not.toContain('url')
 })
 
-test('a tela da tarefa nao promete subir preview nem manda rodar comando morto', () => {
-  const t = renderCabecalhoTarefa(card({ worktree: '/wt', preview_url: 'http://localhost:5222' }), { width: 78 }).join('\n')
+test('a tela da tarefa nao promete subir url nem manda rodar comando morto', () => {
+  const t = renderCabecalhoTarefa(card({ worktree: '/wt', url: 'http://localhost:5222' }), { width: 78 }).join('\n')
   expect(t).not.toContain('sobe quando')
-  expect(t).not.toContain('/preview')
+  expect(t).not.toContain('/url')
 })
 
 test('mostra o gasto quando existe, e omite quando nao', () => {

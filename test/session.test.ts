@@ -35,19 +35,19 @@ test('espaco em branco conta como enter, nao como tarefa', () => {
   expect(handle('   ', planShown(base, '042')).effect.kind).toBe('approve-plan')
 })
 
-test('/help e /board', () => {
+test('/help e /historico', () => {
   expect(handle('/help', base).effect.kind).toBe('help')
-  expect(handle('/board', base).effect.kind).toBe('board')
+  expect(handle('/historico', base).effect.kind).toBe('historico')
 })
 
 test('comando cortado nao volta pela porta dos fundos', () => {
-  for (const morto of ['/cards HALTED', '/ls', '/plan 42', '/watch 42', '/seguir 42', '/agents 42', '/agentes 42', '/preview', '/subir 42', '/ok 42', '/no 42 torto']) {
+  for (const morto of ['/cards HALTED', '/board', '/quadro', '/ask 22 sim', '/responder 22 sim', '/ls', '/plan 42', '/watch 42', '/seguir 42', '/agents 42', '/agentes 42', '/url', '/subir 42', '/ok 42', '/no 42 torto']) {
     expect(handle(morto, base).effect.kind, morto).toBe('error')
   }
 })
 
 test('/board sai do modo seguir', () => {
-  expect(handle('/board', { ...base, seguindo: '42' }).state.seguindo).toBe('')
+  expect(handle('/historico', { ...base, seguindo: '42' }).state.seguindo).toBe('')
 })
 
 test('/halt aceita motivo opcional e limpa plano pendente', () => {
@@ -84,7 +84,7 @@ test('comando desconhecido nao vira tarefa', () => {
 })
 
 test('comando nao aprova plano pendente por acidente', () => {
-  expect(handle('/board', planShown(base, '042')).state.pendingPlan).toBe('042')
+  expect(handle('/historico', planShown(base, '042')).state.pendingPlan).toBe('042')
 })
 
 function card(over: Partial<Fields>): Fields {
@@ -93,8 +93,8 @@ function card(over: Partial<Fields>): Fields {
 
 test('phases: classifica ativo, esperando humano e rotulo', () => {
   expect(isActive('EXECUTING')).toBe(true)
-  expect(isActive('PREVIEW')).toBe(false)
-  expect(waitsHuman('PREVIEW')).toBe(true)
+  expect(isActive('URL')).toBe(false)
+  expect(waitsHuman('URL')).toBe(true)
   expect(waitsHuman('CLARIFY')).toBe(true)
   expect(phaseLabel('TESTS_GREEN')).toBe('Polir')
 })
@@ -114,7 +114,7 @@ test('REGRESSAO: fleet conta card WAITING como ativo e mostra marca propria (nao
 test('fleet: conta ativos e esperando separadamente', () => {
   const t = renderFleet([
     card({ id: '1', status: 'EXECUTING' }),
-    card({ id: '2', status: 'PREVIEW' }),
+    card({ id: '2', status: 'URL' }),
     card({ id: '3', status: 'MERGED' }),
   ], { repo: 'org/app', daemon: 'online (pid 1)' })
   expect(t).toContain('1 ativo(s)')
@@ -165,7 +165,7 @@ test('completar /halt (apelido de /stop) sugere ids de card', () => {
 })
 
 test('comando cortado nao completa nada', () => {
-  for (const morto of ['/cards ', '/plan ', '/watch ', '/preview ', '/ok ']) {
+  for (const morto of ['/cards ', '/plan ', '/watch ', '/url ', '/ok ']) {
     expect(complete(morto, ctx)[0], morto).toEqual([])
   }
 })
@@ -182,7 +182,7 @@ test('REGRESSAO canApprovePlan: so estado pre-execucao', () => {
   for (const s of ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED', 'PAUSED']) {
     expect(canApprovePlan(s)).toBe(true)
   }
-  for (const s of ['EXECUTING', 'EXECUTED', 'PREVIEW', 'PREVIEW_OK', 'REVIEWED', 'PR_OPEN', 'MERGED', 'HALTED']) {
+  for (const s of ['EXECUTING', 'EXECUTED', 'URL', 'URL_OK', 'REVIEWED', 'PR_OPEN', 'MERGED', 'HALTED']) {
     expect(canApprovePlan(s)).toBe(false)
   }
 })
@@ -205,9 +205,9 @@ test('numero longo demais para ser id vira tarefa', () => {
 
 import { perguntando, respondido } from '../lib/core/session'
 
-test('/ask sem id pega o card que estiver perguntando', () => {
-  expect(handle('/ask', base).effect.kind).toBe('ask')
-  expect(handle('/ask 22', base).effect.id).toBe('22')
+test('a pergunta da IA e respondida pelo prompt, sem comando dedicado', () => {
+  expect(perguntando(base, '022').perguntando).toBe('022')
+  expect(handle('/ask', base).effect.kind).toBe('error')
 })
 
 test('com pergunta aberta, numero RESPONDE e nao abre plano', () => {
@@ -231,7 +231,7 @@ test('com pergunta aberta, texto livre vira resposta e nao cria card', () => {
 })
 
 test('comando continua funcionando durante a pergunta', () => {
-  expect(handle('/board', perguntando(base, '022')).effect.kind).toBe('board')
+  expect(handle('/historico', perguntando(base, '022')).effect.kind).toBe('historico')
 })
 
 test('abrir pergunta descarta plano pendente para nao aprovar por engano', () => {
@@ -313,8 +313,8 @@ test('/stop limpa plano pendente para nao aprovar por engano', () => {
   expect(handle('/stop 37', planShown(base, '042')).state.pendingPlan).toBe('')
 })
 
-test('completar sugere ids em /stop, /rm e /ask tambem', () => {
-  for (const c of ['/stop ', '/rm ', '/ask ']) expect(complete(c, ctx)[0]).toEqual(['019', '020'])
+test('completar sugere ids em /stop e /rm', () => {
+  for (const c of ['/stop ', '/rm ']) expect(complete(c, ctx)[0]).toEqual(['019', '020'])
 })
 
 test('dentro da tarefa, texto vira instrucao e NAO tarefa nova', () => {
@@ -331,7 +331,7 @@ test('fora da tarefa, o mesmo texto vira tarefa', () => {
 
 test('comando dentro da tarefa continua sendo comando', () => {
   const dentro = seguir(base, '022')
-  expect(handle('/board', dentro).effect.kind).toBe('board')
+  expect(handle('/historico', dentro).effect.kind).toBe('historico')
   expect(handle('/rm 23', dentro).effect.kind).toBe('rm')
 })
 
@@ -413,7 +413,7 @@ test('enter vazio desiste de escolher projeto', () => {
 })
 
 test('comando durante a escolha continua sendo comando', () => {
-  expect(handle('/board', escolhendoRepo(base)).effect.kind).toBe('board')
+  expect(handle('/historico', escolhendoRepo(base)).effect.kind).toBe('historico')
 })
 
 import { ALIASES, canonico } from '../lib/core/session'
@@ -445,28 +445,28 @@ test('canonico resolve apelido e deixa comando desconhecido intacto', () => {
 
 import { sincronizarAprovacao, comentando } from '../lib/core/session'
 
-test('a ask de aprovacao arma sozinha quando a tarefa que voce segue chega em PREVIEW', () => {
+test('a ask de aprovacao arma sozinha quando a tarefa que voce segue chega em URL', () => {
   const dentro = seguir(base, '022')
   expect(sincronizarAprovacao(dentro, 'EXECUTING').aprovando).toBe('')
-  expect(sincronizarAprovacao(dentro, 'PREVIEW').aprovando).toBe('022')
+  expect(sincronizarAprovacao(dentro, 'URL').aprovando).toBe('022')
 })
 
 test('a ask nao se arma por cima de outra pergunta ja na tela', () => {
   const dentro = seguir(base, '022')
-  expect(sincronizarAprovacao(base, 'PREVIEW').aprovando).toBe('')
-  expect(sincronizarAprovacao(comentando(dentro, '022'), 'PREVIEW').aprovando).toBe('')
-  expect(sincronizarAprovacao(planShown(dentro, '019'), 'PREVIEW').pendingPlan).toBe('019')
-  expect(sincronizarAprovacao(planShown(dentro, '019'), 'PREVIEW').aprovando).toBe('')
+  expect(sincronizarAprovacao(base, 'URL').aprovando).toBe('')
+  expect(sincronizarAprovacao(comentando(dentro, '022'), 'URL').aprovando).toBe('')
+  expect(sincronizarAprovacao(planShown(dentro, '019'), 'URL').pendingPlan).toBe('019')
+  expect(sincronizarAprovacao(planShown(dentro, '019'), 'URL').aprovando).toBe('')
 })
 
 import { aprovando, comentando as comentandoEm } from '../lib/core/session'
 
 test('sair da tarefa fecha a ask de aprovacao junto — ela nao pode ficar boiando sobre o quadro', () => {
   const armado = aprovando(seguir(base, '022'), '022')
-  for (const saida of ['/board', '/config']) {
+  for (const saida of ['/historico', '/config']) {
     const r = handle(saida, armado)
     expect(r.state.seguindo, saida).toBe('')
     expect(r.state.aprovando, saida).toBe('')
   }
-  expect(handle('/board', comentandoEm(seguir(base, '022'), '022')).state.comentando).toBe('')
+  expect(handle('/historico', comentandoEm(seguir(base, '022'), '022')).state.comentando).toBe('')
 })

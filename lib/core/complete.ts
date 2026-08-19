@@ -31,6 +31,6 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (principal === '/model') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.modelos ?? []), 'padrao'], arg), arg]
   if (principal === '/effort') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.esforcos ?? []), 'padrao'], arg), arg]
   if (principal === '/repo') return [byPrefix(ctx.repos, arg), arg]
-  if (['/stop', '/rm', '/ask'].includes(principal)) return [byPrefix(ctx.cards, arg), arg]
+  if (['/stop', '/rm'].includes(principal)) return [byPrefix(ctx.cards, arg), arg]
   return [[], arg]
 }

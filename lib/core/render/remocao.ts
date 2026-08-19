@@ -32,7 +32,7 @@ function pisoDe(alvos: PlanoRemocao[]): string {
 function limpezaDe(p: PlanoRemocao): string {
   const partes = [
     p.worktree ? 'worktree' : '',
-    p.previewPid ? 'preview' : '',
+    p.urlPid ? 'url' : '',
     p.runs.length ? `${p.runs.length} log${p.runs.length > 1 ? 's' : ''}` : '',
   ].filter(Boolean)
   return partes.join(' · ')

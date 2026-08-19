@@ -6,12 +6,13 @@ import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
 test('a ask de aprovacao oferece aprovar, refazer e comentar', () => {
   const t = renderAprovacao('022', { width: 78 }).join('\n')
   expect(t).toContain('#022 aprovar o resultado?')
+  expect(t).not.toContain('abrir a url')
   expect(t).toContain('1  aprovar')
   expect(t).toContain('2  recusar e refazer')
   expect(t).toContain('3  recusar dizendo o que ajustar')
 })
 
-test('mostra o link do preview quando o card tem um (aberto por voce ou pelo painel)', () => {
+test('mostra o link do url quando o card tem um (aberto por voce ou pelo painel)', () => {
   expect(renderAprovacao('022', { url: 'http://localhost:5222' }).join('\n')).toContain('http://localhost:5222')
   expect(renderAprovacao('022').join('\n')).not.toContain('http')
 })
@@ -52,7 +53,7 @@ test('as tres opcoes tem chave 1, 2 e 3', () => {
 })
 
 test('cada estado que espera humano diz o que fazer', () => {
-  for (const status of ['CLARIFY', 'PREVIEW', 'READY', 'HALTED', 'PR_OPEN']) {
+  for (const status of ['CLARIFY', 'URL', 'READY', 'HALTED', 'PR_OPEN']) {
     const p = pendenciaDoStatus(status, '022')
     expect(p, status).not.toBe(null)
     expect(p?.acoes.length).toBeGreaterThan(0)
@@ -65,7 +66,7 @@ test('estado que nao espera ninguem nao pede nada', () => {
 })
 
 test('bloco de pendencia mostra a tecla e o que ela faz', () => {
-  const t = stripAnsi(renderPendencia('PREVIEW', '022', { width: 78 }).join('\n'))
+  const t = stripAnsi(renderPendencia('URL', '022', { width: 78 }).join('\n'))
   expect(t).toContain('precisa de voce')
   expect(t).toContain('resultado pronto')
   expect(t).toContain('enter')
@@ -74,7 +75,7 @@ test('bloco de pendencia mostra a tecla e o que ela faz', () => {
 
 test('REGRESSAO a pendencia nunca ensina comando que o parser recusa', async () => {
   const { handle, newSession } = await import('../lib/core/session')
-  const estados = ['CLARIFY', 'PREVIEW', 'INBOX', 'READY', 'SPECCED', 'PLAN_APPROVED', 'HALTED', 'PAUSED', 'PR_OPEN']
+  const estados = ['CLARIFY', 'URL', 'INBOX', 'READY', 'SPECCED', 'PLAN_APPROVED', 'HALTED', 'PAUSED', 'PR_OPEN']
   const teclas = estados.flatMap(s => pendenciaDoStatus(s, '022')?.acoes.map(a => a.tecla) ?? [])
   expect(teclas.length).toBeGreaterThan(estados.length)
   for (const tecla of teclas.filter(x => x.startsWith('/'))) {
@@ -85,10 +86,10 @@ test('REGRESSAO a pendencia nunca ensina comando que o parser recusa', async () 
   for (const n of numeros) expect(handle(n, newSession('org/app')).effect.kind, n).toBe('plan')
 })
 
-test('REGRESSAO 1 2 3 dentro da tarefa em PREVIEW cai na aprovacao, nao no plano do card #001', async () => {
+test('REGRESSAO 1 2 3 dentro da tarefa em URL cai na aprovacao, nao no plano do card #001', async () => {
   const { handle, newSession, seguir, sincronizarAprovacao } = await import('../lib/core/session')
-  expect(pendenciaDoStatus('PREVIEW', '022')?.acoes.map(a => a.tecla)).toContain('1 2 3')
-  const dentro = sincronizarAprovacao(seguir(newSession('org/app'), '022'), 'PREVIEW')
+  expect(pendenciaDoStatus('URL', '022')?.acoes.map(a => a.tecla)).toContain('1 2 3')
+  const dentro = sincronizarAprovacao(seguir(newSession('org/app'), '022'), 'URL')
   for (const tecla of ['1', '2', '3']) {
     const r = handle(tecla, dentro)
     expect(r.effect.kind, tecla).toBe('aprovacao')
@@ -113,8 +114,16 @@ test('PR aberto aponta para o GitHub, com o link quando ha', () => {
 
 test('bloco de pendencia cabe na largura', () => {
   for (const width of [30, 50, 78]) {
-    for (const l of renderPendencia('PREVIEW', '022', { width })) {
+    for (const l of renderPendencia('URL', '022', { width })) {
       expect(visibleLen(l)).toBeLessThanOrEqual(width)
     }
   }
+})
+
+test('card com url pergunta se ABRIU, nao se aprova — a validacao e ter aberto o link', () => {
+  const t = renderAprovacao('023', { width: 78, url: 'http://localhost:4331' }).join('\n')
+  expect(t).toContain('#023 conseguiu abrir a url?')
+  expect(t).toContain('http://localhost:4331')
+  expect(t).toContain('abriu e esta certo')
+  expect(t).toContain('nao abriu / falta algo')
 })

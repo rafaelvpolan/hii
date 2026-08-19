@@ -19,6 +19,12 @@ export const OPCOES_APROVACAO: OpcaoAprovacao[] = [
   { chave: '3', texto: 'recusar dizendo o que ajustar', cor: 'nao' },
 ]
 
+export const OPCOES_DA_URL: OpcaoAprovacao[] = [
+  { chave: '1', texto: 'abriu e esta certo — segue para o polimento', cor: 'sim' },
+  { chave: '2', texto: 'nao serve — refazer do zero', cor: 'nao' },
+  { chave: '3', texto: 'nao abriu / falta algo — dizer o que ajustar', cor: 'nao' },
+]
+
 export interface AprovacaoOptions {
   color: boolean
   width: number
@@ -44,14 +50,15 @@ export function renderAprovacao(id: string, opts: Partial<AprovacaoOptions> = {}
       `  ${paint('✎', CYAN, o)} ${paint(`#${id} — escreva o que ajustar`, BOLD, o)}${paint('  ·  enter vazio desiste', DIM, o)}`,
     ].map(l => truncVisible(l, o.width))
   }
-  const alvo = o.url ? paint(`  ${o.url}`, DIM, o) : ''
-  const cabecalho = `  ${paint('◎', CYAN, o)} ${paint(`#${id} aprovar o resultado?`, BOLD, o)}${alvo}`
-  const linhas = OPCOES_APROVACAO.map((op) => {
+  const pergunta = o.url ? 'conseguiu abrir a url?' : 'aprovar o resultado?'
+  const cabecalho = `  ${paint('◎', CYAN, o)} ${paint(`#${id} ${pergunta}`, BOLD, o)}`
+  const alvo = o.url ? [`    ${paint(o.url, CYAN, o)}`] : []
+  const linhas = (o.url ? OPCOES_DA_URL : OPCOES_APROVACAO).map((op) => {
     const marcada = o.selecionado === `op:${op.chave}`
     const marca = marcada ? paint('›', CYAN, o) : ' '
     const numero = paint(op.chave, corDa(op), o)
     const texto = marcada && o.color ? `${BOLD}${op.texto}${RESET}` : paint(op.texto, DIM, o)
     return `${marca} ${numero}  ${texto}`
   })
-  return [cabecalho, ...linhas].map(l => truncVisible(l, o.width))
+  return [cabecalho, ...alvo, ...linhas].map(l => truncVisible(l, o.width))
 }

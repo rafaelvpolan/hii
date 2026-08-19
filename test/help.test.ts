@@ -11,7 +11,7 @@ test('agrupa por proposito, nao numa lista solta', () => {
 
 test('cobre todos os comandos que a sessao aceita', () => {
   const t = renderHelp().join('\n')
-  for (const c of ['/board', '/config', '/ask', '/stop', '/rm', '/repo', '/exit', '/new-task', '/new-ask', '/new-session']) {
+  for (const c of ['/historico', '/config', '/stop', '/rm', '/repo', '/exit', '/new-task', '/new-ask', '/new-session']) {
     expect(t).toContain(c)
   }
 })
@@ -81,6 +81,6 @@ test('mostra o projeto atual no cabecalho, e omite quando nao ha', () => {
 test('mostra o caminho da tarefa, do inicio ao PR', () => {
   const t = renderHelp().join('\n')
   expect(t).toContain('Fila')
-  expect(t).toContain('Preview')
+  expect(t).toContain('Url')
   expect(t).toContain('PR')
 })

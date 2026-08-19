@@ -105,7 +105,7 @@ test('resultado sobrando nao vaza para chamada ja resolvida', () => {
 test('REGRESSAO: cabecalho pinado NAO pode esconder a confirmacao no rodape do log', () => {
   const painel = [
     '  ── apagar 1 tarefa ──',
-    '    #023  preview   US$1.47',
+    '    #023  url   US$1.47',
     '',
     '  enter confirma · n cancela',
   ]
@@ -139,7 +139,7 @@ test('REGRESSAO: plano de 19 linhas aparece de verdade, mesmo dentro de tarefa',
     '    Objetivo   criar task no notion', '    Alvo       org/app', '',
     '── Realizacao ──', '    1. Limpeza        pura', '',
     '    pula Arquitetura, Testes, Seguranca, Review', '',
-    '── Execucao ──', '    enter aprova · /ok aprova o preview', '', '    Nada foi executado.',
+    '── Execucao ──', '    enter aprova · /ok aprova o url', '', '    Nada foi executado.',
   ]
   const fixo = Array.from({ length: 20 }, (_, i) => `cabecalho ${i}`)
   const f = renderFrame({

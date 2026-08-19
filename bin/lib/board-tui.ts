@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { reposFile } from '../../lib/runner/config'
 import { repoPath, repoRegistered } from '../../lib/runner/card-store'
-import { abasDe, ordemDoBoard, renderAbas, renderBoard, renderBoardJanela } from '../../lib/core/render/board'
+import { historicoDeSessoes } from '../../lib/core/historico'
+import { renderHistorico } from '../../lib/core/render/historico'
 import { daemonStatus } from '../../lib/core/daemon'
 import { emExecucao, esperandoVoce } from '../../lib/core/render/rodape'
 import { pendencia } from '../../lib/core/responder'
@@ -31,7 +32,7 @@ export function ordemDoRodape(state: SessionState, modo: ModoNavegacao = 'rodape
 }
 
 export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): boolean {
-  const ordem = modo === 'board' ? ordemDoBoard(todosOsCards(), state.repo) : ordemDoRodape(state, modo)
+  const ordem = ordemDoRodape(state, modo)
   if (!ordem.length) return false
   const atual = ordem.indexOf(selecionado())
   const proximo = atual < 0 ? 0 : atual + dir
@@ -40,27 +41,9 @@ export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): 
   return true
 }
 
-export function opcoesDoBoard(state: SessionState): Parameters<typeof renderBoard>[1] {
-  return {
-    color, repo: state.repo, daemon: daemonStatus(), passosDe, selecionado: selecionado(),
-    now: Date.now(), width: Number(process.stdout.columns) || 78,
-  }
-}
-
-export function board(state: SessionState): string {
-  return renderBoard(todosOsCards(), opcoesDoBoard(state))
-}
-
-export function boardNavegavel(state: SessionState, altura: number): string[] {
-  const cards = todosOsCards()
-  const abas = renderAbas(abasDe(reposRegistrados().map(r => r.name), cards), state.repo, { color })
-  const cabecalho = [
-    `  ${color ? ACC : ''}board${color ? RESET : ''} ${dim(abas.length ? '· ↑↓ move · tab troca de projeto · enter abre · → volta' : '· ↑↓ move · enter abre · → volta a escrever')}`,
-    '',
-    ...abas,
-  ]
-  const corpo = renderBoardJanela(todosOsCards(), opcoesDoBoard(state), Math.max(4, altura - cabecalho.length))
-  return [...cabecalho, ...corpo]
+export function historicoDaTela(state: SessionState, altura = 0): string[] {
+  const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0)
+  return renderHistorico(h, { color, width: Number(process.stdout.columns) || 78, selecionado: selecionado() })
 }
 
 export function avisoRepos(state: SessionState): void {

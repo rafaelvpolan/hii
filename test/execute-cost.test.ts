@@ -77,7 +77,7 @@ test('REGRESSAO: custo e tokens ACUMULAM sobre o que ja estava no card, nao sobr
   const id = cardComCustoPrevio()
   await handleExecute(id, agente)
   const card = readCard(id)
-  expect(card?.fm.status).toBe('PREVIEW_OK')
+  expect(card?.fm.status).toBe('URL_OK')
   expect(card?.fm.cost_usd).toBe('1.2845')
   expect(card?.fm.tokens_total).toBe('530')
 })

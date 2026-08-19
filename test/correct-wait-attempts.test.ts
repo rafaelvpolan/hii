@@ -62,6 +62,6 @@ test('REGRESSAO: correcao bem-sucedida limpa wait_attempts residual de um incide
 
   await handleCorrect(id, agente)
   const c = readCard(id)
-  expect(c?.fm.status).toBe('PREVIEW')
+  expect(c?.fm.status).toBe('URL')
   expect(c?.fm.wait_attempts).toBe('')
 })
