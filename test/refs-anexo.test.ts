@@ -1,4 +1,4 @@
-import { test, expect, beforeEach } from 'bun:test'
+import { test, expect, afterEach, beforeEach } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
@@ -8,13 +8,21 @@ let fora = ''
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
 
+function semLimiaresDeDisco(): void {
+  delete process.env.HICODE_DISCO_TETO_MB
+  delete process.env.HICODE_DISCO_ALERTA_MB
+}
+
 beforeEach(() => {
   estado = mkdtempSync(join(tmpdir(), 'hii-refs-'))
   fora = mkdtempSync(join(tmpdir(), 'hii-fonte-'))
   process.env.HICODE_CARDS_DIR = estado
-  delete process.env.HICODE_DISCO_TETO_MB
-  delete process.env.HICODE_DISCO_ALERTA_MB
+  semLimiaresDeDisco()
 })
+
+// bun roda todos os arquivos no MESMO processo: sem isto, o teto de 1 MB deste
+// arquivo vaza para os testes de tick, que passam pela poda de disco
+afterEach(semLimiaresDeDisco)
 
 function imagemFora(nome: string, bytes = PNG): string {
   const caminho = join(fora, nome)

@@ -31,22 +31,29 @@ export async function runJob(job: Job): Promise<void> {
 }
 
 function podarTmp(): void {
-  const r = limparTmpAntigo()
-  if (r.removidos.length) {
-    process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
-  }
-  const uso = usoDeDisco()
-  if (uso.nivel !== 'ok') {
-    process.stdout.write(`[runner] disco do motor em ${uso.bytes} bytes (nivel ${uso.nivel}) — \`hii disco --limpar\` libera o transitorio\n`)
+  try {
+    const r = limparTmpAntigo()
+    if (r.removidos.length) {
+      process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
+    }
+    const uso = usoDeDisco()
+    if (uso.nivel !== 'ok') {
+      process.stdout.write(`[runner] disco do motor em ${uso.bytes} bytes (nivel ${uso.nivel}) — \`hii disco --limpar\` libera o transitorio\n`)
+    }
+  } catch {
+    // medir e podar disco e chore: nao pode derrubar o tick nem mascarar a falha do arquivamento
   }
 }
 
 function podar(): void {
-  podarTmp()
-  if (!precisaArquivar()) return
-  const r = arquivar()
-  for (const m of r.movidos) {
-    process.stdout.write(`[runner] #${m.id}: arquivado (${m.status}) — teto de cards por projeto\n`)
+  try {
+    if (!precisaArquivar()) return
+    const r = arquivar()
+    for (const m of r.movidos) {
+      process.stdout.write(`[runner] #${m.id}: arquivado (${m.status}) — teto de cards por projeto\n`)
+    }
+  } finally {
+    podarTmp()
   }
 }
 
