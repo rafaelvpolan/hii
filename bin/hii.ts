@@ -17,8 +17,10 @@ function daemon(sub: string): number {
   return spawnSync(DAEMON, [sub], { stdio: 'inherit' }).status ?? 1
 }
 
-function script(name: string, extra: string[]): number {
-  return spawnSync('bun', [join(ROOT, 'scripts', 'setup', `${name}.mjs`), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
+function doPainel(comando: string): number {
+  process.stderr.write(`"${comando}" e comando do painel, nao do motor — use o hicode.\n`)
+  process.stderr.write('o hii executa: start, stop, restart, status, watch, run, once, sync, init, hooks\n')
+  return 2
 }
 
 function runnerBun(extra: string[]): number {
@@ -27,13 +29,13 @@ function runnerBun(extra: string[]): number {
 
 function usage(): void {
   process.stdout.write([
-    'hii — plano de controle autonomo do hicode',
+    'hii — motor de execucao autonoma',
     '',
-    'Uso: hii                  abre a sessao interativa (porta canonica)',
-    '     hii <comando>        modo script/CI',
+    'Uso: hii <comando>        o motor executa; quem autora e julga e o painel (hicode)',
+    '     hii start            sobe o daemon',
     '',
-    'Na sessao: escreva a tarefa em linguagem natural, leia o plano e tecle enter',
-    'para aprovar. /help lista os comandos; /quit sai sem derrubar os cards.',
+
+    'O motor nunca faz merge: ele abre o PR e para.',
     '',
     'Motor (daemon):',
     '  start                    inicia o motor em background (daemon)',
@@ -142,29 +144,21 @@ async function main(): Promise<number> {
     case 'hooks':
       return hooks()
     case 'repo':
-      return script('repo', args.slice(1))
     case 'approve':
     case 'reject':
     case 'halt':
-      return script('card', args)
     case 'contract':
-      return script('contract', args.slice(1))
     case 'doctor':
-      return script('doctor', args.slice(1))
     case 'teclas':
-      return args[1] === '--corrigir'
-        ? script('wt-shift-enter', args.slice(2))
-        : script('teclas', args.slice(1))
     case 'board':
     case 'quadro':
-      return script('board', args.slice(1))
     case 'rm':
     case 'apagar':
-      return script('rm', args.slice(1))
     case 'archive':
-      return script('archive', args.slice(1))
+      return doPainel(String(args[0]))
     case undefined:
-      return spawnSync('bun', [join(ROOT, 'bin', 'repl.ts')], { stdio: 'inherit', cwd: ROOT }).status ?? 0
+      usage()
+      return 0
     default:
       usage()
       return 1

@@ -1,30 +1,27 @@
 {
-  "name": "hicode",
+  "name": "hii",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "hii": "bin/hii.ts",
-    "hicode": "bin/hii.ts"
+    "hii": "bin/hii.ts"
   },
   "scripts": {
-    "panel": "cd panel && bun run dev",
-    "panel:build": "cd panel && bun run build",
     "runner": "bun runner.ts",
     "init": "bun runner.ts --init",
     "status": "bun runner.ts --status",
     "watch": "bun runner.ts --status --watch",
     "sync": "bun runner.ts --sync",
     "typecheck": "tsc --noEmit",
-    "typecheck:panel": "cd panel && bun run typecheck",
     "lint:types": "bun scripts/check-no-any.mjs",
     "test:unit": "bun test ./test",
-    "test": "bun run typecheck && bun run lint:types && bun run test:unit && bun run typecheck:panel"
+    "test": "bun run typecheck && bun run lint:types && bun run test:unit"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
     "@types/node": "^22.10.0",
     "playwright": "^1.61.1",
     "typescript": "^5.7.2"
-  }
+  },
+  "description": "Motor de execucao autonoma: worktree, agente, gates, PR. Nao julga e nao faz merge."
 }
