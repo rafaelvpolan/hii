@@ -1,96 +1,72 @@
 # hii — motor de execução autônoma
 
-**hii** executa tarefas de código de ponta a ponta num repositório-alvo: cria o worktree,
-chama a IA, roda os gates, abre o PR — e **para**. Ele não decide se o resultado presta e não
-tem tela: quem autora a tarefa e julga o resultado é o painel (**hicode**).
+**hii** executa tarefas de código de ponta a ponta num repositório-alvo: cria o worktree a partir do
+`main` atualizado, chama a IA, entrega uma URL viva para você conferir, roda os gates, abre o PR — e
+**para**. Merge é sempre humano.
 
-```
-hicode  (painel)  →  escreve o card, aprova o preview, julga  →  TUI
-hii     (motor)   →  executa o card, gera o PR                →  CLI / daemon
-```
-
-A separação é dura: `hii` recusa comando de painel com **exit 2** e nunca abre TUI.
-
-```
-$ hii
-hii — motor de execucao autonoma (sem TUI: o motor nao tem tela)
-
-  hicode          abre o painel de tarefas
-  hii status      estado do daemon + progresso dos cards
-  hii start       sobe o motor para executar a fila
-```
-
----
-
-## Os três caminhos (nunca confunda)
-
-Quase todo bug de execução do motor é confusão entre estas três raízes:
-
-| Raiz | O que é | De onde vem |
-|---|---|---|
-| **`ROOT`** | onde o **motor está instalado** — o código do `hii` | `HICODE_ROOT`, ou o primeiro diretório acima que tenha `runner.ts`, `cards/` ou `config/repos.json` |
-| **alvo** | o **repo que a tarefa modifica** | `repoPath(nome)` lido do registro; **nunca versionado** |
-| **`workdir`** | o **worktree daquele card**, criado a partir de `origin/main` | `prepareBranch` / `ensureWorktree` |
-
-O motor **nunca** escreve em `ROOT` durante uma tarefa. Se um agente editar o código do próprio
-motor, isso é defeito: o `cwd-guard` confina cada agente ao `workdir` do card.
-
-O caminho do alvo mora só na máquina — o registro (`config/repos.json`) é local e não vai para o
-git. O motor não tem alvo embutido: **qualquer** repo serve, registrado por
-`hii repo add <owner/nome>` (comando do painel).
-
----
-
-## Instalação
+Você usa por duas portas, no mesmo binário:
 
 ```bash
-git clone <hii> ~/projects/podium/hii
+hii              # abre a TUI: escrever tarefa, aprovar, acompanhar
+hii <comando>    # CLI direta: subir daemon, ver status, governar cards
+```
+
+---
+
+## Onde clonar e como instalar
+
+O motor não precisa morar perto do repo que ele modifica — o alvo é registrado depois, por caminho.
+
+```bash
+git clone git@github.com:<owner>/hii.git ~/projects/podium/hii
 cd ~/projects/podium/hii
 bun install
-bun link                 # publica o comando `hii`
+bun link          # publica o comando `hii` no PATH
 ```
 
-`bun link` publica **só `hii`**. O painel publica **só `hicode`** — se os dois declararem o mesmo
-nome, o último `bun link` rouba o comando do outro.
-
-### Relinkar não basta: o contrato de ambiente
-
-O motor num clone novo é uma instalação **vazia**: ele resolve `cards/`, `config/repos.json` e
-`config/ia.json` **relativo ao próprio `ROOT`**. Aponte o binário para o `hii` sem mais nada e ele
-não vê card nenhum — não dá erro, mostra zero, que é pior.
-
-A ponte é o contrato em **`lib/runner/environment-contract.ts`**, a fonte da verdade de quais
-variáveis existem, quem as resolve e de que **lado** vivem:
-
-| Variável | Lado | Compartilhada entre clones |
-|---|---|---|
-| `HICODE_ROOT` | ambos | não (é a instalação) |
-| `HICODE_CARDS_DIR` | ambos | **sim** |
-| `HICODE_REPOS_FILE` | ambos | **sim** |
-| `HICODE_RUNNER_PIDFILE` | ambos | **sim** |
-| `HICODE_RUNNER_LOCK` | ambos | **sim** |
-| `HICODE_IA_FILE` | ambos | **sim** |
-| `HICODE_AGENTS_DIR` | motor | não |
-| `HICODE_RUNNER_LOG` | motor | não |
-| `HICODE_MODELOS_FILE` | painel | não |
-
-`compartilhada = sim` significa: **os dois processos precisam apontar para o mesmo arquivo**, senão
-o painel escreve um card que o motor nunca vê, ou os dois sobem daemon ao mesmo tempo porque cada
-um tem seu próprio lock. `lado` diz quem resolve a variável — marcar como compartilhada algo que só
-um lado lê é erro, e existe guarda de coerência que reprova isso.
-
-Uso, com o estado ainda no clone do painel:
+Confira:
 
 ```bash
-set -a; . ~/projects/podium/hicode/.hii-env.sh; set +a
-hii status
+which hii         # ~/.bun/bin/hii
+hii --help
 ```
 
-O `.hii-env.sh` é **gerado** do contrato e é gitignored — não escreva à mão.
+Requisitos: **Bun** ≥ 1.3, **git**, **gh** autenticado (`gh auth status`) e pelo menos uma IA de
+linha de comando instalada (`claude`, `codex`, `kimi` ou `ollama` local).
+
+> `bun link` daqui publica **só `hii`**. O painel web (hicode) publica **só `hicode`**. Se os dois
+> declararem o mesmo nome no `package.json`, o último `bun link` rouba o comando do outro.
+
+### Onde fica o estado
+
+Por padrão o motor guarda tudo dentro do próprio clone: `cards/`, `config/repos.json`,
+`config/ia.json`, `.runner.pid`, `.runner.lock`. Se você quer que o estado more em outro lugar —
+compartilhado com o painel web, por exemplo — o caminho é o **contrato de ambiente** (seção no fim).
 
 ---
 
-## Comandos
+## Primeiro uso, em quatro comandos
+
+```bash
+# 1. registra o repo que as tarefas vão modificar (fica só na sua máquina)
+hii repo add rafaelvpolan/meu-app
+
+# 2. confere se está tudo de pé: gh, IA, daemon, push, contrato do alvo
+hii doctor
+
+# 3. sobe o motor
+hii start
+
+# 4. escreve a tarefa
+hii
+```
+
+`repo add` valida o clone, detecta a stack (comandos de dev/build/test) e provisiona `.hii/` no alvo.
+Nenhum token de IA é gasto nisso — é determinístico.
+
+---
+
+## Comandos da CLI
 
 ### Daemon
 
@@ -99,35 +75,115 @@ O `.hii-env.sh` é **gerado** do contrato e é gitignored — não escreva à m�
 | `hii start` | sobe o motor em background |
 | `hii stop` | para o daemon |
 | `hii restart` | reinicia |
-| `hii run` | roda em foreground, sem daemonizar (é aqui que se depura) |
-| `hii once` | processa a fila **uma vez** e sai |
+| `hii run` | roda em **foreground**, sem daemonizar — é aqui que se depura |
+| `hii once` | processa a fila **uma vez** e sai (bom para cron) |
 
-Uma instância por estado, garantida por `HICODE_RUNNER_LOCK` (`lib/runner/instance-lock.ts`). O lock
-discrimina errno: só `EEXIST` espera; qualquer outro erro **sobe**, em vez de virar espera infinita.
+Uma instância por estado, garantida por lock (`lib/runner/instance-lock.ts`). O lock discrimina
+errno: só `EEXIST` espera; qualquer outro erro **sobe**, em vez de virar espera infinita.
 
 ### Acompanhamento
 
 | Comando | O que faz |
 |---|---|
 | `hii status` | estado do daemon + progresso dos cards |
-| `hii watch` | progresso ao vivo |
+| `hii watch` | o mesmo, ao vivo, atualizando sozinho |
+
+```
+$ hii status
+online (PID 2117058) - log: /home/rpolan/projects/podium/hii/.runner.log
+
+hii — progresso  2026-08-19T14:08:23Z · 11 cards
+ pipeline: Fila › Executar › Url › Aprovado › Polir › PR
+ Url 1 · PR 10
+```
+
+### Portas humanas do card
+
+| Comando | O que faz |
+|---|---|
+| `hii approve <id>` | você abriu a URL e está certo (`URL` → `URL_OK`) |
+| `hii approve <id> --plan` | aprova o plano e enfileira (`READY` → `EXECUTING`) |
+| `hii reject <id> [motivo]` | recusa; **com** motivo, pede correção; sem motivo, refaz |
+| `hii halt <id> [motivo]` | para o card |
+
+Na TUI essas portas são as teclas `1` / `2` / `3` na pergunta que aparece sobre o prompt.
+
+### Repo-alvo
+
+| Comando | O que faz |
+|---|---|
+| `hii repo add <owner/nome>` | registra o alvo, valida o clone, provisiona `.hii/` |
+| `hii repo ls` | lista os alvos e o estado de cada clone |
+| `hii repo rm <owner/nome>` | remove do registro (**não** toca no clone) |
+| `hii contract [caminho]` | redetecta a stack e os comandos do alvo |
+| `hii doctor` | confere gh, IA, daemon, push e contrato de cada alvo |
+
+### Arquivo de cards
+
+| Comando | O que faz |
+|---|---|
+| `hii rm <id> [id...] --yes` | apaga cards e limpa worktree, url e runs |
+| `hii archive` | arquiva os entregues mais antigos acima do teto |
+| `hii archive --dry-run` \| `ls` \| `restore <id>` | simula · lista · traz de volta |
+| `hii teclas [--corrigir]` | diagnostica (e ensina) `shift+enter` no seu terminal |
 
 ### Integração
 
 | Comando | O que faz |
 |---|---|
 | `hii sync` | sincroniza tarefas externas (`HICODE_TASK_SYNC`) |
-| `hii init [caminho]` | provisiona `.hii/` num repo-alvo |
+| `hii init [caminho]` | provisiona `.hii/` num repo-alvo (default: diretório atual) |
 | `hii hooks install\|uninstall [caminho]` | gate de pre-push determinístico |
 
-> `hooks install` existe, mas **a auditoria de repositório inteiro nunca entra em pre-push** — ela é
-> manual, por decisão explícita. `hooks` instala apenas o gate determinístico do diff que sai.
+> `hooks install` instala **apenas** o gate determinístico do diff que está saindo. A auditoria de
+> repositório inteiro **nunca** entra em pre-push — ela é manual, por decisão explícita.
 
-### O que o motor recusa
+---
 
-`approve`, `reject`, `halt`, `repo`, `contract`, `doctor`, `board`, `rm`, `archive`, `teclas` são do
-painel. O motor responde **exit 2** apontando o `hicode`. São portas humanas e de governança: quem
-aprova preview, registra alvo e apaga card é o painel, nunca o executor.
+## A TUI
+
+`hii` sem argumento abre a tela. Ela escolhe o projeto, mostra o **histórico de sessões** do motor
+(execuções reais lidas de `cards/runs/*.json`: quando, card, ✓/✗, modelo, duração, custo, tokens) e
+aceita texto livre como tarefa.
+
+Comandos de barra dentro da TUI:
+
+| Comando | O que faz |
+|---|---|
+| `/help` | os comandos e as teclas |
+| `/historico` | volta ao histórico de sessões — **sai** da tarefa aberta |
+| `/config` | painel das IAs: instaladas, habilitadas, plano, consumo 5 h e semana |
+| `/new-task` | força "isto é uma tarefa" (quando o texto parece pergunta) |
+| `/new-ask` | força "isto é uma pergunta" (não cria card) |
+| `/new-session` | limpa a conversa e começa de novo |
+| `/repo` | troca de projeto |
+| `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço |
+| `/rm <id>` | apaga card |
+| `/stop <id>` | para card |
+| `/exit` | sai |
+
+Teclas: `↑↓` seleciona a tarefa no rodapé, `enter` entra nela, `1`/`2`/`3` responde a pergunta que
+está sobre o prompt, `shift+enter` quebra linha.
+
+Um número puro (`23`) abre aquele card. Navegar o quadro de cards **não** é papel do terminal — isso
+é do painel web.
+
+---
+
+## Os três caminhos (nunca confunda)
+
+Quase todo bug de execução é confusão entre estas três raízes:
+
+| Raiz | O que é | De onde vem |
+|---|---|---|
+| **`ROOT`** | onde o motor está instalado | `HICODE_ROOT`, ou o primeiro diretório acima com `runner.ts`, `cards/` ou `config/repos.json` |
+| **alvo** | o repo que a tarefa modifica | `repoPath(nome)`, do registro; **nunca** versionado |
+| **`workdir`** | o worktree daquele card, criado de `origin/main` | `prepareBranch` / `ensureWorktree` |
+
+O motor **nunca** escreve em `ROOT` durante uma tarefa: o `cwd-guard` confina cada agente ao
+`workdir` do card. Agente editando o código do motor é defeito, não licença.
+
+O caminho do alvo mora só na sua máquina. O motor não tem alvo embutido — **qualquer** repo serve.
 
 ---
 
@@ -138,26 +194,46 @@ pelo motor lendo `cards/runs/*.json` — **nunca** pela fala do modelo.
 
 ```
 INBOX → READY → [CLARIFY] → [SPECCED] → PLAN_APPROVED → EXECUTING → EXECUTED
-      → PREVIEW → PREVIEW_OK → REFINED → TESTS_GREEN → SEC_CLEARED
-      → REVIEWED → CLEANED → PR_OPEN ┃ (parede) ┃ MERGED → DEPLOYED
+      → URL → URL_OK → REFINED → TESTS_GREEN → SEC_CLEARED
+      → REVIEWED → CLEANED → PR_OPEN ┃ parede ┃ MERGED → DEPLOYED
 ```
 
-`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Estados completos em
-`lib/card/types.ts`.
+`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Lista completa em `lib/card/types.ts`.
 
 ### 1. Executar primeiro
 
-Resultado funcional **mínimo, sem polir** (`EXECUTED`). Nada de teste, refactor ou segurança antes
-do preview: valida-se a **intenção** cedo, quando errar é barato.
+Resultado funcional **mínimo, sem polir** (`EXECUTED`). Nada de teste, refactor ou segurança antes da
+URL aprovada: valida-se a **intenção** cedo, quando errar é barato.
 
-### 2. Preview
+### 2. A URL
 
-O app sobe no worktree e gera link vivo (`PREVIEW`). A aprovação (`PREVIEW_OK`) é humana; para
-mudança sem superfície visual é automática. Rejeição volta a `EXECUTED` **com o motivo**.
+O app sobe no worktree e o card recebe `url: http://localhost:<porta>`. Quem decide se há URL é
+`lib/runner/classify.ts`, determinístico:
 
-Quem decide se há superfície é `lib/runner/classify.ts`, determinístico: sinal visual → `visual`;
-sinal não-visual (migration, lint, endpoint, refactor…) → `none`; ambíguo → assume visual, porque
-mostrar de graça custa menos que esconder o resultado errado.
+| Superfície | Quando | URL? |
+|---|---|---|
+| `visual` | página, componente, layout, cor, tema… | sim — abre no navegador |
+| `api` | endpoint, rota, auth, webhook, graphql… | sim — URL para chamar |
+| `none` | migration, lint, refactor, deps, docs… | não — aprovação automática |
+
+Ambíguo assume `visual`: mostrar de graça custa menos que esconder o resultado errado.
+
+**Se a URL não responde, o motor não desiste nem finge que subiu.** A IA recebe uma instrução
+estreita — ajustar só o que impede o arranque (comando de dev, porta, host, env, dependência) sem
+mexer no comportamento entregue — e o motor retenta. O teto é `HICODE_URL_AJUSTES` (default 2).
+Esgotado, o card chega a você com o relato do que foi tentado; não vira HALT silencioso.
+
+Com URL, a pergunta ao humano é literalmente **"conseguiu abrir a url?"**, com o link na tela:
+
+```
+◎ #023 conseguiu abrir a url?
+    http://localhost:4331
+1  abriu e esta certo — segue para o polimento
+2  nao serve — refazer do zero
+3  nao abriu / falta algo — dizer o que ajustar
+```
+
+`3` volta o card para `EXECUTED` **com o motivo** — a correção é dirigida, não um recomeço.
 
 ### 3. Só então polir
 
@@ -171,65 +247,88 @@ Passos configuráveis em `config/pipeline.json` (override por alvo em `<alvo>/.h
 | review | crivo | — | `REVIEWED` |
 | limpeza | pura | — | `CLEANED` |
 
-**Quais** desses rodam é decidido por card em `lib/runner/analyze.ts` (determinístico, zero token):
-
-Os cinco perfis, **na ordem em que `profileOf` decide** (o primeiro que casa ganha):
+**Quais** rodam sai de `lib/runner/analyze.ts` (determinístico, zero token), na ordem em que
+`profileOf` decide — o primeiro que casa ganha:
 
 | Perfil | Quando | O que roda |
 |---|---|---|
-| **`completo`** | `risk: high` no card | **tudo** — vence até `externo` |
-| **`externo`** | ação em ferramenta externa (Notion, Slack via MCP), não código no repo | **nada**, e sem preview: não há o que renderizar |
-| **`enxuto`** | cosmético/texto/visual | pula arquitetura, testes e segurança |
-| **`deps`** | só dependências, sem lógica/backend/dados | testes + segurança (CVE); pula arquitetura |
-| **`padrao`** | o resto | qualidade + review; segurança só por sinal |
+| `completo` | `risk: high` no card | **tudo** — vence até `externo` |
+| `externo` | ação em ferramenta externa (Notion, Slack via MCP), não código no repo | **nada**, e sem URL |
+| `enxuto` | cosmético / texto / visual | pula arquitetura, testes e segurança |
+| `deps` | só dependências, sem lógica/backend/dados | testes + segurança (CVE) |
+| `padrao` | o resto | qualidade + review; segurança só por sinal |
 
 Sinal ambíguo cai em `padrao` mas **abre todos os passos** — na dúvida o analisador gasta, não
-economiza. Segurança entra sempre que houver sinal de segurança, backend, dados, deps ou ambiguidade;
-só é pulada em mudança realmente sem risco. Build e gate codefox no fim valem em **todos** os perfis.
+economiza. Build e gate codefox no fim valem em **todos** os perfis.
 
-Override no card: `steps: all` (força tudo), `steps: <ids>` (só esses) ou `steps: auto` (default).
+No card: `steps: all` força tudo, `steps: <ids>` roda só esses, `steps: auto` (default) decide.
 
 ### 4. O gate é vinculante e fecha em disco
 
 Build, teste e o gate **codefox** (`lib/runner/codefox-gate.ts`) fecham lendo **exit code real em
-disco** — não a afirmação do modelo de que passou. Veredito ausente, diff que falhou ao montar ou
-agente que estourou timeout contam como **não concluído**, nunca como aprovado: o gate **falha
-fechado**.
+disco**, não a afirmação do modelo. Veredito ausente, diff que falhou ao montar ou agente que
+estourou timeout contam como **não concluído** — o gate **falha fechado**.
 
 ### 5. PR — e a parede
 
-O motor abre o PR (`finish.ts` → `PR_OPEN`) e **para**.
+O motor abre o PR e para em `PR_OPEN`.
 
-> **Merge é SEMPRE humano.** O motor não roda `gh pr merge`. Quem lê o diff e clica é a pessoa, no
-> GitHub. É a porta anti-rendição-cognitiva: sem ela o loop se auto-aprova.
-
-`MERGED` só aparece quando `lib/runner/merge.ts` **observa** no GitHub que o merge humano
-aconteceu. PR fechada sem merge marca `pr_closed` e mantém o card em `PR_OPEN`.
-
-### Toda task parte do `main` atualizado
-
-Antes da branch: `git fetch origin main` + `pull --ff-only`, ou criar de `origin/main` recém-buscado
-no worktree. Nunca ramificar de estado velho nem de outra branch de feature.
+> **Merge é SEMPRE humano.** Não existe `gh pr merge` no motor. `MERGED` só aparece quando
+> `lib/runner/merge.ts` **observa** no GitHub que uma pessoa mergeou. PR fechada sem merge marca
+> `pr_closed` e mantém o card em `PR_OPEN`.
 
 ---
 
 ## Provedores de IA
 
-Papéis: **`implement`**, **`verify`**, **`gate`**, **`step`** — cada um escolhe provedor por env.
-Provedores: `claude` (default), `codex`, `ollama`, `kimi`.
+Papéis: `implement`, `verify`, `gate`, `step` — cada um escolhe provedor por env. Provedores:
+`claude` (default), `codex`, `ollama`, `kimi`. Veja tudo com `/config` na TUI.
 
-Capacidade é **declarada**, não presumida: `providerLimits` em `lib/ai/registry.ts` diz quem
-restringe tools, isola leitura, reporta custo e aceita nível de esforço, e `recusaPorLimite`
-(`lib/runner/cost-trust.ts`) barra a chamada quando o pedido exige algo que o provedor não entrega —
-em vez de mandar e tratar o lixo que volta como resultado.
+Capacidade é **declarada**, não presumida: `providerLimits` (`lib/ai/registry.ts`) diz quem restringe
+tools, isola leitura, reporta custo e aceita nível de esforço; `recusaPorLimite`
+(`lib/runner/cost-trust.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
+vez de mandar e tratar o lixo que volta como resultado.
 
-**Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar: isso mudaria o
-custo e a qualidade da execução sem ninguém autorizar. Comportamento travado por teste.
+**Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo
+e qualidade sem ninguém autorizar. Travado por teste.
 
-Saúde do provedor é sondada antes do uso (`lib/ai/health-probe.ts`): `ollama` em
-`$HICODE_OLLAMA_URL/api/tags`, `claude` e `codex` por alcançabilidade da API, timeout de 5 s
+Saúde é sondada antes do uso (`lib/ai/health-probe.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
+`claude` e `codex` por alcançabilidade da API, timeout de 5 s
 (`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** provedor fora desse mapa — hoje `kimi` —
 cai no `return true` e é reportado como saudável sem ter sido testado.
+
+---
+
+## Contrato de ambiente (estado fora do clone)
+
+O motor resolve `cards/`, `config/repos.json` e `config/ia.json` relativo ao próprio `ROOT`. Para
+apontar noutro lugar, use as variáveis do contrato — `lib/runner/environment-contract.ts` é a fonte
+da verdade de quais existem, quem as resolve e de que **lado** vivem:
+
+| Variável | Lado | Precisa ser a mesma nos dois clones |
+|---|---|---|
+| `HICODE_ROOT` | ambos | não (cada clone tem a sua) |
+| `HICODE_CARDS_DIR` | ambos | **sim** |
+| `HICODE_REPOS_FILE` | ambos | **sim** |
+| `HICODE_RUNNER_PIDFILE` | ambos | **sim** |
+| `HICODE_RUNNER_LOCK` | ambos | **sim** |
+| `HICODE_IA_FILE` | ambos | **sim** |
+| `HICODE_AGENTS_DIR` | motor | não |
+| `HICODE_RUNNER_LOG` | motor | não |
+| `HICODE_MODELOS_FILE` | motor | não |
+
+"Precisa ser a mesma" significa: se divergir, o painel escreve um card que o motor nunca vê, ou os
+dois sobem daemon ao mesmo tempo porque cada um tem seu próprio lock. Duas guardas de teste protegem
+isso: variável de um lado só não pode ser marcada como compartilhada, e variável que declara o outro
+lado não pode ter o resolvedor morando aqui.
+
+```bash
+set -a; . /caminho/do/.hii-env.sh; set +a
+hii status
+```
+
+Outras variáveis úteis: `HICODE_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
+(orçamento do diff no gate), `HICODE_OLLAMA_URL`, `HICODE_TASK_SYNC`.
 
 ---
 
@@ -247,17 +346,19 @@ cai no `return true` e é reportado como saudável sem ter sido testado.
 ## Desenvolvimento
 
 ```bash
-bun test              # suíte do motor
+bun test              # 1466 testes
 bun run typecheck     # tsc --noEmit, cobre test/ também
 ```
 
 Regras impostas por hook, não por convenção: arquivo de código ≤ **350 linhas** e nunca god-file
-(≥20 funções e <3 exports); **sem comentário de prosa** (nome revelador no lugar); tudo tipado
-`strict`, `any` proibido, toda função com tipo de retorno.
+(≥20 funções e <3 exports); **sem comentário de prosa**; tudo tipado `strict`, `any` proibido, toda
+função com tipo de retorno.
 
 ## Estado desta separação
 
-O motor foi extraído do hicode com histórico preservado; por ora os dois repos **duplicam** o
-kernel, com unificação depois. Consequência prática: mudança em `lib/core/`, `lib/runner/` ou
-`lib/ai/` que valha para os dois precisa ir aos dois — divergência silenciosa é o custo conhecido
-desta fase.
+O motor foi extraído do hicode com histórico preservado, e a TUI veio junto: o fecho de import da
+tela arrastava 46 arquivos de kernel, que o painel era obrigado a duplicar só para ter terminal.
+
+O painel (**hicode**) fica com `panel/` — Nuxt 4 + Vue 3 — e é dono do quadro de cards, sprints e
+navegação. Por ora ele ainda carrega uma cópia do kernel; ela é **redundante**, não load-bearing, e
+pode ser apagada quando o painel web assumir. `hidash` (dashboard genérico) vem depois.
