@@ -25,7 +25,7 @@ import { ensureDaemon, fleet } from './lib/comandos'
 import { etiquetaDoProjeto } from '../lib/core/render/projeto'
 import { renderSugestoes, prefixoComum } from '../lib/core/render/sugestoes'
 import { aplicar as aplicarIa } from '../lib/core/escolher-ia'
-import { renderAprovacao } from '../lib/core/render/aprovacao'
+import { renderAprovacao, verificacaoDoCard } from '../lib/core/render/aprovacao'
 import { renderOpcoesRodape } from '../lib/core/render/clarify'
 import * as core from '../lib/core/actions'
 
@@ -82,11 +82,13 @@ async function tui(state0: SessionState): Promise<void> {
       }
       if (state.seguindo) state = sincronizarAprovacao(state, String(readCard(state.seguindo)?.fm.status ?? ''))
       if (!state.aprovando) return []
+      const cardEmAprovacao = readCard(state.aprovando)
       return renderAprovacao(state.aprovando, {
         color,
         width: larguraUtil(),
         selecionado: selecionado(),
-        url: String(readCard(state.aprovando)?.fm.url ?? ''),
+        url: String(cardEmAprovacao?.fm.url ?? ''),
+        verificacao: verificacaoDoCard(String(cardEmAprovacao?.fm.verify ?? '')),
       })
     },
     dica: (ctx) => dicaDaNavegacao(ctx, state),

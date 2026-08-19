@@ -322,7 +322,20 @@ estreita — ajustar só o que impede o arranque (comando de dev, porta, host, e
 mexer no comportamento entregue — e o motor retenta. O teto é `HICODE_URL_AJUSTES` (default 2).
 Esgotado, o card chega a você com o relato do que foi tentado; não vira HALT silencioso.
 
-Com URL, a pergunta ao humano é literalmente **"conseguiu abrir a url?"**, com o link na tela:
+A confirmação técnica é da máquina, não sua: o motor sobe o app, confirma com `curl` (timeout, com
+retentativas e ajuste automático se não responder) e, quando responde, abre a página no **Playwright**
+para ver se ela renderiza sem erro. O veredito vai para o campo `verify` do card.
+
+Por isso a pergunta ao humano **muda conforme o veredito** — ninguém precisa responder o que a máquina
+já sabe:
+
+| `verify` | O que a tela pergunta |
+|---|---|
+| `ok` | **"é isso que você queria?"** — com `✓ o motor abriu a url e a página respondeu` |
+| `falhou` | **"a url subiu com erro — o que fazer?"** |
+| `inconclusivo` | **"conseguiu abrir a url?"** — só aqui a pergunta técnica sobra para você |
+
+O que **nunca** vira automático é a intenção: se a entrega é o que você queria, quem diz é você.
 
 ```
 ◎ #023 conseguiu abrir a url?

@@ -127,3 +127,35 @@ test('card com url pergunta se ABRIU, nao se aprova — a validacao e ter aberto
   expect(t).toContain('abriu e esta certo')
   expect(t).toContain('nao abriu / falta algo')
 })
+
+test('quando a maquina ja abriu a url, a pergunta ao humano vira de intencao', async () => {
+  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'ok' }).join('\n')
+  expect(t).toContain('e isso que voce queria?')
+  expect(t).toContain('o motor abriu a url e a pagina respondeu')
+  expect(t).not.toContain('conseguiu abrir a url?')
+})
+
+test('quando a checagem falhou, a tela diz isso em vez de perguntar se abriu', async () => {
+  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'falhou' }).join('\n')
+  expect(t).toContain('subiu com erro')
+  expect(t).toContain('a pagina deu erro')
+})
+
+test('so quando a maquina nao soube checar e que o humano responde a pergunta tecnica', async () => {
+  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'inconclusivo' }).join('\n')
+  expect(t).toContain('conseguiu abrir a url?')
+  expect(t).toContain('nao conseguiu checar sozinho')
+})
+
+test('card antigo, sem veredito gravado, cai na pergunta tecnica e nao inventa veredito', async () => {
+  const { renderAprovacao, verificacaoDoCard } = await import('../lib/core/render/aprovacao')
+  expect(verificacaoDoCard('')).toBe('')
+  expect(verificacaoDoCard('lixo')).toBe('')
+  expect(verificacaoDoCard('ok')).toBe('ok')
+  const t = renderAprovacao('023', { url: 'http://localhost:5200' }).join('\n')
+  expect(t).toContain('conseguiu abrir a url?')
+  expect(t).not.toContain('o motor abriu')
+})
