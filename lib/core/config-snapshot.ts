@@ -9,6 +9,9 @@ import { dailySpend } from '../runner/cost-gap'
 import { emExecucao } from './render/rodape'
 import type { AgentRole, AiProviderName } from '../ai/types'
 import type { EstadoDaConfig, ItemDoLoop, LinhaDeProvedor } from './render/config'
+import { janelasDoProvedor } from '../ai/janelas'
+import { gastoDoMotorNoIntervalo } from '../ai/consumo'
+import type { JanelaDoPainel } from './render/config/tipos'
 
 const BALDES_DA_SERIE = 48
 
@@ -20,7 +23,21 @@ function papelPrincipal(provedor: string): AgentRole | undefined {
   return papeisDe(provedor)[0] as AgentRole | undefined
 }
 
-function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisponivel>): LinhaDeProvedor {
+function janelasDoPainel(nome: AiProviderName, agoraMs: number): JanelaDoPainel[] {
+  return janelasDoProvedor(nome, agoraMs).map((j): JanelaDoPainel => {
+    const gasto = gastoDoMotorNoIntervalo(nome, j.inicioMs, j.fimMs)
+    return {
+      rotulo: j.rotulo,
+      percentualDoLimite: j.percentualDoLimite,
+      limiteConfiavel: j.limiteConfiavel,
+      gastoDoMotorUsd: gasto.custoUsd,
+      runsDoMotor: gasto.runs,
+      restamMs: j.restamMs,
+    }
+  })
+}
+
+function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisponivel>, agoraMs: number): LinhaDeProvedor {
   const limites = providerLimits(nome)
   const papel = papelPrincipal(nome)
   const estado = estados.get(nome)
@@ -32,7 +49,7 @@ function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisp
     motivo: estado && estado.situacao !== 'disponivel' ? estado.comoObter : '',
     plano: plano.plano,
     detalheDoPlano: plano.detalhe,
-    janelas: plano.janelas,
+    janelas: janelasDoPainel(nome, agoraMs),
     idadeDoUsoHoras: plano.idadeHoras,
     modelosDisponiveis: nome === 'ollama' ? estadoDoOllama().modelos : plano.modelos,
     papeis: papeisDe(nome),
@@ -69,7 +86,7 @@ export function loopEmExecucao(repo: string, agoraMs: number): { itens: ItemDoLo
 
 export function lerConfig(repo: string, selecionado: string, agoraMs: number = Date.now()): EstadoDaConfig {
   const estados = estadosPorNome()
-  const provedores = providerNames().map(nome => linhaDeProvedor(nome, estados))
+  const provedores = providerNames().map(nome => linhaDeProvedor(nome, estados, agoraMs))
   const hoje = new Date(agoraMs).toISOString().slice(0, 10)
   const gasto = dailySpend(allCards().filter(c => !repo || c.repo === repo), hoje)
   const { itens, fila } = loopEmExecucao(repo, agoraMs)

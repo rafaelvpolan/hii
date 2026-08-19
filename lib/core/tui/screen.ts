@@ -48,6 +48,18 @@ export function frameToAnsi(f: ReturnType<typeof renderFrame>): string {
   return HOME + corpo + moveCursor(f.cursorRow, f.cursorCol)
 }
 
+export function pinturaDiferencial(f: ReturnType<typeof renderFrame>, anteriores: string[]): string {
+  if (!anteriores.length) return frameToAnsi(f)
+  let saida = ''
+  const total = Math.max(f.lines.length, anteriores.length)
+  for (let i = 0; i < total; i++) {
+    const nova = f.lines[i] ?? ''
+    if (nova === (anteriores[i] ?? '')) continue
+    saida += moveCursor(i + 1, 1) + nova + CLEAR_EOL
+  }
+  return saida + moveCursor(f.cursorRow, f.cursorCol)
+}
+
 export interface Screen {
   draw: (conteudo: Omit<FrameInput, 'rows' | 'cols'>) => void
   close: () => void
@@ -58,17 +70,22 @@ export function openScreen(term: Terminal): Screen {
   term.write(ALT_ON + PASTE_ON + TECLAS_ON)
   term.setRaw(true)
   let ultimo: Omit<FrameInput, 'rows' | 'cols'> | null = null
-  let ultimaPintura = ''
+  let ultimasLinhas: string[] = []
+  let ultimoCursor = ''
   const draw = (conteudo: Omit<FrameInput, 'rows' | 'cols'>): void => {
     if (!aberto) return
     ultimo = conteudo
-    const pintura = frameToAnsi(renderFrame({ ...conteudo, rows: term.rows(), cols: term.cols() }))
-    if (pintura === ultimaPintura) return
-    ultimaPintura = pintura
+    const quadro = renderFrame({ ...conteudo, rows: term.rows(), cols: term.cols() })
+    const cursor = moveCursor(quadro.cursorRow, quadro.cursorCol)
+    const pintura = pinturaDiferencial(quadro, ultimasLinhas)
+    ultimasLinhas = quadro.lines
+    if (pintura === cursor && cursor === ultimoCursor) return
+    ultimoCursor = cursor
     term.write(HIDE + pintura + SHOW)
   }
   const redesenhar = (): void => {
-    ultimaPintura = ''
+    ultimasLinhas = []
+    ultimoCursor = ''
     if (ultimo) draw(ultimo)
   }
   term.onResize(redesenhar)

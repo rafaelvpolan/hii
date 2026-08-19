@@ -1,7 +1,7 @@
 import { padVisible, truncVisible } from '../../tui/layout'
 import { barraRotulada } from '../widget/barra'
 import type { ConsumoDoProvedor } from '../../../ai/consumo'
-import type { EstadoDaConfig, ItemDoLoop, LinhaDeProvedor, OpcoesConfig } from './tipos'
+import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LinhaDeProvedor, OpcoesConfig } from './tipos'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
@@ -43,17 +43,44 @@ export function painelDeIas(e: EstadoDaConfig, largura: number, o: OpcoesConfig)
   })
 }
 
+function quandoReseta(restamMs: number): string {
+  if (restamMs <= 0) return ''
+  const horas = Math.floor(restamMs / 3600_000)
+  if (horas >= 24) return `reseta ${Math.floor(horas / 24)}d${horas % 24}h`
+  if (horas >= 1) return `reseta ${horas}h`
+  return `reseta ${Math.max(1, Math.round(restamMs / 60_000))}min`
+}
+
+function gastoDoMotor(j: JanelaDoPainel): string {
+  if (!j.runsDoMotor) return 'motor nao rodou aqui'
+  const casas = j.gastoDoMotorUsd < 0.01 ? 4 : 2
+  return `motor US$${j.gastoDoMotorUsd.toFixed(casas)} · ${j.runsDoMotor} run`
+}
+
+function linhasDaJanela(j: JanelaDoPainel, medidor: number, largura: number, o: OpcoesConfig): string[] {
+  const cauda = [gastoDoMotor(j), quandoReseta(j.restamMs)].filter(Boolean).join(' · ')
+  if (j.percentualDoLimite === null) {
+    return [
+      truncVisible(` ${padVisible(j.rotulo, 8)} ${paint('limite nao reportado', DIM, o)}`, largura),
+      truncVisible(`          ${paint(cauda, DIM, o)}`, largura),
+    ]
+  }
+  const barra = ' ' + barraRotulada(j.rotulo, j.percentualDoLimite, 100, {
+    color: o.color, largura: medidor, mostrarPercentual: true, rotuloEm: 8,
+  })
+  const aviso = j.limiteConfiavel ? '' : paint(' (leitura mais velha que a janela)', AMARELO, o)
+  return [truncVisible(barra + aviso, largura), truncVisible(`          ${paint(cauda, DIM, o)}`, largura)]
+}
+
 export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o: OpcoesConfig): string[] {
   if (!p) return [' escolha uma ia com ↑↓']
   if (!p.plano) return [' plano nao descoberto nesta maquina']
   const linhas = [campo('plano', p.plano, largura, o)]
   if (p.detalheDoPlano) linhas.push(campo('conta', p.detalheDoPlano, largura, o))
   if (!p.janelas.length) linhas.push(campo('uso', 'sem janela reportada', largura, o))
-  const medidor = Math.max(8, largura - 22)
+  const medidor = Math.max(8, largura - 30)
   for (const j of p.janelas) {
-    linhas.push(' ' + barraRotulada(j.rotulo, j.percentual, 100, {
-      color: o.color, largura: medidor, mostrarPercentual: true, rotuloEm: 8,
-    }))
+    linhas.push(...linhasDaJanela(j, medidor, largura, o))
   }
   if (p.janelas.length && p.idadeDoUsoHoras >= 0) {
     const idade = p.idadeDoUsoHoras < 1

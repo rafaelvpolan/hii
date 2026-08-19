@@ -111,7 +111,10 @@ test('a coluna de ias mostra instalada, ligada e plano de cada uma', () => {
 test('uso do plano vira medidor, e dado velho e marcado como velho', () => {
   const comJanela = ia('claude', {
     plano: 'Max 5x',
-    janelas: [{ rotulo: '5h', percentual: 1, resetaEm: '' }, { rotulo: '7d', percentual: 29, resetaEm: '' }],
+    janelas: [
+      { rotulo: '5h', percentualDoLimite: 1, limiteConfiavel: true, gastoDoMotorUsd: 0.1, runsDoMotor: 2, restamMs: 3600_000 },
+      { rotulo: '7d', percentualDoLimite: 29, limiteConfiavel: true, gastoDoMotorUsd: 0.5, runsDoMotor: 9, restamMs: 2 * 86_400_000 },
+    ],
     idadeDoUsoHoras: 64,
   })
   const t = renderConfig({ ...base, provedores: [comJanela], selecionado: 'claude' },
@@ -124,7 +127,7 @@ test('uso do plano vira medidor, e dado velho e marcado como velho', () => {
 test('dado recente NAO e marcado como velho', () => {
   const recente = ia('claude', {
     plano: 'Max 5x',
-    janelas: [{ rotulo: '5h', percentual: 3, resetaEm: '' }],
+    janelas: [{ rotulo: '5h', percentualDoLimite: 3, limiteConfiavel: true, gastoDoMotorUsd: 0, runsDoMotor: 0, restamMs: 0 }],
     idadeDoUsoHoras: 0.5,
   })
   const t = renderConfig({ ...base, provedores: [recente], selecionado: 'claude' },

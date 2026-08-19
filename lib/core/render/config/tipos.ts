@@ -1,6 +1,15 @@
 import type { ConsumoDoProvedor } from '../../../ai/consumo'
 import type { Situacao } from '../../../ai/disponibilidade'
-import type { JanelaDeUso } from '../../../ai/planos'
+
+
+export interface JanelaDoPainel {
+  rotulo: string
+  percentualDoLimite: number | null
+  limiteConfiavel: boolean
+  gastoDoMotorUsd: number
+  runsDoMotor: number
+  restamMs: number
+}
 
 export interface LinhaDeProvedor {
   nome: string
@@ -9,7 +18,7 @@ export interface LinhaDeProvedor {
   motivo: string
   plano: string
   detalheDoPlano: string
-  janelas: JanelaDeUso[]
+  janelas: JanelaDoPainel[]
   idadeDoUsoHoras: number
   modelosDisponiveis: string[]
   papeis: string[]

@@ -3,12 +3,13 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApp } from '../lib/core/tui/app'
-import { handle, newSession, planShown, respondido } from '../lib/core/session'
+import { handle, newSession, planShown } from '../lib/core/session'
 import { dispatch } from '../lib/core/dispatch'
 import type { Terminal } from '../lib/core/tui/screen'
 import type { SessionState } from '../lib/core/session'
 import { stripAnsi } from '../lib/core/tui/layout'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
+import { telaVirtual } from './fixtures/tela-virtual'
 
 let dir = ''
 
@@ -228,7 +229,7 @@ test('cabecalho fixo nao rola para fora quando o log e longo', async () => {
   const rodando = app.run()
   for (let i = 0; i < 60; i++) app.log(`  linha de log ${i}`)
   await new Promise(r => setTimeout(r, 10))
-  const tela = stripAnsi(term.saida.join('').split('\x1b[H').pop() ?? '')
+  const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
   expect(tela).toContain('#022 executing')
@@ -248,7 +249,7 @@ test('dentro da tarefa, as instrucoes ficam ACIMA da execucao', async () => {
   const rodando = app.run()
   app.log('  instrucao 12 anotada em #022')
   await new Promise(r => setTimeout(r, 10))
-  const tela = stripAnsi(term.saida.join('').split('\x1b[H').pop() ?? '')
+  const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
   expect(tela.indexOf('instrucao 12')).toBeLessThan(tela.indexOf('vitro: editando'))
@@ -264,7 +265,7 @@ test('fora da tarefa, o log continua abaixo do board', async () => {
   const rodando = app.run()
   app.log('  card #023 criado')
   await new Promise(r => setTimeout(r, 10))
-  const tela = stripAnsi(term.saida.join('').split('\x1b[H').pop() ?? '')
+  const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
   expect(tela.indexOf('board do projeto')).toBeLessThan(tela.indexOf('card #023'))
@@ -283,7 +284,7 @@ test('instrucoes antigas saem de cena conforme a execucao cresce', async () => {
   execucao = Array.from({ length: 40 }, (_, i) => `  passo ${i}`)
   app.log('  instrucao 2 anotada')
   await new Promise(r => setTimeout(r, 10))
-  const tela = stripAnsi(term.saida.join('').split('\x1b[H').pop() ?? '')
+  const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
   expect(tela).not.toContain('instrucao 1 anotada')

@@ -200,6 +200,19 @@ A **conversa da TUI** (pergunta respondida, leitura de intenção) também é se
 histórico como `chat`, com as IAs que entraram. Antes esse gasto era mostrado na hora e depois
 desaparecia — não entrava em nenhum total.
 
+No `/config`, **limite e gasto são coisas diferentes e aparecem separados**. O limite vem do próprio
+provedor (o Claude reporta `5h` e `7d` com o instante de reset); o motor só sabe o que **ele** gastou,
+que é um subconjunto — seu uso fora do motor também consome o limite. A janela do motor é alinhada ao
+reset real do provedor, não corrida a partir de agora, senão os dois números nunca fecham. Leitura do
+provedor mais velha que a própria janela sai marcada — um `5h 0%` medido há 6 h não diz nada:
+
+```
+5h       ░░░░░░░░░░░░░░░░░░   0% (leitura mais velha que a janela)
+         motor US$0.85 · 1 run
+7d       ████████████░░░░░░  69%
+         motor US$0.85 · 1 run · reseta 2d3h
+```
+
 O `/config` e a cota agregam **por chamada de IA** quando há ledger: o gate em `codex` deixa de ser
 cobrado do `claude` que implementou. Execuções anteriores ao ledger continuam atribuídas ao provedor
 do topo, para o histórico não sumir na virada, e o painel diz qual atribuição está usando
@@ -415,6 +428,9 @@ hii status
 
 Outras variáveis úteis: `HICODE_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
 (orçamento do diff no gate), `HICODE_OLLAMA_URL`, `HICODE_TASK_SYNC`.
+
+**Janelas de limite por IA.** Cada IA tem sua janela: `HICODE_JANELAS_CLAUDE` (default `5h,7d`),
+`HICODE_JANELAS_CODEX`, `HICODE_JANELAS_KIMI`. Aceita `4h`, `30m`, `7d`. IA local não tem janela.
 
 **Disco.** O estado cresce por referência de imagem, print de URL e registro de run. O motor mede as
 quatro áreas (`refs`, `tmp`, `urls`, `runs`) e mostra o total no rodapé da TUI, na frota e em

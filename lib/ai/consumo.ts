@@ -46,6 +46,10 @@ function runsDaJanela(janelaMs: number, agoraMs: number): RegistroDeRun[] {
   return loteDesde(inicioMs).registros.filter(r => r.concluidoEmMs >= inicioMs)
 }
 
+function runsNoIntervalo(inicioMs: number, fimMs: number): RegistroDeRun[] {
+  return loteDesde(inicioMs).registros.filter(r => r.concluidoEmMs >= inicioMs && r.concluidoEmMs <= fimMs)
+}
+
 function novoAcumulado(provedor: string): Acumulado {
   return {
     consumo: {
@@ -132,4 +136,23 @@ export function serieDeCusto(janelaMs: number, baldes: number, agoraMs: number =
     serie[i] = (serie[i] ?? 0) + custoDe(registro)
   }
   return serie.map(arredondar4)
+}
+
+export interface GastoDoMotor {
+  custoUsd: number
+  tokens: number
+  runs: number
+}
+
+export function gastoDoMotorNoIntervalo(provedor: string, inicioMs: number, fimMs: number): GastoDoMotor {
+  const total: GastoDoMotor = { custoUsd: 0, tokens: 0, runs: 0 }
+  for (const registro of runsNoIntervalo(inicioMs, fimMs)) {
+    for (const c of contribuicoesDoRegistro(registro)) {
+      if (c.provedor !== provedor) continue
+      total.custoUsd += naoNegativo(c.custoUsd)
+      total.tokens += naoNegativo(c.tokens)
+      total.runs += 1
+    }
+  }
+  return { ...total, custoUsd: arredondar4(total.custoUsd) }
 }

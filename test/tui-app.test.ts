@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../lib/core/tui/app'
 import type { Terminal } from '../lib/core/tui/screen'
-import { stripAnsi } from '../lib/core/tui/layout'
+import { telaVirtual } from './fixtures/tela-virtual'
 
 interface Fake extends Terminal {
   saida: string[]
@@ -14,23 +14,18 @@ function fakeTerminal(rows = 12, cols = 50): Fake {
   const saida: string[] = []
   const raw: boolean[] = []
   let onKeyFn: ((k: string) => void) | null = null
-  let onResizeFn: (() => void) | null = null
   return {
     saida, raw,
     write: (s) => { saida.push(s) },
     rows: () => rows,
     cols: () => cols,
-    onResize: (fn) => { onResizeFn = fn },
-    offResize: () => { onResizeFn = null },
+    onResize: () => {},
+    offResize: () => {},
     onKey: (fn) => { onKeyFn = fn },
     offKey: () => { onKeyFn = null },
     setRaw: (on) => { raw.push(on) },
     tecla: (k) => onKeyFn?.(k),
-    tela: () => {
-      const tudo = saida.join('')
-      const i = tudo.lastIndexOf('\x1b[H')
-      return stripAnsi(i >= 0 ? tudo.slice(i) : tudo)
-    },
+    tela: () => telaVirtual(saida),
   }
 }
 

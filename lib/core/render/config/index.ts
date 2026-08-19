@@ -33,8 +33,8 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
     caixa('IAS · instalada / ligada / plano', painelDeIas(e, w - 2, opcoes), cx),
     caixa(`${(e.selecionado || 'ia').toUpperCase()} · PLANO E USO`, painelDoPlano(escolhido, w - 2, opcoes), cx),
     caixa(`${(e.selecionado || 'ia').toUpperCase()} · CONFIGURADO`, painelDoProvedor(escolhido, w - 2, opcoes), cx),
-    caixa('USO 5H', painelDeUso(e.uso5h, w - 2, opcoes), cx),
-    caixa('USO SEMANA', painelDeUso(e.usoSemana, w - 2, opcoes), cx),
+    caixa('GASTO DO MOTOR · 5H', painelDeUso(e.uso5h, w - 2, opcoes), cx),
+    caixa('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes), cx),
     caixa('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes), cx),
     caixa('LOOP EM EXECUCAO', painelDoLoop(e.loop, e.fila, w - 2, opcoes), cx),
   ]

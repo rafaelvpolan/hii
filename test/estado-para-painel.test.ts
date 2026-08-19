@@ -1,4 +1,4 @@
-import { test, expect, beforeEach } from 'bun:test'
+import { test, expect, afterEach, beforeEach } from 'bun:test'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +10,11 @@ beforeEach(() => {
   mkdirSync(join(estado, 'runs'), { recursive: true })
   process.env.HICODE_CARDS_DIR = estado
   process.env.HICODE_COTA_TTL_MS = '0'
+  process.env.HICODE_RUNNER_PIDFILE = join(estado, '.runner.pid')
+})
+
+afterEach(() => {
+  delete process.env.HICODE_RUNNER_PIDFILE
 })
 
 function card(id: string, campos: Record<string, string> = {}): void {
