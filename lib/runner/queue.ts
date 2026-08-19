@@ -11,6 +11,7 @@ import { checkMerged } from './merge'
 import { arquivar, precisaArquivar } from '../core/archive'
 import { recordTickSuccess, reportTickFailure } from './health'
 import { wakeDueWaiting } from './waiting'
+import { limparTmpAntigo, usoDeDisco } from './estado-em-disco'
 
 export { reconcileStranded, pending } from './queue-state'
 
@@ -29,7 +30,19 @@ export async function runJob(job: Job): Promise<void> {
   }
 }
 
+function podarTmp(): void {
+  const r = limparTmpAntigo()
+  if (r.removidos.length) {
+    process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
+  }
+  const uso = usoDeDisco()
+  if (uso.nivel !== 'ok') {
+    process.stdout.write(`[runner] disco do motor em ${uso.bytes} bytes (nivel ${uso.nivel}) — \`hii disco --limpar\` libera o transitorio\n`)
+  }
+}
+
 function podar(): void {
+  podarTmp()
   if (!precisaArquivar()) return
   const r = arquivar()
   for (const m of r.movidos) {

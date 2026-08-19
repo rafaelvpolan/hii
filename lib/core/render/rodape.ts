@@ -2,6 +2,8 @@ import type { Fields } from '../../card'
 import { isActive, esperaHumano } from './phases'
 import { idadeDe } from './board'
 import { truncVisible, padVisible } from '../tui/layout'
+import { marcaCurtaDoDisco } from './disco'
+import type { UsoDeDisco } from '../../runner/estado-em-disco'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
@@ -19,6 +21,7 @@ export interface Propriedades {
   custoHoje: string
   pisoDoGasto: string
   divergentes: string[]
+  disco?: UsoDeDisco
 }
 
 export interface RodapeOptions {
@@ -76,6 +79,7 @@ export function linhaPropriedades(p: Propriedades, opts: Partial<RodapeOptions> 
     `esforco ${paint(p.effort, CYAN, o)}`,
     p.projeto ? `projeto ${paint(p.projeto, CYAN, o)}` : '',
     gastoDoDia(p, o),
+    p.disco ? marcaCurtaDoDisco(p.disco, { color: o.color }) : '',
   ].filter(Boolean)
   const base = paint(partes.join(paint(' · ', DIM, o)), DIM, o) + motivoDoPiso(p, o)
   if (!p.divergentes.length) return base

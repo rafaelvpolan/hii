@@ -1,6 +1,8 @@
 import type { Fields } from '../../card'
 import { fleetFloorProviders, formatProviders } from '../../runner/cost-gap'
 import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman } from './phases'
+import { marcaDoDisco } from './disco'
+import { usoDeDiscoCacheado } from '../../runner/estado-em-disco'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
@@ -65,6 +67,7 @@ export function renderFleet(cards: Fields[], opts: Partial<FleetOptions> = {}): 
   const out: string[] = []
   out.push(paint(`hicode · ${o.repo || 'sem repo'}   daemon ${o.daemon}`, DIM, o))
   out.push(`${paint(`${ativos} ativo(s) · ${esperando} esperando voce`, DIM, o)}${custoDaFrota(cards, o)}`)
+  out.push(marcaDoDisco(usoDeDiscoCacheado(), { color: o.color, detalhe: true }))
   if (!vivos.length) return out.join('\n')
   out.push('')
   for (const linha of chunk(vivos, 2)) out.push('  ' + linha.map(c => cell(c, o)).join('   '))

@@ -35,6 +35,7 @@ const SECOES: Secao[] = [
       { chave: 'escreva', arg: 'a tarefa', texto: 'texto de mudanca vira tarefa; pergunta e respondida' },
       { chave: '/new-task', arg: '<mudanca>', texto: 'cria a tarefa direto, sem leitura de intencao' },
       { chave: '/new-ask', arg: '<pergunta>', texto: 'responde sobre o projeto, sem criar card' },
+      { chave: '/ref', arg: '<url|caminho|clipboard>', texto: 'anexa imagem de referencia para a IA copiar o design' },
       { chave: '/new-session', arg: '', texto: 'limpa a area e recomeca a sessao' },
       { chave: '20', arg: '', texto: 'so o numero abre o plano da tarefa' },
       { chave: 'enter', arg: '', texto: 'aprova o plano que acabou de aparecer' },

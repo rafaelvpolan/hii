@@ -4,6 +4,7 @@ import type { DailySpend } from '../../lib/runner/cost-gap'
 import { effortFor, modelFor, providerNameFor } from '../../lib/ai/registry'
 import { emExecucao, esperandoEmOutrosProjetos, esperandoVoce, linhaDeOutrosProjetos, linhaPropriedades, linhasAjustes, linhasEspera, linhasExecucao } from '../../lib/core/render/rodape'
 import { ESFORCO_PADRAO, itensDeAjuste } from '../../lib/core/ajustes'
+import { usoDeDiscoCacheado } from '../../lib/runner/estado-em-disco'
 import { cardsPerguntando } from '../../lib/core/responder'
 import { ultimoAgente } from '../../lib/core/activity'
 import type { SessionState } from '../../lib/core/session'
@@ -41,6 +42,7 @@ export function rodapeDa(state: SessionState, noRodape = false): string[] {
     custoHoje: gasto.total,
     pisoDoGasto: gasto.floor,
     divergentes: papeisDivergentes(),
+    disco: usoDeDiscoCacheado(),
   }, { color, width: largura })
   const cards = todosOsCards()
   const rodando = emExecucao(cards, state.repo, Date.now(), id => ultimoAgente(atividadeDe(id)))

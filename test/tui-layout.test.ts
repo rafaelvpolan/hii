@@ -332,3 +332,16 @@ test('palavra maior que a largura nao entra em laco infinito', () => {
 test('texto vazio nao gera linha fantasma', () => {
   expect(quebrarEmLargura('', 40)).toEqual([''])
 })
+
+test('REGRESSAO: url colorida nao engole o ANSI para dentro do link OSC 8', () => {
+  const antes = process.env.HICODE_HYPERLINKS
+  process.env.HICODE_HYPERLINKS = 'on'
+  const visivel = 'veja https://exemplo.com/x agora'
+  const linha = linkificar('veja \x1b[2mhttps://exemplo.com/x\x1b[0m agora')
+  expect(linha).toContain('\x1b]8;;https://exemplo.com/x\x1b\\')
+  expect(linha).not.toContain('https://exemplo.com/x\x1b[0m\x1b\\')
+  expect(stripAnsi(linha)).toBe(visivel)
+  expect(visibleLen(linha)).toBe(visivel.length)
+  if (antes === undefined) delete process.env.HICODE_HYPERLINKS
+  else process.env.HICODE_HYPERLINKS = antes
+})

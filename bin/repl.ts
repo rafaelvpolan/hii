@@ -8,6 +8,7 @@ import { daemonPid, daemonStatus } from '../lib/core/daemon'
 import { pendencia } from '../lib/core/responder'
 import { ciclarAjuste } from '../lib/core/ajustes'
 import { quebrarEmLargura } from '../lib/core/tui/layout'
+import { markdownParaAnsi } from '../lib/core/render/markdown'
 import { responderPergunta, classificarComIaLocal } from '../lib/runner/responder-pergunta'
 import { renderParada } from '../lib/core/render/tarefa'
 import { emExecucao } from '../lib/core/render/rodape'
@@ -39,7 +40,8 @@ function ioDo(app: { log: (s: string) => void }, diga: (s: string) => void, repo
       const alvo = repoPath(repo)
       const r = await responderPergunta(pergunta, alvo, conversa)
       if (!r.ok && !r.texto) return ['  nao consegui responder — a consulta falhou']
-      const corpo = quebrarEmLargura(r.texto, larguraUtil() - 2).map(l => `  ${l}`)
+      const emAnsi = markdownParaAnsi(r.texto, { color, largura: larguraUtil() - 2 }).join('\n')
+      const corpo = quebrarEmLargura(emAnsi, larguraUtil() - 2).map(l => `  ${l}`)
       const gasto = r.custo
         ? dim(`  (${r.provedor}${r.custoMedido ? '' : ', custo estimado'} · US$${r.custo.toFixed(4)})`)
         : dim(`  (${r.provedor})`)

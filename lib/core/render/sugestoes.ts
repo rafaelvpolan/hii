@@ -14,6 +14,7 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/new-task': 'cria a tarefa direto, sem leitura de intencao',
   '/new-ask': 'pergunta sobre o projeto, sem criar card',
   '/new-session': 'limpa a area e recomeca a sessao',
+  '/ref': 'anexa imagem de referencia (url, caminho ou clipboard)',
   '/ia': 'escolhe a ia que roda cada papel',
   '/model': 'escolhe o modelo da ia atual',
   '/effort': 'escolhe o esforco da ia atual',

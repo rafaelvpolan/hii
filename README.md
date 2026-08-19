@@ -126,6 +126,7 @@ Na TUI essas portas são as teclas `1` / `2` / `3` na pergunta que aparece sobre
 | `hii archive` | arquiva os entregues mais antigos acima do teto |
 | `hii archive --dry-run` \| `ls` \| `restore <id>` | simula · lista · traz de volta |
 | `hii teclas [--corrigir]` | diagnostica (e ensina) `shift+enter` no seu terminal |
+| `hii disco [--limpar]` | uso de disco do estado por área; `--limpar` esvazia o transitório |
 
 ### Integração
 
@@ -155,15 +156,37 @@ Comandos de barra dentro da TUI:
 | `/config` | painel das IAs: instaladas, habilitadas, plano, consumo 5 h e semana |
 | `/new-task` | força "isto é uma tarefa" (quando o texto parece pergunta) |
 | `/new-ask` | força "isto é uma pergunta" (não cria card) |
-| `/new-session` | limpa a conversa e começa de novo |
+| `/new-session` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
+| `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço |
 | `/rm <id>` | apaga card |
 | `/stop <id>` | para card |
 | `/exit` | sai |
 
-Teclas: `↑↓` seleciona a tarefa no rodapé, `enter` entra nela, `1`/`2`/`3` responde a pergunta que
-está sobre o prompt, `shift+enter` quebra linha.
+Teclas: `↑↓` seleciona a tarefa no rodapé, `enter` entra nela, `←` navega as sessões do histórico
+(`enter` abre a tarefa daquela sessão), `1`/`2`/`3` responde a pergunta que está sobre o prompt,
+`shift+enter` quebra linha, `pgup`/`pgdn` rola a área de resposta (uma linha nova volta ao vivo).
+
+A resposta da IA sai com **markdown renderizado em ANSI** — cabeçalho, negrito, lista, citação,
+bloco de código e link viram formatação, não `##` e `**` na tela.
+
+### Referências de imagem
+
+A TUI não recebe imagem colada pelo terminal: o protocolo só transporta texto. O caminho é o `/ref`:
+
+| Como | O que acontece |
+|---|---|
+| `/ref https://…/tela.png` | grava a fonte; o download acontece **na execução**, com as guardas de rede (10 MB, 30 s, anti-SSRF) |
+| `/ref ~/prints/tela.png` | valida (extensão, tamanho, teto de disco) e **copia** para dentro do estado do motor |
+| `/ref clipboard` | lê a imagem do clipboard do SO — `powershell.exe Get-Clipboard -Format Image` no WSL, `wl-paste` no Wayland, `xclip` no X11, `pngpaste` no macOS — e valida pela assinatura do arquivo, não pela extensão |
+| `/ref` | lista as referências do alvo e o uso de disco |
+| `/ref ambiente` | diz por onde o clipboard seria lido nesta máquina |
+
+Com tarefa aberta, a referência vai para `refs/<tarefa>/` — que **sobrevive a retry e a refazer**,
+porque a referência é entrada da tarefa, não da execução. Sem tarefa aberta, fica em
+`tmp/sessao/<sessao>/` e **migra** para a tarefa no momento em que você escreve o texto dela. Teto de
+8 referências por tarefa; na implementação a IA abre cada uma com a tool `Read`.
 
 Um número puro (`23`) abre aquele card. Navegar o quadro de cards **não** é papel do terminal — isso
 é do painel web.
@@ -329,6 +352,12 @@ hii status
 
 Outras variáveis úteis: `HICODE_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
 (orçamento do diff no gate), `HICODE_OLLAMA_URL`, `HICODE_TASK_SYNC`.
+
+**Disco.** O estado cresce por referência de imagem, print de URL e registro de run. O motor mede as
+quatro áreas (`refs`, `tmp`, `urls`, `runs`) e mostra o total no rodapé da TUI, na frota e em
+`hii disco`. `HICODE_DISCO_ALERTA_MB` (default 200) acende o aviso; `HICODE_DISCO_TETO_MB` (default
+1024) **recusa** nova referência em vez de encher o disco; `HICODE_TMP_TTL_H` (default 24) é a idade
+com que o daemon poda o transitório de `tmp/` a cada tick.
 
 ---
 

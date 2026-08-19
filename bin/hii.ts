@@ -7,6 +7,8 @@ import { initHicodeHome } from '../lib/runner/hicode-home'
 import { installPrePush, uninstallPrePush } from '../lib/runner/hooks'
 import { runSync } from '../lib/tasks/sync'
 import { taskSyncName } from '../lib/tasks/registry'
+import { limparTmpAntigo, usoDeDisco } from '../lib/runner/estado-em-disco'
+import { linhasDoDisco } from '../lib/core/render/disco'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -31,12 +33,24 @@ function runnerBun(extra: string[]): number {
   return spawnSync('bun', [join(ROOT, 'runner.ts'), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
+function disco(extra: string[]): number {
+  const limpar = extra.includes('--limpar')
+  if (limpar) {
+    const r = limparTmpAntigo(0)
+    process.stdout.write(`transitorio limpo: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes liberados\n`)
+  }
+  const uso = usoDeDisco()
+  process.stdout.write(`${linhasDoDisco(uso, { color: process.stdout.isTTY === true }).join('\n')}\n`)
+  return uso.nivel === 'teto' ? 1 : 0
+}
+
 function usage(): void {
   process.stdout.write([
     'hii — motor de execucao autonoma',
     '',
     'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
+    '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
     '',
 
     'O motor nunca faz merge: ele abre o PR e para.',
@@ -160,6 +174,8 @@ async function main(): Promise<number> {
       return script('rm', args.slice(1))
     case 'archive':
       return script('archive', args.slice(1))
+    case 'disco':
+      return disco(args.slice(1))
     case 'board':
     case 'quadro':
       return semBoard()

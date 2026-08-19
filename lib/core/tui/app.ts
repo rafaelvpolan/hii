@@ -71,11 +71,24 @@ export function createApp(term: Terminal, dados: AppHooks): App {
   let sugestoes: string[] = []
   let sugIdx = -1
   let sujo = true
+  let rolagem = 0
   let quadro: { fixo: string[]; corpo: string[]; rodape: string[] } = { fixo: [], corpo: [], rodape: [] }
   let input: InputState = newInput()
   let sair = false
   let resolver: (() => void) | null = null
   const screen = openScreen(term)
+
+  const janelaRolada = (linhas: string[], altura: number): string[] => {
+    const maximo = Math.max(0, linhas.length - altura)
+    if (rolagem > maximo) rolagem = maximo
+    if (rolagem <= 0) return linhas.slice(-altura)
+    const alturaUtil = Math.max(1, altura - 1)
+    const fim = Math.max(alturaUtil, linhas.length - rolagem)
+    return [
+      `  ── ${rolagem} linha(s) mais novas abaixo · pgdn volta ao vivo`,
+      ...linhas.slice(Math.max(0, fim - alturaUtil), fim),
+    ]
+  }
 
   const desenhar = (): void => {
     const sugAnterior = sugestoes.join('\n')
@@ -98,7 +111,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
         ? corpo
         : (hooks.logPrimeiro(ctx) ? [...extras, ...corpo] : [...corpo, ...extras])
             .flatMap(l => quebrarEmLargura(l, interno))
-      quadro = { fixo, corpo: rolante.slice(-Math.max(1, ctx.altura)), rodape }
+      quadro = { fixo, corpo: janelaRolada(rolante, Math.max(1, ctx.altura)), rodape }
       sujo = false
     }
     const rodape = quadro.rodape
@@ -124,6 +137,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
   }
 
   const log = (linha: string): void => {
+    rolagem = 0
     for (const l of linha.split('\n')) extras.push(linkificar(l))
     if (extras.length > 500) extras.splice(0, extras.length - 500)
     sujo = true
@@ -213,6 +227,12 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       hooks.onEntrar(modo)
       return true
     }
+    if (a.kind === 'rolar') {
+      sujo = true
+      const passo = Math.max(1, term.rows() - 8)
+      rolagem = Math.max(0, rolagem + (a.dir === -1 ? passo : -passo))
+      return true
+    }
     if (a.kind === 'ciclar-ia') {
       sujo = true
       hooks.onCiclarIa(a.dir)
@@ -259,6 +279,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     log,
     limparLog: (): void => {
       extras.length = 0
+      rolagem = 0
       sujo = true
       desenhar()
     },

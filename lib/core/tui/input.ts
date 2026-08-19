@@ -27,6 +27,7 @@ export type InputAction =
   | { kind: 'limpar' }
   | { kind: 'aba'; dir: -1 | 1 }
   | { kind: 'ciclar-ia'; dir: -1 | 1 }
+  | { kind: 'rolar'; dir: -1 | 1 }
 
 export interface KeyResult {
   state: InputState
@@ -77,6 +78,8 @@ const APAGA_PALAVRA_ESQ = ['\x17', '\x08', '\x00', '\x1b\x7f', '\x1b[3;5~', '\x1
 const APAGA_PALAVRA_DIR = ['\x1bd', '\x1b[3;3~']
 const APAGA_ATE_FIM = '\x0b'
 const APAGA_ATE_INICIO = '\x15'
+const ROLAR_CIMA = ['\x1b[5~', '\x1b[5;2~', '\x1b[5;5~', '\x1b[5;3~']
+const ROLAR_BAIXO = ['\x1b[6~', '\x1b[6;2~', '\x1b[6;5~', '\x1b[6;3~']
 const QUEBRA_LINHA = ['\n', '\x1b\r', '\x1b\n', '\x1b[13;2u', '\x1b[13;5u', '\x1b[13;2;13u',
   '\x1b[27;2;13~', '\x1b[27;5;13~', '\x1b[106;5u', '\x1bOM']
 
@@ -135,7 +138,15 @@ export function pararNavegacao(state: InputState): InputState {
   return state.navegando ? { ...state, navegando: '' } : state
 }
 
+function rolagemDe(key: string): -1 | 1 | 0 {
+  if (ROLAR_CIMA.includes(key)) return -1
+  if (ROLAR_BAIXO.includes(key)) return 1
+  return 0
+}
+
 export function keypress(state: InputState, key: string): KeyResult {
+  const rolar = rolagemDe(key)
+  if (rolar !== 0) return { state, action: { kind: 'rolar', dir: rolar } }
   if (state.navegando) {
     if (key === ESC || key === ESC_CSI || key === RIGHT) {
       return { state: { ...state, navegando: '' }, action: { kind: 'redraw' } }

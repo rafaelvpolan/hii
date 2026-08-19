@@ -1,4 +1,5 @@
 import { COMMANDS, canonico } from './session'
+import { PALAVRAS_DE_CLIPBOARD } from './refs-comando'
 
 export interface CompleteContext {
   repos: string[]
@@ -30,6 +31,7 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (principal === '/ia') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.provedores ?? [])], arg), arg]
   if (principal === '/model') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.modelos ?? []), 'padrao'], arg), arg]
   if (principal === '/effort') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.esforcos ?? []), 'padrao'], arg), arg]
+  if (principal === '/ref') return [byPrefix([...PALAVRAS_DE_CLIPBOARD, 'ambiente'], arg), arg]
   if (principal === '/repo') return [byPrefix(ctx.repos, arg), arg]
   if (['/stop', '/rm'].includes(principal)) return [byPrefix(ctx.cards, arg), arg]
   return [[], arg]

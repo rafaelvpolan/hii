@@ -151,7 +151,8 @@ const ctx = { repos: ['acme/site', 'acme/api'], cards: ['019', '020'] }
 
 test('completar: barra sozinha lista os comandos', () => {
   expect(complete('/', ctx)[0]).toContain('/repo')
-  expect(complete('/re', ctx)[0]).toEqual(['/repo'])
+  expect(complete('/re', ctx)[0]).toEqual(['/ref', '/repo'])
+  expect(complete('/rep', ctx)[0]).toEqual(['/repo'])
 })
 
 test('completar /repo sugere os repos registrados', () => {

@@ -14,6 +14,9 @@ import { renderHelp } from './render/help'
 import { esperandoVoce } from './render/rodape'
 import { newSession, seguir, foraDaTarefa, planShown, perguntando, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './session'
 import { classificarPrompt } from './classificar'
+import { alvoDeRef, comandoRef } from './refs-comando'
+import { migrarRefsDaSessao, limparSessao } from '../runner/refs-anexo'
+import { reiniciarSessao, sessaoAtual } from '../runner/sessao'
 import { renderPergunta as renderPerguntaLida } from './render/pergunta-lida'
 import type { Effect, SessionState } from './session'
 
@@ -193,6 +196,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const base = state.perguntando ? respondido(state) : state
       const novoId = core.submit({ title: texto, repo: base.repo })
       io.log(`card #${novoId} criado`)
+      const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
+      if (refs.migrados > 0) {
+        io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
+      }
       for (const l of await io.plano(novoId)) io.log(l)
       io.log('enter aprova e enfileira · outra tarefa descarta')
       return planShown(base, novoId)
@@ -212,8 +219,15 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return state
     }
     case 'nova-sessao': {
+      limparSessao(sessaoAtual())
+      reiniciarSessao()
       io.log('sessao nova — a area fica limpa e as tarefas seguem rodando')
       return newSession(state.repo)
+    }
+    case 'ref': {
+      const r = await comandoRef(texto, alvoDeRef(state.seguindo || state.pendingPlan))
+      for (const l of r.linhas) io.log(l)
+      return state
     }
     case 'config': {
       io.log(io.dim('  /config — ↑↓ escolhe a ia · enter aplica no papel implement · /board volta'))

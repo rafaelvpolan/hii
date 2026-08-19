@@ -2,7 +2,7 @@ export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'confirmar-tarefa' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'config'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'confirmar-tarefa' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'config' | 'ref'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -43,6 +43,7 @@ export const ALIASES: Record<string, string[]> = {
   '/help': ['/h', '/?'],
   '/historico': ['/history'],
   '/config': ['/configuracao'],
+  '/ref': ['/referencia', '/imagem'],
 }
 
 export function canonico(comando: string): string {
@@ -52,7 +53,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/exit'] as const
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/exit'] as const
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
@@ -153,6 +154,10 @@ function command(line: string, state: SessionState): Reply {
       return arg
         ? reply({ kind: 'consultar', text: arg }, cleared)
         : reply({ kind: 'error', text: 'uso: /new-ask <pergunta> — responde sem criar card' }, state)
+    case 'ref':
+    case 'referencia':
+    case 'imagem':
+      return reply({ kind: 'ref', text: arg }, state)
     case 'new-session':
     case 'nova-sessao':
       return reply({ kind: 'nova-sessao' }, state)
