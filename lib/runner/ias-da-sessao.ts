@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cardsDir } from './config'
 import { garantirDir } from './estado-em-disco'
@@ -6,7 +6,7 @@ import type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '.
 
 export type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor }
 
-export const ROTULO_DO_PAPEL: Record<PapelDeChamada, string> = {
+const ROTULO_DO_PAPEL: Record<PapelDeChamada, string> = {
   implement: 'executa',
   verify: 'verifica',
   gate: 'revisa',
@@ -45,7 +45,7 @@ export function abrirSessao(card: string, agoraMs = Date.now()): string {
   return sessao
 }
 
-function ultimoLedgerDoCard(card: string): string {
+function sessaoRetomadaDoDiscoAposReinicio(card: string): string {
   const dir = join(cardsDir(), 'runs')
   if (!card || !existsSync(dir)) return ''
   const sufixo = '.ias.jsonl'
@@ -59,18 +59,12 @@ function ultimoLedgerDoCard(card: string): string {
 export function sessaoDoCard(card: string): string {
   const guardada = abertas.get(card)
   if (guardada) return guardada
-  // o finish pode rodar depois de um reinicio do daemon: retoma o ledger em disco
-  // em vez de abrir sessao nova e partir a execucao em duas
-  const emDisco = ultimoLedgerDoCard(card)
-  if (emDisco) {
-    abertas.set(card, emDisco)
-    return emDisco
+  const retomada = sessaoRetomadaDoDiscoAposReinicio(card)
+  if (retomada) {
+    abertas.set(card, retomada)
+    return retomada
   }
   return abrirSessao(card)
-}
-
-export function fecharSessao(card: string): void {
-  abertas.delete(card)
 }
 
 export function esquecerSessoes(): void {
@@ -138,11 +132,6 @@ export function chamadasDaSessao(sessao: string): ChamadaDeIa[] {
     }
   }
   return saida
-}
-
-export function apagarLedger(sessao: string): void {
-  if (!sessao) return
-  rmSync(arquivoDoLedger(sessao), { force: true })
 }
 
 const ORDEM_DO_PAPEL: PapelDeChamada[] = [

@@ -83,8 +83,16 @@ export function sessaoParaChamada(id: string): string {
   return id ? sessaoDoCard(id) : `conversa-${sessaoAtual()}`
 }
 
-function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
+function semPropagarFalhaDeRegistro(registro: () => void): void {
   try {
+    registro()
+  } catch {
+    return
+  }
+}
+
+function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
+  semPropagarFalhaDeRegistro(() => {
     registrarChamada(sessaoParaChamada(id), {
       ts: isoNow(),
       papel,
@@ -100,9 +108,7 @@ function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, pape
       ok: res.ok === true,
     })
     if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
-  } catch {
-    // o ledger e registro, nao gate: nunca derruba a chamada que acabou de rodar
-  }
+  })
 }
 
 export async function runProvider(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {

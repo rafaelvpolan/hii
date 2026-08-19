@@ -20,8 +20,6 @@ beforeEach(() => {
   semLimiaresDeDisco()
 })
 
-// bun roda todos os arquivos no MESMO processo: sem isto, o teto de 1 MB deste
-// arquivo vaza para os testes de tick, que passam pela poda de disco
 afterEach(semLimiaresDeDisco)
 
 function imagemFora(nome: string, bytes = PNG): string {
@@ -159,4 +157,11 @@ test('a limpeza de tmp remove o antigo e preserva a sessao em uso', async () => 
   expect(r.bytesLiberados).toBe(512)
   expect(existsSync(viva)).toBe(true)
   expect(existsSync(velha)).toBe(false)
+})
+
+test('os limiares de disco nao vazam para os outros arquivos (bun roda tudo no mesmo processo)', () => {
+  process.env.HICODE_DISCO_TETO_MB = '1'
+  semLimiaresDeDisco()
+  expect(process.env.HICODE_DISCO_TETO_MB).toBeUndefined()
+  expect(process.env.HICODE_DISCO_ALERTA_MB).toBeUndefined()
 })

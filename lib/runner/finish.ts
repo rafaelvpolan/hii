@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../card'
-import type { StepMap, Card } from '../card'
+import type { StepMap } from '../card'
 import { CARD_BUDGET_USD, MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from './config'
 import { appendProjectMemory } from './memory'
 import { readCard, patchCard, repoPath, repoBase } from './card-store'

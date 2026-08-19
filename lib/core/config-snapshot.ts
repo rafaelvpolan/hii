@@ -7,7 +7,6 @@ import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../a
 import { allCards } from '../runner/card-store'
 import { dailySpend } from '../runner/cost-gap'
 import { emExecucao } from './render/rodape'
-import { idadeDe } from './render/board'
 import type { AgentRole, AiProviderName } from '../ai/types'
 import type { EstadoDaConfig, ItemDoLoop, LinhaDeProvedor } from './render/config'
 

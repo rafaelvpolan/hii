@@ -71,10 +71,12 @@ function novoAcumulador(c: ContribuicaoDeProvedor): Acumulador {
   }
 }
 
+function oLimiteEDesteProvedor(acc: Acumulador, registro: RegistroDeRun): boolean {
+  return registro.classeDeFalha === 'quota' && registro.provedor === acc.uso.provedor
+}
+
 function anotarLimite(acc: Acumulador, registro: RegistroDeRun): void {
-  // o limite de cota e do provedor que bateu nele: nao contamina os outros
-  // participantes da mesma execucao
-  if (registro.classeDeFalha !== 'quota' || registro.provedor !== acc.uso.provedor) return
+  if (!oLimiteEDesteProvedor(acc, registro)) return
   acc.uso.limiteAtingido = true
   if (registro.card && !acc.uso.cardsNoLimite.includes(registro.card)) acc.uso.cardsNoLimite.push(registro.card)
   if (registro.concluidoEmMs < acc.limiteMs) return

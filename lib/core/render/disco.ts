@@ -13,23 +13,23 @@ export interface OpcoesDeDisco {
 
 const PADRAO: OpcoesDeDisco = { color: false, detalhe: false }
 
-export function corDoNivel(nivel: NivelDeDisco): string {
+function corDoNivel(nivel: NivelDeDisco): string {
   if (nivel === 'teto') return RED
   if (nivel === 'alerta') return YELLOW
   return DIM
 }
 
-export function detalheDoDisco(uso: UsoDeDisco): string {
+function detalheDoDisco(uso: UsoDeDisco): string {
   return uso.areas.filter(a => a.bytes > 0).map(a => `${a.area} ${mb(a.bytes)}`).join(' · ')
 }
 
-export function avisoDoNivel(uso: UsoDeDisco): string {
+function avisoDoNivel(uso: UsoDeDisco): string {
   if (uso.nivel === 'teto') return `NO TETO de ${mb(uso.teto)} — o motor recusa nova referencia`
   if (uso.nivel === 'alerta') return `passou de ${mb(uso.alerta)}, teto em ${mb(uso.teto)}`
   return ''
 }
 
-export function avisoCurto(uso: UsoDeDisco): string {
+function avisoCurto(uso: UsoDeDisco): string {
   if (uso.nivel === 'teto') return 'NO TETO'
   if (uso.nivel === 'alerta') return 'perto do teto'
   return ''

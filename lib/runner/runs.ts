@@ -91,6 +91,13 @@ export function stampRunFailure(id: string, failure: ResolvedFailure, provider: 
   return true
 }
 
+function refrescarIasDaSessao(r: Run, id: string): void {
+  const resumo = resumoDaSessao(r.session || sessaoDoCard(id))
+  if (!resumo.chamadas) return
+  r.ias = resumo.ias
+  r.trocas = resumo.trocas
+}
+
 export function updateRunSteps(id: string, fsteps: StepMap): { tokens: number; cost: string } {
   const p = latestRunPath(id)
   if (!p) return { tokens: 0, cost: '' }
@@ -110,13 +117,7 @@ export function updateRunSteps(id: string, fsteps: StepMap): { tokens: number; c
   r.cost_usd = ((parseFloat(r.cost_usd) || 0) + addCost).toFixed(4)
   r.cost_measured = r.cost_measured === true && !Object.values(fsteps).some(v => v.costMeasured === false)
   r.duration_s = (Number(r.duration_s) || 0) + addTime
-  // o finish roda depois do writeRun e faz mais chamadas de IA na MESMA sessao:
-  // sem refrescar aqui, o gate e o polimento nao apareceriam nas IAs da sessao
-  const resumo = resumoDaSessao(r.session || sessaoDoCard(id))
-  if (resumo.chamadas) {
-    r.ias = resumo.ias
-    r.trocas = resumo.trocas
-  }
+  refrescarIasDaSessao(r, id)
   writeFileSync(p, JSON.stringify(r, null, 2))
   return { tokens: r.tokens_total, cost: r.cost_usd }
 }
@@ -127,12 +128,6 @@ export function readRunSteps(id: string): StepMap | null {
   return readRunAt(p)?.steps ?? null
 }
 
-/**
- * A conversa da TUI (pergunta respondida, leitura de intencao) gasta IA e nao tem
- * card. Sem registro proprio esse gasto ficava orfao: nao entrava no historico
- * nem no consumo por provedor. Reescrito do ledger a cada chamada — idempotente,
- * um arquivo por sessao de terminal.
- */
 export function atualizarRegistroDeConversa(sessao: string): Run | null {
   if (!sessao) return null
   const chamadas = chamadasDaSessao(sessao)

@@ -2,7 +2,7 @@ import { isoNow } from '../card'
 import type { Job } from '../card'
 import { MAX_CONCURRENCY } from './config'
 import { patchCard } from './card-store'
-import { reconcileStranded, pending, marcarEmVoo, liberar, quantosEmVoo } from './queue-state'
+import { pending, marcarEmVoo, liberar, quantosEmVoo } from './queue-state'
 import { handleExecute } from './execute'
 import { handleFinish } from './finish'
 import { handleCorrect } from './correct'
@@ -30,8 +30,16 @@ export async function runJob(job: Job): Promise<void> {
   }
 }
 
-function podarTmp(): void {
+function semDerrubarOTick(chore: () => void): void {
   try {
+    chore()
+  } catch {
+    return
+  }
+}
+
+function podarTmp(): void {
+  semDerrubarOTick(() => {
     const r = limparTmpAntigo()
     if (r.removidos.length) {
       process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
@@ -40,9 +48,7 @@ function podarTmp(): void {
     if (uso.nivel !== 'ok') {
       process.stdout.write(`[runner] disco do motor em ${uso.bytes} bytes (nivel ${uso.nivel}) — \`hii disco --limpar\` libera o transitorio\n`)
     }
-  } catch {
-    // medir e podar disco e chore: nao pode derrubar o tick nem mascarar a falha do arquivamento
-  }
+  })
 }
 
 function podar(): void {

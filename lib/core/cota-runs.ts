@@ -215,14 +215,6 @@ function doTopoDaRun(r: RegistroDeRun): ContribuicaoDeProvedor {
   }
 }
 
-/**
- * Quebra uma execucao no gasto de CADA provedor que participou dela.
- *
- * Com ledger (execucoes novas), a atribuicao e por chamada de IA: o gate em codex
- * deixa de ser cobrado do claude que implementou. Sem ledger (execucoes antigas),
- * cai no provedor do topo da run — que era o comportamento anterior, para o
- * historico de cota nao sumir na virada.
- */
 export function contribuicoesDoRegistro(r: RegistroDeRun): ContribuicaoDeProvedor[] {
   if (!r.ias.length) return [doTopoDaRun(r)]
   const porProvedor = new Map<string, ContribuicaoDeProvedor>()

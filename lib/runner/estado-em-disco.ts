@@ -4,7 +4,7 @@ import { cardsDir, numeroDeEnv } from './config'
 
 export const MAX_REFS_POR_TAREFA = 8
 
-export function refsRaiz(): string {
+function refsRaiz(): string {
   return join(cardsDir(), 'refs')
 }
 
@@ -16,11 +16,11 @@ export function refsFile(id: string): string {
   return join(refsRaiz(), `${id}.json`)
 }
 
-export function tmpRaiz(): string {
+function tmpRaiz(): string {
   return join(cardsDir(), 'tmp')
 }
 
-export function dirDeTransito(): string {
+function dirDeTransito(): string {
   return join(tmpRaiz(), 'transito')
 }
 
@@ -33,7 +33,7 @@ export function garantirDir(caminho: string): string {
   return caminho
 }
 
-export function alertaBytes(): number {
+function alertaBytes(): number {
   return numeroDeEnv('HICODE_DISCO_ALERTA_MB', 200) * 1024 * 1024
 }
 
@@ -41,7 +41,7 @@ export function tetoBytes(): number {
   return numeroDeEnv('HICODE_DISCO_TETO_MB', 1024) * 1024 * 1024
 }
 
-export function ttlDoTmpMs(): number {
+function ttlDoTmpMs(): number {
   return numeroDeEnv('HICODE_TMP_TTL_H', 24) * 3600_000
 }
 
@@ -50,7 +50,7 @@ export interface Medida {
   arquivos: number
 }
 
-export function medirDir(caminho: string): Medida {
+function medirDir(caminho: string): Medida {
   if (!existsSync(caminho)) return { bytes: 0, arquivos: 0 }
   let bytes = 0
   let arquivos = 0
@@ -192,7 +192,7 @@ let cacheChave = ''
 let cacheQuando = -Infinity
 let cacheValor: UsoDeDisco | null = null
 
-export const TTL_DO_USO_MS = 5000
+const TTL_DO_USO_MS = 5000
 
 export function usoDeDiscoCacheado(ttlMs = TTL_DO_USO_MS, agoraMs = Date.now()): UsoDeDisco {
   const chave = cardsDir()
@@ -204,8 +204,3 @@ export function usoDeDiscoCacheado(ttlMs = TTL_DO_USO_MS, agoraMs = Date.now()):
   return cacheValor
 }
 
-export function esquecerUsoDeDisco(): void {
-  cacheValor = null
-  cacheChave = ''
-  cacheQuando = -Infinity
-}

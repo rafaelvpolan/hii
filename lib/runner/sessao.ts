@@ -15,6 +15,3 @@ export function reiniciarSessao(): string {
   return atual
 }
 
-export function definirSessao(id: string): void {
-  atual = id
-}

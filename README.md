@@ -97,6 +97,27 @@ hii — progresso  2026-08-19T14:08:23Z · 11 cards
  Url 1 · PR 10
 ```
 
+### Para o painel (contrato de máquina)
+
+O painel (hicode) não precisa reimplementar a leitura do estado: pede ao motor.
+
+| Comando | O que faz |
+|---|---|
+| `hii estado --json` | snapshot inteiro: tarefas com status, fase, passos, url, PR, custo, **pergunta aberta** e o que o humano precisa fazer; mais daemon, saúde, cota e disco |
+| `hii estado --revisao` | só o token de revisão — muda quando o estado muda |
+| `hii estado --repo <owner/nome>` | filtra por projeto |
+| `hii responder <id> <texto> [--json]` | responde a pergunta aberta e retoma a tarefa |
+| `hii approve <id> [--plan] [--json]` | aprova a url (ou o plano) |
+| `hii reject <id> [motivo] [--json]` | com motivo pede correção; sem motivo, refaz |
+| `hii halt <id> [motivo] [--json]` | para a tarefa |
+
+**Tempo real sem socket:** o painel guarda o último `--revisao` e só refaz o trabalho quando o token
+vira. `--revisao` é um `readdir` + `stat` local, barato de chamar a cada segundo; o snapshot inteiro
+só quando mudou. O campo `versao` diz com qual contrato o painel está falando.
+
+`--json` devolve `{ ok, acao, id, status, mensagem }` — status é o **novo** status depois da ação, para
+o painel não precisar reler só para saber o que aconteceu.
+
 ### Portas humanas do card
 
 | Comando | O que faz |

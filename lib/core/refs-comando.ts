@@ -25,7 +25,7 @@ export interface DepsDeRef {
   clipboard: DepsDeColagem
 }
 
-export function depsDeRef(): DepsDeRef {
+function depsDeRef(): DepsDeRef {
   return { colar: colarImagem, clipboard: depsPadrao() }
 }
 
@@ -49,11 +49,11 @@ function rotuloDaFonte(fonte: string): string {
   return ehUrlDeRef(fonte) ? fonte : basename(fonte)
 }
 
-export function linhaDeDisco(): string {
+function linhaDeDisco(): string {
   return `  ${textoDoDisco(usoDeDisco(), { detalhe: true })}`
 }
 
-export function listarRefs(alvo: AlvoDeRef): ResultadoDeRef {
+function listarRefs(alvo: AlvoDeRef): ResultadoDeRef {
   const fontes = fontesDoAlvo(alvo)
   const linhas = [`  referencias de ${ondeFica(alvo)}`]
   if (!fontes.length) {

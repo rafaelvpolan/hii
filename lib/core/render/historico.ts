@@ -50,11 +50,11 @@ export function duracao(segundos: number): string {
   return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}m`
 }
 
+const MENOR_QUE_UM_CENTAVO = 0.01
+
 export function custo(usd: number): string {
   if (usd <= 0) return '—'
-  // gasto de conversa fica na casa dos milesimos: arredondar para 2 casas
-  // mostraria US$0.00, o que e mentira por arredondamento
-  return usd < 0.01 ? `US$${usd.toFixed(4)}` : `US$${usd.toFixed(2)}`
+  return usd < MENOR_QUE_UM_CENTAVO ? `US$${usd.toFixed(4)}` : `US$${usd.toFixed(2)}`
 }
 
 export function tokens(total: number): string {

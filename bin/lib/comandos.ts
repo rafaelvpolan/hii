@@ -1,11 +1,10 @@
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
-import { ROOT, cardsDir } from '../../lib/runner/config'
+import { ROOT } from '../../lib/runner/config'
 import { renderFleet } from '../../lib/core/render/fleet'
-import { startLive } from '../../lib/core/watch'
 import { daemonPid, daemonStatus, readPrefs, writePrefs } from '../../lib/core/daemon'
 import type { SessionState } from '../../lib/core/session'
-import { DIM, RESET, color, dim, say } from './saida'
+import { color, dim, say } from './saida'
 import { todosOsCards } from './dados'
 
 export function fleet(state: SessionState): void {

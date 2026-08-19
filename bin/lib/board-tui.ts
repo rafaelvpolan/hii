@@ -6,7 +6,6 @@ import { avisoDeEstadoVazio, lerEstadoVazio } from '../../lib/core/estado-vazio'
 import { renderHistorico } from '../../lib/core/render/historico'
 import { renderConfig } from '../../lib/core/render/config'
 import { seguimento } from './tela-tarefa'
-import { daemonStatus } from '../../lib/core/daemon'
 import { emExecucao, esperandoVoce } from '../../lib/core/render/rodape'
 import { pendencia } from '../../lib/core/responder'
 import { ordemDosAjustes } from '../../lib/core/ajustes'
@@ -17,8 +16,8 @@ import { modelosDe } from '../../lib/ai/catalogo'
 import { ESFORCOS } from '../../lib/ai/preferencias'
 import type { SessionState } from '../../lib/core/session'
 import type { ModoNavegacao } from '../../lib/core/tui/input'
-import { ACC, RESET, color, dim, say } from './saida'
-import { larguraUtil, passosDe, reposRegistrados, todosOsCards } from './dados'
+import { color, dim, say } from './saida'
+import { larguraUtil, reposRegistrados, todosOsCards } from './dados'
 import { definirSessoesVisiveis, selecionado, selecionar, sessoesVisiveis } from './estado'
 
 export function ordemDasSessoes(): string[] {
@@ -56,7 +55,7 @@ export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): 
   return true
 }
 
-export function historicoDaTela(state: SessionState, altura = 0): string[] {
+export function historicoDaTela(altura = 0): string[] {
   const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0)
   definirSessoesVisiveis(h.sessoes.map(chaveDaSessao))
   return renderHistorico(h, {
@@ -119,8 +118,8 @@ export function corpoDaTela(state: SessionState, ctx: ContextoDoCorpo): string[]
       color, largura: larguraUtil(), altura: ctx.altura,
     })
   }
-  if (ctx.navegando === 'board') return historicoDaTela(state, ctx.altura)
-  return state.seguindo ? seguimento(state) : historicoDaTela(state, ctx.altura)
+  if (ctx.navegando === 'board') return historicoDaTela(ctx.altura)
+  return state.seguindo ? seguimento(state) : historicoDaTela(ctx.altura)
 }
 
 export type Entrada =

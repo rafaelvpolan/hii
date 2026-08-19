@@ -4,7 +4,7 @@ import { MAX_FILESIZE_BYTES } from './download'
 import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from './estado-em-disco'
 import { readRefSources } from './refs'
 
-export const EXT_DE_IMAGEM = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp']
+const EXT_DE_IMAGEM = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp']
 const PARECE_URL = /^https?:\/\//i
 const PREFIXO_LOCAL = 'local-'
 const FONTES_DA_SESSAO = 'fontes.json'
@@ -13,7 +13,7 @@ export function ehUrlDeRef(entrada: string): boolean {
   return PARECE_URL.test(entrada.trim())
 }
 
-export function ehImagem(caminho: string): boolean {
+function ehImagem(caminho: string): boolean {
   return EXT_DE_IMAGEM.includes(extname(caminho).toLowerCase())
 }
 
@@ -128,7 +128,7 @@ export function anexarNaTarefa(id: string, entrada: string): Anexo {
   return anexar(refsDir(id), refsFile(id), readRefSources(id), entrada)
 }
 
-export function arquivoDeFontesDaSessao(sessao: string): string {
+function arquivoDeFontesDaSessao(sessao: string): string {
   return join(dirDaSessao(sessao), FONTES_DA_SESSAO)
 }
 

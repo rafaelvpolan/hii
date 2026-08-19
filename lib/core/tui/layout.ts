@@ -150,7 +150,6 @@ export function renderFrame(f: FrameInput): Frame {
   }
   const recuo = ' '.repeat(visibleLen(f.prompt))
   const primeira = lines.length + 1
-  const dentro = comMoldura ? interno - 2 : largura - 4
   entrada.forEach((linha, i) => {
     const prefixo = i === 0 ? f.prompt : recuo
     const pintada = f.corInput ? f.corInput(linha) : linha

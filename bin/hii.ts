@@ -9,6 +9,9 @@ import { runSync } from '../lib/tasks/sync'
 import { taskSyncName } from '../lib/tasks/registry'
 import { limparTmpAntigo, usoDeDisco } from '../lib/runner/estado-em-disco'
 import { linhasDoDisco } from '../lib/core/render/disco'
+import { snapshotDoMotor, revisaoDoEstado } from '../lib/core/estado-json'
+import { executarAcao } from '../lib/core/comandos-de-tarefa'
+import type { AcaoDeTarefa } from '../lib/core/comandos-de-tarefa'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -44,6 +47,37 @@ function disco(extra: string[]): number {
   return uso.nivel === 'teto' ? 1 : 0
 }
 
+function valorDaFlag(extra: string[], flag: string): string {
+  const i = extra.indexOf(flag)
+  return i >= 0 ? (extra[i + 1] ?? '') : ''
+}
+
+function estado(extra: string[]): number {
+  if (extra.includes('--revisao')) {
+    process.stdout.write(`${revisaoDoEstado()}\n`)
+    return 0
+  }
+  const snapshot = snapshotDoMotor({ repo: valorDaFlag(extra, '--repo') })
+  const espacos = extra.includes('--compacto') ? 0 : 2
+  process.stdout.write(`${JSON.stringify(snapshot, null, espacos)}\n`)
+  return 0
+}
+
+function semIdDeTarefa(acao: string): number {
+  process.stderr.write(`uso: hii ${acao} <id> [texto] [--json]\n`)
+  return 2
+}
+
+function tarefa(acao: AcaoDeTarefa, extra: string[]): number {
+  const argumentos = extra.filter(a => !a.startsWith('--'))
+  const id = argumentos[0] ?? ''
+  if (!id) return semIdDeTarefa(acao)
+  const r = executarAcao(acao, id, argumentos.slice(1).join(' '))
+  if (extra.includes('--json')) process.stdout.write(`${JSON.stringify(r)}\n`)
+  else process.stdout.write(`${r.mensagem}\n`)
+  return r.ok ? 0 : 1
+}
+
 function usage(): void {
   process.stdout.write([
     'hii — motor de execucao autonoma',
@@ -51,6 +85,8 @@ function usage(): void {
     'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
     '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
+    '     hii estado [--json]  snapshot do motor em JSON (para o painel); --revisao so o token',
+    '     hii responder <id> <texto>   responde a pergunta aberta da tarefa',
     '',
 
     'O motor nunca faz merge: ele abre o PR e para.',
@@ -158,9 +194,20 @@ async function main(): Promise<number> {
     case 'repo':
       return script('repo', args.slice(1))
     case 'approve':
+    case 'aprovar':
+      return tarefa(args.includes('--plan') || args.includes('--plano') ? 'aprovar-plano' : 'aprovar-url', args.slice(1))
     case 'reject':
+    case 'recusar':
+      return tarefa('recusar', args.slice(1))
     case 'halt':
-      return runnerBun([cmd, ...args.slice(1)])
+    case 'parar':
+      return tarefa('parar', args.slice(1))
+    case 'answer':
+    case 'responder':
+      return tarefa('responder', args.slice(1))
+    case 'estado':
+    case 'state':
+      return estado(args.slice(1))
     case 'contract':
       return script('contract', args.slice(1))
     case 'doctor':

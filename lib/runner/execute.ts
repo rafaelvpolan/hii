@@ -10,7 +10,7 @@ import { evaluate } from './eval'
 import { readCard, patchCard, repoPath, repoBase } from './card-store'
 import { ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from './git'
 import type { WorktreeFate } from './git'
-import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl, waitHttp } from './url-vivo'
+import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from './url-vivo'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './classify'
 import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from './url-ajuste'
 import { implement, verifyVisual } from './agent'
@@ -95,8 +95,6 @@ async function commitAndRecord(id: string, wt: string, card: Card, steps: Execut
 export async function handleExecute(id: string, deps: ExecuteDeps = { implement, verifyVisual }): Promise<void> {
   const card = readCard(id)
   if (!card) return
-  // a sessao do motor abre AQUI, antes da primeira chamada de IA, para que todas
-  // as chamadas desta tentativa caiam no mesmo ledger
   abrirSessao(id)
   const baseCost = parseFloat(card.fm.cost_usd || '0') || 0
   const baseTokens = Number(card.fm.tokens_total || '0') || 0

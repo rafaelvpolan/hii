@@ -11,7 +11,7 @@ export interface Sonda {
   temComando: (nome: string) => boolean
 }
 
-export function ehWSL(procVersion: string, env: Record<string, string | undefined>): boolean {
+function ehWSL(procVersion: string, env: Record<string, string | undefined>): boolean {
   if (env.WSL_DISTRO_NAME || env.WSL_INTEROP) return true
   return /microsoft/i.test(procVersion)
 }
@@ -96,7 +96,7 @@ interface ErroDeExec {
   message?: string
 }
 
-export function rodarComando(cmd: string, args: string[], tetoBytes = MAX_FILESIZE_BYTES + 1024): Promise<Rodada> {
+function rodarComando(cmd: string, args: string[], tetoBytes = MAX_FILESIZE_BYTES + 1024): Promise<Rodada> {
   return new Promise<Rodada>((pronto) => {
     execFile(cmd, args, { maxBuffer: tetoBytes, timeout: 15000, encoding: 'buffer' }, (err, stdout) => {
       const e = err as ErroDeExec | null
@@ -129,7 +129,7 @@ export function depsPadrao(): DepsDeColagem {
   }
 }
 
-export function temNoPath(nome: string): boolean {
+function temNoPath(nome: string): boolean {
   const caminhos = (process.env.PATH || '').split(':').filter(Boolean)
   return caminhos.some(dir => existsSync(`${dir}/${nome}`))
 }
