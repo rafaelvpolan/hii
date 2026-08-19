@@ -67,8 +67,9 @@ export function renderAprovacao(id: string, opts: Partial<AprovacaoOptions> = {}
       `  ${paint('✎', CYAN, o)} ${paint(`#${id} — escreva o que ajustar`, BOLD, o)}${paint('  ·  enter vazio desiste', DIM, o)}`,
     ].map(l => truncVisible(l, o.width))
   }
-  const pergunta = o.url ? PERGUNTA_POR_VERIFICACAO[o.verificacao] : 'aprovar o resultado?'
-  const cabecalho = `  ${paint('◎', CYAN, o)} ${paint(`#${id} ${pergunta}`, BOLD, o)}`
+  const pergunta = o.url ? PERGUNTA_POR_VERIFICACAO[o.verificacao] : 'a funcionalidade esta certa?'
+  const semUrl = o.url ? '' : paint('  ·  sem url — confira pelo que a tarefa mudou', DIM, o)
+  const cabecalho = `  ${paint('◎', CYAN, o)} ${paint(`#${id} ${pergunta}`, BOLD, o)}${semUrl}`
   const veredito = VEREDITO_DA_MAQUINA[o.verificacao]
   const alvo = o.url
     ? [`    ${paint(o.url, CYAN, o)}${veredito ? paint(`   ${veredito}`, o.verificacao === 'falhou' ? RED : DIM, o) : ''}`]

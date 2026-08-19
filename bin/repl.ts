@@ -74,6 +74,7 @@ async function tui(state0: SessionState): Promise<void> {
     },
     fixo: (ctx) => (state.seguindo && state.tela !== 'config' && ctx.navegando !== 'board' ? cabecalhoDaTarefa(state) : []),
     logPrimeiro: () => !!state.seguindo,
+    telaPropria: () => state.tela === 'config',
     acima: () => {
       if (state.comentando) return renderAprovacao(state.comentando, { color, comentando: true, width: larguraUtil() })
       if (state.perguntando) {

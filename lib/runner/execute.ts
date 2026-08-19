@@ -12,7 +12,7 @@ import { ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, work
 import type { WorktreeFate } from './git'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from './url-vivo'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './classify'
-import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from './url-ajuste'
+import { instrucaoDeAjuste, instrucaoDeConserto, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from './url-ajuste'
 import { implement, verifyVisual } from './agent'
 import { resolvedFailure, writeRun } from './runs'
 import { abrirSessao } from './ias-da-sessao'
@@ -23,6 +23,7 @@ import { quotaFallbackProviderFor } from '../ai/registry'
 export interface ExecuteDeps {
   implement: typeof implement
   verifyVisual: typeof verifyVisual
+  inspecionar?: typeof inspectUrl
 }
 
 interface ExecuteSteps {
@@ -77,6 +78,31 @@ function resolveSurface(card: Card, target: string): SurfaceVerdict {
   const explicit = card.fm.surface
   if (explicit === 'visual' || explicit === 'api' || explicit === 'none') return { surface: explicit, reason: 'definido no card' }
   return classifySurface(card.fm.title ?? '', extractObjetivo(card.body), hasDevServer(target))
+}
+
+export interface Conserto {
+  vstate: string
+  vreason: string
+  custo: number
+  tokens: number
+}
+
+export async function consertarUmaVez(id: string, card: Card, wt: string, url: string, detalhe: string, deps: ExecuteDeps): Promise<Conserto> {
+  const inspecionar = deps.inspecionar ?? inspectUrl
+  process.stdout.write(`[runner] #${id}: pagina com erro — tentando consertar uma vez\n`)
+  patchCard(id, {}, `${isoNow()} url com erro (${detalhe}) — uma tentativa automatica de conserto antes de chamar voce`)
+  const r = await deps.implement(card, wt, instrucaoDeConserto(detalhe), false)
+  const custo = parseFloat(r.cost || '0') || 0
+  const tokens = tokensOf(r.usage)
+  if (!r.ok) {
+    return { vstate: 'falhou', vreason: `url subiu com erro (${detalhe}) e a tentativa de conserto falhou — precisa de voce`, custo, tokens }
+  }
+  const depois = await inspecionar(id, url, true)
+  if (depois.conclusive && depois.ok) {
+    return { vstate: 'ok', vreason: `url subiu com erro e o motor consertou: ${r.resultText || 'conserto aplicado'}`, custo, tokens }
+  }
+  const sobrou = depois.detail || detalhe
+  return { vstate: 'falhou', vreason: `url ainda com erro depois de uma tentativa de conserto (${sobrou}) — precisa de voce`, custo, tokens }
 }
 
 async function commitAndRecord(id: string, wt: string, card: Card, steps: ExecuteSteps, res: ImplementResult, t0: number): Promise<{ costSum: number; tokensTotal: number }> {
@@ -229,12 +255,13 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {
-      status: 'URL_OK',
-      verify: 'n/a',
+      status: 'URL',
+      url: '',
+      verify: 'sem-url',
       cost_usd: (baseCost + costSum + auxCost).toFixed(4),
       tokens_total: String(baseTokens + tokensTotal + auxTokens),
-    }, `${isoNow()} EXECUTED->URL_OK auto — tarefa nao-visual (${surface.reason}); url pulado`)
-    process.stdout.write(`[runner] #${id}: URL_OK auto (nao-visual) — url pulado\n`)
+    }, `${isoNow()} EXECUTED->URL sem url — tarefa nao-visual (${surface.reason}); aprovacao de funcionalidade e sua`)
+    process.stdout.write(`[runner] #${id}: aguardando aprovacao de funcionalidade (nao-visual)\n`)
     return
   }
   const tpv = Date.now()
@@ -269,7 +296,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   }, `${isoNow()} EXECUTED->URL ${url || '(sem dev server)'} (${initReason})`)
   process.stdout.write(`[runner] #${id}: URL ${url} (${initReason})\n`)
   if (up) {
-    const health = await inspectUrl(id, url, true)
+    const health = await (deps.inspecionar ?? inspectUrl)(id, url, true)
     let vstate = 'inconclusivo'
     let vreason = `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`
     if (VISUAL_AI && health.ok) {
@@ -281,6 +308,13 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     } else if (health.conclusive) {
       vstate = health.ok ? 'ok' : 'falhou'
       vreason = health.ok ? 'url no ar — abra o link para conferir' : `url subiu com erro: ${health.detail}`
+    }
+    if (vstate === 'falhou') {
+      const conserto = await consertarUmaVez(id, card, wt, url, health.detail || vreason, deps)
+      auxCost += conserto.custo
+      auxTokens += conserto.tokens
+      vstate = conserto.vstate
+      vreason = conserto.vreason
     }
     patchCard(id, { verify: vstate }, `${isoNow()} inspecao do url: ${vstate} — ${vreason}`)
     process.stdout.write(`[runner] #${id}: inspecao ${vstate}\n`)

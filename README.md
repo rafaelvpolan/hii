@@ -229,7 +229,7 @@ Comandos de barra dentro da TUI:
 |---|---|
 | `/help` | os comandos e as teclas |
 | `/historico` | volta ao histórico de sessões — **sai** da tarefa aberta |
-| `/config` | painel das IAs: instaladas, habilitadas, plano, consumo 5 h e semana |
+| `/config` | **página própria** das IAs: instaladas, habilitadas, plano, limite por janela e gasto do motor |
 | `/new-task` | força "isto é uma tarefa" (quando o texto parece pergunta) |
 | `/new-ask` | força "isto é uma pergunta" (não cria card) |
 | `/new-session` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
@@ -334,6 +334,14 @@ já sabe:
 | `ok` | **"é isso que você queria?"** — com `✓ o motor abriu a url e a página respondeu` |
 | `falhou` | **"a url subiu com erro — o que fazer?"** |
 | `inconclusivo` | **"conseguiu abrir a url?"** — só aqui a pergunta técnica sobra para você |
+
+Quando o veredito é `falhou`, o motor **tenta consertar uma vez** antes de te chamar: manda a IA
+corrigir só o que quebra a página (sem refazer o trabalho) e reinspeciona. Deu certo, vira `ok` com o
+relato do conserto; não deu, para e o card diz que já houve uma tentativa. Uma, não um loop.
+
+Tarefa **sem URL** (refactor, config, doc) também para para você: em vez de seguir sozinha até o PR,
+ela pede **aprovação de funcionalidade** — a mesma tela, com a pergunta "a funcionalidade está certa?".
+Nenhuma tarefa chega ao PR sem um checkpoint humano.
 
 O que **nunca** vira automático é a intenção: se a entrega é o que você queria, quem diz é você.
 

@@ -404,3 +404,21 @@ test('sair devolve o terminal ao estado normal', () => {
   expect(saida).toContain('\x1b[?2004l')
   expect(t.raw[t.raw.length - 1]).toBe(false)
 })
+
+test('/config vira pagina propria: o log nao invade a tela de configuracao', async () => {
+  const t = fakeTerminal(16, 60)
+  let emConfig = false
+  const a = app(t, {
+    corpo: () => (emConfig ? ['╭─ IAS ─╮', '│ claude │', '╰────────╯'] : ['board']),
+    telaPropria: () => emConfig,
+  })
+  void a.run()
+  a.log('  ruido do log 1')
+  a.log('  ruido do log 2')
+  expect(t.tela()).toContain('ruido do log 2')
+  emConfig = true
+  a.log('  ruido do log 3')
+  const tela = t.tela()
+  expect(tela).toContain('IAS')
+  expect(tela).not.toContain('ruido do log')
+})

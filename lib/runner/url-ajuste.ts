@@ -16,6 +16,15 @@ export interface DepsDoAjuste {
   ajustar: (motivo: string, tentativa: number) => Promise<string>
 }
 
+export function instrucaoDeConserto(detalhe: string): string {
+  return [
+    `A url subiu, mas a pagina deu erro: ${detalhe || 'erro nao detalhado'}.`,
+    'Conserte APENAS o que quebra a pagina — erro de runtime, import faltando, chamada quebrada.',
+    'Nao mude o comportamento entregue pela tarefa nem refaca o trabalho.',
+    'Ao terminar, diga em uma linha o que consertou.',
+  ].join(' ')
+}
+
 export function instrucaoDeAjuste(porta: number, tentativa: number): string {
   return [
     `A url do resultado nao subiu em http://localhost:${porta} (tentativa ${tentativa}).`,

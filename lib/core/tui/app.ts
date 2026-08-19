@@ -40,6 +40,7 @@ export interface AppHooks {
   onCiclarIa?: (dir: -1 | 1) => void
   podeLimpar?: () => string
   logPrimeiro?: (ctx: CorpoContexto) => boolean
+  telaPropria?: (ctx: CorpoContexto) => boolean
   acima?: (ctx: CorpoContexto) => string[]
   intervalMs: number
 }
@@ -58,6 +59,7 @@ const PADRAO = {
   prefixoComum: (): string => '',
   podeLimpar: (): string => '',
   logPrimeiro: (): boolean => false,
+  telaPropria: (): boolean => false,
   acima: (): string[] => [],
   onNav: (): boolean => false,
   onEntrar: (): void => {},
@@ -107,7 +109,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       const fixo = hooks.fixo(ctx)
       const corpo = hooks.corpo(ctx)
       const interno = Math.max(20, term.cols() - 4)
-      const rolante = ctx.navegando === 'board'
+      const rolante = ctx.navegando === 'board' || hooks.telaPropria(ctx)
         ? corpo
         : (hooks.logPrimeiro(ctx) ? [...extras, ...corpo] : [...corpo, ...extras])
             .flatMap(l => quebrarEmLargura(l, interno))

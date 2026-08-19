@@ -5,7 +5,8 @@ import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
 
 test('a ask de aprovacao oferece aprovar, refazer e comentar', () => {
   const t = renderAprovacao('022', { width: 78 }).join('\n')
-  expect(t).toContain('#022 aprovar o resultado?')
+  expect(t).toContain('#022 a funcionalidade esta certa?')
+  expect(t).toContain('sem url')
   expect(t).not.toContain('abrir a url')
   expect(t).toContain('1  aprovar')
   expect(t).toContain('2  recusar e refazer')
