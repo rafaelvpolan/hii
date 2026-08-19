@@ -19,6 +19,10 @@ export function chaveDaSessao(s: Sessao): string {
   return s.arquivo
 }
 
+export function idDaSessao(s: Sessao): string {
+  return s.sessao || s.arquivo.replace(/\.json$/, '')
+}
+
 export function sessaoPorChave(chave: string, h: HistoricoDeSessoes): Sessao | null {
   return h.sessoes.find(s => chaveDaSessao(s) === chave) ?? null
 }

@@ -5,6 +5,10 @@ import { COST_UNKNOWN } from '../ai/cost'
 import { emptyUsage } from '../ai/usage'
 import { patchCard, patchCardWith, readCard } from './card-store'
 import { addProvider, classifyCostGap, floorProviders, formatProviders, parseProviders, removeProvider } from './cost-gap'
+import { registrarChamada, sessaoDoCard } from './ias-da-sessao'
+import type { PapelDeChamada } from './ias-da-sessao'
+import { sessaoAtual } from './sessao'
+import { sumTokens } from '../ai/usage'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -74,7 +78,29 @@ export function recusaPorLimite(provider: AiProvider, req: AgentRequest): string
   return ''
 }
 
-export async function runProvider(id: string, provider: AiProvider, req: AgentRequest): Promise<AgentResult> {
+export function sessaoParaChamada(id: string): string {
+  return id ? sessaoDoCard(id) : `conversa-${sessaoAtual()}`
+}
+
+function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
+  try {
+    registrarChamada(sessaoParaChamada(id), {
+      ts: isoNow(),
+      papel,
+      provedor: provider.name,
+      modelo: req.model ?? '',
+      custoUsd: Number(res.cost) || 0,
+      custoMedido: classifyCostGap(res) === 'measured',
+      tokens: sumTokens(res.usage),
+      duracaoS: Math.round((Date.now() - t0) / 1000),
+      ok: res.ok === true,
+    })
+  } catch {
+    // o ledger e registro, nao gate: nunca derruba a chamada que acabou de rodar
+  }
+}
+
+export async function runProvider(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {
   const recusa = recusaPorLimite(provider, req)
   if (recusa) {
     return {
@@ -88,8 +114,10 @@ export async function runProvider(id: string, provider: AiProvider, req: AgentRe
       usage: emptyUsage(),
     }
   }
+  const t0 = Date.now()
   const res = await provider.run(req)
   recordCostTrust(id, provider.name, res)
+  anotarChamada(id, provider, req, papel, res, t0)
   return res
 }
 

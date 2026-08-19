@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
-import type { FailureClass } from '../card'
+import type { FailureClass, IaDaSessao, TrocaDeProvedor } from '../card'
 import { cardsDir } from '../runner/config'
 import { memoArquivo, memoChave, memoTempo } from './cache'
 
@@ -32,6 +32,9 @@ export interface RegistroDeRun {
   modelo: string
   classeDeFalha: FailureClass | ''
   motivoDaFalha: string
+  sessao: string
+  ias: IaDaSessao[]
+  trocas: TrocaDeProvedor[]
 }
 
 export interface LoteDeRuns {
@@ -54,6 +57,9 @@ interface RunEmDisco {
   model?: string
   failure_class?: string
   failure_reason?: string
+  session?: string
+  ias?: IaDaSessao[]
+  trocas?: TrocaDeProvedor[]
 }
 
 const CLASSES_DE_FALHA: readonly FailureClass[] = ['transient', 'quota', 'terminal']
@@ -123,6 +129,9 @@ function normalizar(caminho: string, bruto: RunEmDisco): RegistroDeRun | null {
     modelo: String(bruto.model ?? '').trim(),
     classeDeFalha: classeDeFalhaDe(bruto.failure_class, ok),
     motivoDaFalha: ok ? '' : String(bruto.failure_reason ?? ''),
+    sessao: String(bruto.session ?? ''),
+    ias: Array.isArray(bruto.ias) ? bruto.ias : [],
+    trocas: Array.isArray(bruto.trocas) ? bruto.trocas : [],
   }
 }
 

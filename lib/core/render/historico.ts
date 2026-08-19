@@ -1,7 +1,9 @@
 import { larguraDeTexto } from '../tui/largura'
 import { pintar, type Tom } from '../tui/paleta'
-import { chaveDaSessao } from '../historico'
+import { chaveDaSessao, idDaSessao } from '../historico'
 import type { HistoricoDeSessoes, Sessao } from '../historico'
+import { idCurto } from '../../runner/ias-da-sessao'
+import type { IaDaSessao } from '../../card/types'
 
 export interface OpcoesDoHistorico {
   color?: boolean
@@ -70,6 +72,7 @@ function linhaDaSessao(s: Sessao, o: OpcoesDoHistorico, agoraMs: number): string
   const sinal = s.ok ? tinta('✓', 'sucesso', o) : tinta('✗', 'falha', o)
   const partes = [
     marca,
+    pad(tinta(idCurto(idDaSessao(s)), 'destaque', o), 4),
     pad(tinta(quando(s.concluidoEmMs, agoraMs), 'apagado', o), 12),
     pad(tinta(`#${s.card}`, 'texto', o), 5),
     sinal,
@@ -81,6 +84,29 @@ function linhaDaSessao(s: Sessao, o: OpcoesDoHistorico, agoraMs: number): string
   const base = ' ' + partes.join(' ')
   if (s.ok || !s.motivoDaFalha) return base
   return `${base}  ${tinta(s.motivoDaFalha.slice(0, 40), 'falha', o)}`
+}
+
+function iaDaSessao(ia: IaDaSessao, o: OpcoesDoHistorico): string {
+  const modelo = ia.modelo ? `${ia.provedor}/${ia.modelo}` : ia.provedor
+  const repetida = ia.chamadas > 1 ? ` ×${ia.chamadas}` : ''
+  const piso = ia.custoMedido ? '' : tinta(' piso', 'atencao', o)
+  return '      '
+    + pad(tinta(ia.rotulo, 'texto', o), 9)
+    + pad(tinta(modelo + repetida, 'apagado', o), 24)
+    + padEsq(tinta(tokens(ia.tokens), 'apagado', o), 6)
+    + padEsq(tinta(custo(ia.custoUsd), 'custo', o), 10)
+    + piso
+}
+
+export function linhasDasIas(s: Sessao, o: OpcoesDoHistorico): string[] {
+  if (!s.ias.length) {
+    return ['      ' + tinta('sem ledger de IA nesta sessao (execucao anterior ao registro por chamada)', 'apagado', o)]
+  }
+  const linhas = s.ias.map(ia => iaDaSessao(ia, o))
+  for (const t of s.trocas) {
+    linhas.push('      ' + tinta(`⇄ ${t.rotulo} trocou de ia no meio: ${t.de} → ${t.para}`, 'atencao', o))
+  }
+  return linhas
 }
 
 function resumo(h: HistoricoDeSessoes, o: OpcoesDoHistorico): string {
@@ -103,5 +129,12 @@ export function renderHistorico(h: HistoricoDeSessoes, opts: OpcoesDoHistorico =
       : ['  ' + tinta('nenhuma sessao na janela — escreva uma tarefa para o motor executar', 'apagado', opts)]
     return [resumo(h, opts), '', ...aviso]
   }
-  return [resumo(h, opts), '', ...h.sessoes.map(s => linhaDaSessao(s, opts, agoraMs))]
+  const linhas: string[] = [resumo(h, opts), '']
+  for (const s of h.sessoes) {
+    linhas.push(linhaDaSessao(s, opts, agoraMs))
+    if (opts.selecionado && opts.selecionado === chaveDaSessao(s)) {
+      linhas.push(...linhasDasIas(s, opts))
+    }
+  }
+  return linhas
 }

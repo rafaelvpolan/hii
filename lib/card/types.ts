@@ -35,6 +35,43 @@ export interface Usage {
   tokens_cache_read: number
 }
 
+export type PapelDeChamada =
+  | 'implement' | 'verify' | 'gate' | 'step'
+  | 'clarify' | 'conversa' | 'classificacao' | 'ideacao' | 'avaliacao'
+  | 'desconhecido'
+
+export interface ChamadaDeIa {
+  ts: string
+  papel: PapelDeChamada
+  provedor: string
+  modelo: string
+  custoUsd: number
+  custoMedido: boolean
+  tokens: number
+  duracaoS: number
+  ok: boolean
+}
+
+export interface IaDaSessao {
+  papel: PapelDeChamada
+  rotulo: string
+  provedor: string
+  modelo: string
+  custoUsd: number
+  custoMedido: boolean
+  tokens: number
+  duracaoS: number
+  chamadas: number
+  falhas: number
+}
+
+export interface TrocaDeProvedor {
+  papel: PapelDeChamada
+  rotulo: string
+  de: string
+  para: string
+}
+
 export interface StepMetric {
   time: number
   cost: number
@@ -59,6 +96,9 @@ export interface Run {
   steps: StepMap | null
   provider: string
   model: string
+  session?: string
+  ias?: IaDaSessao[]
+  trocas?: TrocaDeProvedor[]
   failure_class: FailureClass | ''
   failure_reason: string
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { isoNow } from '../card'
 import type { FailureClass, ImplementResult, Run, StepMap } from '../card'
 import { cardsDir } from './config'
+import { resumoDaSessao, sessaoDoCard } from './ias-da-sessao'
 
 export const MOTIVO_SEM_CLASSIFICACAO = 'falha nao classificada — tratada como terminal'
 
@@ -47,6 +48,8 @@ export function writeRun(id: string, res: ImplementResult, durationS = 0, steps:
   const total = (u?.tokens_in || 0) + (u?.tokens_out || 0) + (u?.tokens_cache_create || 0)
   const stepTokens = steps ? Object.values(steps).reduce((a, s) => a + (Number(s.tokens) || 0), 0) : 0
   const safe = isoNow().replace(/[^0-9]/g, '').slice(0, 14)
+  const sessao = sessaoDoCard(id)
+  const resumo = resumoDaSessao(sessao)
   const rec: Run = {
     id,
     ts: isoNow(),
@@ -62,6 +65,9 @@ export function writeRun(id: string, res: ImplementResult, durationS = 0, steps:
     steps: steps || null,
     provider: res.provider || '',
     model: res.model || '',
+    session: sessao,
+    ias: resumo.ias,
+    trocas: resumo.trocas,
     ...failureFields(res),
   }
   writeFileSync(join(dir, `${id}-${safe}.json`), JSON.stringify(rec, null, 2))
@@ -104,6 +110,13 @@ export function updateRunSteps(id: string, fsteps: StepMap): { tokens: number; c
   r.cost_usd = ((parseFloat(r.cost_usd) || 0) + addCost).toFixed(4)
   r.cost_measured = r.cost_measured === true && !Object.values(fsteps).some(v => v.costMeasured === false)
   r.duration_s = (Number(r.duration_s) || 0) + addTime
+  // o finish roda depois do writeRun e faz mais chamadas de IA na MESMA sessao:
+  // sem refrescar aqui, o gate e o polimento nao apareceriam nas IAs da sessao
+  const resumo = resumoDaSessao(r.session || sessaoDoCard(id))
+  if (resumo.chamadas) {
+    r.ias = resumo.ias
+    r.trocas = resumo.trocas
+  }
   writeFileSync(p, JSON.stringify(r, null, 2))
   return { tokens: r.tokens_total, cost: r.cost_usd }
 }

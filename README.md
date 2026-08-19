@@ -144,8 +144,38 @@ Na TUI essas portas são as teclas `1` / `2` / `3` na pergunta que aparece sobre
 ## A TUI
 
 `hii` sem argumento abre a tela. Ela escolhe o projeto, mostra o **histórico de sessões** do motor
-(execuções reais lidas de `cards/runs/*.json`: quando, card, ✓/✗, modelo, duração, custo, tokens) e
-aceita texto livre como tarefa.
+(execuções reais lidas de `cards/runs/*.json`: id curto, quando, tarefa, ✓/✗, modelo, duração, custo,
+tokens) e aceita texto livre como tarefa.
+
+### Sessão, chamada de IA e tarefa
+
+Uma **sessão do motor** é uma tentativa da tarefa — worktree, implementa, revisa, verifica, PR. Ela
+**mistura IAs de propósito**, porque cada papel pode rodar num provedor diferente, e porque o
+fallback de cota troca de provedor no meio. A tarefa é atributo da sessão, não o contrário: uma
+tarefa tem N sessões.
+
+Toda chamada de IA passa por um funil único (`runProvider`) e vai para o **ledger da sessão**
+(`cards/runs/<sessao>.ias.jsonl`), com papel, provedor, modelo, custo, tokens e duração. O registro
+da execução embute o agregado por (papel, provedor, modelo). Selecione a sessão com `←` e as IAs de
+dentro abrem:
+
+```
+ ▸ cjfj hoje 15:32   #011  ✓ claude/opus-5            3m25s   US$0.18    52k
+      executa  claude/opus-5              52k   US$0.10
+      executa  codex/gpt-5.2               8k   US$0.03
+      verifica claude/haiku-4.5            2k   US$0.01 piso
+      revisa   codex/gpt-5.2               8k   US$0.01
+      poli     claude/sonnet ×2            5k   US$0.03
+      ⇄ executa trocou de ia no meio: claude → codex
+```
+
+Troca **por papel** é o desenho e não vira evento. Troca **dentro do mesmo papel** é evento e aparece
+marcada — é o fallback de cota ou uma substituição de provedor acontecendo. Custo sem reporte do
+provedor sai marcado como `piso`, nunca como total.
+
+> Enquanto um passo "gated" somar agente + revisor crivo numa métrica só, o custo **por fase**
+> (`steps`) não fecha com a soma **por papel**. O ledger é a fonte de verdade das IAs; o `steps`
+> segue sendo a visão de progresso. O `/config` ainda agrega por execução, não por chamada.
 
 Comandos de barra dentro da TUI:
 

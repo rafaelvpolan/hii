@@ -66,7 +66,7 @@ export async function responderPergunta(
     model: modelFor('verify'),
     effort: effortFor('verify'),
     timeoutMs: 120000,
-  })
+  }, 'conversa')
 
   return {
     ok: res.ok,
@@ -90,6 +90,6 @@ export async function classificarComIaLocal(prompt: string): Promise<string> {
     useAgents: false,
     model: process.env.HICODE_CLASSIFY_MODEL || undefined,
     timeoutMs: Number(process.env.HICODE_CLASSIFY_TIMEOUT_MS || 15000),
-  })
+  }, 'classificacao')
   return res.text || ''
 }

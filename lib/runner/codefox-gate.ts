@@ -161,7 +161,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     model: modelFor('gate'),
     effort: effortFor('gate'),
     timeoutMs: timeoutForDiff(diff),
-  })
+  }, 'gate')
   const tokens = sumTokens(res.usage)
   if (res.failed) {
     const cls = classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text })
