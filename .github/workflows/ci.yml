@@ -12,9 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile || bun install
+      - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run lint:types
+      - run: bun run lint:clone
       - run: bun run test:unit
-      - run: cd panel && bun install --frozen-lockfile || bun install
-      - run: bun run typecheck:panel

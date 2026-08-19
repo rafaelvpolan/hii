@@ -22,7 +22,7 @@ panel/.output/
 panel/.data/
 
 # Dependências / segredos
-node_modules/
+node_modules
 .env
 .env.*
 cards/refs/

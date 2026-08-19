@@ -14,8 +14,9 @@
     "sync": "bun runner.ts --sync",
     "typecheck": "tsc --noEmit",
     "lint:types": "bun scripts/check-no-any.mjs",
+    "lint:clone": "bun scripts/check-clone-limpo.mjs",
     "test:unit": "bun test ./test",
-    "test": "bun run typecheck && bun run lint:types && bun run test:unit"
+    "test": "bun run typecheck && bun run lint:types && bun run lint:clone && bun run test:unit"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

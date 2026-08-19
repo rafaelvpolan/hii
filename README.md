@@ -162,6 +162,11 @@ Na TUI essas portas são as teclas `1` / `2` / `3` na pergunta que aparece sobre
 > `hooks install` instala **apenas** o gate determinístico do diff que está saindo. A auditoria de
 > repositório inteiro **nunca** entra em pre-push — ela é manual, por decisão explícita.
 
+O gate roda `bun run test`, que inclui **`lint:clone`** — a checagem de que esta árvore sobrevive a um
+clone novo, que é o que a CI faz. Ela reprova três coisas que passam nesta máquina e quebram lá:
+link rastreado apontando para fora do clone, `bun.lock` fora de sincronia com o `package.json`, e
+workflow que chama script ou pasta que não existe no repo.
+
 ---
 
 ## A TUI
