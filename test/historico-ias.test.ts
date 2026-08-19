@@ -15,6 +15,9 @@ function ia(over: Partial<IaDaSessao> = {}): IaDaSessao {
     custoUsd: 0.1,
     custoMedido: true,
     tokens: 52000,
+    tokensEntrada: 12000,
+    tokensSaida: 20000,
+    tokensCache: 20000,
     duracaoS: 120,
     chamadas: 1,
     falhas: 0,
@@ -42,6 +45,7 @@ function sessao(over: Partial<Sessao> = {}): Sessao {
     motivoDaFalha: '',
     posicao: 0,
     sessao: '011-20260819153200',
+    tipo: 'execucao' as const,
     ias: [],
     trocas: [],
     ...over,
@@ -126,4 +130,29 @@ test('sem sessao gravada, o id curto cai no nome do arquivo e segue estavel', ()
   const s = sessao({ sessao: '' })
   expect(idDaSessao(s)).toBe('011-20260819153200')
   expect(idCurto(idDaSessao(s))).toBe(idCurto('011-20260819153200'))
+})
+
+test('gasto de conversa nao vira US$0.00 por arredondamento', async () => {
+  const { custo } = await import('../lib/core/render/historico')
+  expect(custo(0.0042)).toBe('US$0.0042')
+  expect(custo(0.12)).toBe('US$0.12')
+  expect(custo(0)).toBe('—')
+})
+
+test('a linha de conversa mostra quais IAs entraram, em vez de "?"', () => {
+  const s = sessao({
+    tipo: 'conversa',
+    card: '',
+    provedor: '',
+    provedorIdentificado: false,
+    modelo: '',
+    ias: [
+      ia({ papel: 'conversa', rotulo: 'conversa', provedor: 'claude' }),
+      ia({ papel: 'classificacao', rotulo: 'leitura', provedor: 'ollama' }),
+    ],
+  })
+  const linha = renderHistorico(historico([s]), { color: false, now: AGORA }).map(stripAnsi).join('\n')
+  expect(linha).toContain('chat')
+  expect(linha).toContain('claude+ollama')
+  expect(linha).not.toContain(' ? ')
 })

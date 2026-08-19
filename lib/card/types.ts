@@ -48,6 +48,9 @@ export interface ChamadaDeIa {
   custoUsd: number
   custoMedido: boolean
   tokens: number
+  tokensEntrada: number
+  tokensSaida: number
+  tokensCache: number
   duracaoS: number
   ok: boolean
 }
@@ -60,6 +63,9 @@ export interface IaDaSessao {
   custoUsd: number
   custoMedido: boolean
   tokens: number
+  tokensEntrada: number
+  tokensSaida: number
+  tokensCache: number
   duracaoS: number
   chamadas: number
   falhas: number
@@ -97,6 +103,7 @@ export interface Run {
   provider: string
   model: string
   session?: string
+  kind?: 'execucao' | 'conversa'
   ias?: IaDaSessao[]
   trocas?: TrocaDeProvedor[]
   failure_class: FailureClass | ''

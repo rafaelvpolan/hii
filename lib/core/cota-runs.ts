@@ -14,6 +14,15 @@ export const JANELA_COTA_MS = 4 * 60 * 60 * 1000
 
 const FOLGA_DO_NOME_MS = 60_000
 const RE_ARQUIVO_DE_RUN = /^(\d+)-(\d{14})\.json$/
+const RE_ARQUIVO_DE_CONVERSA = /^conversa-(\d{14})-\d+\.json$/
+
+export function ehArquivoDeSessao(nome: string): boolean {
+  return RE_ARQUIVO_DE_RUN.test(nome) || RE_ARQUIVO_DE_CONVERSA.test(nome)
+}
+
+function digitosDoNome(nome: string): string {
+  return RE_ARQUIVO_DE_RUN.exec(nome)?.[2] ?? RE_ARQUIVO_DE_CONVERSA.exec(nome)?.[1] ?? ''
+}
 
 export interface RegistroDeRun {
   arquivo: string
@@ -33,6 +42,7 @@ export interface RegistroDeRun {
   classeDeFalha: FailureClass | ''
   motivoDaFalha: string
   sessao: string
+  tipo: 'execucao' | 'conversa'
   ias: IaDaSessao[]
   trocas: TrocaDeProvedor[]
 }
@@ -58,6 +68,7 @@ interface RunEmDisco {
   failure_class?: string
   failure_reason?: string
   session?: string
+  kind?: 'execucao' | 'conversa'
   ias?: IaDaSessao[]
   trocas?: TrocaDeProvedor[]
 }
@@ -69,7 +80,7 @@ function runsDir(): string {
 }
 
 export function instanteDoNome(nome: string): number {
-  const digitos = RE_ARQUIVO_DE_RUN.exec(nome)?.[2]
+  const digitos = digitosDoNome(nome)
   if (!digitos) return Number.NaN
   const d = digitos
   return Date.parse(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T${d.slice(8, 10)}:${d.slice(10, 12)}:${d.slice(12, 14)}Z`)
@@ -130,6 +141,7 @@ function normalizar(caminho: string, bruto: RunEmDisco): RegistroDeRun | null {
     classeDeFalha: classeDeFalhaDe(bruto.failure_class, ok),
     motivoDaFalha: ok ? '' : String(bruto.failure_reason ?? ''),
     sessao: String(bruto.session ?? ''),
+    tipo: bruto.kind === 'conversa' ? 'conversa' : 'execucao',
     ias: Array.isArray(bruto.ias) ? bruto.ias : [],
     trocas: Array.isArray(bruto.trocas) ? bruto.trocas : [],
   }
@@ -152,7 +164,7 @@ function lerLoteDesde(pedidoMs: number): LoteDeRuns {
   const registros: RegistroDeRun[] = []
   let ignorados = 0
   for (const nome of readdirSync(dir)) {
-    if (!RE_ARQUIVO_DE_RUN.test(nome)) continue
+    if (!ehArquivoDeSessao(nome)) continue
     const doNome = instanteDoNome(nome)
     if (Number.isFinite(doNome) && doNome < desdeMs) continue
     const registro = registroDoArquivo(join(dir, nome))
@@ -171,4 +183,73 @@ const lotePorDiretorio = memoChave(runsDir, (): (() => LoteDeRuns) => memoTempo(
 export function loteDesde(pedidoMs: number): LoteDeRuns {
   const guardado = lotePorDiretorio()()
   return pedidoMs >= guardado.desdeMs ? guardado : lerLoteDesde(pedidoMs)
+}
+
+export interface ContribuicaoDeProvedor {
+  provedor: string
+  provedorIdentificado: boolean
+  modelos: string[]
+  custoUsd: number
+  tokens: number
+  tokensEntrada: number
+  tokensSaida: number
+  tokensCache: number
+  chamadas: number
+  porChamada: boolean
+  falhou: boolean
+}
+
+function doTopoDaRun(r: RegistroDeRun): ContribuicaoDeProvedor {
+  return {
+    provedor: r.provedor,
+    provedorIdentificado: r.provedorIdentificado,
+    modelos: r.modelo ? [r.modelo] : [],
+    custoUsd: r.custoUsd,
+    tokens: r.tokens,
+    tokensEntrada: r.tokensEntrada,
+    tokensSaida: r.tokensSaida,
+    tokensCache: r.tokensCache,
+    chamadas: 1,
+    porChamada: false,
+    falhou: !r.ok,
+  }
+}
+
+/**
+ * Quebra uma execucao no gasto de CADA provedor que participou dela.
+ *
+ * Com ledger (execucoes novas), a atribuicao e por chamada de IA: o gate em codex
+ * deixa de ser cobrado do claude que implementou. Sem ledger (execucoes antigas),
+ * cai no provedor do topo da run — que era o comportamento anterior, para o
+ * historico de cota nao sumir na virada.
+ */
+export function contribuicoesDoRegistro(r: RegistroDeRun): ContribuicaoDeProvedor[] {
+  if (!r.ias.length) return [doTopoDaRun(r)]
+  const porProvedor = new Map<string, ContribuicaoDeProvedor>()
+  for (const ia of r.ias) {
+    const provedor = ia.provedor || PROVEDOR_DESCONHECIDO
+    const atual = porProvedor.get(provedor) ?? {
+      provedor,
+      provedorIdentificado: !!ia.provedor,
+      modelos: [],
+      custoUsd: 0,
+      tokens: 0,
+      tokensEntrada: 0,
+      tokensSaida: 0,
+      tokensCache: 0,
+      chamadas: 0,
+      porChamada: true,
+      falhou: false,
+    }
+    atual.custoUsd += Number(ia.custoUsd) || 0
+    atual.tokens += Number(ia.tokens) || 0
+    atual.tokensEntrada += Number(ia.tokensEntrada) || 0
+    atual.tokensSaida += Number(ia.tokensSaida) || 0
+    atual.tokensCache += Number(ia.tokensCache) || 0
+    atual.chamadas += Number(ia.chamadas) || 0
+    atual.falhou = atual.falhou || (Number(ia.falhas) || 0) > 0 || (!r.ok && provedor === r.provedor)
+    if (ia.modelo && !atual.modelos.includes(ia.modelo)) atual.modelos.push(ia.modelo)
+    porProvedor.set(provedor, atual)
+  }
+  return [...porProvedor.values()]
 }

@@ -1,6 +1,6 @@
 import { isoAt } from '../card'
-import { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO, loteDesde } from './cota-runs'
-import type { RegistroDeRun } from './cota-runs'
+import { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO, contribuicoesDoRegistro, loteDesde } from './cota-runs'
+import type { ContribuicaoDeProvedor, RegistroDeRun } from './cota-runs'
 
 export { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO }
 export type { RegistroDeRun }
@@ -21,6 +21,7 @@ export interface UsoDoProvedor {
   limiteAtingidoEm: string
   limiteMotivo: string
   cardsNoLimite: string[]
+  porChamada: boolean
 }
 
 export interface LeituraDeCota {
@@ -44,11 +45,11 @@ interface Acumulador {
   limiteMs: number
 }
 
-function novoAcumulador(registro: RegistroDeRun): Acumulador {
+function novoAcumulador(c: ContribuicaoDeProvedor): Acumulador {
   return {
     uso: {
-      provedor: registro.provedor,
-      provedorIdentificado: registro.provedorIdentificado,
+      provedor: c.provedor,
+      provedorIdentificado: c.provedorIdentificado,
       runs: 0,
       runsComFalha: 0,
       custoUsd: 0,
@@ -62,6 +63,7 @@ function novoAcumulador(registro: RegistroDeRun): Acumulador {
       limiteAtingidoEm: '',
       limiteMotivo: '',
       cardsNoLimite: [],
+      porChamada: true,
     },
     primeiroMs: Number.POSITIVE_INFINITY,
     ultimoMs: Number.NEGATIVE_INFINITY,
@@ -70,7 +72,9 @@ function novoAcumulador(registro: RegistroDeRun): Acumulador {
 }
 
 function anotarLimite(acc: Acumulador, registro: RegistroDeRun): void {
-  if (registro.classeDeFalha !== 'quota') return
+  // o limite de cota e do provedor que bateu nele: nao contamina os outros
+  // participantes da mesma execucao
+  if (registro.classeDeFalha !== 'quota' || registro.provedor !== acc.uso.provedor) return
   acc.uso.limiteAtingido = true
   if (registro.card && !acc.uso.cardsNoLimite.includes(registro.card)) acc.uso.cardsNoLimite.push(registro.card)
   if (registro.concluidoEmMs < acc.limiteMs) return
@@ -79,12 +83,13 @@ function anotarLimite(acc: Acumulador, registro: RegistroDeRun): void {
   acc.uso.limiteMotivo = registro.motivoDaFalha
 }
 
-function acumular(acc: Acumulador, registro: RegistroDeRun): void {
+function acumular(acc: Acumulador, registro: RegistroDeRun, c: ContribuicaoDeProvedor): void {
   acc.uso.runs += 1
-  if (!registro.ok) acc.uso.runsComFalha += 1
-  acc.uso.custoUsd += registro.custoUsd
-  acc.uso.tokens += registro.tokens
-  if (registro.modelo && !acc.uso.modelos.includes(registro.modelo)) acc.uso.modelos.push(registro.modelo)
+  if (c.falhou) acc.uso.runsComFalha += 1
+  acc.uso.custoUsd += c.custoUsd
+  acc.uso.tokens += c.tokens
+  acc.uso.porChamada = acc.uso.porChamada && c.porChamada
+  for (const m of c.modelos) if (!acc.uso.modelos.includes(m)) acc.uso.modelos.push(m)
   acc.primeiroMs = Math.min(acc.primeiroMs, registro.concluidoEmMs)
   acc.ultimoMs = Math.max(acc.ultimoMs, registro.concluidoEmMs)
   anotarLimite(acc, registro)
@@ -110,9 +115,11 @@ function porGasto(a: UsoDoProvedor, b: UsoDoProvedor): number {
 function agrupar(registros: RegistroDeRun[]): Map<string, Acumulador> {
   const porProvedor = new Map<string, Acumulador>()
   for (const registro of registros) {
-    const atual = porProvedor.get(registro.provedor) ?? novoAcumulador(registro)
-    acumular(atual, registro)
-    porProvedor.set(registro.provedor, atual)
+    for (const c of contribuicoesDoRegistro(registro)) {
+      const atual = porProvedor.get(c.provedor) ?? novoAcumulador(c)
+      acumular(atual, registro, c)
+      porProvedor.set(c.provedor, atual)
+    }
   }
   return porProvedor
 }

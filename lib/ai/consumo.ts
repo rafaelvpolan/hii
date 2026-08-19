@@ -1,6 +1,6 @@
 import { isoAt } from '../card'
-import { loteDesde } from '../core/cota-runs'
-import type { RegistroDeRun } from '../core/cota-runs'
+import { contribuicoesDoRegistro, loteDesde } from '../core/cota-runs'
+import type { ContribuicaoDeProvedor, RegistroDeRun } from '../core/cota-runs'
 
 export const JANELA_5H = 5 * 60 * 60 * 1000
 export const JANELA_SEMANA = 7 * 24 * 60 * 60 * 1000
@@ -17,6 +17,7 @@ export interface ConsumoDoProvedor {
   tokensNaoSeparados: number
   tokens: number
   ultimoEm: string
+  porChamada: boolean
 }
 
 interface Acumulado {
@@ -33,7 +34,7 @@ function naoNegativo(valor: number): number {
 }
 
 function custoDe(registro: RegistroDeRun): number {
-  return naoNegativo(registro.custoUsd)
+  return contribuicoesDoRegistro(registro).reduce((a, c) => a + naoNegativo(c.custoUsd), 0)
 }
 
 function inicioDaJanela(janelaMs: number, agoraMs: number): number {
@@ -59,17 +60,18 @@ function novoAcumulado(provedor: string): Acumulado {
       tokensNaoSeparados: 0,
       tokens: 0,
       ultimoEm: '',
+      porChamada: true,
     },
     ultimoMs: Number.NEGATIVE_INFINITY,
   }
 }
 
-function somarTokens(c: ConsumoDoProvedor, registro: RegistroDeRun): void {
-  const entrada = naoNegativo(registro.tokensEntrada)
-  const saida = naoNegativo(registro.tokensSaida)
-  const cache = naoNegativo(registro.tokensCache)
+function somarTokens(c: ConsumoDoProvedor, contribuicao: ContribuicaoDeProvedor): void {
+  const entrada = naoNegativo(contribuicao.tokensEntrada)
+  const saida = naoNegativo(contribuicao.tokensSaida)
+  const cache = naoNegativo(contribuicao.tokensCache)
   const partes = entrada + saida + cache
-  const total = naoNegativo(registro.tokens)
+  const total = naoNegativo(contribuicao.tokens)
   c.tokensEntrada += entrada
   c.tokensSaida += saida
   c.tokensCache += cache
@@ -77,13 +79,14 @@ function somarTokens(c: ConsumoDoProvedor, registro: RegistroDeRun): void {
   c.tokens += Math.max(total, partes)
 }
 
-function somarRun(acc: Acumulado, registro: RegistroDeRun): void {
+function somarRun(acc: Acumulado, registro: RegistroDeRun, contribuicao: ContribuicaoDeProvedor): void {
   const c = acc.consumo
   c.runs += 1
-  if (!registro.ok) c.falhas += 1
-  c.custoUsd += custoDe(registro)
-  somarTokens(c, registro)
-  if (registro.modelo && !c.modelos.includes(registro.modelo)) c.modelos.push(registro.modelo)
+  if (contribuicao.falhou) c.falhas += 1
+  c.custoUsd += naoNegativo(contribuicao.custoUsd)
+  c.porChamada = c.porChamada && contribuicao.porChamada
+  somarTokens(c, contribuicao)
+  for (const m of contribuicao.modelos) if (!c.modelos.includes(m)) c.modelos.push(m)
   if (registro.concluidoEmMs > acc.ultimoMs) acc.ultimoMs = registro.concluidoEmMs
 }
 
@@ -103,9 +106,11 @@ function porGastoDecrescente(a: ConsumoDoProvedor, b: ConsumoDoProvedor): number
 export function consumoPorProvedor(janelaMs: number, agoraMs: number = Date.now()): ConsumoDoProvedor[] {
   const porProvedor = new Map<string, Acumulado>()
   for (const registro of runsDaJanela(janelaMs, agoraMs)) {
-    const atual = porProvedor.get(registro.provedor) ?? novoAcumulado(registro.provedor)
-    somarRun(atual, registro)
-    porProvedor.set(registro.provedor, atual)
+    for (const contribuicao of contribuicoesDoRegistro(registro)) {
+      const atual = porProvedor.get(contribuicao.provedor) ?? novoAcumulado(contribuicao.provedor)
+      somarRun(atual, registro, contribuicao)
+      porProvedor.set(contribuicao.provedor, atual)
+    }
   }
   return [...porProvedor.values()].map(fechar).sort(porGastoDecrescente)
 }

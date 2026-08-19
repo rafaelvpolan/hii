@@ -86,6 +86,13 @@ function totalDe(uso: ConsumoDoProvedor[]): number {
   return uso.reduce((t, u) => t + u.custoUsd, 0)
 }
 
+function atribuicaoDe(uso: ConsumoDoProvedor[]): string {
+  const porChamada = uso.filter(u => u.porChamada).length
+  if (porChamada === uso.length) return 'por chamada de ia'
+  if (porChamada === 0) return 'por execucao (sem ledger)'
+  return `${porChamada}/${uso.length} por chamada de ia`
+}
+
 export function painelDeUso(uso: ConsumoDoProvedor[], largura: number, o: OpcoesConfig): string[] {
   if (!uso.length) return [' sem execucao nesta janela']
   const total = totalDe(uso)
@@ -97,6 +104,7 @@ export function painelDeUso(uso: ConsumoDoProvedor[], largura: number, o: Opcoes
   const tokens = uso.reduce((t, u) => t + u.tokens, 0)
   linhas.push(campo('gasto', `US$ ${total.toFixed(4)}`, largura, o))
   linhas.push(campo('tokens', tokens.toLocaleString('pt-BR'), largura, o))
+  linhas.push(campo('atribuicao', atribuicaoDe(uso), largura, o))
   return linhas
 }
 

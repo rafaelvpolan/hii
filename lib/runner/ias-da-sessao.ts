@@ -100,6 +100,9 @@ interface LinhaCrua {
   custoUsd?: number
   custoMedido?: boolean
   tokens?: number
+  tokensEntrada?: number
+  tokensSaida?: number
+  tokensCache?: number
   duracaoS?: number
   ok?: boolean
 }
@@ -114,6 +117,9 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
     custoUsd: positivo(cru.custoUsd),
     custoMedido: cru.custoMedido === true,
     tokens: positivo(cru.tokens),
+    tokensEntrada: positivo(cru.tokensEntrada),
+    tokensSaida: positivo(cru.tokensSaida),
+    tokensCache: positivo(cru.tokensCache),
     duracaoS: positivo(cru.duracaoS),
     ok: cru.ok !== false,
   }
@@ -159,6 +165,9 @@ export function agregarPorIa(chamadas: ChamadaDeIa[]): IaDaSessao[] {
       custoUsd: 0,
       custoMedido: true,
       tokens: 0,
+      tokensEntrada: 0,
+      tokensSaida: 0,
+      tokensCache: 0,
       duracaoS: 0,
       chamadas: 0,
       falhas: 0,
@@ -166,6 +175,9 @@ export function agregarPorIa(chamadas: ChamadaDeIa[]): IaDaSessao[] {
     atual.custoUsd += c.custoUsd
     atual.custoMedido = atual.custoMedido && c.custoMedido
     atual.tokens += c.tokens
+    atual.tokensEntrada += c.tokensEntrada
+    atual.tokensSaida += c.tokensSaida
+    atual.tokensCache += c.tokensCache
     atual.duracaoS += c.duracaoS
     atual.chamadas += 1
     if (!c.ok) atual.falhas += 1

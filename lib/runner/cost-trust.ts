@@ -9,6 +9,7 @@ import { registrarChamada, sessaoDoCard } from './ias-da-sessao'
 import type { PapelDeChamada } from './ias-da-sessao'
 import { sessaoAtual } from './sessao'
 import { sumTokens } from '../ai/usage'
+import { atualizarRegistroDeConversa } from './runs'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -92,9 +93,13 @@ function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, pape
       custoUsd: Number(res.cost) || 0,
       custoMedido: classifyCostGap(res) === 'measured',
       tokens: sumTokens(res.usage),
+      tokensEntrada: res.usage.tokens_in || 0,
+      tokensSaida: res.usage.tokens_out || 0,
+      tokensCache: res.usage.tokens_cache_create || 0,
       duracaoS: Math.round((Date.now() - t0) / 1000),
       ok: res.ok === true,
     })
+    if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
   } catch {
     // o ledger e registro, nao gate: nunca derruba a chamada que acabou de rodar
   }

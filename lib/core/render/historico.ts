@@ -51,7 +51,10 @@ export function duracao(segundos: number): string {
 }
 
 export function custo(usd: number): string {
-  return usd > 0 ? `US$${usd.toFixed(2)}` : '—'
+  if (usd <= 0) return '—'
+  // gasto de conversa fica na casa dos milesimos: arredondar para 2 casas
+  // mostraria US$0.00, o que e mentira por arredondamento
+  return usd < 0.01 ? `US$${usd.toFixed(4)}` : `US$${usd.toFixed(2)}`
 }
 
 export function tokens(total: number): string {
@@ -62,6 +65,10 @@ export function tokens(total: number): string {
 }
 
 function modeloCurto(s: Sessao): string {
+  if (s.tipo === 'conversa') {
+    const provedores = [...new Set(s.ias.map(i => i.provedor).filter(Boolean))]
+    return provedores.length ? provedores.join('+') : 'ia'
+  }
   const provedor = s.provedorIdentificado ? s.provedor : '?'
   const modelo = (s.modelo || '').replace(/^claude-|-\d{8}$/g, '').replace(/-latest$/, '')
   return modelo ? `${provedor}/${modelo}` : provedor
@@ -74,7 +81,7 @@ function linhaDaSessao(s: Sessao, o: OpcoesDoHistorico, agoraMs: number): string
     marca,
     pad(tinta(idCurto(idDaSessao(s)), 'destaque', o), 4),
     pad(tinta(quando(s.concluidoEmMs, agoraMs), 'apagado', o), 12),
-    pad(tinta(`#${s.card}`, 'texto', o), 5),
+    pad(tinta(s.tipo === 'conversa' ? 'chat' : `#${s.card}`, 'texto', o), 5),
     sinal,
     pad(tinta(modeloCurto(s), 'apagado', o), 22),
     padEsq(tinta(duracao(s.duracaoS), 'texto', o), 7),

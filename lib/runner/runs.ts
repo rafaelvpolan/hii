@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { isoNow } from '../card'
 import type { FailureClass, ImplementResult, Run, StepMap } from '../card'
 import { cardsDir } from './config'
-import { resumoDaSessao, sessaoDoCard } from './ias-da-sessao'
+import { chamadasDaSessao, resumoDaSessao, sessaoDoCard } from './ias-da-sessao'
 
 export const MOTIVO_SEM_CLASSIFICACAO = 'falha nao classificada — tratada como terminal'
 
@@ -125,4 +125,45 @@ export function readRunSteps(id: string): StepMap | null {
   const p = latestRunPath(id)
   if (!p) return null
   return readRunAt(p)?.steps ?? null
+}
+
+/**
+ * A conversa da TUI (pergunta respondida, leitura de intencao) gasta IA e nao tem
+ * card. Sem registro proprio esse gasto ficava orfao: nao entrava no historico
+ * nem no consumo por provedor. Reescrito do ledger a cada chamada — idempotente,
+ * um arquivo por sessao de terminal.
+ */
+export function atualizarRegistroDeConversa(sessao: string): Run | null {
+  if (!sessao) return null
+  const chamadas = chamadasDaSessao(sessao)
+  if (!chamadas.length) return null
+  const resumo = resumoDaSessao(sessao)
+  const ultima = chamadas[chamadas.length - 1]
+  const soma = (campo: (c: typeof chamadas[number]) => number): number => chamadas.reduce((a, c) => a + campo(c), 0)
+  const rec: Run = {
+    id: '',
+    ts: ultima?.ts || isoNow(),
+    ok: chamadas.every(c => c.ok),
+    cost_usd: resumo.custoUsd.toFixed(4),
+    cost_measured: resumo.ias.every(i => i.custoMedido),
+    duration_s: soma(c => c.duracaoS),
+    tokens_in: soma(c => c.tokensEntrada),
+    tokens_out: soma(c => c.tokensSaida),
+    tokens_cache_create: soma(c => c.tokensCache),
+    tokens_cache_read: 0,
+    tokens_total: resumo.tokens,
+    steps: null,
+    provider: '',
+    model: '',
+    session: sessao,
+    kind: 'conversa',
+    ias: resumo.ias,
+    trocas: resumo.trocas,
+    failure_class: '',
+    failure_reason: '',
+  }
+  const dir = join(cardsDir(), 'runs')
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, `${sessao}.json`), JSON.stringify(rec, null, 2))
+  return rec
 }

@@ -173,9 +173,19 @@ Troca **por papel** é o desenho e não vira evento. Troca **dentro do mesmo pap
 marcada — é o fallback de cota ou uma substituição de provedor acontecendo. Custo sem reporte do
 provedor sai marcado como `piso`, nunca como total.
 
+A **conversa da TUI** (pergunta respondida, leitura de intenção) também é sessão: aparece no
+histórico como `chat`, com as IAs que entraram. Antes esse gasto era mostrado na hora e depois
+desaparecia — não entrava em nenhum total.
+
+O `/config` e a cota agregam **por chamada de IA** quando há ledger: o gate em `codex` deixa de ser
+cobrado do `claude` que implementou. Execuções anteriores ao ledger continuam atribuídas ao provedor
+do topo, para o histórico não sumir na virada, e o painel diz qual atribuição está usando
+(`atribuicao  2/3 por chamada de ia`). O limite de cota fica no provedor que **bateu** nele, não em
+quem apenas participou da mesma execução.
+
 > Enquanto um passo "gated" somar agente + revisor crivo numa métrica só, o custo **por fase**
 > (`steps`) não fecha com a soma **por papel**. O ledger é a fonte de verdade das IAs; o `steps`
-> segue sendo a visão de progresso. O `/config` ainda agrega por execução, não por chamada.
+> segue sendo a visão de progresso.
 
 Comandos de barra dentro da TUI:
 

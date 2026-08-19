@@ -13,7 +13,7 @@ const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor 
 const uso = (provedor: string, custoUsd: number): EstadoDaConfig['uso5h'][number] => ({
   provedor, modelos: ['m'], runs: 1, falhas: 0, custoUsd,
   tokensEntrada: 10, tokensSaida: 20, tokensCache: 30, tokensNaoSeparados: 0, tokens: 60,
-  ultimoEm: '2026-08-18T16:00:00Z',
+  ultimoEm: '2026-08-18T16:00:00Z', porChamada: true,
 })
 
 const base: EstadoDaConfig = {
