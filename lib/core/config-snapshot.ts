@@ -6,7 +6,7 @@ import type { ProvedorDisponivel } from '../ai/disponibilidade'
 import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../ai/consumo'
 import { allCards } from '../runner/card-store'
 import { resumoDaSessao } from '../runner/ias-da-sessao'
-import { sessaoAtual } from '../runner/sessao'
+import { sessaoParaChamada } from '../runner/cost-trust'
 import { dailySpend } from '../runner/cost-gap'
 import { emExecucao } from './render/rodape'
 import type { AgentRole, AiProviderName } from '../ai/types'
@@ -109,7 +109,7 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
 }
 
 function ledgerDaSessao(): LedgerDaSessao {
-  const r = resumoDaSessao(sessaoAtual())
+  const r = resumoDaSessao(sessaoParaChamada(''))
   return {
     curto: r.curto,
     papeis: r.ias.map(i => ({

@@ -87,7 +87,7 @@ function tarefaNova(extra: string[]): number {
   return r.ok ? 0 : 1
 }
 
-function tarefa2(extra: string[]): number {
+function comandoDeTarefa(extra: string[]): number {
   const sub = extra[0] ?? ''
   if (sub === 'nova' || sub === 'new') return tarefaNova(extra.slice(1))
   process.stderr.write('uso: hii tarefa nova "<o que mudar>" --repo <owner/nome> [--json]\n')
@@ -228,7 +228,7 @@ async function main(): Promise<number> {
       return tarefa('responder', args.slice(1))
     case 'tarefa':
     case 'task':
-      return tarefa2(args.slice(1))
+      return comandoDeTarefa(args.slice(1))
     case 'estado':
     case 'state':
       return estado(args.slice(1))

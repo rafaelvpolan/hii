@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { podarRegistrosAntigos, ehRegistroPodavel } from '../lib/runner/podar-registros'
+import { podarRegistrosAntigos, ehRegistroPodavel, cardDoLedger } from '../lib/runner/podar-registros'
 
 const DIA_MS = 24 * 60 * 60 * 1000
 const criados: string[] = []
@@ -66,4 +66,23 @@ test('TTL configuravel por env, para o operador apertar sem mexer em codigo', ()
   gravar('conversa-20260101000000-9.json', 2 * DIA_MS)
   expect(podarRegistrosAntigos().removidos.length).toBe(1)
   delete process.env.HICODE_REGISTROS_TTL_MS
+})
+
+test('REGRESSAO ledger de card VIVO nao e podado, por mais velho que esteja', () => {
+  writeFileSync(join(dir, '042-parada.md'),
+    '---\nid: "042"\nstatus: HALTED\ntitle: tarefa parada\nrepo: org/app\n---\n## Objetivo\nx\n')
+  gravar('042-20260101000000.ias.jsonl', 30 * DIA_MS)
+  expect(podarRegistrosAntigos().removidos).toEqual([])
+  expect(restantes()).toEqual(['042-20260101000000.ias.jsonl'])
+})
+
+test('ledger de card que nao existe mais e podado normalmente', () => {
+  gravar('777-20260101000000.ias.jsonl', 30 * DIA_MS)
+  expect(podarRegistrosAntigos().removidos).toEqual(['777-20260101000000.ias.jsonl'])
+})
+
+test('cardDoLedger extrai o id do card, e conversa nao tem card', () => {
+  expect(cardDoLedger('042-20260101000000.ias.jsonl')).toBe('042')
+  expect(cardDoLedger('conversa-20260101000000-9.ias.jsonl')).toBe('')
+  expect(cardDoLedger('conversa-20260101000000-9.json')).toBe('')
 })
