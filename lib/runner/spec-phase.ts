@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
-import { extractObjetivo, isoNow } from '../card'
+import { objetivoComInstrucoes } from '../core/instruir'
+import { isoNow } from '../card'
 import { maxReajuste } from './config'
 import { readCard, patchCard, repoPath, repoBase } from './card-store'
 import { ensureWorktree, runGit, stageAll, worktreePath } from './git'
@@ -47,7 +48,7 @@ export async function handleSpec(id: string): Promise<void> {
   }
   if (!(await initOpenspec(wt))) patchCard(id, {}, `${isoNow()} spec: openspec init retornou erro (seguindo mesmo assim)`)
   const name = `card-${id}`
-  const desc = extractObjetivo(card.body) || card.fm.title || ''
+  const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   let v: SpecValidation = { ok: false, failed: 1, issues: ['spec nao gerado'] }
   let attempt = 0
   while (attempt <= maxReajuste()) {
@@ -62,6 +63,11 @@ export async function handleSpec(id: string): Promise<void> {
     return
   }
   await stageAll(wt)
-  await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', `spec: openspec change ${name} (#${id})`])
+  const cm = await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', `spec: openspec change ${name} (#${id})`])
+  if (cm.err && !/nothing to commit|nada a submeter/i.test(String(cm.stdout || cm.stderr || ''))) {
+    const motivo = String(cm.stderr || cm.stdout || '').split('\n')[0] ?? ''
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED commit do spec falhou: ${motivo} (worktree mantido p/ inspecao)`)
+    return
+  }
   patchCard(id, { status: 'EXECUTING', spec_done: 'true' }, `${isoNow()} SPECCED->EXECUTING (plano aprovado: openspec validate --strict passou; spec commitado)`)
 }

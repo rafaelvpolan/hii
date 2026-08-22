@@ -44,13 +44,22 @@ export interface AcaoExterna {
   motivo: string
 }
 
+function trechoDe(texto: string): string {
+  return (texto ?? '').replace(/\s+/g, ' ').trim().slice(0, LIMITE_INSTRUCAO)
+}
+
+function normalizado(texto: string): string {
+  return ` ${texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')} `
+}
+
 export function lerAcaoExterna(titulo: string, objetivo: string): AcaoExterna {
-  const bruto = `${titulo ?? ''}\n${objetivo ?? ''}`
-  const t = ` ${instrucaoDe(bruto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')} `
+  const doTitulo = normalizado(trechoDe(titulo))
+  const t = normalizado(`${trechoDe(titulo)} ${trechoDe(objetivo)}`)
   const ferramenta = t.match(FERRAMENTAS_RE)?.[0] ?? ''
   const ponte = PONTE_RE.test(t)
   if (!ferramenta && !ponte) return { externo: false, ferramenta: '', motivo: '' }
-  if (CODIGO_RE.test(t)) return { externo: false, ferramenta, motivo: '' }
+  const declaradoNoTitulo = FERRAMENTAS_RE.test(doTitulo) || PONTE_RE.test(doTitulo)
+  if (CODIGO_RE.test(declaradoNoTitulo ? doTitulo : t)) return { externo: false, ferramenta, motivo: '' }
   if (!ACAO_RE.test(t) || !ARTEFATO_RE.test(t)) return { externo: false, ferramenta, motivo: '' }
   const onde = ferramenta || 'ferramenta externa'
   return {

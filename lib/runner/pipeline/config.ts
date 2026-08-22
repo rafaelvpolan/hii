@@ -29,11 +29,16 @@ export function loadPipeline(worktree?: string): PipelineConfig {
     try {
       const raw = JSON.parse(readFileSync(f, 'utf8')) as Partial<PipelineConfig>
       if (!Array.isArray(raw.steps)) continue
-      const invalidos = raw.steps.filter(p => !isValidStep(p))
-      if (invalidos.length) {
-        process.stderr.write(`[hicode] ${f}: ${invalidos.length} step(s) invalido(s) ignorado(s) — o pipeline vai rodar SEM eles\n`)
+      const validos = raw.steps.filter(isValidStep)
+      const invalidos = raw.steps.length - validos.length
+      if (!validos.length) {
+        process.stderr.write(`[hicode] ${f}: nenhum step valido (${raw.steps.length} reprovado(s)) — caindo para o proximo pipeline, nao para um pipeline VAZIO\n`)
+        continue
       }
-      return { version: Number(raw.version) || 1, steps: raw.steps.filter(isValidStep) }
+      if (invalidos) {
+        process.stderr.write(`[hicode] ${f}: ${invalidos} step(s) invalido(s) ignorado(s) — o pipeline vai rodar SEM eles\n`)
+      }
+      return { version: Number(raw.version) || 1, steps: validos }
     } catch (e) {
       process.stderr.write(`[hicode] ${f} ilegivel (${(e as ErroLido).message ?? 'json invalido'}) — usando o pipeline padrao\n`)
       continue

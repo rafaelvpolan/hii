@@ -41,7 +41,7 @@ function scopedInstruction(instruction: string, file: string, line: string, line
 }
 
 async function revalidate(id: string, wt: string, target: string): Promise<VerifyResult> {
-  if (!hasDevServer(target)) return { ok: true, reason: 'sem dev server', cost: 0, tokens: 0 }
+  if (!hasDevServer(target)) return { ok: true, conclusive: false, reason: 'sem dev server — verificacao humana pelo link', cost: 0, tokens: 0 }
   const port = urlPort(id)
   const url = `http://localhost:${port}`
   let up = await httpOk(url)
@@ -49,12 +49,12 @@ async function revalidate(id: string, wt: string, target: string): Promise<Verif
     await ensureUrl(wt, port, target)
     up = await waitHttp(url, 25)
   }
-  if (!up) return { ok: true, reason: 'dev server nao respondeu', cost: 0, tokens: 0 }
+  if (!up) return { ok: true, conclusive: false, reason: 'dev server nao respondeu — nao deu para verificar', cost: 0, tokens: 0 }
   const health = await inspectUrl(id, url, true)
-  if (!health.conclusive) return { ok: true, reason: `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`, cost: 0, tokens: 0 }
+  if (!health.conclusive) return { ok: true, conclusive: false, reason: `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`, cost: 0, tokens: 0 }
   return health.ok
-    ? { ok: true, reason: 'url no ar — confira pelo link', cost: 0, tokens: 0 }
-    : { ok: false, reason: `url com erro: ${health.detail}`, cost: 0, tokens: 0 }
+    ? { ok: true, conclusive: true, reason: 'url no ar — confira pelo link', cost: 0, tokens: 0 }
+    : { ok: false, conclusive: true, reason: `url com erro: ${health.detail}`, cost: 0, tokens: 0 }
 }
 
 async function commit(wt: string, message: string): Promise<void> {
@@ -128,5 +128,6 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   }, `${isoNow()} CORRECTING->URL ${redo ? 'url refeito' : 'correção aplicada'}: ${r.text || 'ok'} (verificando…) (custo $${r.cost.toFixed(4)} · ${r.tokens} tokens)`)
   process.stdout.write(`[runner] #${id}: URL apos ${redo ? 'refação' : 'correção'} (verificando)\n`)
   const reval = await revalidate(id, wt, target)
-  patchCard(id, { verify: reval.ok ? 'ok' : 'falhou' }, `${isoNow()} inspecao pos-${redo ? 'refação' : 'correção'}: ${reval.ok ? 'ok' : 'revisar'} — ${reval.reason}`)
+  const estado = reval.conclusive === false ? 'inconclusivo' : (reval.ok ? 'ok' : 'falhou')
+  patchCard(id, { verify: estado }, `${isoNow()} inspecao pos-${redo ? 'refação' : 'correção'}: ${estado} — ${reval.reason}`)
 }

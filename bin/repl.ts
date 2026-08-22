@@ -71,7 +71,7 @@ async function tui(state0: SessionState): Promise<void> {
     const { effect, state: next } = handle(linha, state)
     state = next
     const diga = (s: string): void => app.log('  ' + s)
-    if (effect.kind === 'quit') { sairPedido = true; return }
+    if (effect.kind === 'quit') { sairPedido = true; app.encerrar(); return }
     const repoAntes = state.repo
     const r = await dispatch(effect, state, ioDo(app, diga, state.repo))
     state = r.state

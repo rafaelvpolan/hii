@@ -78,7 +78,9 @@ export function aplicar(ajuste: Ajuste): ResultadoEscolha {
   const prefs = ler()
   for (const papel of ajuste.papeis) {
     const atual = prefs[papel] ?? {}
+    const trocouDeProvedor = !!ajuste.provider && ajuste.provider !== atual.provider
     if (ajuste.provider) atual.provider = ajuste.provider
+    if (trocouDeProvedor && ajuste.model === undefined) atual.model = undefined
     if (ajuste.model !== undefined) atual.model = ajuste.model || undefined
     if (ajuste.effort) atual.effort = ajuste.effort
     if (ajuste.modo !== undefined) atual.modo = ajuste.modo || undefined

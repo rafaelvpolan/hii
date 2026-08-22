@@ -1,3 +1,4 @@
+import { extractObjetivo } from '../card'
 import { readCard, updateCard } from '../runner/card-store'
 import { isoNow } from '../card/util'
 import { existsSync } from 'node:fs'
@@ -45,6 +46,14 @@ export function anexarSubPrompt(body: string, texto: string): string {
   const bloco = fim < 0 ? resto : resto.slice(0, fim)
   const depois = fim < 0 ? '' : resto.slice(fim)
   return body.slice(0, i) + TITULO + `${bloco.replace(/\s*$/, '')}\n${linha}\n` + depois
+}
+
+export function objetivoComInstrucoes(body: string, tituloDoCard = ''): string {
+  const objetivo = extractObjetivo(body) || tituloDoCard
+  const instrucoes = subPrompts(body)
+  if (!instrucoes.length) return objetivo
+  const lista = instrucoes.map((t, i) => `${i + 1}. ${t}`).join('\n')
+  return `${objetivo}\n\nINSTRUCOES ADICIONAIS DO HUMANO (fazem parte da tarefa, atenda todas):\n${lista}`
 }
 
 export function instruir(id: string, texto: string): ResultadoInstrucao {
