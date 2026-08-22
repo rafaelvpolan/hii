@@ -10,7 +10,7 @@ import { taskSyncName } from '../lib/tasks/registry'
 import { limparTmpAntigo, usoDeDisco } from '../lib/runner/estado-em-disco'
 import { linhasDoDisco } from '../lib/core/render/disco'
 import { snapshotDoMotor, revisaoDoEstado } from '../lib/core/estado-json'
-import { executarAcao } from '../lib/core/comandos-de-tarefa'
+import { executarAcao, criarTarefa } from '../lib/core/comandos-de-tarefa'
 import type { AcaoDeTarefa } from '../lib/core/comandos-de-tarefa'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -78,6 +78,22 @@ function tarefa(acao: AcaoDeTarefa, extra: string[]): number {
   return r.ok ? 0 : 1
 }
 
+function tarefaNova(extra: string[]): number {
+  const repo = valorDaFlag(extra, '--repo')
+  const texto = extra.filter(a => !a.startsWith('--') && a !== repo).join(' ')
+  const r = criarTarefa(texto, repo)
+  if (extra.includes('--json')) process.stdout.write(`${JSON.stringify(r)}\n`)
+  else process.stdout.write(`${r.mensagem}\n`)
+  return r.ok ? 0 : 1
+}
+
+function tarefa2(extra: string[]): number {
+  const sub = extra[0] ?? ''
+  if (sub === 'nova' || sub === 'new') return tarefaNova(extra.slice(1))
+  process.stderr.write('uso: hii tarefa nova "<o que mudar>" --repo <owner/nome> [--json]\n')
+  return 2
+}
+
 function usage(): void {
   process.stdout.write([
     'hii — motor de execucao autonoma',
@@ -87,6 +103,7 @@ function usage(): void {
     '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
     '     hii estado [--json]  snapshot do motor em JSON (para o painel); --revisao so o token',
     '     hii responder <id> <texto>   responde a pergunta aberta da tarefa',
+    '     hii tarefa nova "<texto>" --repo <owner/nome>  cria a tarefa e enfileira',
     '',
 
     'O motor nunca faz merge: ele abre o PR e para.',
@@ -104,6 +121,7 @@ function usage(): void {
     '  board, quadro            saiu do terminal — os cards se navegam pelo painel web',
     '',
     'Portas humanas do card:',
+    '  tarefa nova "<t>" --repo <owner/nome> [--json]   cria a tarefa e ja enfileira',
     '  approve <id>             aprova a url entregue (URL -> URL_OK)',
     '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
     '  reject <id> [o que]      rejeita; com motivo, pede correcao',
@@ -208,6 +226,9 @@ async function main(): Promise<number> {
     case 'answer':
     case 'responder':
       return tarefa('responder', args.slice(1))
+    case 'tarefa':
+    case 'task':
+      return tarefa2(args.slice(1))
     case 'estado':
     case 'state':
       return estado(args.slice(1))

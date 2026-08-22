@@ -53,6 +53,7 @@ export interface ChamadaDeIa {
   tokensCache: number
   duracaoS: number
   ok: boolean
+  classeDeFalha?: FailureClass | ''
 }
 
 export interface IaDaSessao {
@@ -69,6 +70,7 @@ export interface IaDaSessao {
   duracaoS: number
   chamadas: number
   falhas: number
+  classeDeFalha?: FailureClass | ''
 }
 
 export interface TrocaDeProvedor {

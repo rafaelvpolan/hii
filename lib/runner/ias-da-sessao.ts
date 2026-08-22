@@ -160,7 +160,9 @@ export function agregarPorIa(chamadas: ChamadaDeIa[]): IaDaSessao[] {
       duracaoS: 0,
       chamadas: 0,
       falhas: 0,
+      classeDeFalha: '' as const,
     }
+    if (c.classeDeFalha) atual.classeDeFalha = c.classeDeFalha
     atual.custoUsd += c.custoUsd
     atual.custoMedido = atual.custoMedido && c.custoMedido
     atual.tokens += c.tokens

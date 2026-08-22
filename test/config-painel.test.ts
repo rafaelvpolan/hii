@@ -21,6 +21,7 @@ const base: EstadoDaConfig = {
   selecionado: 'kimi',
   uso5h: [uso('claude', 1)], usoSemana: [uso('claude', 2)],
   serie: [1, 2, 3], loop: [], fila: 0, gastoHoje: 1.5, tetoUsd: 20, projeto: 'org/app',
+  sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
 }
 
 test('todas as linhas do painel tem a MESMA largura visivel', () => {
@@ -68,7 +69,7 @@ test('limite declarado do provedor aparece no detalhe — isola leitura nao', ()
 test('estado vazio nao quebra e nao mente', () => {
   const vazio: EstadoDaConfig = {
     provedores: [], selecionado: '', uso5h: [], usoSemana: [], serie: [],
-    loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '',
+    loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
   const t = renderConfig(vazio, { color: false, largura: 80, altura: 20 }).join('\n')
   expect(t).toContain('nenhuma ia configurada')
@@ -252,4 +253,31 @@ test('REGRESSAO: a TUI aquece a sonda do ollama antes de desenhar, senao o 1o qu
   expect(desenho).toBeGreaterThan(-1)
   expect(sonda).toBeLessThan(desenho)
   expect(fonte).toContain('definirEstadoDoOllama(estadoOllama)')
+})
+
+test('o /config mostra o ledger da sessao por papel, nao so o consumo por provedor', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    sessao: {
+      curto: 'a1b2',
+      papeis: [
+        { rotulo: 'executa', provedor: 'claude', modelo: 'opus', custoUsd: 0.12, tokens: 1200, chamadas: 3, falhas: 0 },
+        { rotulo: 'revisa', provedor: 'kimi', modelo: '', custoUsd: 0.03, tokens: 400, chamadas: 1, falhas: 1 },
+      ],
+      custoUsd: 0.15,
+      tokens: 1600,
+    },
+  }
+  const t = stripAnsi(renderConfig(e, { color: false, largura: 104, altura: 44 }).join('\n'))
+  expect(t).toContain('SESSAO a1b2')
+  expect(t).toContain('executa')
+  expect(t).toContain('claude/opus')
+  expect(t).toContain('revisa')
+  expect(t).toContain('1 falha(s)')
+  expect(t).toContain('US$0.1500')
+})
+
+test('sessao sem chamada de IA diz isso, em vez de mostrar caixa vazia', () => {
+  const t = renderConfig(base, { color: false, largura: 104, altura: 44 }).join('\n')
+  expect(t).toContain('ainda nao chamou IA')
 })

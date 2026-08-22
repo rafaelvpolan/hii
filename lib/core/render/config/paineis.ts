@@ -1,7 +1,7 @@
 import { padVisible, truncVisible } from '../../tui/layout'
 import { barraRotulada } from '../widget/barra'
 import type { ConsumoDoProvedor } from '../../../ai/consumo'
-import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LinhaDeProvedor, OpcoesConfig } from './tipos'
+import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LedgerDaSessao, LinhaDeProvedor, OpcoesConfig } from './tipos'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
@@ -41,7 +41,7 @@ function semTierPago(p: LinhaDeProvedor): boolean {
   return p.planoLido && conectadoNaNuvem(p)
 }
 
-function rotuloDoPlano(p: LinhaDeProvedor, o: OpcoesConfig): string {
+function rotuloDoPlano(p: LinhaDeProvedor): string {
   if (p.plano) return p.plano
   if (semTierPago(p)) return '(free)'
   if (conectadoNaNuvem(p)) return 'plano nao lido'
@@ -55,7 +55,7 @@ export function painelDeIas(e: EstadoDaConfig, largura: number, o: OpcoesConfig)
     const estado = padVisible(rotuloDaSituacao(p, o), 14)
     const nome = p.nome === e.selecionado ? paint(padVisible(p.nome, 8), CYAN, o) : padVisible(p.nome, 8)
     const ligada = padVisible(p.habilitado ? paint('on', VERDE, o) : paint('off', DIM, o), 3)
-    const plano = rotuloDoPlano(p, o)
+    const plano = rotuloDoPlano(p)
     return truncVisible(` ${marca} ${nome} ${estado} ${ligada}  ${paint(plano, DIM, o)}`, largura)
   })
 }
@@ -173,4 +173,16 @@ export function painelDoLoop(loop: ItemDoLoop[], fila: number, largura: number, 
     largura))
   if (fila) linhas.push(paint(` +${fila} na fila`, DIM, o))
   return linhas
+}
+
+export function painelDaSessao(sessao: LedgerDaSessao, largura: number, o: OpcoesConfig): string[] {
+  if (!sessao.papeis.length) return [' esta sessao ainda nao chamou IA']
+  const linhas = sessao.papeis.map((papel) => {
+    const ia = papel.modelo ? `${papel.provedor}/${papel.modelo}` : papel.provedor
+    const falhas = papel.falhas ? `${paint(`${papel.falhas} falha(s)`, VERMELHO, o)} ` : ''
+    const cauda = `${papel.chamadas}x · US$${papel.custoUsd.toFixed(4)} · ${papel.tokens} tok`
+    return truncVisible(` ${padVisible(papel.rotulo, 9)}${padVisible(ia, 17)} ${falhas}${paint(cauda, DIM, o)}`, largura)
+  })
+  const total = ` ${padVisible('total', 9)}${padVisible('', 17)} ${paint(`US$${sessao.custoUsd.toFixed(4)} · ${sessao.tokens} tok`, DIM, o)}`
+  return [...linhas, truncVisible(total, largura)]
 }

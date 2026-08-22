@@ -136,7 +136,7 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
       ],
     }],
     selecionado: 'claude', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0,
-    gastoHoje: 0, tetoUsd: 0, projeto: 'org/app',
+    gastoHoje: 0, tetoUsd: 0, projeto: 'org/app', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
   const t = renderConfig(base, { color: false, largura: 104, altura: 40 }).map(stripAnsi).join('\n')
   expect(t).toContain('12%')

@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, afterEach } from 'bun:test'
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, delimiter } from 'node:path'
 
@@ -109,7 +109,7 @@ test('o rotulo da situacao no painel /config diferencia sem-login de cota estour
       { ...base, nome: 'claude', situacao: 'nao-autenticado' as const },
       { ...base, nome: 'codex', situacao: 'cota-esgotada' as const },
     ],
-    selecionado: '', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '',
+    selecionado: '', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
   const { stripAnsi } = await import('../lib/core/tui/layout')
   const linhas = painelDeIas(estado, 78, { color: false, largura: 78, altura: 10 }).map(stripAnsi)

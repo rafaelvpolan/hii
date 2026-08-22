@@ -232,6 +232,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     useAgents: injetou,
     model: modelFor('step'),
     effort: effortFor('step'),
+    modo: modoFor('step'),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools: navegacao,

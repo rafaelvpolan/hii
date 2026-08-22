@@ -46,7 +46,7 @@ function reset(steps: StepResult[], gates: GateResult[]): string {
   return createCard({ title: 'gated', status: 'REFINED' }, '## Objetivo\nalgo\n')
 }
 
-function run(id: string): Promise<{ ok: boolean; reason: string; metric: { cost: number; tokens: number } }> {
+function run(id: string): Promise<{ ok: boolean; reason: string; metric: { cost: number; tokens: number }; metricaDoGate: { cost: number; tokens: number } }> {
   return runGatedStep(id, '/tmp/wt', 'main', 'rufus', 'melhore X', 'objetivo', 'Arquitetura', agente)
 }
 
@@ -120,20 +120,34 @@ test('REGRESSAO crivo indisponivel nao vira reprovacao no prompt do agente', asy
   expect(stepCalls.some(c => c.instrucao.includes('CRIVO reprovou'))).toBe(false)
 })
 
-test('custo do gate repetido entra na conta mesmo sem veredito', async () => {
+test('custo do gate repetido entra na conta mesmo sem veredito, na metrica do gate', async () => {
   const naoRodou = gate({ ok: false, verdict: 'CONDITIONAL', reason: 'timeout', cost: 0.02, tokens: 200 })
   const id = reset([step({ cost: 0.01, tokens: 100 })], [naoRodou, naoRodou])
   const r = await run(id)
-  expect(r.metric.cost).toBeCloseTo(0.05, 5)
-  expect(r.metric.tokens).toBe(500)
+  expect(r.metric.cost).toBeCloseTo(0.01, 5)
+  expect(r.metricaDoGate.cost).toBeCloseTo(0.04, 5)
+  expect(r.metric.cost + r.metricaDoGate.cost).toBeCloseTo(0.05, 5)
+  expect(r.metric.tokens + r.metricaDoGate.tokens).toBe(500)
 })
 
-test('custo e tokens somam agente + crivo de todas as tentativas', async () => {
+test('agente e crivo viram metricas SEPARADAS — da para dizer quanto foi de cada um', async () => {
   const id = reset(
     [step({ cost: 0.01, tokens: 100 }), step({ cost: 0.01, tokens: 100 })],
     [gate({ verdict: 'BLOCKED', reason: 'x', cost: 0.02, tokens: 200 }), gate({ verdict: 'APPROVED', cost: 0.02, tokens: 200 })],
   )
   const r = await run(id)
-  expect(r.metric.cost).toBeCloseTo(0.06, 5)
-  expect(r.metric.tokens).toBe(600)
+  expect(r.metric.cost).toBeCloseTo(0.02, 5)
+  expect(r.metric.tokens).toBe(200)
+  expect(r.metricaDoGate.cost).toBeCloseTo(0.04, 5)
+  expect(r.metricaDoGate.tokens).toBe(400)
+})
+
+test('REGRESSAO o total do passo continua fechando — separar nao pode perder custo', async () => {
+  const id = reset(
+    [step({ cost: 0.01, tokens: 100 }), step({ cost: 0.01, tokens: 100 })],
+    [gate({ verdict: 'BLOCKED', reason: 'x', cost: 0.02, tokens: 200 }), gate({ verdict: 'APPROVED', cost: 0.02, tokens: 200 })],
+  )
+  const r = await run(id)
+  expect(r.metric.cost + r.metricaDoGate.cost).toBeCloseTo(0.06, 5)
+  expect(r.metric.tokens + r.metricaDoGate.tokens).toBe(600)
 })

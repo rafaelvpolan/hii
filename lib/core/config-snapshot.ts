@@ -5,10 +5,12 @@ import { estadoDoOllama } from '../ai/ollama-estado'
 import type { ProvedorDisponivel } from '../ai/disponibilidade'
 import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../ai/consumo'
 import { allCards } from '../runner/card-store'
+import { resumoDaSessao } from '../runner/ias-da-sessao'
+import { sessaoAtual } from '../runner/sessao'
 import { dailySpend } from '../runner/cost-gap'
 import { emExecucao } from './render/rodape'
 import type { AgentRole, AiProviderName } from '../ai/types'
-import type { EstadoDaConfig, ItemDoLoop, LinhaDeProvedor } from './render/config'
+import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from './render/config'
 import { janelasDoProvedor } from '../ai/janelas'
 import { gastoDoMotorNoIntervalo } from '../ai/consumo'
 import type { JanelaDoPainel } from './render/config/tipos'
@@ -99,9 +101,28 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
     serie: serieDeCusto(JANELA_5H, BALDES_DA_SERIE, agoraMs),
     loop: itens,
     fila,
+    sessao: ledgerDaSessao(),
     gastoHoje: Number(gasto.total) || 0,
     tetoUsd: Number(process.env.HICODE_BUDGET_USD ?? '0'),
     projeto: repo,
+  }
+}
+
+function ledgerDaSessao(): LedgerDaSessao {
+  const r = resumoDaSessao(sessaoAtual())
+  return {
+    curto: r.curto,
+    papeis: r.ias.map(i => ({
+      rotulo: i.rotulo,
+      provedor: i.provedor,
+      modelo: i.modelo,
+      custoUsd: i.custoUsd,
+      tokens: i.tokens,
+      chamadas: i.chamadas,
+      falhas: i.falhas,
+    })),
+    custoUsd: r.custoUsd,
+    tokens: r.tokens,
   }
 }
 

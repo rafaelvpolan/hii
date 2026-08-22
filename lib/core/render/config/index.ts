@@ -1,9 +1,9 @@
 import { caixa, grade } from '../widget/caixa'
 import { serie } from '../widget/serie'
-import { painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis'
+import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis'
 import type { EstadoDaConfig, OpcoesConfig } from './tipos'
 
-export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, OpcoesConfig } from './tipos'
+export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
@@ -44,6 +44,7 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
     ...(compacto ? [] : [caixa('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes), cx)]),
     ...(compacto ? [] : [caixa('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes), cx)]),
     caixa('LOOP EM EXECUCAO', painelDoLoop(e.loop, e.fila, w - 2, opcoes), cx),
+    caixa(`SESSAO ${e.sessao.curto} · POR PAPEL`, painelDaSessao(e.sessao, w - 2, opcoes), cx),
   ]
 
   const cabecalho = [

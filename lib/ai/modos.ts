@@ -1,4 +1,4 @@
-import type { AiProviderName } from './types'
+import type { AgentRole, AiProviderName } from './types'
 
 export interface CatalogoDeModo {
   readonly modos: readonly string[]
@@ -30,4 +30,10 @@ export function ehModoValido(provedor: AiProviderName, modo: string | undefined)
 
 export function modoResolvido(provedor: AiProviderName, escolhido: string | undefined): string {
   return ehModoValido(provedor, escolhido) ? escolhido : modoPadraoDoProvedor(provedor)
+}
+
+const PAPEIS_QUE_EDITAM: readonly AgentRole[] = ['implement', 'step']
+
+export function papelHonraModo(papel: AgentRole): boolean {
+  return PAPEIS_QUE_EDITAM.includes(papel)
 }

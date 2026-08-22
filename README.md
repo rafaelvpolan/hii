@@ -187,10 +187,15 @@ O painel (hicode) não precisa reimplementar a leitura do estado: pede ao motor.
 | `hii estado --json` | snapshot inteiro: tarefas com status, fase, passos, url, PR, custo, **pergunta aberta** e o que o humano precisa fazer; mais daemon, saúde, cota e disco |
 | `hii estado --revisao` | só o token de revisão — muda quando o estado muda |
 | `hii estado --repo <owner/nome>` | filtra por projeto |
+| `hii tarefa nova "<texto>" --repo <owner/nome> [--json]` | **cria a tarefa e enfileira** — a porta de disparar, mesma da TUI |
 | `hii responder <id> <texto> [--json]` | responde a pergunta aberta e retoma a tarefa |
 | `hii approve <id> [--plan] [--json]` | aprova a url (ou o plano) |
 | `hii reject <id> [motivo] [--json]` | com motivo pede correção; sem motivo, refaz |
 | `hii halt <id> [motivo] [--json]` | para a tarefa |
+
+O painel não só lê o motor: `hii tarefa nova` é a porta de **disparar**, e segue o mesmo caminho da
+TUI — sempre tarefa, criada e enfileirada direto, sem leitura de intenção. Repo não registrado é
+recusado na porta, em vez de virar card que morre em `HALTED`.
 
 **Tempo real sem socket:** o painel guarda o último `--revisao` e só refaz o trabalho quando o token
 vira. `--revisao` é um `readdir` + `stat` local, barato de chamar a cada segundo; o snapshot inteiro
@@ -320,7 +325,7 @@ Comandos de barra dentro da TUI:
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
-| `/mode` | modo de operação da IA ativa (`plan`, `acceptEdits`, …); **shift+tab** cicla direto no prompt. Hoje só o papel `implement` envia o modo à IA |
+| `/mode` | modo de operação da IA ativa (`plan`, `acceptEdits`, …); **shift+tab** cicla direto no prompt. Vale para os papéis que editam (`implement`, `step`) — `verify` e `gate` rodam em leitura, então não há edição para aprovar |
 | `/rm <id>` | apaga card |
 | `/stop <id>` | para card |
 | `/exit` | sai |
