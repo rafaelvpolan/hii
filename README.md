@@ -204,6 +204,10 @@ só quando mudou. O campo `versao` diz com qual contrato o painel está falando.
 `--json` devolve `{ ok, acao, id, status, mensagem }` — status é o **novo** status depois da ação, para
 o painel não precisar reler só para saber o que aconteceu.
 
+**Por que polling e não push.** SSE/HTTP em cima do mesmo snapshot seria possível, mas traz servidor,
+porta e superfície de auth para dentro do motor — o que contraria o escopo dele (execução, revisão,
+verificação e roteador de IAs). O polling é local e barato. **Só troque se ele doer de verdade.**
+
 ### Portas humanas do card
 
 | Comando | O que faz |
@@ -348,6 +352,11 @@ A TUI não recebe imagem colada pelo terminal: o protocolo só transporta texto.
 | `/ref clipboard` | lê a imagem do clipboard do SO — `powershell.exe Get-Clipboard -Format Image` no WSL, `wl-paste` no Wayland, `xclip` no X11, `pngpaste` no macOS — e valida pela assinatura do arquivo, não pela extensão |
 | `/ref` | lista as referências do alvo e o uso de disco |
 | `/ref ambiente` | diz por onde o clipboard seria lido nesta máquina |
+
+> **Só o caminho do WSL foi verificado em execução real** (imagem no clipboard do Windows, PNG
+> conferido em disco). `wl-paste` (Wayland), `xclip` (X11) e `pngpaste` (macOS) estão cobertos por
+> teste com mock, mas nunca rodaram de verdade — trate os três como não verificados até alguém rodar
+> `/ref clipboard` de ponta a ponta nessas plataformas.
 
 Com tarefa aberta, a referência vai para `refs/<tarefa>/` — que **sobrevive a retry e a refazer**,
 porque a referência é entrada da tarefa, não da execução. Sem tarefa aberta, fica em
