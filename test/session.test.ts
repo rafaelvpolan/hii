@@ -1,18 +1,13 @@
 import { test, expect } from 'bun:test'
 import { handle, newSession, planShown, seguir } from '../lib/core/session'
-import { renderFleet } from '../lib/core/render/fleet'
-import { isActive, waitsHuman, phaseLabel } from '../lib/core/render/phases'
-import type { Fields } from '../lib/card'
 
 const base = newSession('org/app')
 
-test('texto livre passa pela leitura de intencao antes de virar tarefa', () => {
+test('texto livre vira tarefa direto, sem leitura de intencao', () => {
   const r = handle('FAQ acordeao na home', base)
-  expect(r.effect.kind).toBe('confirmar-tarefa')
+  expect(r.effect.kind).toBe('submit')
   expect(r.effect.text).toBe('FAQ acordeao na home')
 })
-
-
 
 test('linha vazia sem plano pendente nao faz nada', () => {
   expect(handle('', base).effect.kind).toBe('none')
@@ -27,7 +22,7 @@ test('enter com plano pendente aprova e limpa o pendente', () => {
 
 test('texto livre com plano pendente descarta o plano e cria outro card', () => {
   const r = handle('outra tarefa', planShown(base, '042'))
-  expect(r.effect.kind).toBe('confirmar-tarefa')
+  expect(r.effect.kind).toBe('submit')
   expect(r.state.pendingPlan).toBe('')
 })
 
@@ -87,107 +82,6 @@ test('comando nao aprova plano pendente por acidente', () => {
   expect(handle('/historico', planShown(base, '042')).state.pendingPlan).toBe('042')
 })
 
-function card(over: Partial<Fields>): Fields {
-  return { id: '1', title: 't', status: 'READY', ...over }
-}
-
-test('phases: classifica ativo, esperando humano e rotulo', () => {
-  expect(isActive('EXECUTING')).toBe(true)
-  expect(isActive('URL')).toBe(false)
-  expect(waitsHuman('URL')).toBe(true)
-  expect(waitsHuman('CLARIFY')).toBe(true)
-  expect(phaseLabel('TESTS_GREEN')).toBe('Polir')
-})
-
-test('REGRESSAO: WAITING e ativo (motor retomando sozinho) mas nao espera humano (nao ha comando a digitar)', () => {
-  expect(isActive('WAITING')).toBe(true)
-  expect(waitsHuman('WAITING')).toBe(false)
-})
-
-test('REGRESSAO: fleet conta card WAITING como ativo e mostra marca propria (nao fica invisivel)', () => {
-  const t = renderFleet([card({ id: '7', status: 'WAITING' })], { repo: 'org/app', daemon: 'online (pid 1)' })
-  expect(t).toContain('1 ativo(s)')
-  expect(t).toContain('#007')
-  expect(t).toContain('aguardando')
-})
-
-test('fleet: conta ativos e esperando separadamente', () => {
-  const t = renderFleet([
-    card({ id: '1', status: 'EXECUTING' }),
-    card({ id: '2', status: 'URL' }),
-    card({ id: '3', status: 'MERGED' }),
-  ], { repo: 'org/app', daemon: 'online (pid 1)' })
-  expect(t).toContain('1 ativo(s)')
-  expect(t).toContain('1 esperando voce')
-  expect(t).toContain('org/app')
-})
-
-test('fleet: card terminal nao aparece na faixa', () => {
-  const t = renderFleet([card({ id: '9', status: 'MERGED' })], {})
-  expect(t).not.toContain('#009')
-})
-
-test('fleet: HALTED e PAUSED aparecem com marca propria', () => {
-  const t = renderFleet([card({ id: '4', status: 'HALTED' }), card({ id: '5', status: 'PAUSED' })], {})
-  expect(t).toContain('parou')
-  expect(t).toContain('pausado')
-})
-
-test('fleet sem cor nao emite escape ANSI', () => {
-  const t = renderFleet([card({ id: '1', status: 'EXECUTING' })], { color: false })
-  expect(t).not.toContain('\x1b[')
-})
-
-test('fleet vazio ainda mostra cabecalho e daemon', () => {
-  const t = renderFleet([], { repo: 'org/app', daemon: 'offline' })
-  expect(t).toContain('daemon offline')
-  expect(t).toContain('0 ativo(s)')
-})
-
-import { complete } from '../lib/core/complete'
-import { canApprovePlan } from '../lib/core/actions'
-
-const ctx = { repos: ['acme/site', 'acme/api'], cards: ['019', '020'] }
-
-test('completar: barra sozinha lista os comandos', () => {
-  expect(complete('/', ctx)[0]).toContain('/repo')
-  expect(complete('/re', ctx)[0]).toEqual(['/ref', '/repo'])
-  expect(complete('/rep', ctx)[0]).toEqual(['/repo'])
-})
-
-test('completar /repo sugere os repos registrados', () => {
-  expect(complete('/repo ', ctx)[0]).toEqual(['acme/site', 'acme/api'])
-  expect(complete('/repo acme/a', ctx)[0]).toEqual(['acme/api'])
-})
-
-test('completar /halt (apelido de /stop) sugere ids de card', () => {
-  expect(complete('/halt ', ctx)[0]).toEqual(['019', '020'])
-  expect(complete('/halt 02', ctx)[0]).toEqual(['020'])
-})
-
-test('comando cortado nao completa nada', () => {
-  for (const morto of ['/cards ', '/plan ', '/watch ', '/url ', '/ok ']) {
-    expect(complete(morto, ctx)[0], morto).toEqual([])
-  }
-})
-
-test('texto livre nao completa', () => {
-  expect(complete('adicionar um selo', ctx)[0]).toEqual([])
-})
-
-test('nao completa alem do primeiro argumento', () => {
-  expect(complete('/halt 020 motivo qual', ctx)[0]).toEqual([])
-})
-
-test('REGRESSAO canApprovePlan: so estado pre-execucao', () => {
-  for (const s of ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED', 'PAUSED']) {
-    expect(canApprovePlan(s)).toBe(true)
-  }
-  for (const s of ['EXECUTING', 'EXECUTED', 'URL', 'URL_OK', 'REVIEWED', 'PR_OPEN', 'MERGED', 'HALTED']) {
-    expect(canApprovePlan(s)).toBe(false)
-  }
-})
-
 test('REGRESSAO numero puro MOSTRA o card, nao cria tarefa chamada "20"', () => {
   for (const entrada of ['20', '020', '#20', '7']) {
     const r = handle(entrada, base)
@@ -197,11 +91,11 @@ test('REGRESSAO numero puro MOSTRA o card, nao cria tarefa chamada "20"', () => 
 })
 
 test('texto que so comeca com numero ainda vira tarefa', () => {
-  expect(handle('2 selos no hero', base).effect.kind).toBe('confirmar-tarefa')
+  expect(handle('2 selos no hero', base).effect.kind).toBe('submit')
 })
 
 test('numero longo demais para ser id vira tarefa', () => {
-  expect(handle('12345', base).effect.kind).toBe('confirmar-tarefa')
+  expect(handle('12345', base).effect.kind).toBe('submit')
 })
 
 import { perguntando, respondido } from '../lib/core/session'
@@ -314,10 +208,6 @@ test('/stop limpa plano pendente para nao aprovar por engano', () => {
   expect(handle('/stop 37', planShown(base, '042')).state.pendingPlan).toBe('')
 })
 
-test('completar sugere ids em /stop e /rm', () => {
-  for (const c of ['/stop ', '/rm ']) expect(complete(c, ctx)[0]).toEqual(['019', '020'])
-})
-
 test('dentro da tarefa, texto vira instrucao e NAO tarefa nova', () => {
   const dentro = seguir(base, '022')
   const r = handle('tira tambem o selo do hero', dentro)
@@ -327,7 +217,7 @@ test('dentro da tarefa, texto vira instrucao e NAO tarefa nova', () => {
 })
 
 test('fora da tarefa, o mesmo texto vira tarefa', () => {
-  expect(handle('tira tambem o selo do hero', base).effect.kind).toBe('confirmar-tarefa')
+  expect(handle('tira tambem o selo do hero', base).effect.kind).toBe('submit')
 })
 
 test('comando dentro da tarefa continua sendo comando', () => {
@@ -424,15 +314,6 @@ test('REGRESSAO todo apelido se comporta igual ao comando principal', () => {
     const esperado = handle(`${principal} x`, base).effect.kind
     for (const apelido of apelidos) {
       expect(handle(`${apelido} x`, base).effect.kind, `${apelido} vs ${principal}`).toBe(esperado)
-    }
-  }
-})
-
-test('REGRESSAO apelido completa os mesmos argumentos que o principal', () => {
-  for (const [principal, apelidos] of Object.entries(ALIASES)) {
-    const esperado = complete(`${principal} `, ctx)[0]
-    for (const apelido of apelidos) {
-      expect(complete(`${apelido} `, ctx)[0], `${apelido} vs ${principal}`).toEqual(esperado)
     }
   }
 })

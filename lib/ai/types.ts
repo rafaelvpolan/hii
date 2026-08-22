@@ -1,6 +1,6 @@
 import type { Usage } from '../card'
 
-export type AgentRole = 'implement' | 'verify' | 'gate' | 'step' | 'classificacao'
+export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 
 export type AiProviderName = 'claude' | 'codex' | 'ollama' | 'kimi'
 
@@ -14,6 +14,7 @@ export interface AgentRequest {
   useAgents: boolean
   model?: string
   effort?: string
+  modo?: string
   timeoutMs: number
   liveLog?: string
   extraTools?: string[]

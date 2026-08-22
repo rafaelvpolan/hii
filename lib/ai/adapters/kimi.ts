@@ -2,6 +2,7 @@ import { appendFileSync } from 'node:fs'
 import { run } from '../../runner/git'
 import { emptyUsage } from '../usage'
 import { COST_UNKNOWN } from '../cost'
+import { modoResolvido } from '../modos'
 import type { AgentRequest, AgentResult, AiProvider, AiProviderName, ProviderLimits } from '../types'
 
 interface KimiStreamLine {
@@ -30,9 +31,17 @@ export const KIMI_LIMITS: ProviderLimits = {
   reportsTokens: false,
 }
 
+function modoArgv(modo: string | undefined): string[] {
+  const escolhido = modoResolvido('kimi', modo)
+  if (escolhido === 'yolo') return ['--yolo']
+  if (escolhido === 'plan') return ['--plan']
+  if (escolhido === 'default') return []
+  return ['--auto']
+}
+
 export function kimiArgv(req: AgentRequest): string[] {
   const a = ['-p', req.prompt, '--output-format', OUTPUT_FORMAT]
-  if (req.mode === 'edit') a.push('--auto')
+  if (req.mode === 'edit') a.push(...modoArgv(req.modo))
   if (req.model) a.push('-m', req.model)
   for (const d of req.dirs) a.push('--add-dir', d)
   return a
@@ -84,7 +93,7 @@ function gravarLiveLog(caminho: string, stdout: string): void {
 
 export class KimiProvider implements AiProvider {
   readonly name: AiProviderName = 'kimi'
-  readonly supportsAgents = true
+  readonly supportsAgents = false
   readonly supportsVision = false
   readonly agentic = true
   readonly limits: ProviderLimits = KIMI_LIMITS

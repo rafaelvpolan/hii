@@ -101,6 +101,7 @@ function usage(): void {
     'Acompanhamento:',
     '  status                   estado do daemon + progresso dos cards',
     '  watch                    progresso dos cards ao vivo (atualiza sozinho)',
+    '  board, quadro            saiu do terminal — os cards se navegam pelo painel web',
     '',
     'Portas humanas do card:',
     '  approve <id>             aprova a url entregue (URL -> URL_OK)',
@@ -108,9 +109,10 @@ function usage(): void {
     '  reject <id> [o que]      rejeita; com motivo, pede correcao',
     '  halt <id> [motivo]       para o card',
     '',
-    'Repo-alvo (deterministico, 0 token):',
+    'Repo-alvo (deterministico, 0 token) — "project" e sinonimo de "repo":',
     '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/',
-    '  repo rm|ls               remove do registro | lista alvos e clones',
+    '  repo rm <owner/nome>     remove do registro (o clone local nao e tocado)',
+    '  repo ls                  lista os alvos registrados e o estado do clone',
     '  contract [caminho]       redetecta o contrato do alvo (stack, comandos)',
     '  doctor                   confere gh, IA, daemon, push e contrato',
     '',
@@ -192,6 +194,7 @@ async function main(): Promise<number> {
     case 'hooks':
       return hooks()
     case 'repo':
+    case 'project':
       return script('repo', args.slice(1))
     case 'approve':
     case 'aprovar':

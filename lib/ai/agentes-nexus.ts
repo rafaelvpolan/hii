@@ -51,8 +51,7 @@ export function lerAgente(texto: string): AgenteLido | null {
   return { nome, agente }
 }
 
-function lerDoDisco(): Record<string, AgenteInjetado> {
-  const dir = diretorioDosAgentes()
+function lerDoDiretorio(dir: string): Record<string, AgenteInjetado> {
   if (!existsSync(dir)) return {}
   const out: Record<string, AgenteInjetado> = {}
   for (const arquivo of readdirSync(dir)) {
@@ -67,10 +66,18 @@ function lerDoDisco(): Record<string, AgenteInjetado> {
   return out
 }
 
-const memorizado = memoTempo(lerDoDisco, TTL_MS)
+const memorizadoPorDiretorio = new Map<string, () => Record<string, AgenteInjetado>>()
+
+function memorizadoDe(dir: string): () => Record<string, AgenteInjetado> {
+  const existente = memorizadoPorDiretorio.get(dir)
+  if (existente) return existente
+  const memo = memoTempo(() => lerDoDiretorio(dir), TTL_MS)
+  memorizadoPorDiretorio.set(dir, memo)
+  return memo
+}
 
 export function agentesNexus(): Record<string, AgenteInjetado> {
-  return memorizado()
+  return memorizadoDe(diretorioDosAgentes())()
 }
 
 export function agentesNexusJson(): string {

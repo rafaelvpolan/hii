@@ -96,6 +96,31 @@ const MIN_ROLANTE = 5
 const FATIA_PINADA = 0.4
 const ALTURA_MINIMA = 4
 
+export interface OrcamentoDoCorpo {
+  rows: number
+  temLegenda: boolean
+  temDica: boolean
+  linhasDeEntrada: number
+  linhasDeRodape: number
+  linhasAcima: number
+}
+
+export interface CorpoRecortado {
+  sugVisiveis: number
+  rodapeVisivel: number
+  alturaCorpo: number
+}
+
+export function orcamentoDoCorpo(o: OrcamentoDoCorpo): CorpoRecortado {
+  const moldura = o.temLegenda && o.rows >= ALTURA_MINIMA + 2 ? 2 : 0
+  const linhaDica = o.temDica && o.rows >= ALTURA_MINIMA + moldura + 1 ? 1 : 0
+  const fixo = 3 + Math.max(1, o.linhasDeEntrada) + moldura + linhaDica
+  const disponivel = Math.max(0, o.rows - fixo)
+  const sugVisiveis = Math.min(o.linhasAcima, Math.max(0, disponivel - 1))
+  const rodapeVisivel = Math.min(o.linhasDeRodape, Math.max(0, disponivel - sugVisiveis - MIN_CORPO))
+  return { sugVisiveis, rodapeVisivel, alturaCorpo: Math.max(0, disponivel - sugVisiveis - rodapeVisivel) }
+}
+
 export function posicaoNoTexto(texto: string, cursor: number): { linha: number; coluna: number } {
   const antes = texto.slice(0, Math.max(0, Math.min(cursor, texto.length)))
   const partes = antes.split('\n')
@@ -121,11 +146,17 @@ export function renderFrame(f: FrameInput): Frame {
     : Math.max(0, Math.min(pos.linha - maxEntrada + 1, todasEntradas.length - maxEntrada))
   const entrada = todasEntradas.slice(inicioEntrada, inicioEntrada + maxEntrada)
   const alturaEntrada = entrada.length
-  const fixo = 3 + alturaEntrada + moldura + linhaDica
-  const disponivel = Math.max(0, f.rows - fixo)
-  const sugVisiveis = sugestoes.slice(0, Math.max(0, disponivel - 1))
-  const rodapeVisivel = rodape.slice(0, Math.max(0, disponivel - sugVisiveis.length - MIN_CORPO))
-  const alturaCorpo = Math.max(0, disponivel - sugVisiveis.length - rodapeVisivel.length)
+  const orcamento = orcamentoDoCorpo({
+    rows: f.rows,
+    temLegenda: f.legenda !== undefined,
+    temDica: !!f.dica,
+    linhasDeEntrada: alturaEntrada,
+    linhasDeRodape: rodape.length,
+    linhasAcima: sugestoes.length,
+  })
+  const sugVisiveis = sugestoes.slice(0, orcamento.sugVisiveis)
+  const rodapeVisivel = rodape.slice(0, orcamento.rodapeVisivel)
+  const alturaCorpo = orcamento.alturaCorpo
   const pinado = f.fixo ?? []
   const tetoPinado = Math.max(1, Math.min(alturaCorpo - MIN_ROLANTE, Math.floor(alturaCorpo * FATIA_PINADA)))
   const quantosPinados = alturaCorpo ? Math.min(pinado.length, tetoPinado) : 0

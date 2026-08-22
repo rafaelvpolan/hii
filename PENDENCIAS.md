@@ -15,9 +15,9 @@ porta de **disparar**: `core.submit()` (`lib/core/actions.ts:33`) só é chamado
 Sem isso o painel lê o motor mas não o aciona — que é metade do que ele precisa.
 
 **O que fazer:** `hii tarefa nova "<texto>" --repo <owner/nome> [--json]`, devolvendo o id criado.
-Decidir se passa pela leitura de intenção (`classificarPrompt`, que gasta IA e pode virar pergunta em
-vez de tarefa) ou se é sempre tarefa, como o `/new-task`. Recomendação: sempre tarefa — o painel já
-sabe que é tarefa, e classificar de novo gasta IA sem necessidade.
+A decisão de sempre criar tarefa direto, sem leitura de intenção, já foi tomada e vale para a TUI
+(`lib/core/dispatch.ts`, caso `submit`) — o `classificarPrompt` que fazia essa leitura foi removido.
+O comando de CLI deve seguir o mesmo caminho: sempre tarefa, sem classificar de novo.
 
 Verificar: criar por CLI num estado isolado, conferir o card em disco e o id no `hii estado --json`.
 
@@ -35,16 +35,14 @@ mais barata.
 
 ---
 
-## 3. Teste intermitente sem diagnóstico
+## 3. `/mode` só vale para o papel `implement`
 
-Numa rodada da suíte apareceu `1 fail / 1 error` que **não reproduzi** em ~13 rodadas completas
-seguintes. Única evidência: a rodada vermelha teve 5 `expect()` a menos que a verde, ou seja o teste
-abortou cedo. Sem o nome não dá para ir além.
+`modoFor` é lido num lugar só — `lib/runner/agent.ts:158`, no `implement`. Os papéis `verify`, `gate`
+e `step` montam o pedido sem `modo`, então `/mode gate plan` grava a preferência e não muda nada na
+chamada. Hoje o comando avisa isso na resposta em vez de mentir, mas o aviso é remendo.
 
-**O que fazer:** quando reaparecer, capturar o nome (`bun test ./test 2>&1 | tee` e guardar o log)
-antes de qualquer outra coisa. Suspeita não confirmada: estado compartilhado entre arquivos — o bun
-roda todos no MESMO processo, então env e módulo com estado vazam. Já fechei um vazamento assim
-(`HICODE_DISCO_TETO_MB` em `test/refs-anexo.test.ts`), pode haver outro.
+**O que fazer:** decidir se modo é conceito por papel ou da sessão. Se for por papel, passar `modo`
+nos outros três pedidos; se for da sessão, tirar o papel de `/mode` e guardar um valor só.
 
 ---
 

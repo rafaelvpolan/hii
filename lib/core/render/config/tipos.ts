@@ -17,6 +17,7 @@ export interface LinhaDeProvedor {
   habilitado: boolean
   motivo: string
   plano: string
+  planoLido: boolean
   detalheDoPlano: string
   janelas: JanelaDoPainel[]
   idadeDoUsoHoras: number

@@ -52,6 +52,10 @@ function arquivoDoClaude(): string {
   return process.env.HICODE_CLAUDE_CONFIG || join(homedir(), '.claude.json')
 }
 
+export function claudeAutenticado(): boolean {
+  return !!lerClaude(arquivoDoClaude()).oauthAccount
+}
+
 function lerJson(caminho: string): ClaudeConfig {
   if (!existsSync(caminho)) return {}
   try {
@@ -131,6 +135,10 @@ function lerToml(caminho: string): string {
 
 const lerKimi = memoArquivo(caminho => caminho, lerToml)
 
+export function kimiAutenticado(): boolean {
+  return !!provedorDoKimi(lerKimi(arquivoDoKimi()))
+}
+
 export function planoDoKimi(): PlanoDoProvedor {
   const toml = lerKimi(arquivoDoKimi())
   const provedor = provedorDoKimi(toml)
@@ -149,9 +157,30 @@ export function planoLocal(nome: AiProviderName): PlanoDoProvedor {
   return { provedor: nome, plano: 'local, sem plano', detalhe: '', janelas: [], medidoEm: '', idadeHoras: -1, modelos: [] }
 }
 
+const COM_LEITOR_DE_PLANO: readonly AiProviderName[] = ['claude', 'kimi', 'ollama']
+
+export function temLeitorDePlano(nome: AiProviderName): boolean {
+  return COM_LEITOR_DE_PLANO.includes(nome)
+}
+
 export function planoDoProvedor(nome: AiProviderName, agoraMs: number = Date.now()): PlanoDoProvedor {
   if (nome === 'claude') return planoDoClaude(agoraMs)
   if (nome === 'kimi') return planoDoKimi()
   if (nome === 'ollama') return planoLocal(nome)
   return { provedor: nome, plano: '', detalhe: '', janelas: [], medidoEm: '', idadeHoras: -1, modelos: [] }
+}
+
+export function raizDoCodex(): string {
+  return process.env.CODEX_HOME || join(homedir(), '.codex')
+}
+
+export function codexAutenticado(): boolean {
+  return existsSync(join(raizDoCodex(), 'auth.json'))
+}
+
+export function autenticadoDoProvedor(nome: AiProviderName): boolean {
+  if (nome === 'claude') return claudeAutenticado()
+  if (nome === 'kimi') return kimiAutenticado()
+  if (nome === 'codex') return codexAutenticado()
+  return true
 }

@@ -42,7 +42,7 @@ function bancada(): Bancada {
     onNav: () => false,
     onEntrar: () => {},
     onAba: () => {},
-    onCiclarIa: () => {},
+    onCiclarModo: () => {},
     podeLimpar: () => '',
     fixo: () => [],
     sugestoes: () => [],

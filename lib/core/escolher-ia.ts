@@ -2,9 +2,10 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { dirname } from 'node:path'
 import { arquivoDePreferencias, ehEsforco, ESFORCOS } from '../ai/preferencias'
 import type { PreferenciasDeIa } from '../ai/preferencias'
-import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor } from '../ai/registry'
+import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modoFor } from '../ai/registry'
 import { provedoresDisponiveis } from '../ai/disponibilidade'
 import { modelosDe, arquivoDoCatalogo } from '../ai/catalogo'
+import { modosDoProvedor, modoPadraoDoProvedor, temModos, ehModoValido } from '../ai/modos'
 import type { AgentRole } from '../ai/types'
 
 export interface ResultadoEscolha {
@@ -46,6 +47,7 @@ export interface Ajuste {
   provider?: string
   model?: string
   effort?: string
+  modo?: string
 }
 
 export function interpretar(argumentos: string[]): { ajuste?: Ajuste; erro?: string } {
@@ -79,6 +81,7 @@ export function aplicar(ajuste: Ajuste): ResultadoEscolha {
     if (ajuste.provider) atual.provider = ajuste.provider
     if (ajuste.model !== undefined) atual.model = ajuste.model || undefined
     if (ajuste.effort) atual.effort = ajuste.effort
+    if (ajuste.modo !== undefined) atual.modo = ajuste.modo || undefined
     prefs[papel] = atual
   }
   gravar(prefs)
@@ -110,18 +113,22 @@ export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
   return { ok: true, mensagem: `esforco volta ao padrao da IA: ${papeis.join(', ')}` }
 }
 
-export function ciclarIa(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
-  const nomes = providerNames()
-  if (nomes.length < 2) return { ok: false, mensagem: 'so ha um provedor configurado' }
-  const prefs = ler()
-  const atual = prefs[role]?.provider
-  const i = atual ? nomes.indexOf(atual as typeof nomes[number]) : -1
-  const proximo = nomes[((i < 0 ? 0 : i) + dir + nomes.length) % nomes.length]
-  if (!proximo) return { ok: false, mensagem: 'nao consegui trocar de provedor' }
-  const anterior = prefs[role] ?? {}
-  prefs[role] = { ...anterior, provider: proximo, model: undefined }
-  gravar(prefs)
-  return { ok: true, mensagem: `${role}: ${proximo} — vale na proxima instrucao` }
+const PAPEL_QUE_HONRA_MODO: AgentRole = 'implement'
+
+function ressalvaDoPapel(papel: AgentRole): string {
+  return papel === PAPEL_QUE_HONRA_MODO ? '' : ` — atencao: hoje so ${PAPEL_QUE_HONRA_MODO} envia o modo para a IA`
+}
+
+export function ciclarModo(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
+  const provedor = providerNameFor(role)
+  if (!temModos(provedor)) return { ok: false, mensagem: `${provedor} nao tem modo de operacao` }
+  const modos = modosDoProvedor(provedor)
+  const atual = modoFor(role)
+  const i = atual ? modos.indexOf(atual) : -1
+  const proximo = modos[((i < 0 ? 0 : i) + dir + modos.length) % modos.length]
+  if (!proximo) return { ok: false, mensagem: 'nao consegui trocar de modo' }
+  aplicar({ papeis: [role], modo: proximo })
+  return { ok: true, mensagem: `${provedor}: modo ${proximo}` }
 }
 
 export function estadoDaIa(): string[] {
@@ -132,12 +139,16 @@ export function estadoDaIa(): string[] {
     disponivel: 'instalado',
     ausente: 'NAO instalado',
     'precisa-servidor': 'precisa do servidor no ar',
+    'nao-autenticado': 'instalado, SEM login',
+    'cota-esgotada': 'instalado, cota estourada',
   }
   for (const p of provedores) {
     const uso = p.papeis.length ? `em uso: ${p.papeis.join(', ')}` : 'nenhum papel'
     const modelo = p.modelo ? p.modelo : 'modelo padrao do CLI'
     linhas.push(`    ${p.nome.padEnd(largura)}  ${(rotulo[p.situacao] ?? '').padEnd(26)}  ${modelo} · ${uso}`)
-    if (p.situacao === 'ausente') linhas.push(`    ${' '.repeat(largura)}  ${p.comoObter}`)
+    if (['ausente', 'nao-autenticado', 'cota-esgotada'].includes(p.situacao)) {
+      linhas.push(`    ${' '.repeat(largura)}  ${p.comoObter}`)
+    }
   }
   linhas.push('', '  papeis')
   for (const item of itensPorPapel()) linhas.push(`    ${item}`)
@@ -206,6 +217,27 @@ export function definirEsforco(partes: string[]): ResultadoEscolha {
   return { ok: true, mensagem: `${papel}: esforco ${escolhido} em ${providerNameFor(papel)}` }
 }
 
+export function definirModoDeOperacao(partes: string[]): ResultadoEscolha {
+  const { papel, resto } = papelAlvo(partes)
+  const provedor = providerNameFor(papel)
+  const escolhido = (resto[0] ?? '').trim()
+  if (!temModos(provedor)) {
+    return { ok: false, mensagem: `${provedor} nao tem modo de operacao configuravel` }
+  }
+  if (!escolhido) {
+    return { ok: false, mensagem: `modos de ${provedor}: ${modosDoProvedor(provedor).join(' · ')} — use /mode <nome>` }
+  }
+  if (escolhido === 'padrao' || escolhido === 'reset') {
+    aplicar({ papeis: [papel], modo: '' })
+    return { ok: true, mensagem: `${papel}: modo padrao de ${provedor} (${modoPadraoDoProvedor(provedor)})${ressalvaDoPapel(papel)}` }
+  }
+  if (!ehModoValido(provedor, escolhido)) {
+    return { ok: false, mensagem: `"${escolhido}" nao e modo valido de ${provedor} — use: ${modosDoProvedor(provedor).join(' · ')}` }
+  }
+  aplicar({ papeis: [papel], modo: escolhido })
+  return { ok: true, mensagem: `${papel}: modo ${escolhido} em ${provedor}${ressalvaDoPapel(papel)}` }
+}
+
 export function ajuda(): string[] {
   return [
     '',
@@ -220,6 +252,7 @@ export function ajuda(): string[] {
     '  /model padrao                   volta ao modelo padrao do CLI',
     '  /effort high                    esforco da ia atual',
     '  /effort gate max                esforco do gate',
+    '  /mode plan                      modo de operacao da ia atual',
     '  /ia padrao gate                 volta o gate ao padrao',
   ]
 }

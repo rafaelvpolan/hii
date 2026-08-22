@@ -1,4 +1,5 @@
 import type { AgentRequest } from '../types'
+import { modoResolvido } from '../modos'
 
 const EDIT_TOOLS_AGENTS = 'Task,Read,Edit,Write,Glob,Grep,Bash'
 const EDIT_TOOLS = 'Read,Edit,Write,Glob,Grep,Bash'
@@ -23,11 +24,16 @@ export function agentsArgv(req: AgentRequest): string[] {
   return json ? ['--agents', json] : []
 }
 
+function permissaoArgv(modo: string | undefined): string[] {
+  const escolhido = modoResolvido('claude', modo)
+  return escolhido === 'default' ? [] : ['--permission-mode', escolhido]
+}
+
 export function claudeArgv(req: AgentRequest, formato: string[] = FORMATO_JSON): string[] {
   const a = ['-p', req.prompt, ...formato]
   if (req.model) a.push('--model', req.model)
   if (req.effort) a.push('--effort', req.effort)
-  if (req.mode === 'edit') a.push('--permission-mode', 'acceptEdits', '--allowedTools', toolsFor(req))
+  if (req.mode === 'edit') a.push(...permissaoArgv(req.modo), '--allowedTools', toolsFor(req))
   else a.push('--allowedTools', toolsFor(req))
   a.push(...agentsArgv(req))
   for (const d of req.dirs) a.push('--add-dir', d)

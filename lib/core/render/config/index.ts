@@ -9,6 +9,8 @@ const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
 const CYAN = '\x1b[36m'
 const ALTURA_DA_SERIE = 3
+const ALTURA_DA_SERIE_COMPACTA = 1
+const ALTURA_COMPACTA = 22
 
 function paint(s: string, cor: string, o: OpcoesConfig): string {
   return o.color && s ? `${cor}${s}${RESET}` : s
@@ -22,9 +24,14 @@ function larguraDaColuna(largura: number, cols: number): number {
   return Math.max(24, Math.floor(largura / cols))
 }
 
+function ehCompacto(altura: number): boolean {
+  return altura > 0 && altura < ALTURA_COMPACTA
+}
+
 export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   const cols = colunas(o.largura)
   const w = larguraDaColuna(o.largura, cols)
+  const compacto = ehCompacto(o.altura)
   const escolhido = e.provedores.find(p => p.nome === e.selecionado)
   const opcoes: OpcoesConfig = { ...o, largura: w }
   const cx = { color: o.color, largura: w }
@@ -34,8 +41,8 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
     caixa(`${(e.selecionado || 'ia').toUpperCase()} · PLANO E USO`, painelDoPlano(escolhido, w - 2, opcoes), cx),
     caixa(`${(e.selecionado || 'ia').toUpperCase()} · CONFIGURADO`, painelDoProvedor(escolhido, w - 2, opcoes), cx),
     caixa('GASTO DO MOTOR · 5H', painelDeUso(e.uso5h, w - 2, opcoes), cx),
-    caixa('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes), cx),
-    caixa('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes), cx),
+    ...(compacto ? [] : [caixa('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes), cx)]),
+    ...(compacto ? [] : [caixa('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes), cx)]),
     caixa('LOOP EM EXECUCAO', painelDoLoop(e.loop, e.fila, w - 2, opcoes), cx),
   ]
 
@@ -44,7 +51,7 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
     '',
   ]
   const custo = caixa('CUSTO NA JANELA DE 5H', serie(e.serie, {
-    color: o.color, largura: o.largura - 4, altura: ALTURA_DA_SERIE,
+    color: o.color, largura: o.largura - 4, altura: compacto ? ALTURA_DA_SERIE_COMPACTA : ALTURA_DA_SERIE,
   }), { color: o.color, largura: o.largura })
 
   return [...cabecalho, ...grade(blocos, { largura: o.largura, colunas: cols }), ...custo]

@@ -2,7 +2,7 @@ export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'confirmar-tarefa' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'config' | 'ref'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'config' | 'ref' | 'login'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -22,6 +22,7 @@ export interface Effect {
   kind: EffectKind
   id?: string
   text?: string
+  raw?: string
 }
 
 export interface Reply {
@@ -37,9 +38,10 @@ export const ALIASES: Record<string, string[]> = {
   '/ia': ['/provedor'],
   '/model': ['/modelo'],
   '/effort': ['/esforco'],
+  '/mode': ['/modo'],
   '/new-task': ['/nova-tarefa'],
   '/new-ask': ['/nova-pergunta'],
-  '/new-session': ['/nova-sessao'],
+  '/new-session': ['/nova-sessao', '/new'],
   '/help': ['/h', '/?'],
   '/historico': ['/history'],
   '/config': ['/configuracao'],
@@ -53,7 +55,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/exit'] as const
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/login', '/exit'] as const
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
@@ -148,7 +150,7 @@ function command(line: string, state: SessionState): Reply {
     case 'nova-tarefa':
       return arg
         ? reply({ kind: 'submit', text: arg }, cleared)
-        : reply({ kind: 'error', text: 'uso: /new-task <o que mudar> — cria a tarefa sem passar pela leitura de intencao' }, state)
+        : reply({ kind: 'error', text: 'uso: /new-task <o que mudar> — cria a tarefa e enfileira direto' }, state)
     case 'new-ask':
     case 'nova-pergunta':
       return arg
@@ -160,6 +162,7 @@ function command(line: string, state: SessionState): Reply {
       return reply({ kind: 'ref', text: arg }, state)
     case 'new-session':
     case 'nova-sessao':
+    case 'new':
       return reply({ kind: 'nova-sessao' }, state)
     case 'ia':
     case 'provedor':
@@ -170,6 +173,11 @@ function command(line: string, state: SessionState): Reply {
     case 'effort':
     case 'esforco':
       return reply({ kind: 'esforco', text: arg }, state)
+    case 'mode':
+    case 'modo':
+      return reply({ kind: 'modo', text: arg }, state)
+    case 'login':
+      return reply({ kind: 'login', text: arg }, state)
     case 'repo':
     case 'project':
     case 'projeto':
@@ -181,7 +189,7 @@ function command(line: string, state: SessionState): Reply {
     case 'q':
       return reply({ kind: 'quit' }, state)
     default:
-      return reply({ kind: 'error', text: `comando desconhecido: /${head} — tente /help` }, state)
+      return reply({ kind: 'error', id: head, text: `comando desconhecido: /${head} — tente /help`, raw: [head, ...rest].join(' ') }, state)
   }
 }
 
@@ -222,9 +230,9 @@ export function handle(raw: string, state: SessionState): Reply {
     return reply({ kind: 'instruct', id: state.seguindo, text: line }, state)
   }
   if (state.pendingPlan) {
-    return reply({ kind: 'confirmar-tarefa', text: line }, { ...state, pendingPlan: '' })
+    return reply({ kind: 'submit', text: line }, { ...state, pendingPlan: '' })
   }
-  return reply({ kind: 'confirmar-tarefa', text: line }, state)
+  return reply({ kind: 'submit', text: line }, state)
 }
 
 export function planShown(state: SessionState, id: string): SessionState {

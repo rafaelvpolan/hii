@@ -1,9 +1,9 @@
 import { readCard } from '../../lib/runner/card-store'
 import { dailySpend } from '../../lib/runner/cost-gap'
 import type { DailySpend } from '../../lib/runner/cost-gap'
-import { effortFor, modelFor, providerNameFor } from '../../lib/ai/registry'
-import { emExecucao, esperandoEmOutrosProjetos, esperandoVoce, linhaDeOutrosProjetos, linhaPropriedades, linhasAjustes, linhasEspera, linhasExecucao } from '../../lib/core/render/rodape'
-import { ESFORCO_PADRAO, itensDeAjuste } from '../../lib/core/ajustes'
+import { effortFor, modelFor, modoFor, providerNameFor } from '../../lib/ai/registry'
+import { emExecucao, esperandoEmOutrosProjetos, esperandoVoce, linhaDeOutrosProjetos, linhaPropriedades, linhasEspera, linhasExecucao } from '../../lib/core/render/rodape'
+import { ESFORCO_PADRAO } from '../../lib/ai/preferencias'
 import { usoDeDiscoCacheado } from '../../lib/runner/estado-em-disco'
 import { cardsPerguntando } from '../../lib/core/responder'
 import { ultimoAgente } from '../../lib/core/activity'
@@ -11,7 +11,7 @@ import type { SessionState } from '../../lib/core/session'
 import type { CorpoContexto } from '../../lib/core/tui/app'
 import { ACC, DIM, RESET, color } from './saida'
 import { atividadeDe, todosOsCards } from './dados'
-import { modoAtual, selecionado } from './estado'
+import { selecionado } from './estado'
 
 export function custoDoDia(repo: string): DailySpend {
   const hoje = new Date().toISOString().slice(0, 10)
@@ -38,6 +38,7 @@ export function rodapeDa(state: SessionState, noRodape = false): string[] {
     provedor: providerNameFor('implement'),
     modelo: modelFor('implement') ?? '',
     effort: esforcoAtual(state),
+    modo: modoFor('implement') ?? '',
     projeto: state.repo,
     custoHoje: gasto.total,
     pisoDoGasto: gasto.floor,
@@ -50,9 +51,6 @@ export function rodapeDa(state: SessionState, noRodape = false): string[] {
     color, now: Date.now(), width: largura,
     selecionado: noRodape ? selecionado() : '',
     maxLinhas: noRodape ? 6 : 3,
-  }
-  if (modoAtual() === 'ajustes') {
-    return [props, ...linhasAjustes(itensDeAjuste(), { color, width: largura, selecionado: selecionado() })]
   }
   const espera = linhasEspera(esperandoVoce(cards, state.repo), marcado)
   const fora = linhaDeOutrosProjetos(esperandoEmOutrosProjetos(cards, state.repo), marcado)
@@ -69,7 +67,6 @@ export function pintarComando(linha: string): string {
 
 export function dicaDa(state: SessionState, sugerindo = false): string {
   const texto = ((): string => {
-    if (modoAtual() === 'ajustes') return '↑/↓ escolhe · tab troca · shift+tab sai'
     if (sugerindo) return '↑/↓ escolhe · tab completa · enter usa'
     if (selecionado()) return '↑/↓ move · enter entra · esc sai'
     if (state.comentando) return 'escreva o ajuste · enter vazio desiste'
@@ -83,14 +80,14 @@ export function dicaDa(state: SessionState, sugerindo = false): string {
     if (aqui.length) return `#${aqui[0]} espera resposta · /ask responde`
     const noutro = cardsPerguntando(todosOsCards())
     if (noutro.length) return `#${noutro[0]} espera resposta em outro projeto · /ask ${Number(noutro[0])}`
-    return 'shift+tab ajusta a ia · ctrl+j quebra linha · /help para tudo'
+    return 'shift+tab cicla o modo da ia · ctrl+j quebra linha · /help para tudo'
   })()
   return color ? `${DIM}${texto}${RESET}` : texto
 }
 
 export function dicaDaNavegacao(ctx: CorpoContexto, state: SessionState): string {
+  if (state.tela === 'config') return '↑↓ escolhe a ia · enter aplica no papel implement · esc sai'
   if (ctx.navegando === 'board') return '↑↓ escolhe a sessao · enter abre a tarefa · ← ou → volta'
-  if (ctx.navegando === 'ajustes') return dicaDa(state, ctx.sugerindo)
   if (ctx.navegando) return '↑↓ move · enter abre · → volta · ← sessoes'
   return dicaDa(state, ctx.sugerindo)
 }
