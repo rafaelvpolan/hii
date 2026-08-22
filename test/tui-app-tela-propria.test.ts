@@ -202,6 +202,5 @@ test('REGRESSAO na tela propria a seta nunca chega como ajustes ou board — sem
     onNav: (dir, modo) => { navs.push({ dir, modo }); return true },
   }).run()
   for (const k of ['\x1b[Z', '\t', '\x1b[D', '\x1b[B', '\x1b[A']) t.tecla(k)
-  expect(navs.length).toBeGreaterThan(0)
-  for (const n of navs) expect(n.modo).toBe('')
+  expect(navs).toEqual([{ dir: 1, modo: '' }, { dir: -1, modo: '' }])
 })
