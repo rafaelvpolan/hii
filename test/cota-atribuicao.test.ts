@@ -59,3 +59,26 @@ test('registro antigo sem ledger continua caindo no provedor do topo', async () 
   const cota = lerCota(Date.now())
   expect(cota.provedores.find(p => p.provedor === 'claude')?.limiteAtingido).toBe(true)
 })
+
+test('REGRESSAO classeDeFalha sobrevive ao ida-e-volta do ledger — sem isso a atribuicao de cota e cega', async () => {
+  const { registrarChamada, chamadasDaSessao, agregarPorIa } = await import('../lib/runner/ias-da-sessao')
+  registrarChamada('001-20260101000000', {
+    ts: new Date().toISOString(), papel: 'gate', provedor: 'kimi', modelo: 'k2',
+    custoUsd: 0.1, custoMedido: true, tokens: 10, tokensEntrada: 5, tokensSaida: 5,
+    tokensCache: 0, duracaoS: 1, ok: false, classeDeFalha: 'quota',
+  })
+  const lidas = chamadasDaSessao('001-20260101000000')
+  expect(lidas[0]?.classeDeFalha).toBe('quota')
+  expect(agregarPorIa(lidas)[0]?.classeDeFalha).toBe('quota')
+})
+
+test('classe de falha desconhecida no ledger nao vira classe valida', async () => {
+  const { registrarChamada, chamadasDaSessao } = await import('../lib/runner/ias-da-sessao')
+  registrarChamada('002-20260101000000', {
+    ts: new Date().toISOString(), papel: 'gate', provedor: 'kimi', modelo: 'k2',
+    custoUsd: 0, custoMedido: true, tokens: 0, tokensEntrada: 0, tokensSaida: 0,
+    tokensCache: 0, duracaoS: 1, ok: false,
+    classeDeFalha: 'coisa-inventada' as never,
+  })
+  expect(chamadasDaSessao('002-20260101000000')[0]?.classeDeFalha).toBe('')
+})

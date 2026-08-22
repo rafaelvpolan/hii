@@ -2,7 +2,7 @@ import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cardsDir } from './config'
 import { garantirDir } from './estado-em-disco'
-import type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../card/types'
+import type { ChamadaDeIa, FailureClass, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../card/types'
 
 export type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor }
 
@@ -99,6 +99,13 @@ interface LinhaCrua {
   tokensCache?: number
   duracaoS?: number
   ok?: boolean
+  classeDeFalha?: string
+}
+
+const CLASSES_DE_FALHA: readonly string[] = ['quota', 'auth', 'transient', 'terminal']
+
+function ehClasseDeFalha(valor: string | undefined): valor is FailureClass {
+  return !!valor && CLASSES_DE_FALHA.includes(valor)
 }
 
 function normalizar(cru: LinhaCrua): ChamadaDeIa {
@@ -116,6 +123,7 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
     tokensCache: positivo(cru.tokensCache),
     duracaoS: positivo(cru.duracaoS),
     ok: cru.ok !== false,
+    classeDeFalha: ehClasseDeFalha(cru.classeDeFalha) ? cru.classeDeFalha : '',
   }
 }
 
