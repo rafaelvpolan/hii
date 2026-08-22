@@ -56,6 +56,7 @@ export interface App {
   log: (linha: string) => void
   abrirBoard: () => void
   limparLog: () => void
+  encerrar: () => void
 }
 
 const PADRAO = {
@@ -334,6 +335,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
 
   return {
     log,
+    encerrar: (): void => { finalizar() },
     limparLog: (): void => {
       extras.length = 0
       rolagem = 0

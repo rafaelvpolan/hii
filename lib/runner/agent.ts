@@ -1,4 +1,5 @@
 import { dirname, join } from 'node:path'
+import { objetivoComInstrucoes } from '../core/instruir'
 import { existsSync } from 'node:fs'
 import { extractObjetivo } from '../card'
 import type { Card, FailureClass, ImplementResult, VerifyResult } from '../card'
@@ -109,7 +110,7 @@ function acaoExternaPrompt(ferramenta: string, desc: string, feedback: string): 
 }
 
 export async function implement(card: Card, workdir: string, feedback = '', visual = false): Promise<ImplementResult> {
-  const desc = extractObjetivo(card.body) || card.fm.title || ''
+  const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const id = card.fm.id ?? ''
   const override = card.fm.provider_override_implement || undefined
   const provider = providerFor('implement', override)

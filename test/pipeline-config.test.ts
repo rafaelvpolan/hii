@@ -38,3 +38,25 @@ test('step com state fora do enum e descartado (cai no default)', () => {
   }))
   expect(loadPipeline(d).steps.map(s => String(s.state))).not.toContain('FOO')
 })
+
+test('REGRESSAO todos os steps invalidos NAO produzem pipeline vazio — o card nao vai ao PR sem gate', async () => {
+  const { DEFAULT_STEPS } = await import('../lib/runner/pipeline/config')
+  const d = mkdtempSync(join(tmpdir(), 'wt4-'))
+  mkdirSync(join(d, '.hii'), { recursive: true })
+  writeFileSync(join(d, '.hii', 'pipeline.json'), JSON.stringify({
+    version: 1,
+    steps: [
+      { id: 'x', label: 'X', kind: 'quality', agent: 'rufus', state: 'FOO', gate: 'none', enabled: true, instruction: 'z' },
+      { id: 'y', label: 'Y', kind: 'quality', agent: 'rufus', state: 'BAR', gate: 'none', enabled: true, instruction: 'z' },
+    ],
+  }))
+  const steps = loadPipeline(d).steps
+  expect(steps.length).toBeGreaterThan(0)
+  expect(steps.map(s => s.id)).toEqual(DEFAULT_STEPS.map(s => s.id))
+})
+
+test('REGRESSAO o pipeline default cobre testes, seguranca e review — nao e so um passo qualquer', async () => {
+  const { DEFAULT_STEPS } = await import('../lib/runner/pipeline/config')
+  const ids = DEFAULT_STEPS.map(s => s.id)
+  for (const obrigatorio of ['testes', 'seguranca', 'review']) expect(ids).toContain(obrigatorio)
+})

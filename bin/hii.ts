@@ -159,13 +159,23 @@ function hooks(): number {
   const repo = args[2] || process.cwd()
   const source = join(ROOT, 'scripts', 'hooks', 'pre-push')
   if (sub === 'install') {
-    const dest = installPrePush(repo, source)
-    process.stdout.write(dest ? `pre-push instalado: ${dest}\n` : `falha ao instalar (repo git valido? hook fonte existe?)\n`)
-    return dest ? 0 : 1
+    const r = installPrePush(repo, source)
+    if (!r.ok) {
+      process.stderr.write(`falha ao instalar: ${r.motivo}\n`)
+      return 1
+    }
+    process.stdout.write(`pre-push instalado: ${r.caminho}\n`)
+    if (r.backup) process.stdout.write(`  o pre-push que ja existia foi guardado em ${r.backup}\n`)
+    return 0
   }
   if (sub === 'uninstall') {
-    const ok = uninstallPrePush(repo)
-    process.stdout.write(ok ? `pre-push removido de ${repo}\n` : `nenhum pre-push encontrado em ${repo}\n`)
+    const r = uninstallPrePush(repo, source)
+    if (!r.ok) {
+      process.stderr.write(`${r.motivo}\n`)
+      return 1
+    }
+    process.stdout.write(`pre-push removido de ${repo}\n`)
+    if (r.restaurado) process.stdout.write(`  o pre-push anterior foi restaurado em ${r.restaurado}\n`)
     return 0
   }
   process.stdout.write('uso: hii hooks <install|uninstall> [caminho]\n')

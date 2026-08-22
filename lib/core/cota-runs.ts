@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import type { FailureClass, IaDaSessao, TrocaDeProvedor } from '../card'
 import { cardsDir } from '../runner/config'
@@ -157,6 +157,18 @@ function lerRegistro(caminho: string): RegistroDeRun | null {
 
 const registroDoArquivo = memoArquivo((caminho: string): string => caminho, lerRegistro)
 
+function foraDaJanelaPeloNome(nome: string, caminho: string, desdeMs: number): boolean {
+  if (RE_ARQUIVO_DE_CONVERSA.test(nome)) {
+    try {
+      return statSync(caminho).mtimeMs < desdeMs
+    } catch {
+      return false
+    }
+  }
+  const doNome = instanteDoNome(nome)
+  return Number.isFinite(doNome) && doNome < desdeMs
+}
+
 function lerLoteDesde(pedidoMs: number): LoteDeRuns {
   const desdeMs = pedidoMs - FOLGA_DO_NOME_MS
   const dir = runsDir()
@@ -165,9 +177,9 @@ function lerLoteDesde(pedidoMs: number): LoteDeRuns {
   let ignorados = 0
   for (const nome of readdirSync(dir)) {
     if (!ehArquivoDeSessao(nome)) continue
-    const doNome = instanteDoNome(nome)
-    if (Number.isFinite(doNome) && doNome < desdeMs) continue
-    const registro = registroDoArquivo(join(dir, nome))
+    const caminho = join(dir, nome)
+    if (foraDaJanelaPeloNome(nome, caminho, desdeMs)) continue
+    const registro = registroDoArquivo(caminho)
     if (registro) registros.push(registro)
     else ignorados++
   }

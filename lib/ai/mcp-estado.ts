@@ -27,7 +27,9 @@ export function lerListaDeServidores(saida: string): ServidorMcp[] {
 export type EscopoServidor = 'dinamico' | 'persistente' | 'nao-verificavel'
 
 export function lerEscopo(saidaDoGet: string): EscopoServidor {
-  return /scope:\s*dynamic config/i.test(saidaDoGet) ? 'dinamico' : 'persistente'
+  if (/scope:\s*dynamic config/i.test(saidaDoGet)) return 'dinamico'
+  if (/scope:\s*\S/i.test(saidaDoGet)) return 'persistente'
+  return 'nao-verificavel'
 }
 
 export interface DisponibilidadeExterna {

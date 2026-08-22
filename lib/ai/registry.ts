@@ -69,7 +69,7 @@ export function providerLimits(name: AiProviderName): ProviderLimits | undefined
 
 export function modelFor(role: AgentRole, override?: string): string | undefined {
   const name = providerNameFor(role, override)
-  const escolhido = preferenciaDoPapel(role).model
+  const escolhido = name === providerNameFor(role) ? preferenciaDoPapel(role).model : undefined
   if (escolhido) return escolhido
   if (name === 'claude') {
     if (role === 'verify') return VERIFY_MODEL

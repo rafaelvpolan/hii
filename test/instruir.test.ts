@@ -179,3 +179,24 @@ test('paste curto nao vira marcador, entra direto', async () => {
   expect(s.buffer).toBe('http://localhost:5222')
   expect(s.buffer).not.toContain('[colado')
 })
+
+test('REGRESSAO instrucao dada antes de executar CHEGA ao objetivo que vira prompt', async () => {
+  const { objetivoComInstrucoes, instruir } = await import('../lib/core/instruir')
+  const { readCard } = await import('../lib/runner/card-store')
+  card('077', { status: 'READY' })
+  instruir('077', 'use a paleta escura')
+  instruir('077', 'nao mexa no header')
+  const body = readCard('077')?.body ?? ''
+  const objetivo = objetivoComInstrucoes(body, 'tarefa 077')
+  expect(objetivo).toContain('use a paleta escura')
+  expect(objetivo).toContain('nao mexa no header')
+  expect(objetivo).toContain('INSTRUCOES ADICIONAIS DO HUMANO')
+})
+
+test('sem instrucao, o objetivo sai igual ao de antes — sem cabecalho vazio', async () => {
+  const { objetivoComInstrucoes } = await import('../lib/core/instruir')
+  const { readCard } = await import('../lib/runner/card-store')
+  card('078', { status: 'READY' })
+  const body = readCard('078')?.body ?? ''
+  expect(objetivoComInstrucoes(body, 'tarefa 078')).not.toContain('INSTRUCOES ADICIONAIS')
+})

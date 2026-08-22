@@ -272,6 +272,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       ajustar: async (motivo, n) => {
         process.stdout.write(`[runner] #${id}: url ${motivo} — ajustando (${n})\n`)
         const r = await deps.implement(card, wt, instrucaoDeAjuste(port, n), false)
+        steps.Url.cost += parseFloat(r.cost) || 0
+        steps.Url.tokens += tokensOf(r.usage)
         return r.ok ? `ajuste ${n} aplicado` : `ajuste ${n} falhou`
       },
     }, urlPid ? String(urlPid) : card.fm.url_pid)

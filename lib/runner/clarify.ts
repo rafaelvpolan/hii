@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { objetivoComInstrucoes } from '../core/instruir'
 import { join } from 'node:path'
-import { extractObjetivo } from '../card'
 import type { Card, ClarifyQuestion } from '../card'
 import { cardsDir, ROOT } from './config'
 import { providerFor, modelFor } from '../ai/registry'
@@ -71,7 +71,7 @@ export interface IdeacaoNoClarify {
 }
 
 export async function clarifyPorIdeacao(card: Card, perfil: string): Promise<IdeacaoNoClarify> {
-  const objetivo = extractObjetivo(card.body) || card.fm.title || ''
+  const objetivo = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const gate = preflight({ titulo: card.fm.title ?? '', objetivo, perfil, override: card.fm.ideate ?? '' })
   if (!gate.vale) return { perguntas: [], cost: 0, tokens: 0, motivo: gate.motivo }
   const r = await idear(objetivo, card.fm.id ?? '')
@@ -92,7 +92,7 @@ export async function clarifyPorIdeacao(card: Card, perfil: string): Promise<Ide
 }
 
 export async function clarify(card: Card): Promise<ClarifyResult> {
-  const desc = extractObjetivo(card.body) || card.fm.title || ''
+  const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const provider = providerFor('verify')
   const prompt = [
     'Voce recebe uma tarefa de desenvolvimento web. Se ela ja estiver CLARA o bastante para implementar sem suposicoes, responda exatamente {"questions":[]}.',

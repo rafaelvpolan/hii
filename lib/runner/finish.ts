@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
-import { extractObjetivo, isoNow } from '../card'
+import { objetivoComInstrucoes } from '../core/instruir'
+import { isoNow } from '../card'
 import type { StepMap, StepMetric } from '../card'
 import { CARD_BUDGET_USD, MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from './config'
 import { appendProjectMemory } from './memory'
@@ -65,7 +66,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   }
   const resumeFrom = card.fm.resume_from ?? ''
   if (resumeFrom) patchCard(id, { resume_from: '' }, `${isoNow()} retomando finish a partir de ${resumeFrom}`)
-  const desc = extractObjetivo(card.body) || card.fm.title
+  const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const preflight = podeAbrirPr(target, repoName)
   if (preflight.severidade === 'erro') {
     patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)

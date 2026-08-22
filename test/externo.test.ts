@@ -77,3 +77,20 @@ test('trabalho de codigo de verdade continua abrindo as fases', () => {
   expect(p.steps.map(s => s.id)).toContain('seguranca')
   expect(p.steps.map(s => s.id)).toContain('testes')
 })
+
+test('REGRESSAO acao externa descrita no OBJETIVO e detectada, nao so no titulo', () => {
+  const r = lerAcaoExterna('nova tarefa', 'criar uma pagina no notion com o resumo da sprint')
+  expect(r.externo).toBe(true)
+  expect(r.ferramenta).toBe('notion')
+})
+
+test('REGRESSAO titulo longo nao empurra o objetivo para fora da deteccao', () => {
+  const tituloLongo = 'ajuste '.repeat(60)
+  const r = lerAcaoExterna(tituloLongo, 'criar uma pagina no notion com o resumo')
+  expect(r.externo).toBe(true)
+})
+
+test('objetivo sobre codigo nao vira acao externa so por citar a ferramenta', () => {
+  const r = lerAcaoExterna('nova tarefa', 'refatorar o client do notion no arquivo src/notion.ts')
+  expect(r.externo).toBe(false)
+})
