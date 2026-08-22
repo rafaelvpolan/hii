@@ -63,17 +63,22 @@ test('/new e forma curta de /new-session: match exato aprova, TAB ainda mostra o
 
 test('comandos da ia ativa entram como complemento, depois dos do hii', () => {
   const comIa = { ...ctx, comandosDaIa: ['/review', '/refactor'] }
-  expect(complete('/re', comIa)[0]).toEqual(['/ref', '/repo', '/review', '/refactor'])
+  expect(complete('/re', comIa)[0]).toEqual(['/ref', '/repo', '/review'])
 })
 
-test('comandos da ia nunca superam em quantidade os do hii, quando o hii tem match', () => {
+test('os comandos do hii sao MAIORIA, nao empate — a ia fica sempre em minoria estrita', () => {
   const comIa = { ...ctx, comandosDaIa: ['/rex1', '/rex2', '/rex3', '/rex4', '/rex5'] }
   const r = complete('/re', comIa)[0]
   const doHii = r.filter(c => ['/ref', '/repo'].includes(c))
   const daIa = r.filter(c => c.startsWith('/rex'))
   expect(doHii.length).toBe(2)
-  expect(daIa.length).toBeLessThanOrEqual(doHii.length)
-  expect(daIa).toEqual(['/rex1', '/rex2'])
+  expect(daIa.length).toBeLessThan(doHii.length)
+  expect(daIa).toEqual(['/rex1'])
+})
+
+test('REGRESSAO com um unico match do hii nao ha espaco para a ia — maioria estrita exige isso', () => {
+  const comIa = { ...ctx, comandosDaIa: ['/helpme'] }
+  expect(complete('/he', comIa)[0]).toEqual(['/help'])
 })
 
 test('sem match do hii, os comandos da ia aparecem sozinhos', () => {
@@ -82,8 +87,8 @@ test('sem match do hii, os comandos da ia aparecem sozinhos', () => {
 })
 
 test('comando da ia que colide com um comando do hii nao aparece duplicado', () => {
-  const comIa = { ...ctx, comandosDaIa: ['/config', '/config-avancado'] }
-  expect(complete('/c', comIa)[0]).toEqual(['/config', '/config-avancado'])
+  const comIa = { ...ctx, comandosDaIa: ['/config'] }
+  expect(complete('/c', comIa)[0]).toEqual(['/config'])
 })
 
 test('sem comandosDaIa no contexto, o comportamento e identico ao de antes', () => {

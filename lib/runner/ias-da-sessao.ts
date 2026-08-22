@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cardsDir } from './config'
 import { garantirDir } from './estado-em-disco'
+import { ehClasseDeFalha } from '../card/types'
 import type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../card/types'
 
 export type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor }
@@ -99,6 +100,7 @@ interface LinhaCrua {
   tokensCache?: number
   duracaoS?: number
   ok?: boolean
+  classeDeFalha?: string
 }
 
 function normalizar(cru: LinhaCrua): ChamadaDeIa {
@@ -116,6 +118,7 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
     tokensCache: positivo(cru.tokensCache),
     duracaoS: positivo(cru.duracaoS),
     ok: cru.ok !== false,
+    classeDeFalha: ehClasseDeFalha(cru.classeDeFalha) ? cru.classeDeFalha : '',
   }
 }
 
@@ -160,7 +163,9 @@ export function agregarPorIa(chamadas: ChamadaDeIa[]): IaDaSessao[] {
       duracaoS: 0,
       chamadas: 0,
       falhas: 0,
+      classeDeFalha: '' as const,
     }
+    if (c.classeDeFalha) atual.classeDeFalha = c.classeDeFalha
     atual.custoUsd += c.custoUsd
     atual.custoMedido = atual.custoMedido && c.custoMedido
     atual.tokens += c.tokens

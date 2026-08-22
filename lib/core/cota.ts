@@ -71,8 +71,14 @@ function novoAcumulador(c: ContribuicaoDeProvedor): Acumulador {
   }
 }
 
+function provedoresQueEstouraramCota(registro: RegistroDeRun): string[] {
+  const doLedger = registro.ias.filter(i => i.classeDeFalha === 'quota').map(i => i.provedor).filter(Boolean)
+  if (doLedger.length) return doLedger
+  return registro.classeDeFalha === 'quota' ? [registro.provedor] : []
+}
+
 function oLimiteEDesteProvedor(acc: Acumulador, registro: RegistroDeRun): boolean {
-  return registro.classeDeFalha === 'quota' && registro.provedor === acc.uso.provedor
+  return provedoresQueEstouraramCota(registro).includes(acc.uso.provedor)
 }
 
 function anotarLimite(acc: Acumulador, registro: RegistroDeRun): void {

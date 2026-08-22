@@ -1,7 +1,7 @@
 import { test, expect, beforeEach, afterEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, delimiter } from 'node:path'
+import { join } from 'node:path'
 import { handle, newSession } from '../lib/core/session'
 import { dispatch } from '../lib/core/dispatch'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'

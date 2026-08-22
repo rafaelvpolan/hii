@@ -5,7 +5,7 @@ import type { PreferenciasDeIa } from '../ai/preferencias'
 import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modoFor } from '../ai/registry'
 import { provedoresDisponiveis } from '../ai/disponibilidade'
 import { modelosDe, arquivoDoCatalogo } from '../ai/catalogo'
-import { modosDoProvedor, modoPadraoDoProvedor, temModos, ehModoValido } from '../ai/modos'
+import { modosDoProvedor, modoPadraoDoProvedor, temModos, ehModoValido, papelHonraModo } from '../ai/modos'
 import type { AgentRole } from '../ai/types'
 
 export interface ResultadoEscolha {
@@ -113,14 +113,9 @@ export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
   return { ok: true, mensagem: `esforco volta ao padrao da IA: ${papeis.join(', ')}` }
 }
 
-const PAPEL_QUE_HONRA_MODO: AgentRole = 'implement'
-
-function ressalvaDoPapel(papel: AgentRole): string {
-  return papel === PAPEL_QUE_HONRA_MODO ? '' : ` — atencao: hoje so ${PAPEL_QUE_HONRA_MODO} envia o modo para a IA`
-}
-
 export function ciclarModo(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
   const provedor = providerNameFor(role)
+  if (!papelHonraModo(role)) return { ok: false, mensagem: `${role} roda em leitura — modo nao se aplica` }
   if (!temModos(provedor)) return { ok: false, mensagem: `${provedor} nao tem modo de operacao` }
   const modos = modosDoProvedor(provedor)
   const atual = modoFor(role)
@@ -221,6 +216,9 @@ export function definirModoDeOperacao(partes: string[]): ResultadoEscolha {
   const { papel, resto } = papelAlvo(partes)
   const provedor = providerNameFor(papel)
   const escolhido = (resto[0] ?? '').trim()
+  if (!papelHonraModo(papel)) {
+    return { ok: false, mensagem: `${papel} roda em leitura — nao ha edicao para aprovar, entao modo nao se aplica (vale para: implement, step)` }
+  }
   if (!temModos(provedor)) {
     return { ok: false, mensagem: `${provedor} nao tem modo de operacao configuravel` }
   }
@@ -229,13 +227,13 @@ export function definirModoDeOperacao(partes: string[]): ResultadoEscolha {
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
     aplicar({ papeis: [papel], modo: '' })
-    return { ok: true, mensagem: `${papel}: modo padrao de ${provedor} (${modoPadraoDoProvedor(provedor)})${ressalvaDoPapel(papel)}` }
+    return { ok: true, mensagem: `${papel}: modo padrao de ${provedor} (${modoPadraoDoProvedor(provedor)})` }
   }
   if (!ehModoValido(provedor, escolhido)) {
     return { ok: false, mensagem: `"${escolhido}" nao e modo valido de ${provedor} — use: ${modosDoProvedor(provedor).join(' · ')}` }
   }
   aplicar({ papeis: [papel], modo: escolhido })
-  return { ok: true, mensagem: `${papel}: modo ${escolhido} em ${provedor}${ressalvaDoPapel(papel)}` }
+  return { ok: true, mensagem: `${papel}: modo ${escolhido} em ${provedor}` }
 }
 
 export function ajuda(): string[] {

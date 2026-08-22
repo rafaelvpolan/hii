@@ -263,7 +263,6 @@ test('janela mantem o cabecalho fixo enquanto rola', () => {
 })
 
 test('janela sempre mostra o card selecionado', () => {
-  const b = linhasDoBoard(muitos(40), { repo: 'org/app', selecionado: '38', ...semPassos })
   for (const alvo of ['1', '20', '38', '40']) {
     const j = janela(linhasDoBoard(muitos(40), { repo: 'org/app', selecionado: alvo, ...semPassos }), alvo, 15)
     expect(j.some(l => l.includes(`#${alvo.padStart(3, '0')} `))).toBe(true)

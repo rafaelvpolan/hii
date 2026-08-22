@@ -53,6 +53,7 @@ export interface ChamadaDeIa {
   tokensCache: number
   duracaoS: number
   ok: boolean
+  classeDeFalha?: FailureClass | ''
 }
 
 export interface IaDaSessao {
@@ -69,6 +70,7 @@ export interface IaDaSessao {
   duracaoS: number
   chamadas: number
   falhas: number
+  classeDeFalha?: FailureClass | ''
 }
 
 export interface TrocaDeProvedor {
@@ -110,7 +112,13 @@ export interface Run {
   failure_reason: string
 }
 
-export type FailureClass = 'transient' | 'quota' | 'terminal'
+export const CLASSES_DE_FALHA = ['transient', 'quota', 'terminal'] as const
+
+export type FailureClass = (typeof CLASSES_DE_FALHA)[number]
+
+export function ehClasseDeFalha(valor: string | undefined): valor is FailureClass {
+  return !!valor && (CLASSES_DE_FALHA as readonly string[]).includes(valor)
+}
 
 export interface VerifyResult {
   ok: boolean

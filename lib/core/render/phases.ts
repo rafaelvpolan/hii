@@ -19,8 +19,15 @@ export function phaseIndex(status: string): number {
   return PHASES.findIndex(p => p.states.includes(status))
 }
 
+const ROTULO_FORA_DE_FASE: Record<string, string> = {
+  CLARIFY: 'Pergunta',
+  WAITING: 'Esperando',
+  PAUSED: 'Pausado',
+  HALTED: 'Parado',
+}
+
 export function phaseLabel(status: string): string {
-  return PHASES[phaseIndex(status)]?.label ?? status
+  return PHASES[phaseIndex(status)]?.label ?? ROTULO_FORA_DE_FASE[status] ?? status
 }
 
 export function isActive(status: string): boolean {

@@ -187,10 +187,15 @@ O painel (hicode) não precisa reimplementar a leitura do estado: pede ao motor.
 | `hii estado --json` | snapshot inteiro: tarefas com status, fase, passos, url, PR, custo, **pergunta aberta** e o que o humano precisa fazer; mais daemon, saúde, cota e disco |
 | `hii estado --revisao` | só o token de revisão — muda quando o estado muda |
 | `hii estado --repo <owner/nome>` | filtra por projeto |
+| `hii tarefa nova "<texto>" --repo <owner/nome> [--json]` | **cria a tarefa e enfileira** — a porta de disparar, mesma da TUI |
 | `hii responder <id> <texto> [--json]` | responde a pergunta aberta e retoma a tarefa |
 | `hii approve <id> [--plan] [--json]` | aprova a url (ou o plano) |
 | `hii reject <id> [motivo] [--json]` | com motivo pede correção; sem motivo, refaz |
 | `hii halt <id> [motivo] [--json]` | para a tarefa |
+
+O painel não só lê o motor: `hii tarefa nova` é a porta de **disparar**, e segue o mesmo caminho da
+TUI — sempre tarefa, criada e enfileirada direto, sem leitura de intenção. Repo não registrado é
+recusado na porta, em vez de virar card que morre em `HALTED`.
 
 **Tempo real sem socket:** o painel guarda o último `--revisao` e só refaz o trabalho quando o token
 vira. `--revisao` é um `readdir` + `stat` local, barato de chamar a cada segundo; o snapshot inteiro
@@ -198,6 +203,10 @@ só quando mudou. O campo `versao` diz com qual contrato o painel está falando.
 
 `--json` devolve `{ ok, acao, id, status, mensagem }` — status é o **novo** status depois da ação, para
 o painel não precisar reler só para saber o que aconteceu.
+
+**Por que polling e não push.** SSE/HTTP em cima do mesmo snapshot seria possível, mas traz servidor,
+porta e superfície de auth para dentro do motor — o que contraria o escopo dele (execução, revisão,
+verificação e roteador de IAs). O polling é local e barato. **Só troque se ele doer de verdade.**
 
 ### Portas humanas do card
 
@@ -320,7 +329,7 @@ Comandos de barra dentro da TUI:
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
-| `/mode` | modo de operação da IA ativa (`plan`, `acceptEdits`, …); **shift+tab** cicla direto no prompt. Hoje só o papel `implement` envia o modo à IA |
+| `/mode` | modo de operação da IA ativa (`plan`, `acceptEdits`, …); **shift+tab** cicla direto no prompt. Vale para os papéis que editam (`implement`, `step`) — `verify` e `gate` rodam em leitura, então não há edição para aprovar |
 | `/rm <id>` | apaga card |
 | `/stop <id>` | para card |
 | `/exit` | sai |
@@ -343,6 +352,11 @@ A TUI não recebe imagem colada pelo terminal: o protocolo só transporta texto.
 | `/ref clipboard` | lê a imagem do clipboard do SO — `powershell.exe Get-Clipboard -Format Image` no WSL, `wl-paste` no Wayland, `xclip` no X11, `pngpaste` no macOS — e valida pela assinatura do arquivo, não pela extensão |
 | `/ref` | lista as referências do alvo e o uso de disco |
 | `/ref ambiente` | diz por onde o clipboard seria lido nesta máquina |
+
+> **Só o caminho do WSL foi verificado em execução real** (imagem no clipboard do Windows, PNG
+> conferido em disco). `wl-paste` (Wayland), `xclip` (X11) e `pngpaste` (macOS) estão cobertos por
+> teste com mock, mas nunca rodaram de verdade — trate os três como não verificados até alguém rodar
+> `/ref clipboard` de ponta a ponta nessas plataformas.
 
 Com tarefa aberta, a referência vai para `refs/<tarefa>/` — que **sobrevive a retry e a refazer**,
 porque a referência é entrada da tarefa, não da execução. Sem tarefa aberta, fica em

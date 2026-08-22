@@ -1,5 +1,6 @@
 import { isoNow } from '../card'
 import type { Fields } from '../card'
+import { classifyFailure } from '../ai/failure'
 import type { AgentRequest, AgentResult, AiProvider } from '../ai/types'
 import { COST_UNKNOWN } from '../ai/cost'
 import { emptyUsage } from '../ai/usage'
@@ -106,6 +107,9 @@ function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, pape
       tokensCache: res.usage.tokens_cache_create || 0,
       duracaoS: Math.round((Date.now() - t0) / 1000),
       ok: res.ok === true,
+      classeDeFalha: res.ok === true
+        ? ''
+        : classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text }).failureClass,
     })
     if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
   })

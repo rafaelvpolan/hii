@@ -12,6 +12,7 @@ import { arquivar, precisaArquivar } from '../core/archive'
 import { recordTickSuccess, reportTickFailure } from './health'
 import { wakeDueWaiting } from './waiting'
 import { limparTmpAntigo, usoDeDisco } from './estado-em-disco'
+import { podarRegistrosAntigos } from './podar-registros'
 
 export { reconcileStranded, pending } from './queue-state'
 
@@ -43,6 +44,10 @@ function podarTmp(): void {
     const r = limparTmpAntigo()
     if (r.removidos.length) {
       process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
+    }
+    const registros = podarRegistrosAntigos()
+    if (registros.removidos.length) {
+      process.stdout.write(`[runner] registros podados: ${registros.removidos.length} conversa(s)/ledger(s), ${registros.bytesLiberados} bytes\n`)
     }
     const uso = usoDeDisco()
     if (uso.nivel !== 'ok') {

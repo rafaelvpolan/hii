@@ -30,6 +30,23 @@ export interface LinhaDeProvedor {
   reportaCusto: boolean
 }
 
+export interface PapelDaSessao {
+  rotulo: string
+  provedor: string
+  modelo: string
+  custoUsd: number
+  tokens: number
+  chamadas: number
+  falhas: number
+}
+
+export interface LedgerDaSessao {
+  curto: string
+  papeis: PapelDaSessao[]
+  custoUsd: number
+  tokens: number
+}
+
 export interface ItemDoLoop {
   id: string
   passo: string
@@ -45,6 +62,7 @@ export interface EstadoDaConfig {
   serie: number[]
   loop: ItemDoLoop[]
   fila: number
+  sessao: LedgerDaSessao
   gastoHoje: number
   tetoUsd: number
   projeto: string

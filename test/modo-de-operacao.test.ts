@@ -66,9 +66,9 @@ test('/mode define o modo do papel atual', async () => {
 test('/mode <papel> <modo> mira o papel pedido', async () => {
   const { definirModoDeOperacao, aplicar } = await import('../lib/core/escolher-ia')
   const { modoFor } = await import('../lib/ai/registry')
-  aplicar({ papeis: ['gate'], provider: 'claude' })
-  definirModoDeOperacao(['gate', 'plan'])
-  expect(modoFor('gate')).toBe('plan')
+  aplicar({ papeis: ['step'], provider: 'claude' })
+  definirModoDeOperacao(['step', 'plan'])
+  expect(modoFor('step')).toBe('plan')
   expect(modoFor('implement')).not.toBe('plan')
 })
 
@@ -178,4 +178,24 @@ test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita 
   expect(fonte).toContain('approval_policy')
   expect(fonte).not.toContain("'-a', 'never'")
   expect(fonte).toContain("modoResolvido('codex'")
+})
+
+test('o papel step tambem envia o modo — ele edita arquivos como o implement', async () => {
+  const { papelHonraModo } = await import('../lib/ai/modos')
+  expect(papelHonraModo('implement')).toBe(true)
+  expect(papelHonraModo('step')).toBe(true)
+})
+
+test('REGRESSAO /mode recusa papel que roda em leitura, em vez de gravar preferencia inerte', async () => {
+  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  for (const papel of ['verify', 'gate']) {
+    const r = definirModoDeOperacao([papel, 'plan'])
+    expect(r.ok).toBe(false)
+    expect(r.mensagem).toContain('leitura')
+  }
+})
+
+test('REGRESSAO shift+tab num papel de leitura nao cicla modo nenhum', async () => {
+  const { ciclarModo } = await import('../lib/core/escolher-ia')
+  expect(ciclarModo('gate', 1).ok).toBe(false)
 })

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../card'
-import type { StepMap } from '../card'
+import type { StepMap, StepMetric } from '../card'
 import { CARD_BUDGET_USD, MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from './config'
 import { appendProjectMemory } from './memory'
 import { readCard, patchCard, repoPath, repoBase } from './card-store'
@@ -11,7 +11,7 @@ import type { PushResult } from './git'
 import { stopUrl } from './url-vivo'
 import { activeSteps } from './pipeline/config'
 import { planSteps } from './analyze'
-import { runGatedStep } from './gated'
+import { SUFIXO_DO_GATE, runGatedStep } from './gated'
 import { updateRunSteps } from './runs'
 import { runCodefoxGate, runGatedReview, persistGate, buildPrBody, gateOutcome, gateHaltReason, withGateRetry } from './codefox-gate'
 import { ensureContract } from '../contract/store'
@@ -87,11 +87,14 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   for (const step of steps.slice(startIdx)) {
     const instruction = step.instruction.replace('%s', desc ?? '')
     let r: { time: number; cost: number; costMeasured?: boolean; tokens: number; text: string }
+    let gateDoPasso: StepMetric | null = null
     if (step.gated) {
       const g = await runGatedStep(id, wt, base, step.agent, instruction, desc ?? '', step.label, { runStep: deps.runStep, runGatedReview })
       r = { ...g.metric, text: g.text }
+      gateDoPasso = g.metricaDoGate
       if (!g.ok) {
         fsteps[step.label] = g.metric
+        if (g.metricaDoGate.cost || g.metricaDoGate.tokens) fsteps[step.label + SUFIXO_DO_GATE] = g.metricaDoGate
         if (g.failureClass) {
           applyStepFailurePolicy(id, card, fsteps, {
             fromStatus: step.label,
@@ -125,11 +128,14 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       r = { time: sr.time, cost: sr.cost, costMeasured: sr.costMeasured, tokens: sr.tokens, text: sr.text }
     }
     fsteps[step.label] = { time: r.time, cost: r.cost, tokens: r.tokens, costMeasured: r.costMeasured }
+    if (gateDoPasso && (gateDoPasso.cost || gateDoPasso.tokens)) fsteps[step.label + SUFIXO_DO_GATE] = gateDoPasso
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
       haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`)
       return
     }
-    patchCard(id, { status: step.state, wait_attempts: '' }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (custo $${r.cost.toFixed(4)} · ${r.tokens} tokens)`)
+    const custoDoGate = gateDoPasso?.cost ?? 0
+    const detalheDoGate = gateDoPasso ? ` + crivo $${custoDoGate.toFixed(4)}` : ''
+    patchCard(id, { status: step.state, wait_attempts: '' }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (agente $${r.cost.toFixed(4)}${detalheDoGate} · ${r.tokens + (gateDoPasso?.tokens ?? 0)} tokens)`)
     process.stdout.write(`[runner] #${id}: ${step.label} (${step.agent}) $${r.cost.toFixed(4)}\n`)
   }
   if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Testes', 'Reajuste', deps.runStep))) {

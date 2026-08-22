@@ -27,7 +27,7 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (partes.length === 1) {
     const hii = byPrefix([...COMMANDS], head)
     const daIa = byPrefix(ctx.comandosDaIa ?? [], head).filter(c => !hii.includes(c))
-    const teto = hii.length ? hii.length : Math.min(6, daIa.length)
+    const teto = hii.length ? Math.max(0, hii.length - 1) : Math.min(6, daIa.length)
     return [[...hii, ...daIa.slice(0, teto)], head]
   }
 

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { isoNow } from '../card'
-import type { FailureClass, ImplementResult, Run, StepMap } from '../card'
+import type { FailureClass, IaDaSessao, ImplementResult, Run, StepMap } from '../card'
 import { cardsDir } from './config'
 import { chamadasDaSessao, resumoDaSessao, sessaoDoCard } from './ias-da-sessao'
 
@@ -41,6 +41,10 @@ function readRunAt(path: string): Run | null {
   }
 }
 
+function doImplementNoLedger(ias: IaDaSessao[], campo: 'provedor' | 'modelo'): string {
+  return ias.find(i => i.papel === 'implement')?.[campo] ?? ''
+}
+
 export function writeRun(id: string, res: ImplementResult, durationS = 0, steps: StepMap | null = null): Run {
   const dir = join(cardsDir(), 'runs')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
@@ -63,8 +67,8 @@ export function writeRun(id: string, res: ImplementResult, durationS = 0, steps:
     tokens_cache_read: u?.tokens_cache_read || 0,
     tokens_total: steps ? stepTokens : total,
     steps: steps || null,
-    provider: res.provider || '',
-    model: res.model || '',
+    provider: res.provider || doImplementNoLedger(resumo.ias, 'provedor'),
+    model: res.model || doImplementNoLedger(resumo.ias, 'modelo'),
     session: sessao,
     ias: resumo.ias,
     trocas: resumo.trocas,

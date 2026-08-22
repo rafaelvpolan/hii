@@ -1,7 +1,4 @@
-import { test, expect, beforeEach } from 'bun:test'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { test, expect } from 'bun:test'
 import { resolverResposta, cardsPerguntando } from '../lib/core/responder'
 import { renderPergunta, quebrar } from '../lib/core/render/clarify'
 import type { ClarifyQuestion, Fields } from '../lib/card/types'
