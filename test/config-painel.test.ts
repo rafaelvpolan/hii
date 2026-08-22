@@ -6,7 +6,7 @@ import { provedoresDisponiveis } from '../lib/ai/disponibilidade'
 
 const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor => ({
   nome, situacao: 'disponivel', habilitado: true, motivo: '', papeis: [], modelo: '', esforco: '',
-  plano: '', detalheDoPlano: '', janelas: [], idadeDoUsoHoras: -1, modelosDisponiveis: [],
+  plano: '', planoLido: true, detalheDoPlano: '', janelas: [], idadeDoUsoHoras: -1, modelosDisponiveis: [],
   restringeFerramenta: true, isolaLeitura: true, reportaCusto: true, ...over,
 })
 
@@ -76,6 +76,21 @@ test('estado vazio nao quebra e nao mente', () => {
   expect(t).toContain('nada em execucao')
 })
 
+test('altura curta esconde os paineis menos essenciais, sem cortar os principais', () => {
+  const t = renderConfig(base, { color: false, largura: 104, altura: 16 }).join('\n')
+  expect(t).toContain('IAS')
+  expect(t).toContain('GASTO DO MOTOR · 5H')
+  expect(t).toContain('LOOP EM EXECUCAO')
+  expect(t).not.toContain('GASTO DO MOTOR · 7D')
+  expect(t).not.toContain('TOKENS 5H')
+})
+
+test('altura generosa mantem todos os paineis', () => {
+  const t = renderConfig(base, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('GASTO DO MOTOR · 7D')
+  expect(t).toContain('TOKENS 5H')
+})
+
 test('loop em execucao mostra passo e agente, e conta a fila', () => {
   const t = renderConfig({ ...base, loop: [{ id: '024', passo: 'gerando', agente: 'limpio', desde: '00:41' }], fila: 2 },
     { color: false, largura: 100, altura: 30 }).join('\n')
@@ -143,6 +158,73 @@ test('provedor que nao reporta janela diz isso, em vez de mostrar zero', () => {
   expect(t).toContain('sem janela reportada')
 })
 
+test('provedor de nuvem cujo plano o hii sabe ler, sem tier pago, mostra (free)', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('claude', { situacao: 'disponivel', plano: '', planoLido: true })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('(free)')
+})
+
+test('REGRESSAO provedor sem leitor de plano NAO vira (free) — quem paga nao pode ser chamado de free', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('codex', { situacao: 'disponivel', plano: '', planoLido: false })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).not.toContain('(free)')
+  expect(t).toContain('plano nao lido')
+})
+
+test('cota estourada com plano lido tambem conta como conectado — mostra (free)', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('codex', { situacao: 'cota-esgotada', plano: '' })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('(free)')
+})
+
+test('REGRESSAO: provedor ausente sem plano NAO vira (free) — falta de dado nao e free', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('codex', { situacao: 'ausente', plano: '' })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).not.toContain('(free)')
+})
+
+test('REGRESSAO: sem login sem plano NAO vira (free)', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('claude', { situacao: 'nao-autenticado', plano: '' })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).not.toContain('(free)')
+})
+
+test('REGRESSAO: ollama local nunca vira (free), mesmo sem plano', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('ollama', { situacao: 'disponivel', plano: '' })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).not.toContain('(free)')
+  expect(t).toContain('—')
+})
+
+test('REGRESSAO: o painel de plano nao contradiz a coluna de ias quando o provedor selecionado mostra (free)', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    provedores: [ia('codex', { situacao: 'disponivel', plano: '' })],
+    selecionado: 'codex',
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('(free) — nenhum tier pago identificado')
+  expect(t).not.toContain('plano nao descoberto')
+})
+
 test('plano nao descoberto e dito, nao chutado', () => {
   const sem = ia('codex', { plano: '', situacao: 'ausente' })
   const t = renderConfig({ ...base, provedores: [sem], selecionado: 'codex' },
@@ -164,5 +246,10 @@ test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
 
 test('REGRESSAO: a TUI aquece a sonda do ollama antes de desenhar, senao o 1o quadro mente', async () => {
   const fonte = await Bun.file('bin/repl.ts').text()
-  expect(fonte).toContain('definirEstadoDoOllama(await sondarOllama())')
+  const sonda = fonte.indexOf('await sondarOllama()')
+  const desenho = fonte.indexOf('await tui(state)')
+  expect(sonda).toBeGreaterThan(-1)
+  expect(desenho).toBeGreaterThan(-1)
+  expect(sonda).toBeLessThan(desenho)
+  expect(fonte).toContain('definirEstadoDoOllama(estadoOllama)')
 })

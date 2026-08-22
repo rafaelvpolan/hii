@@ -128,7 +128,7 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
   const base = {
     provedores: [{
       nome: 'claude', situacao: 'disponivel' as const, habilitado: true, motivo: '',
-      plano: 'Max 5x', detalheDoPlano: '', idadeDoUsoHoras: 0.2, modelosDisponiveis: [],
+      plano: 'Max 5x', planoLido: true, detalheDoPlano: '', idadeDoUsoHoras: 0.2, modelosDisponiveis: [],
       papeis: [], modelo: '', esforco: '', restringeFerramenta: true, isolaLeitura: true, reportaCusto: true,
       janelas: [
         { rotulo: '5h', percentualDoLimite: 12, limiteConfiavel: true, gastoDoMotorUsd: 0.85, runsDoMotor: 1, restamMs: 3600_000 },
@@ -146,25 +146,9 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
   expect(t).toContain('GASTO DO MOTOR')
 })
 
-test('classificacao e papel do roteador: da para apontar para a ia local e persistir', async () => {
-  const { agentRoles, providerNameFor } = await import('../lib/ai/registry')
-  const { aplicar } = await import('../lib/core/escolher-ia')
-  process.env.HICODE_IA_FILE = join(estado, 'ia.json')
-  expect(agentRoles()).toContain('classificacao')
-  aplicar({ papeis: ['classificacao'], provider: 'ollama' })
-  expect(providerNameFor('classificacao')).toBe('ollama')
-  expect(providerNameFor('implement')).not.toBe('ollama')
-  delete process.env.HICODE_IA_FILE
+test('REGRESSAO classificacao saiu dos papeis configuraveis junto com a leitura de intencao', async () => {
+  const { agentRoles } = await import('../lib/ai/registry')
+  expect(agentRoles()).not.toContain('classificacao')
+  expect(agentRoles()).toEqual(['implement', 'verify', 'gate', 'step'])
 })
 
-test('a env antiga HICODE_CLASSIFY_PROVIDER continua valendo como o env do papel', async () => {
-  const { roleProviderEnv } = await import('../lib/ai/registry')
-  expect(roleProviderEnv('classificacao')).toBe('HICODE_CLASSIFY_PROVIDER')
-})
-
-test('o papel novo aparece nos ajustes da TUI, com rotulo legivel', async () => {
-  const { itensDeAjuste } = await import('../lib/core/ajustes')
-  const item = itensDeAjuste().find(i => i.chave === 'classificacao:ia')
-  expect(item).toBeTruthy()
-  expect(item?.rotulo).toContain('le a intencao')
-})

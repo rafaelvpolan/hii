@@ -7,10 +7,13 @@ import type { AgentRole } from './types'
 export const ESFORCOS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 export type Esforco = (typeof ESFORCOS)[number]
 
+export const ESFORCO_PADRAO = '(padrao da IA)'
+
 export interface PreferenciaDePapel {
   provider?: string
   model?: string
   effort?: string
+  modo?: string
 }
 
 export type PreferenciasDeIa = Partial<Record<AgentRole, PreferenciaDePapel>>

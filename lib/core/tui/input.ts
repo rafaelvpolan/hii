@@ -1,6 +1,6 @@
 import { ehCola, textoDaCola } from './keys'
 
-export type ModoNavegacao = '' | 'board' | 'rodape' | 'ajustes'
+export type ModoNavegacao = '' | 'board' | 'rodape'
 
 export interface InputState {
   buffer: string
@@ -26,7 +26,7 @@ export type InputAction =
   | { kind: 'entrar'; modo: ModoNavegacao }
   | { kind: 'limpar' }
   | { kind: 'aba'; dir: -1 | 1 }
-  | { kind: 'ciclar-ia'; dir: -1 | 1 }
+  | { kind: 'ciclar-modo'; dir: -1 | 1 }
   | { kind: 'rolar'; dir: -1 | 1 }
 
 export interface KeyResult {
@@ -138,10 +138,18 @@ export function pararNavegacao(state: InputState): InputState {
   return state.navegando ? { ...state, navegando: '' } : state
 }
 
-function rolagemDe(key: string): -1 | 1 | 0 {
+export function rolagemDe(key: string): -1 | 1 | 0 {
   if (ROLAR_CIMA.includes(key)) return -1
   if (ROLAR_BAIXO.includes(key)) return 1
   return 0
+}
+
+export function ehEscape(key: string): boolean {
+  return key === ESC || key === ESC_CSI
+}
+
+export function ehInterrupt(key: string): boolean {
+  return INTERRUPT.includes(key)
 }
 
 export function keypress(state: InputState, key: string): KeyResult {
@@ -160,13 +168,8 @@ export function keypress(state: InputState, key: string): KeyResult {
     if (key === UP || key === DOWN) {
       return { state, action: { kind: 'nav', dir: key === UP ? -1 : 1, modo: state.navegando } }
     }
-    if (state.navegando === 'ajustes') {
-      if (key === '\x1b[Z') return { state: { ...state, navegando: '' }, action: { kind: 'redraw' } }
-      if (key === '\t') return { state, action: { kind: 'ciclar-ia', dir: 1 } }
-    } else {
-      if (key === '\t') return { state, action: { kind: 'aba', dir: 1 } }
-      if (key === '\x1b[Z') return { state, action: { kind: 'aba', dir: -1 } }
-    }
+    if (key === '\t') return { state, action: { kind: 'aba', dir: 1 } }
+    if (key === '\x1b[Z') return { state, action: { kind: 'aba', dir: -1 } }
     return keypress({ ...state, navegando: '' }, key)
   }
   if (ENTER.includes(key) && state.buffer.endsWith('\\')) {
@@ -191,7 +194,7 @@ export function keypress(state: InputState, key: string): KeyResult {
   }
   if (key === '\t') return { state, action: { kind: 'complete', line: state.buffer } }
   if (key === '\x1b[Z' && !state.buffer) {
-    return { state: { ...state, navegando: 'ajustes' }, action: { kind: 'nav', dir: 1, modo: 'ajustes' } }
+    return { state, action: { kind: 'ciclar-modo', dir: 1 } }
   }
   if (LIMPAR.includes(key)) return { state, action: { kind: 'limpar' } }
   if (BACKSPACE.includes(key)) {

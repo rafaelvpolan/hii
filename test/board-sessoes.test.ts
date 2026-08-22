@@ -37,6 +37,8 @@ beforeEach(() => {
 test('o modo board tem ordem propria, vinda das sessoes, e nao a lista de cards do rodape', async () => {
   const antigo = sessaoEmDisco('010', 3 * 3600_000)
   const recente = sessaoEmDisco('011', 3600_000)
+  cardEmDisco('010', 'MERGED')
+  cardEmDisco('011', 'MERGED')
   cardEmDisco('020', 'EXECUTING')
   const { ordemDoRodape, historicoDaTela } = await import('../bin/lib/board-tui')
   const { newSession } = await import('../lib/core/session')
@@ -51,6 +53,7 @@ test('o modo board tem ordem propria, vinda das sessoes, e nao a lista de cards 
 test('varias sessoes do mesmo card sao itens distintos e navegaveis uma por uma', async () => {
   const primeira = sessaoEmDisco('010', 2 * 3600_000)
   const segunda = sessaoEmDisco('010', 3600_000)
+  cardEmDisco('010', 'MERGED')
   expect(primeira).not.toBe(segunda)
   const { ordemDoRodape, historicoDaTela, navegar } = await import('../bin/lib/board-tui')
   const { newSession } = await import('../lib/core/session')
@@ -68,6 +71,8 @@ test('varias sessoes do mesmo card sao itens distintos e navegaveis uma por uma'
 test('a seta esquerda realca a sessao escolhida na lista', async () => {
   sessaoEmDisco('010', 2 * 3600_000)
   sessaoEmDisco('011', 3600_000)
+  cardEmDisco('010', 'MERGED')
+  cardEmDisco('011', 'MERGED')
   const { historicoDaTela, navegar } = await import('../bin/lib/board-tui')
   const { newSession } = await import('../lib/core/session')
   const { selecionar } = await import('../bin/lib/estado')
@@ -83,6 +88,7 @@ test('a seta esquerda realca a sessao escolhida na lista', async () => {
 
 test('REGRESSAO: dentro de uma tarefa, o modo board mostra as sessoes em vez do seguimento', async () => {
   sessaoEmDisco('010', 3600_000)
+  cardEmDisco('010', 'MERGED')
   cardEmDisco('020', 'EXECUTING')
   const { corpoDaTela } = await import('../bin/lib/board-tui')
   const { newSession, seguir } = await import('../lib/core/session')
@@ -105,25 +111,59 @@ test('enter no modo board abre a tarefa daquela sessao', async () => {
   expect(alvoDeEntrada('board', newSession('org/app'))).toEqual({ kind: 'tarefa', id: '010' })
 })
 
-test('em modo ajustes o enter nao aplica provedor, mesmo com a tela de config aberta', async () => {
-  const { alvoDeEntrada } = await import('../bin/lib/board-tui')
+test('o board so mostra sessoes do projeto atual, mesmo com sessoes de outro projeto no disco', async () => {
+  sessaoEmDisco('010', 3600_000)
+  const chave011 = sessaoEmDisco('011', 7200_000)
+  cardEmDisco('010', 'MERGED')
+  const fm = { id: '011', status: 'MERGED', title: 'tarefa 011', repo: 'outra/coisa', updated: new Date().toISOString() }
+  const cabeca = Object.entries(fm).map(([k, v]) => `${k}: ${v}`).join('\n')
+  writeFileSync(join(dir, '011-slug.md'), `---\n${cabeca}\n---\n## Objetivo\nx\n`)
+  const { ordemDoRodape, historicoDaTela } = await import('../bin/lib/board-tui')
   const { newSession } = await import('../lib/core/session')
-  const { selecionar } = await import('../bin/lib/estado')
-  selecionar('implement:esforco')
-  const naConfig = { ...newSession('org/app'), tela: 'config' as const }
-  expect(alvoDeEntrada('ajustes', naConfig)).toEqual({ kind: 'nada' })
+  const state = newSession('org/app')
+  const linhas = historicoDaTela(12, state.repo)
+  expect(linhas.join('\n')).toContain('#010')
+  expect(linhas.join('\n')).not.toContain('#011')
+  expect(ordemDoRodape(state, 'board')).not.toContain(chave011)
 })
 
-test('REGRESSAO: com /config aberto, shift+tab navega os ajustes que o rodape mostra', async () => {
-  const { navegarNaTela } = await import('../bin/lib/board-tui')
-  const { ordemDosAjustes, ciclarAjuste } = await import('../lib/core/ajustes')
+test('REGRESSAO: fora do modo board, o /historico continua global — nao esconde sessoes de outros projetos nem o gasto delas', async () => {
+  sessaoEmDisco('010', 3600_000)
+  const fm = { id: '010', status: 'MERGED', title: 'tarefa 010', repo: 'outra/coisa', updated: new Date().toISOString() }
+  const cabeca = Object.entries(fm).map(([k, v]) => `${k}: ${v}`).join('\n')
+  writeFileSync(join(dir, '010-slug.md'), `---\n${cabeca}\n---\n## Objetivo\nx\n`)
+  const { corpoDaTela } = await import('../bin/lib/board-tui')
   const { newSession } = await import('../lib/core/session')
-  const { selecionado, selecionar } = await import('../bin/lib/estado')
+  const { stripAnsi } = await import('../lib/core/tui/layout')
+  const state = newSession('org/app')
+  const global = corpoDaTela(state, { navegando: '', altura: 12 }).map(stripAnsi).join('\n')
+  const board = corpoDaTela(state, { navegando: 'board', altura: 12 }).map(stripAnsi).join('\n')
+  expect(global).toContain('#010')
+  expect(board).not.toContain('#010')
+})
+
+test('projeto sem nenhuma sessao mostra um aviso especifico, nao a lista generica vazia', async () => {
+  sessaoEmDisco('010', 3600_000)
+  const fm = { id: '010', status: 'MERGED', title: 'tarefa 010', repo: 'outra/coisa', updated: new Date().toISOString() }
+  const cabeca = Object.entries(fm).map(([k, v]) => `${k}: ${v}`).join('\n')
+  writeFileSync(join(dir, '010-slug.md'), `---\n${cabeca}\n---\n## Objetivo\nx\n`)
+  const { historicoDaTela } = await import('../bin/lib/board-tui')
+  const linhas = historicoDaTela(12, 'org/app').join('\n')
+  expect(linhas).toContain('nenhuma sessao de org/app')
+  expect(linhas).not.toContain('escreva a primeira tarefa')
+})
+
+test('REGRESSAO: enter no /config com selecao invalida ou de outra tela aplica o mesmo provedor que a lista realca', async () => {
+  const { alvoDeEntrada } = await import('../bin/lib/board-tui')
+  const { providerNames } = await import('../lib/ai/registry')
+  const { newSession } = await import('../lib/core/session')
+  const { selecionar } = await import('../bin/lib/estado')
   const naConfig = { ...newSession('org/app'), tela: 'config' as const }
+  const primeiro = providerNames()[0] ?? ''
   selecionar('')
-  expect(navegarNaTela(naConfig, 1, 'ajustes')).toBe(true)
-  expect(ordemDosAjustes()).toContain(selecionado())
-  expect(ciclarAjuste(selecionado(), 1).ok).toBe(true)
+  expect(alvoDeEntrada('rodape', naConfig)).toEqual({ kind: 'provedor', nome: primeiro })
+  selecionar('42')
+  expect(alvoDeEntrada('rodape', naConfig)).toEqual({ kind: 'provedor', nome: primeiro })
 })
 
 test('com /config aberto, a seta de baixo continua escolhendo provedor na tela', async () => {

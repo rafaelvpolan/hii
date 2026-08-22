@@ -12,6 +12,8 @@ export function dispatchIOFalso(parcial: Partial<DispatchIO> = {}): DispatchIO {
     largura: () => 78,
     responder: () => naoProvido('responder'),
     plano: async () => [],
+    daemonOnline: () => true,
+    iaProntaParaEnviar: () => ({ ok: true, motivo: '' }),
     ...parcial,
   }
 }

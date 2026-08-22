@@ -1,7 +1,7 @@
 import type { Fields } from '../../card'
 import { isActive, esperaHumano } from './phases'
 import { idadeDe } from './board'
-import { truncVisible, padVisible } from '../tui/layout'
+import { truncVisible } from '../tui/layout'
 import { marcaCurtaDoDisco } from './disco'
 import type { UsoDeDisco } from '../../runner/estado-em-disco'
 
@@ -17,6 +17,7 @@ export interface Propriedades {
   provedor: string
   modelo: string
   effort: string
+  modo: string
   projeto: string
   custoHoje: string
   pisoDoGasto: string
@@ -77,6 +78,7 @@ export function linhaPropriedades(p: Propriedades, opts: Partial<RodapeOptions> 
   const partes = [
     `ia ${paint(ia, CYAN, o)}`,
     `esforco ${paint(p.effort, CYAN, o)}`,
+    p.modo ? `modo ${paint(p.modo, CYAN, o)}` : '',
     p.projeto ? `projeto ${paint(p.projeto, CYAN, o)}` : '',
     gastoDoDia(p, o),
     p.disco ? marcaCurtaDoDisco(p.disco, { color: o.color }) : '',
@@ -187,22 +189,3 @@ export function linhasExecucao(lista: EmExecucao[], opts: Partial<RodapeOptions>
   }), ...contador(lista.length, visiveis.length, o)]
 }
 
-export interface AjusteVisivel {
-  chave: string
-  rotulo: string
-  valor: string
-}
-
-export function linhasAjustes(itens: AjusteVisivel[], opts: Partial<RodapeOptions> = {}): string[] {
-  const o = { ...PADRAO, ...opts }
-  const largura = itens.reduce((a, i) => Math.max(a, i.rotulo.length), 0)
-  const cabecalho = paint('  ajustes · ↑↓ escolhe · tab troca · shift+tab sai', DIM, o)
-  const linhas = itens.map((i) => {
-    const alvo = o.selecionado === i.chave
-    const marca = alvo ? paint(BARRA, CYAN, o) : ' '
-    const nome = paint(padVisible(i.rotulo, largura), DIM, o)
-    const valor = alvo && o.color ? `${BOLD}${CYAN}${i.valor}${RESET}` : paint(i.valor, CYAN, o)
-    return truncVisible(`${marca} ${nome}  ${valor}`, o.width)
-  })
-  return [cabecalho, ...linhas]
-}

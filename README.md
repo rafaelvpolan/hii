@@ -15,7 +15,84 @@ hii <comando>    # CLI direta: subir daemon, ver status, governar cards
 
 > O que ficou em aberto (com o porquê e onde mexer) está em **[PENDENCIAS.md](PENDENCIAS.md)**.
 
-## Onde clonar e como instalar
+---
+
+## Requisitos
+
+### Bun runtime
+
+O projeto usa **Bun >= 1.3** como runtime. Se você não tem Bun instalado:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+Confira a versão:
+
+```bash
+bun --version        # deve exibir 1.3.0 ou maior
+```
+
+Se a saída não aparecer, ou se a versão for menor que 1.3, reinstale seguindo a documentação
+em https://bun.sh.
+
+### Git
+
+O motor depende de **git** (qualquer versão recente) para clonar, criar branches e worktrees.
+
+```bash
+git --version        # verifica se está instalado
+```
+
+Se não estiver, instale via seu gerenciador de pacotes (`apt`, `brew`, `choco`, etc.).
+
+### GitHub CLI (gh)
+
+Necessário para criar PRs automaticamente. O motor usa apenas `gh pr create` — **sem extensões**.
+
+```bash
+gh auth status       # confira autenticação
+```
+
+Se não estiver autenticado:
+
+```bash
+gh auth login        # segue o fluxo interativo
+```
+
+Se `gh` não estiver instalado, veja https://cli.github.com.
+
+### IA de linha de comando
+
+O motor fala com pelo menos uma IA. Escolha uma das opções:
+
+**Claude (recomendado)**
+- Instale `claude` CLI (https://github.com/anthropics/anthropic-cli)
+- Exporte sua chave: `export ANTHROPIC_API_KEY=sk-...`
+
+**Codex / OpenAI**
+- Instale `codex` CLI (https://github.com/openai/...)
+- Exporte sua chave: `export OPENAI_API_KEY=sk-...`
+
+**Ollama (local, grátis)**
+- Instale Ollama em https://ollama.ai
+- Lance o daemon: `ollama serve`
+- Baixe um modelo:
+  ```bash
+  ollama pull llama2          # modelo recomendado (4.5 GB, ~4GB RAM livre)
+  ollama pull llama3.1        # alternativa maior (8B, ~6GB RAM)
+  ```
+
+**Sistema recomendado para Ollama:**
+- **llama2** (padrão sugerido): 4–5 GB de RAM livre, ~2.5 GB de disco
+- **llama3.1:8b**: 6–7 GB de RAM livre, ~4.7 GB de disco
+- **llama3.1:70b** (GPU recomendado): 40+ GB de VRAM ou 70+ GB de RAM
+
+Qualquer falta será detectada em `hii doctor`.
+
+---
+
+## Instalação
 
 O motor não precisa morar perto do repo que ele modifica — o alvo é registrado depois, por caminho.
 
@@ -33,9 +110,6 @@ which hii         # ~/.bun/bin/hii
 hii --help
 ```
 
-Requisitos: **Bun** ≥ 1.3, **git**, **gh** autenticado (`gh auth status`) e pelo menos uma IA de
-linha de comando instalada (`claude`, `codex`, `kimi` ou `ollama` local).
-
 > `bun link` daqui publica **só `hii`**. O painel web (hicode) publica **só `hicode`**. Se os dois
 > declararem o mesmo nome no `package.json`, o último `bun link` rouba o comando do outro.
 
@@ -47,7 +121,12 @@ compartilhado com o painel web, por exemplo — o caminho é o **contrato de amb
 
 ---
 
-## Primeiro uso, em quatro comandos
+## Execução
+
+> **Atenção:** A execução depende de você ter completado a **Instalação** e ter acesso a uma
+> **IA de linha de comando funcional** (verificável com `hii doctor`).
+
+### Primeiro uso, em quatro comandos
 
 ```bash
 # 1. registra o repo que as tarefas vão modificar (fica só na sua máquina)
@@ -235,12 +314,13 @@ Comandos de barra dentro da TUI:
 | `/help` | os comandos e as teclas |
 | `/historico` | volta ao histórico de sessões — **sai** da tarefa aberta |
 | `/config` | **página própria** das IAs: instaladas, habilitadas, plano, limite por janela e gasto do motor |
-| `/new-task` | força "isto é uma tarefa" (quando o texto parece pergunta) |
-| `/new-ask` | força "isto é uma pergunta" (não cria card) |
-| `/new-session` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
+| `/new-task` | cria a tarefa explicitamente — mesmo efeito de escrever o texto solto |
+| `/new-ask` | pergunta sobre o projeto **sem** criar card — texto solto sempre vira tarefa, então pergunta pede este comando |
+| `/new-session`, `/new` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
-| `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço — inclusive do papel `classificacao` (a leitura de intenção), que é o candidato natural à IA local |
+| `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
+| `/mode` | modo de operação da IA ativa (`plan`, `acceptEdits`, …); **shift+tab** cicla direto no prompt. Hoje só o papel `implement` envia o modo à IA |
 | `/rm <id>` | apaga card |
 | `/stop <id>` | para card |
 | `/exit` | sai |
@@ -468,7 +548,7 @@ com que o daemon poda o transitório de `tmp/` a cada tick.
 
 ## Segurança operacional
 
-- **`acceptEdits`**, nunca `bypassPermissions`
+- **`acceptEdits`**, nunca `bypassPermissions` — e o catálogo de `/mode` não oferece nenhum modo que dispense aprovação (nem `bypassPermissions`, nem `dontAsk`)
 - **`cwd-guard`** confina cada agente ao worktree do card
 - denylist de operações destrutivas — conveniência, **não** fronteira
 - banco read-only por role SELECT-only; verificação via MCP com `read_only=true`

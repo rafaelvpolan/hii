@@ -35,3 +35,4 @@ config/repos.json
 # preferencia de IA em tempo de execucao (por maquina)
 config/ia.json
 config/*.tmp.*
+.runner.pid.root

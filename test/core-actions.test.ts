@@ -192,3 +192,12 @@ test('rejectUrl fora de URL recusa', () => {
   A.transition(id, 'HALTED')
   expect(A.rejectUrl(id, 'x').ok).toBe(false)
 })
+
+test('REGRESSAO canApprovePlan: so estado pre-execucao', () => {
+  for (const s of ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED', 'PAUSED']) {
+    expect(A.canApprovePlan(s)).toBe(true)
+  }
+  for (const s of ['EXECUTING', 'EXECUTED', 'URL', 'URL_OK', 'REVIEWED', 'PR_OPEN', 'MERGED', 'HALTED']) {
+    expect(A.canApprovePlan(s)).toBe(false)
+  }
+})

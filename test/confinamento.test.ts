@@ -62,6 +62,18 @@ echo '{"total_cost_usd":0.01,"result":"feito","is_error":false,"usage":{"input_t
 writeFileSync(join(BIN, 'claude'), FAKE)
 chmodSync(join(BIN, 'claude'), 0o755)
 
+const FAKE_KIMI = `#!/usr/bin/env bash
+: > "$CONF_ARGV_FILE"
+for a in "$@"; do printf '%s\\0' "$a" >> "$CONF_ARGV_FILE"; done
+pwd -P > "$CONF_CWD_FILE"
+cat <<'FIM'
+{"role":"assistant","content":"feito"}
+FIM
+`
+
+writeFileSync(join(BIN, 'kimi'), FAKE_KIMI)
+chmodSync(join(BIN, 'kimi'), 0o755)
+
 const PATH_ORIGINAL = process.env.PATH ?? ''
 process.env.PATH = `${BIN}:${PATH_ORIGINAL}`
 
@@ -182,11 +194,33 @@ test('tools do omc NAO entram quando o escopo do conector e dinamico (nao chega 
   process.env.CONF_OMC_ESCOPO = 'user'
 })
 
-test('--agents nao aparece quando nao ha agente a injetar', async () => {
+test('--agents nao aparece quando nao ha agente a injetar, e o prompt cai no modo direto (papel, sem "agente Nexus")', async () => {
   limpar()
   await runStep(WT, 'agente-que-nao-existe', 'faca algo')
   expect(argvDoDisco()).not.toContain('--agents')
   expect(agentesNexusJsonPor(['agente-que-nao-existe'])).toBe('')
+  const a = argvDoDisco()
+  const prompt = String(a[a.indexOf('-p') + 1] ?? '')
+  expect(prompt).not.toContain('agente Nexus')
+  expect(prompt).toContain('Atue no papel "agente-que-nao-existe"')
+  const tools = String(a[a.indexOf('--allowedTools') + 1] ?? '').split(',')
+  expect(tools).not.toContain('Task')
+})
+
+test('kimi nao promete agentes Nexus que nao consegue injetar: implement cai no modo direto (sem Task, sem --agents)', async () => {
+  limpar()
+  process.env.HICODE_IMPLEMENT_PROVIDER = 'kimi'
+  try {
+    await implement(CARTAO, WT)
+  } finally {
+    delete process.env.HICODE_IMPLEMENT_PROVIDER
+  }
+  const a = argvDoDisco()
+  expect(a).not.toContain('--agents')
+  const prompt = String(a[a.indexOf('-p') + 1] ?? '')
+  expect(prompt).not.toContain('AGENTES NEXUS')
+  expect(prompt).not.toContain('Roteie via Task')
+  expect(prompt).toContain('Implemente a tarefa abaixo')
 })
 
 test('agentsArgv omite a flag com JSON vazio, ausente ou so espaco', () => {
@@ -214,8 +248,31 @@ test('o prompt de implement so roteia para agente que ele mesmo injeta', async (
   const a = argvDoDisco()
   const prompt = String(a[a.indexOf('-p') + 1] ?? '')
   const roteados = [...prompt.matchAll(/->\s*([a-z]+)/g)].map(m => m[1] ?? '')
+  const injetados = Object.keys(agentesDoDisco())
   expect(roteados.length).toBeGreaterThan(0)
-  for (const agente of roteados) expect(AGENTES_IMPLEMENT).toContain(agente)
+  for (const agente of roteados) expect(injetados).toContain(agente)
+})
+
+test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENTES_IMPLEMENT, o roteamento cita SO os presentes', async () => {
+  const SUBSET_DIR = mkdtempSync(join(tmpdir(), 'hicode-agentes-subset-'))
+  writeFileSync(join(SUBSET_DIR, 'limpio.md'), '---\nname: limpio\ndescription: agente de logica e feature, code review limpo\n---\nImplemente a feature com codigo limpo, SOLID e testado.\n')
+  writeFileSync(join(SUBSET_DIR, 'radix.md'), '---\nname: radix\ndescription: agente de banco de dados e migrations\n---\nImplemente a mudanca de banco com migration segura e reversivel.\n')
+  const dirOriginal = process.env.HICODE_AGENTS_DIR
+  process.env.HICODE_AGENTS_DIR = SUBSET_DIR
+  try {
+    limpar()
+    await implement(CARTAO, WT)
+    const injetados = Object.keys(agentesDoDisco())
+    expect(injetados.sort()).toEqual(['limpio', 'radix'])
+    for (const fora of ['vitro', 'frontiteto', 'rufus']) expect(injetados).not.toContain(fora)
+    const a = argvDoDisco()
+    const prompt = String(a[a.indexOf('-p') + 1] ?? '')
+    const roteados = [...prompt.matchAll(/->\s*([a-z]+)/g)].map(m => m[1] ?? '')
+    expect(roteados.sort()).toEqual(['limpio', 'radix'])
+  } finally {
+    process.env.HICODE_AGENTS_DIR = dirOriginal
+    rmSync(SUBSET_DIR, { recursive: true, force: true })
+  }
 })
 
 test('modo readonly (verifyVisual) fica no ROOT de proposito, sem tools do omc e sem --agents', async () => {

@@ -1,9 +1,12 @@
 import { openScreen } from './screen'
 import type { Terminal } from './screen'
-import { newInput, keypress, aplicarCompletar, pararNavegacao, classificarNavegacao } from './input'
+import {
+  newInput, keypress, aplicarCompletar, pararNavegacao, classificarNavegacao,
+  rolagemDe, ehEscape, ehInterrupt,
+} from './input'
 import type { ModoNavegacao } from './input'
 import { tokenizeParcial, agruparColagem } from './keys'
-import { linkificar, quebrarEmLargura } from './layout'
+import { linkificar, orcamentoDoCorpo, quebrarEmLargura } from './layout'
 import type { InputState } from './input'
 
 interface ErroLancado {
@@ -13,6 +16,8 @@ interface ErroLancado {
 function mensagemDoErro(e: ErroLancado): string {
   return e?.message ? e.message : String(e)
 }
+
+const TECLAS_LIVRES_NA_TELA = ['\t', '\x1b[Z']
 
 export interface CorpoContexto {
   navegando: ModoNavegacao
@@ -37,10 +42,11 @@ export interface AppHooks {
   onNav?: (dir: -1 | 1, modo: ModoNavegacao) => boolean
   onEntrar?: (modo: ModoNavegacao) => void
   onAba?: (dir: -1 | 1) => void
-  onCiclarIa?: (dir: -1 | 1) => void
+  onCiclarModo?: (dir: -1 | 1) => void
   podeLimpar?: () => string
   logPrimeiro?: (ctx: CorpoContexto) => boolean
   telaPropria?: (ctx: CorpoContexto) => boolean
+  sairDaTela?: () => void
   acima?: (ctx: CorpoContexto) => string[]
   intervalMs: number
 }
@@ -60,11 +66,12 @@ const PADRAO = {
   podeLimpar: (): string => '',
   logPrimeiro: (): boolean => false,
   telaPropria: (): boolean => false,
+  sairDaTela: (): void => {},
   acima: (): string[] => [],
   onNav: (): boolean => false,
   onEntrar: (): void => {},
   onAba: (): void => {},
-  onCiclarIa: (): void => {},
+  onCiclarModo: (): void => {},
 }
 
 export function createApp(term: Terminal, dados: AppHooks): App {
@@ -92,6 +99,18 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     ]
   }
 
+  const janelaDoTopo = (linhas: string[], altura: number): string[] => {
+    const maximo = Math.max(0, linhas.length - altura)
+    rolagem = Math.min(Math.max(0, rolagem), maximo)
+    return linhas.slice(rolagem, rolagem + altura)
+  }
+
+  const ctxAtual = (): CorpoContexto => ({
+    navegando: input.navegando,
+    altura: Math.max(4, term.rows() - 6 - quadro.rodape.length - sugestoes.length),
+    sugerindo: sugestoes.length > 0,
+  })
+
   const desenhar = (): void => {
     const sugAnterior = sugestoes.join('\n')
     sugestoes = input.buffer.startsWith('/') && !input.buffer.includes('\n')
@@ -99,6 +118,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       : []
     if (!sugestoes.length) sugIdx = -1
     if (sugestoes.join('\n') !== sugAnterior) sujo = true
+    const acima = hooks.acima(ctxAtual())
     if (sujo) {
       const rodape = hooks.rodape()
       const ctx: CorpoContexto = {
@@ -109,32 +129,39 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       const fixo = hooks.fixo(ctx)
       const corpo = hooks.corpo(ctx)
       const interno = Math.max(20, term.cols() - 4)
-      const rolante = ctx.navegando === 'board' || hooks.telaPropria(ctx)
+      const emTelaPropria = hooks.telaPropria(ctx)
+      const rolante = ctx.navegando === 'board' || emTelaPropria
         ? corpo
         : (hooks.logPrimeiro(ctx) ? [...extras, ...corpo] : [...corpo, ...extras])
             .flatMap(l => quebrarEmLargura(l, interno))
-      quadro = { fixo, corpo: janelaRolada(rolante, Math.max(1, ctx.altura)), rodape }
+      const janela = emTelaPropria ? janelaDoTopo : janelaRolada
+      const altura = emTelaPropria
+        ? orcamentoDoCorpo({
+            rows: term.rows(),
+            temLegenda: hooks.legenda() !== undefined,
+            temDica: !!hooks.dica(ctx),
+            linhasDeEntrada: 1,
+            linhasDeRodape: rodape.length,
+            linhasAcima: acima.length,
+          }).alturaCorpo
+        : ctx.altura
+      quadro = { fixo, corpo: janela(rolante, Math.max(1, altura)), rodape }
       sujo = false
     }
-    const rodape = quadro.rodape
-    const ctx: CorpoContexto = {
-      navegando: input.navegando,
-      altura: Math.max(4, term.rows() - 6 - rodape.length - sugestoes.length),
-      sugerindo: sugestoes.length > 0,
-    }
-    const acima = hooks.acima(ctx)
+    const ctx = ctxAtual()
+    const escondePrompt = ctx.navegando === 'board' || hooks.telaPropria(ctx)
     screen.draw({
       header: hooks.header(),
       corpo: quadro.corpo,
       fixo: quadro.fixo,
-      input: ctx.navegando === 'board' ? '' : input.buffer,
-      cursor: ctx.navegando === 'board' ? 0 : input.cursor,
+      input: escondePrompt ? '' : input.buffer,
+      cursor: escondePrompt ? 0 : input.cursor,
       dica: hooks.dica(ctx),
       prompt: hooks.prompt(),
       corInput: hooks.corInput,
       sugestoes: [...acima, ...hooks.sugestoes(sugestoes, sugIdx)],
       legenda: hooks.legenda(),
-      rodape,
+      rodape: quadro.rodape,
     })
   }
 
@@ -178,8 +205,37 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     if (precisaDesenhar && !sair) desenhar()
   }
 
+  const passoDeRolagem = (): number => Math.max(1, term.rows() - 8)
+
   const onKey = (key: string): boolean => {
     if (sair) return false
+    if (hooks.telaPropria(ctxAtual())) {
+      if (ehEscape(key) || ehInterrupt(key)) {
+        sujo = true
+        rolagem = 0
+        input = pararNavegacao(input)
+        hooks.sairDaTela()
+        return true
+      }
+      const navDaTela = classificarNavegacao(key)
+      if (navDaTela === 'cima' || navDaTela === 'baixo') {
+        sujo = true
+        if (hooks.onNav(navDaTela === 'baixo' ? 1 : -1, input.navegando)) rolagem = 0
+        return true
+      }
+      if (navDaTela === 'enter') {
+        sujo = true
+        hooks.onEntrar(input.navegando)
+        return true
+      }
+      const rolar = rolagemDe(key)
+      if (rolar !== 0) {
+        sujo = true
+        rolagem = Math.max(0, rolagem + (rolar === 1 ? passoDeRolagem() : -passoDeRolagem()))
+        return true
+      }
+      if (!TECLAS_LIVRES_NA_TELA.includes(key)) return false
+    }
     if (sugestoes.length) {
       const nav = classificarNavegacao(key)
       if (nav === 'baixo') {
@@ -231,13 +287,12 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     }
     if (a.kind === 'rolar') {
       sujo = true
-      const passo = Math.max(1, term.rows() - 8)
-      rolagem = Math.max(0, rolagem + (a.dir === -1 ? passo : -passo))
+      rolagem = Math.max(0, rolagem + (a.dir === -1 ? passoDeRolagem() : -passoDeRolagem()))
       return true
     }
-    if (a.kind === 'ciclar-ia') {
+    if (a.kind === 'ciclar-modo') {
       sujo = true
-      hooks.onCiclarIa(a.dir)
+      hooks.onCiclarModo(a.dir)
       return true
     }
     if (a.kind === 'aba') {

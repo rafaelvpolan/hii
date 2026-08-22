@@ -3,7 +3,7 @@ import { linhaPropriedades, linhasExecucao, emExecucao, quadroDoGiro, GIRO } fro
 import type { Fields } from '../lib/card'
 
 const props = {
-  provedor: 'claude', modelo: 'opus', effort: 'medium',
+  provedor: 'claude', modelo: 'opus', effort: 'medium', modo: 'acceptEdits',
   projeto: 'org/app', custoHoje: '2.37', pisoDoGasto: '', divergentes: [],
 }
 
@@ -11,12 +11,17 @@ function card(over: Partial<Fields>): Fields {
   return { id: '1', title: 'tarefa', status: 'READY', repo: 'org/app', ...over }
 }
 
-test('propriedades mostram ia, esforco, projeto e gasto', () => {
+test('propriedades mostram ia, esforco, modo, projeto e gasto', () => {
   const l = linhaPropriedades(props)
   expect(l).toContain('claude/opus')
   expect(l).toContain('esforco medium')
+  expect(l).toContain('modo acceptEdits')
   expect(l).toContain('org/app')
   expect(l).toContain('US$2.37')
+})
+
+test('sem modo (provedor sem modos de operacao), o campo some em vez de mostrar vazio', () => {
+  expect(linhaPropriedades({ ...props, modo: '' })).not.toContain('modo')
 })
 
 test('provedor sem modelo nao mostra barra solta', () => {

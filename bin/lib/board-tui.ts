@@ -1,29 +1,36 @@
 import { existsSync } from 'node:fs'
 import { reposFile } from '../../lib/runner/config'
 import { repoPath, repoRegistered } from '../../lib/runner/card-store'
-import { chaveDaSessao, historicoDeSessoes, sessaoPorChave } from '../../lib/core/historico'
+import { chaveDaSessao, historicoDeSessoes, repoDoCard, sessaoPorChave } from '../../lib/core/historico'
 import { avisoDeEstadoVazio, lerEstadoVazio } from '../../lib/core/estado-vazio'
 import { renderHistorico } from '../../lib/core/render/historico'
 import { renderConfig } from '../../lib/core/render/config'
 import { seguimento } from './tela-tarefa'
 import { emExecucao, esperandoVoce } from '../../lib/core/render/rodape'
 import { pendencia } from '../../lib/core/responder'
-import { ordemDosAjustes } from '../../lib/core/ajustes'
 import { complete } from '../../lib/core/complete'
 import { lerConfig, ordemDaConfig } from '../../lib/core/config-snapshot'
 import { agentRoles, providerNameFor, providerNames } from '../../lib/ai/registry'
 import { modelosDe } from '../../lib/ai/catalogo'
+import { modosDoProvedor } from '../../lib/ai/modos'
 import { ESFORCOS } from '../../lib/ai/preferencias'
+import { comandosDaIaAtiva } from '../../lib/ai/comandos-da-ia'
 import type { SessionState } from '../../lib/core/session'
 import type { ModoNavegacao } from '../../lib/core/tui/input'
 import { color, dim, say } from './saida'
 import { larguraUtil, reposRegistrados, todosOsCards } from './dados'
 import { definirSessoesVisiveis, selecionado, selecionar, sessoesVisiveis } from './estado'
 
-export function ordemDasSessoes(): string[] {
-  const visiveis = sessoesVisiveis()
+function pertenceAoRepo(chave: string, repo: string): boolean {
+  if (!repo) return true
+  const card = cardDaSessao(chave)
+  return !!card && repoDoCard(card) === repo
+}
+
+export function ordemDasSessoes(repo = ''): string[] {
+  const visiveis = sessoesVisiveis().filter(chave => pertenceAoRepo(chave, repo))
   if (visiveis.length) return visiveis
-  return historicoDeSessoes().sessoes.map(chaveDaSessao)
+  return historicoDeSessoes(0, undefined, undefined, repo).sessoes.map(chaveDaSessao)
 }
 
 export function cardDaSessao(chave: string): string {
@@ -32,8 +39,7 @@ export function cardDaSessao(chave: string): string {
 }
 
 export function ordemDoRodape(state: SessionState, modo: ModoNavegacao = 'rodape'): string[] {
-  if (modo === 'ajustes') return ordemDosAjustes()
-  if (modo === 'board') return ordemDasSessoes()
+  if (modo === 'board') return ordemDasSessoes(state.repo)
   if (state.aprovando) return ['op:1', 'op:2', 'op:3']
   if (state.perguntando) {
     const p = pendencia(state.perguntando)
@@ -55,12 +61,21 @@ export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): 
   return true
 }
 
-export function historicoDaTela(altura = 0): string[] {
-  const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0)
+function avisoDeProjetoSemSessao(repo: string): string[] {
+  if (!repo) return []
+  return [`nenhuma sessao de ${repo} nesta janela — /repo troca de projeto, o historico dos outros continua intacto`]
+}
+
+export function historicoDaTela(altura = 0, repo = ''): string[] {
+  const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0, undefined, undefined, repo)
   definirSessoesVisiveis(h.sessoes.map(chaveDaSessao))
+  const vazio = lerEstadoVazio()
+  const avisoDeVazio = h.sessoes.length
+    ? []
+    : (vazio.vazio ? avisoDeEstadoVazio(vazio) : avisoDeProjetoSemSessao(repo))
   return renderHistorico(h, {
     color, width: Number(process.stdout.columns) || 78, selecionado: selecionado(),
-    avisoDeVazio: avisoDeEstadoVazio(lerEstadoVazio()),
+    avisoDeVazio,
   })
 }
 
@@ -86,14 +101,17 @@ export function avisoRepos(state: SessionState): void {
   }
 }
 
-export function completer(line: string): [string[], string] {
+export function completer(line: string, repo = ''): [string[], string] {
+  const daIa = comandosDaIaAtiva(repo ? repoPath(repo) : '')
   return complete(line, {
     repos: reposRegistrados().map(r => r.name),
     cards: todosOsCards().map(c => String(c.id ?? '')).filter(Boolean),
     provedores: providerNames(),
     modelos: modelosDe(providerNameFor('implement')),
     esforcos: [...ESFORCOS],
+    modos: [...modosDoProvedor(providerNameFor('implement'))],
     papeis: agentRoles(),
+    comandosDaIa: daIa.comandos.map(c => c.comando),
   })
 }
 
@@ -118,7 +136,7 @@ export function corpoDaTela(state: SessionState, ctx: ContextoDoCorpo): string[]
       color, largura: larguraUtil(), altura: ctx.altura,
     })
   }
-  if (ctx.navegando === 'board') return historicoDaTela(ctx.altura)
+  if (ctx.navegando === 'board') return historicoDaTela(ctx.altura, state.repo)
   return state.seguindo ? seguimento(state) : historicoDaTela(ctx.altura)
 }
 
@@ -129,9 +147,12 @@ export type Entrada =
   | { kind: 'tarefa'; id: string }
 
 export function alvoDeEntrada(modo: ModoNavegacao, state: SessionState): Entrada {
-  if (modo === 'ajustes') return { kind: 'nada' }
   const escolha = selecionado()
-  if (state.tela === 'config') return escolha ? { kind: 'provedor', nome: escolha } : { kind: 'nada' }
+  if (state.tela === 'config') {
+    const nomes = providerNames()
+    const alvo = (nomes as string[]).includes(escolha) ? escolha : (nomes[0] ?? '')
+    return alvo ? { kind: 'provedor', nome: alvo } : { kind: 'nada' }
+  }
   if (modo === 'board') {
     const id = cardDaSessao(escolha)
     return id ? { kind: 'tarefa', id } : { kind: 'nada' }
@@ -141,7 +162,6 @@ export function alvoDeEntrada(modo: ModoNavegacao, state: SessionState): Entrada
 }
 
 export function navegarNaTela(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): boolean {
-  if (modo === 'ajustes') return navegar(state, dir, modo)
   if (state.tela === 'config') return navegarConfig(dir)
   return navegar(state, dir, modo)
 }

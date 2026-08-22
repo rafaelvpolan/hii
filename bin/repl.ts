@@ -1,15 +1,16 @@
 import { createInterface } from 'node:readline'
 import { readCard, repoPath } from '../lib/runner/card-store'
-import { dispatch } from '../lib/core/dispatch'
-import type { DispatchIO } from '../lib/core/dispatch'
+import { dispatch, rotuloDoBloqueio } from '../lib/core/dispatch'
+import type { DispatchIO, SituacaoDeEnvio } from '../lib/core/dispatch'
+import { provedoresDisponiveis } from '../lib/ai/disponibilidade'
+import { providerNameFor } from '../lib/ai/registry'
 import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao } from '../lib/core/session'
 import type { SessionState } from '../lib/core/session'
 import { daemonPid, daemonStatus } from '../lib/core/daemon'
 import { pendencia } from '../lib/core/responder'
-import { ciclarAjuste } from '../lib/core/ajustes'
 import { quebrarEmLargura } from '../lib/core/tui/layout'
 import { markdownParaAnsi } from '../lib/core/render/markdown'
-import { responderPergunta, classificarComIaLocal } from '../lib/runner/responder-pergunta'
+import { responderPergunta } from '../lib/runner/responder-pergunta'
 import { renderParada } from '../lib/core/render/tarefa'
 import { emExecucao } from '../lib/core/render/rodape'
 import { floorProviders, formatProviders } from '../lib/runner/cost-gap'
@@ -22,10 +23,13 @@ import { cabecalhoDaTarefa, planoDe } from './lib/tela-tarefa'
 import { dicaDaNavegacao, pintarComando, rodapeDa } from './lib/rodape-tui'
 import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from './lib/board-tui'
 import { ensureDaemon, fleet } from './lib/comandos'
+import { bloqueia, preflight } from './lib/preflight'
 import { definirEstadoDoOllama, sondarOllama } from '../lib/ai/ollama-estado'
 import { etiquetaDoProjeto } from '../lib/core/render/projeto'
 import { renderSugestoes, prefixoComum } from '../lib/core/render/sugestoes'
-import { aplicar as aplicarIa } from '../lib/core/escolher-ia'
+import type { GrupoDeSugestao } from '../lib/core/render/sugestoes'
+import { comandosDaIaAtiva, corDaIa } from '../lib/ai/comandos-da-ia'
+import { aplicar as aplicarIa, ciclarModo } from '../lib/core/escolher-ia'
 import { renderAprovacao, verificacaoDoCard } from '../lib/core/render/aprovacao'
 import { renderOpcoesRodape } from '../lib/core/render/clarify'
 import * as core from '../lib/core/actions'
@@ -36,7 +40,6 @@ function ioDo(app: { log: (s: string) => void }, diga: (s: string) => void, repo
     dim,
     color,
     largura: larguraUtil,
-    classificar: classificarComIaLocal,
     responder: async (pergunta, conversa) => {
       const alvo = repoPath(repo)
       const r = await responderPergunta(pergunta, alvo, conversa)
@@ -49,6 +52,14 @@ function ioDo(app: { log: (s: string) => void }, diga: (s: string) => void, repo
       return [...corpo, '', gasto]
     },
     plano: async (id) => planoDe(id).split('\n'),
+    daemonOnline: () => !!daemonPid(),
+    iaProntaParaEnviar: (): SituacaoDeEnvio => {
+      const provedor = providerNameFor('implement')
+      const estado = provedoresDisponiveis().find(p => p.nome === provedor)
+      if (!estado || estado.situacao === 'disponivel') return { ok: true, motivo: '' }
+      const motivo = `nao da para enviar — a ia "${provedor}" ${rotuloDoBloqueio(estado.situacao)}: ${estado.comoObter} (/login mostra como resolver)`
+      return { ok: false, motivo }
+    },
   }
 }
 
@@ -61,8 +72,10 @@ async function tui(state0: SessionState): Promise<void> {
     state = next
     const diga = (s: string): void => app.log('  ' + s)
     if (effect.kind === 'quit') { sairPedido = true; return }
+    const repoAntes = state.repo
     const r = await dispatch(effect, state, ioDo(app, diga, state.repo))
     state = r.state
+    if (state.repo !== repoAntes) selecionar('')
     if (effect.kind === 'nova-sessao') { selecionar(''); app.limparLog() }
     if (!r.tratado && effect.kind === 'historico') state = { ...state, seguindo: '' }
   }
@@ -76,6 +89,7 @@ async function tui(state0: SessionState): Promise<void> {
     fixo: (ctx) => (state.seguindo && state.tela !== 'config' && ctx.navegando !== 'board' ? cabecalhoDaTarefa(state) : []),
     logPrimeiro: () => !!state.seguindo,
     telaPropria: () => state.tela === 'config',
+    sairDaTela: () => { state = { ...state, tela: '' } },
     acima: () => {
       if (state.comentando) return renderAprovacao(state.comentando, { color, comentando: true, width: larguraUtil() })
       if (state.perguntando) {
@@ -102,10 +116,17 @@ async function tui(state0: SessionState): Promise<void> {
     }),
     rodape: () => rodapeDa(state, modoAtual() === 'rodape'),
     intervalMs: 400,
-    onComplete: (linha) => completer(linha)[0],
-    sugestoes: (opcoes, selecionado) => renderSugestoes(opcoes, {
-      color, selecionado, width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
-    }),
+    onComplete: (linha) => completer(linha, state.repo)[0],
+    sugestoes: (opcoes, selecionado) => {
+      const daIa = comandosDaIaAtiva(state.repo ? repoPath(state.repo) : '')
+      const descricaoPorComando = new Map(daIa.comandos.map(c => [c.comando, c.descricao]))
+      const grupoDe = (opcao: string): GrupoDeSugestao | null =>
+        descricaoPorComando.has(opcao) ? { titulo: daIa.provedor, cor: corDaIa(daIa.provedor) } : null
+      return renderSugestoes(opcoes, {
+        color, selecionado, width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+        grupoDe, descricaoDe: (opcao) => descricaoPorComando.get(opcao),
+      })
+    },
     prefixoComum,
     corInput: (linha) => pintarComando(linha),
     onInterrupt: () => {
@@ -127,8 +148,8 @@ async function tui(state0: SessionState): Promise<void> {
       return false
     },
     onNav: (dir, modo) => navegarNaTela(state, dir, modo),
-    onCiclarIa: (dir) => {
-      const r = ciclarAjuste(selecionado(), dir)
+    onCiclarModo: (dir) => {
+      const r = ciclarModo('implement', dir)
       app.log(`  ${r.mensagem}`)
     },
     onAba: (dir) => {
@@ -170,7 +191,11 @@ async function tui(state0: SessionState): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, completer })
+  let repoAtual = ''
+  const rl = createInterface({
+    input: process.stdin, output: process.stdout,
+    completer: (linha: string) => completer(linha, repoAtual),
+  })
   const lines = rl[Symbol.asyncIterator]()
   const ask = async (q: string): Promise<string | null> => {
     process.stdout.write(q)
@@ -179,9 +204,21 @@ async function main(): Promise<void> {
   }
   say('')
   say(`  ${color ? ACC : ''}hii${color ? RESET : ''} — motor de execucao   ${dim('/help para os comandos')}`)
+  const estadoOllama = await sondarOllama()
+  definirEstadoDoOllama(estadoOllama)
+  const diagnostico = preflight(estadoOllama.habilitado)
+  for (const c of diagnostico.filter(c => c.severidade !== 'ok')) {
+    const marca = c.severidade === 'erro' ? '!' : '·'
+    say(dim(`  ${marca} ${c.nome}: ${c.detalhe}${c.conserto ? ` — ${c.conserto}` : ''}`))
+  }
+  if (bloqueia(diagnostico)) {
+    say(dim('  ambiente incompleto — resolva o acima antes de abrir o hii'))
+    rl.close()
+    return
+  }
   await ensureDaemon(ask)
   let state = newSession(await escolherProjeto(ask))
-  definirEstadoDoOllama(await sondarOllama())
+  repoAtual = state.repo
   avisoRepos(state)
   if (color) {
     rl.close()
@@ -198,12 +235,13 @@ async function main(): Promise<void> {
     if (effect.kind === 'quit') break
     if (effect.kind === 'reopen-repo') {
       state = { ...state, repo: await escolherProjeto(ask) }
+      repoAtual = state.repo
       fleet(state)
       continue
     }
     const passo = await dispatch(effect, state, ioDo({ log: (l) => say(l) }, (l) => say(dim('  ' + l)), state.repo))
     state = passo.state
-    if (effect.kind === 'approve-plan' && !daemonPid()) say(dim('  daemon offline — vai rodar quando voce subir com `hii start`'))
+    repoAtual = state.repo
   }
   rl.close()
   say(dim('  sessao encerrada — os cards seguem rodando'))
