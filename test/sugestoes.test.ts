@@ -92,6 +92,49 @@ test('sugestoes nao desalinham o quadro nem perdem o cursor', () => {
   expect(stripAnsi(f.lines[f.cursorRow - 1] ?? '')).toContain('/re')
 })
 
+test('sem grupoDe, a lista sai identica a antes (nenhum cabecalho)', () => {
+  const antes = renderSugestoes(['/rm', '/repo'], { width: 78 })
+  const depois = renderSugestoes(['/rm', '/repo'], { width: 78, grupoDe: undefined })
+  expect(depois).toEqual(antes)
+})
+
+test('com comandos da ia misturados, aparecem duas secoes com cabecalho', () => {
+  const grupoDe = (opcao: string) => (opcao === '/review' ? { titulo: 'codex', cor: { r: 16, g: 163, b: 127 } } : null)
+  const linhas = renderSugestoes(['/repo', '/review'], { width: 78, grupoDe }).map(stripAnsi)
+  expect(linhas[0]).toBe('  hii')
+  expect(linhas[1]).toContain('/repo')
+  expect(linhas[2]).toBe('  codex')
+  expect(linhas[3]).toContain('/review')
+})
+
+test('sem nenhum comando de ia na lista mostrada, nao aparece cabecalho mesmo com grupoDe', () => {
+  const grupoDe = () => null
+  const linhas = renderSugestoes(['/rm', '/repo'], { width: 78, grupoDe })
+  expect(linhas.some(l => l.trim() === 'hii')).toBe(false)
+})
+
+test('a descricao da ia vem de descricaoDe, sem contaminar AJUDA_DO_COMANDO', () => {
+  const grupoDe = () => ({ titulo: 'codex', cor: { r: 16, g: 163, b: 127 } })
+  const descricaoDe = (opcao: string) => (opcao === '/review' ? 'revisa o diff' : '')
+  const linhas = renderSugestoes(['/review'], { width: 78, grupoDe, descricaoDe })
+  expect(linhas.join('\n')).toContain('revisa o diff')
+  expect(AJUDA_DO_COMANDO['/review']).toBeUndefined()
+})
+
+test('REGRESSAO: descricaoDe que nao conhece o comando do hii cai no AJUDA_DO_COMANDO padrao', () => {
+  const descricaoDe = (opcao: string) => (opcao === '/review' ? 'revisa o diff' : undefined)
+  const linhas = renderSugestoes(['/rm', '/review'], { width: 78, descricaoDe }).join('\n')
+  expect(linhas).toContain(AJUDA_DO_COMANDO['/rm'] ?? '')
+  expect(linhas).toContain('revisa o diff')
+})
+
+test('o item da ia sai na cor de marca informada, nao na cor padrao do hii', () => {
+  const grupoDe = () => ({ titulo: 'codex', cor: { r: 16, g: 163, b: 127 } })
+  const linhas = renderSugestoes(['/review'], { color: true, width: 78, grupoDe, profundidade: 'truecolor' })
+  const linhaDoItem = linhas.find(l => l.includes('/review')) ?? ''
+  expect(linhaDoItem).toContain('\x1b[38;2;16;163;127m')
+})
+
 test('comando digitado pode sair colorido sem mover o cursor', () => {
   const semCor = renderFrame({
     rows: 12, cols: 50, header: 'h', corpo: [], input: '/rm 23', cursor: 6,

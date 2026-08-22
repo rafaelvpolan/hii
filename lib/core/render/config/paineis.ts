@@ -24,11 +24,28 @@ const AMARELO = '\x1b[33m'
 function rotuloDaSituacao(p: LinhaDeProvedor, o: OpcoesConfig): string {
   if (p.situacao === 'disponivel') return paint('conectada', VERDE, o)
   if (p.situacao === 'precisa-servidor') return paint('servidor local', AMARELO, o)
+  if (p.situacao === 'nao-autenticado') return paint('sem login', AMARELO, o)
+  if (p.situacao === 'cota-esgotada') return paint('cota estourada', VERMELHO, o)
   return paint('ausente', VERMELHO, o)
 }
 
 function sim(v: boolean, o: OpcoesConfig): string {
   return v ? paint('sim', VERDE, o) : paint('nao', VERMELHO, o)
+}
+
+function conectadoNaNuvem(p: LinhaDeProvedor): boolean {
+  return p.nome !== 'ollama' && (p.situacao === 'disponivel' || p.situacao === 'cota-esgotada')
+}
+
+function semTierPago(p: LinhaDeProvedor): boolean {
+  return p.planoLido && conectadoNaNuvem(p)
+}
+
+function rotuloDoPlano(p: LinhaDeProvedor, o: OpcoesConfig): string {
+  if (p.plano) return p.plano
+  if (semTierPago(p)) return '(free)'
+  if (conectadoNaNuvem(p)) return 'plano nao lido'
+  return '—'
 }
 
 export function painelDeIas(e: EstadoDaConfig, largura: number, o: OpcoesConfig): string[] {
@@ -38,7 +55,7 @@ export function painelDeIas(e: EstadoDaConfig, largura: number, o: OpcoesConfig)
     const estado = padVisible(rotuloDaSituacao(p, o), 14)
     const nome = p.nome === e.selecionado ? paint(padVisible(p.nome, 8), CYAN, o) : padVisible(p.nome, 8)
     const ligada = padVisible(p.habilitado ? paint('on', VERDE, o) : paint('off', DIM, o), 3)
-    const plano = p.plano || '—'
+    const plano = rotuloDoPlano(p, o)
     return truncVisible(` ${marca} ${nome} ${estado} ${ligada}  ${paint(plano, DIM, o)}`, largura)
   })
 }
@@ -74,7 +91,11 @@ function linhasDaJanela(j: JanelaDoPainel, medidor: number, largura: number, o: 
 
 export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o: OpcoesConfig): string[] {
   if (!p) return [' escolha uma ia com ↑↓']
-  if (!p.plano) return [' plano nao descoberto nesta maquina']
+  if (!p.plano) {
+    if (semTierPago(p)) return [' (free) — nenhum tier pago identificado']
+    if (conectadoNaNuvem(p)) return [' plano nao lido — o hii nao sabe ler o tier desta ia']
+    return [' plano nao descoberto nesta maquina']
+  }
   const linhas = [campo('plano', p.plano, largura, o)]
   if (p.detalheDoPlano) linhas.push(campo('conta', p.detalheDoPlano, largura, o))
   if (!p.janelas.length) linhas.push(campo('uso', 'sem janela reportada', largura, o))

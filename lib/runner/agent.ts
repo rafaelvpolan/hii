@@ -3,12 +3,13 @@ import { existsSync } from 'node:fs'
 import { extractObjetivo } from '../card'
 import type { Card, FailureClass, ImplementResult, VerifyResult } from '../card'
 import { cardsDir, ROOT, RUN_TIMEOUT_MS, PROJECT_MEMORY } from './config'
-import { isProviderName, modelFor, providerFor, effortFor } from '../ai/registry'
+import { isProviderName, modelFor, providerFor, effortFor, modoFor } from '../ai/registry'
 import { sumTokens } from '../ai/usage'
 import { classifyFailure } from '../ai/failure'
 import type { AiProvider } from '../ai/types'
 import { conectorExterno, navegacaoSemantica } from '../ai/mcp'
-import { agentesNexusJsonPor } from '../ai/agentes-nexus'
+import { agentesNexusPor } from '../ai/agentes-nexus'
+import type { AgenteInjetado } from '../ai/agentes-nexus'
 import { readProjectRules } from './hicode-home'
 import { repoPath } from './card-store'
 import { runProvider } from './cost-trust'
@@ -47,8 +48,15 @@ const ROTEAMENTO_IMPLEMENT: ReadonlyArray<readonly [string, string]> = [
 
 export const AGENTES_IMPLEMENT: readonly string[] = ROTEAMENTO_IMPLEMENT.map(([, agente]) => agente)
 
-function roteamentoImplement(): string {
-  return ROTEAMENTO_IMPLEMENT.map(([dominio, agente]) => `${dominio} -> ${agente}`).join('; ')
+function roteamentoImplement(nomesInjetados: readonly string[]): string {
+  return ROTEAMENTO_IMPLEMENT
+    .filter(([, agente]) => nomesInjetados.includes(agente))
+    .map(([dominio, agente]) => `${dominio} -> ${agente}`)
+    .join('; ')
+}
+
+function agentesInjetaveis(provider: AiProvider, nomes: readonly string[], ferramentasExtra: readonly string[]): Record<string, AgenteInjetado> {
+  return provider.supportsAgents ? agentesNexusPor(nomes, ferramentasExtra) : {}
 }
 
 function stackOf(repo: string): string {
@@ -56,15 +64,15 @@ function stackOf(repo: string): string {
   return c?.stack ?? 'stack nao detectado — inspecione o projeto antes de editar'
 }
 
-function implementPrompt(provider: AiProvider, workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string): string {
+function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
     : ''
-  const head = provider.supportsAgents
+  const head = agentesInjetados.length
     ? [
         'Use os AGENTES NEXUS deste projeto para implementar a tarefa abaixo (auto-construcao do hicode).',
         `O codigo a alterar fica em: ${workdir} — ${stack}. Edite os arquivos DESSE diretorio.`,
-        `Roteie via Task: ${roteamentoImplement()}. NAO rode crivo/review nesta etapa (nao chame o crivo): a revisao adversarial e os gates rodam DEPOIS, na fase de polimento do motor. Apenas implemente.`,
+        `Roteie via Task: ${roteamentoImplement(agentesInjetados)}. NAO rode crivo/review nesta etapa (nao chame o crivo): a revisao adversarial e os gates rodam DEPOIS, na fase de polimento do motor. Apenas implemente.`,
       ]
     : [
         'Implemente a tarefa abaixo (auto-construcao do hicode).',
@@ -132,24 +140,26 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const dirs = refImages.length ? [workdir, join(cardsDir(), 'refs', id)] : [workdir]
   const target = repoPath(card.fm.repo ?? '')
   const memory = PROJECT_MEMORY ? readProjectMemory(target) : ''
-  const prompt = acaoExterna.externo
-    ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(provider, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target))
   const navegacao = acaoExterna.externo ? [] : await navegacaoSemantica()
   extraTools = extraTools.concat(navegacao)
-  const injetaAgentes = provider.supportsAgents && !acaoExterna.externo
+  const agentesInjetados = acaoExterna.externo ? {} : agentesInjetaveis(provider, AGENTES_IMPLEMENT, navegacao)
+  const nomesInjetados = Object.keys(agentesInjetados)
+  const prompt = acaoExterna.externo
+    ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
+    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target))
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,
     dirs,
     mode: 'edit',
-    useAgents: provider.supportsAgents,
+    useAgents: nomesInjetados.length > 0,
     model,
     effort: effortFor('implement', card.fm.effort),
+    modo: modoFor('implement', override),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools,
-    agentsJson: injetaAgentes ? agentesNexusJsonPor(AGENTES_IMPLEMENT, navegacao) : '',
+    agentsJson: nomesInjetados.length ? JSON.stringify(agentesInjetados) : '',
   }, 'implement')
   const cost = res.cost ? res.cost.toFixed(4) : ''
   if (!res.ok) {
@@ -194,8 +204,8 @@ export async function verifyVisual(card: Card, shotPath: string): Promise<Verify
   return { ok: false, conclusive: false, reason: 'verify inconclusivo (sem veredito parseavel)', cost: res.cost, tokens }
 }
 
-function stepPrompt(provider: AiProvider, wt: string, agent: string, instruction: string, rules: string, stack: string): string {
-  const head = provider.supportsAgents
+function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruction: string, rules: string, stack: string): string {
+  const head = agenteInjetado
     ? `Use o agente Nexus ${agent} no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
     : `Atue no papel "${agent}" no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
   return [
@@ -212,18 +222,20 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const provider = providerFor('step')
   if (!provider.agentic) return { time: 0, cost: 0, costMeasured: true, tokens: 0, ok: false, text: `provider ${provider.name} nao-agentico — step "${agent}" NAO executou (use claude/codex para steps que editam)`, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos', provider: provider.name }
   const navegacao = await navegacaoSemantica()
+  const agenteInjetado = agentesInjetaveis(provider, [agent], navegacao)
+  const injetou = Object.keys(agenteInjetado).length > 0
   const res = await runProvider(id, provider, {
-    prompt: stepPrompt(provider, wt, agent, instruction, readProjectRules(wt), stackOf(repo || wt)),
+    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo || wt)),
     cwd: wt,
     dirs: [wt],
     mode: 'edit',
-    useAgents: provider.supportsAgents,
+    useAgents: injetou,
     model: modelFor('step'),
     effort: effortFor('step'),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools: navegacao,
-    agentsJson: provider.supportsAgents ? agentesNexusJsonPor([agent], navegacao) : '',
+    agentsJson: injetou ? JSON.stringify(agenteInjetado) : '',
   }, 'step')
   const time = Math.round((Date.now() - t) / 1000)
   const tokens = sumTokens(res.usage)

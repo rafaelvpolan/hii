@@ -7,6 +7,8 @@ export const ENV_RUNNER_LOCK = 'HICODE_RUNNER_LOCK'
 export const ENV_RUNNER_LOG = 'HICODE_RUNNER_LOG'
 export const ENV_IA_FILE = 'HICODE_IA_FILE'
 export const ENV_MODELOS_FILE = 'HICODE_MODELOS_FILE'
+export const ENV_CLAUDE_HOME_DIR = 'HICODE_CLAUDE_HOME_DIR'
+export const ENV_KIMI_HOME_DIR = 'HICODE_KIMI_HOME_DIR'
 
 export type LadoDoContrato = 'motor' | 'painel' | 'ambos'
 
@@ -27,4 +29,6 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_RUNNER_LOG, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['scripts/runner-daemon.sh'], lado: 'motor' },
   { nome: ENV_IA_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/ai/preferencias.ts'], lado: 'ambos' },
   { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/catalogo.ts'], lado: 'motor' },
+  { nome: ENV_CLAUDE_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/comandos-da-ia.ts'], lado: 'motor' },
+  { nome: ENV_KIMI_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/comandos-da-ia.ts'], lado: 'motor' },
 ]

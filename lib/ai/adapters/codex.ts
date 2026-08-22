@@ -1,6 +1,7 @@
 import { run } from '../../runner/git'
 import { emptyUsage } from '../usage'
 import { COST_UNKNOWN } from '../cost'
+import { modoResolvido } from '../modos'
 import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../types'
 import type { Usage } from '../../card'
 
@@ -14,8 +15,9 @@ function sandbox(mode: AgentMode): string {
   return mode === 'edit' ? 'workspace-write' : 'read-only'
 }
 
-function argv(req: AgentRequest, workdir: string): string[] {
-  const a = ['exec', req.prompt, '-C', workdir, '--sandbox', sandbox(req.mode), '-a', 'never', '--json']
+export function argv(req: AgentRequest, workdir: string): string[] {
+  const aprovacao = modoResolvido('codex', req.modo)
+  const a = ['exec', req.prompt, '-C', workdir, '--sandbox', sandbox(req.mode), '-c', `approval_policy="${aprovacao}"`, '--json']
   if (req.model) a.push('-m', req.model)
   if (req.effort) a.push('-c', `model_reasoning_effort="${req.effort}"`)
   for (const d of req.dirs.slice(1)) a.push('--add-dir', d)

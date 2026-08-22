@@ -1,6 +1,6 @@
 import { agentRoles, effortFor, modelFor, providerLimits, providerNameFor, providerNames } from '../ai/registry'
 import { provedoresDisponiveis } from '../ai/disponibilidade'
-import { planoDoProvedor } from '../ai/planos'
+import { planoDoProvedor, temLeitorDePlano } from '../ai/planos'
 import { estadoDoOllama } from '../ai/ollama-estado'
 import type { ProvedorDisponivel } from '../ai/disponibilidade'
 import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../ai/consumo'
@@ -48,6 +48,7 @@ function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisp
     habilitado: habilitadoDe(nome, estado),
     motivo: estado && estado.situacao !== 'disponivel' ? estado.comoObter : '',
     plano: plano.plano,
+    planoLido: temLeitorDePlano(nome),
     detalheDoPlano: plano.detalhe,
     janelas: janelasDoPainel(nome, agoraMs),
     idadeDoUsoHoras: plano.idadeHoras,
@@ -62,7 +63,7 @@ function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisp
 }
 
 export function habilitadoDe(nome: AiProviderName, estado: ProvedorDisponivel | undefined): boolean {
-  if (!estado || estado.situacao === 'ausente') return false
+  if (!estado || estado.situacao !== 'disponivel') return false
   if (nome === 'ollama') return estadoDoOllama().habilitado
   return true
 }
@@ -92,7 +93,7 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
   const { itens, fila } = loopEmExecucao(repo, agoraMs)
   return {
     provedores,
-    selecionado: selecionado || provedores[0]?.nome || '',
+    selecionado: provedores.some(p => p.nome === selecionado) ? selecionado : (provedores[0]?.nome ?? ''),
     uso5h: consumoPorProvedor(JANELA_5H, agoraMs),
     usoSemana: consumoPorProvedor(JANELA_SEMANA, agoraMs),
     serie: serieDeCusto(JANELA_5H, BALDES_DA_SERIE, agoraMs),

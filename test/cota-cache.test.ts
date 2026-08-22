@@ -64,7 +64,7 @@ test('dentro da janela do cache a leitura nao volta ao disco, e passada a janela
   const caminho = gravarRun('001', quando, '2.0000')
   expect(lerCota(agora()).custoUsd).toBe(2)
 
-  writeFileSync(caminho, conteudoDeRun('001', quando, '7.5000'))
+  writeFileSync(caminho, conteudoDeRun('001', quando, '7.50'))
   expect(lerCota(agora()).custoUsd).toBe(2)
 
   await passarAJanela()

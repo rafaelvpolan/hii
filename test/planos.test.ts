@@ -1,8 +1,11 @@
 import { test, expect, afterEach } from 'bun:test'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { janelasDe, modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi } from '../lib/ai/planos'
+import {
+  autenticadoDoProvedor, claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
+  modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
+} from '../lib/ai/planos'
 import { sondarOllama } from '../lib/ai/ollama-estado'
 
 const dir = mkdtempSync(join(tmpdir(), 'hicode-planos-'))
@@ -11,6 +14,7 @@ afterEach(() => {
   delete process.env.HICODE_CLAUDE_CONFIG
   delete process.env.HICODE_KIMI_CONFIG
   delete process.env.HICODE_OLLAMA_URL
+  delete process.env.CODEX_HOME
 })
 
 function claudeFake(conteudo: object, nome: string): string {
@@ -92,6 +96,47 @@ test('SEGURANCA: nada do plano do kimi carrega api_key nem token', () => {
   expect(serializado).not.toContain('SEGREDO')
   expect(serializado).not.toContain('sk-')
   expect(serializado).toContain('gerenciado (oauth)')
+})
+
+test('claude: sem oauthAccount no config, conta como nao autenticado', () => {
+  process.env.HICODE_CLAUDE_CONFIG = claudeFake({}, 'claude-sem-conta.json')
+  expect(claudeAutenticado()).toBe(false)
+})
+
+test('claude: com oauthAccount no config, conta como autenticado', () => {
+  process.env.HICODE_CLAUDE_CONFIG = claudeFake({ oauthAccount: { userRateLimitTier: 'default_claude_pro' } }, 'claude-com-conta.json')
+  expect(claudeAutenticado()).toBe(true)
+})
+
+test('kimi: sem provider configurado no toml, conta como nao autenticado', () => {
+  const p = join(dir, 'kimi-vazio.toml')
+  writeFileSync(p, '# vazio, sem login ainda\n')
+  process.env.HICODE_KIMI_CONFIG = p
+  expect(kimiAutenticado()).toBe(false)
+})
+
+test('kimi: com provider gravado no toml, conta como autenticado', () => {
+  const p = join(dir, 'kimi-logado.toml')
+  writeFileSync(p, TOML)
+  process.env.HICODE_KIMI_CONFIG = p
+  expect(kimiAutenticado()).toBe(true)
+})
+
+test('codex: sem auth.json em CODEX_HOME, conta como nao autenticado', () => {
+  process.env.CODEX_HOME = join(dir, 'codex-sem-login')
+  expect(codexAutenticado()).toBe(false)
+})
+
+test('codex: com auth.json em CODEX_HOME, conta como autenticado', () => {
+  const home = join(dir, 'codex-com-login')
+  mkdirSync(home, { recursive: true })
+  writeFileSync(join(home, 'auth.json'), '{}')
+  process.env.CODEX_HOME = home
+  expect(codexAutenticado()).toBe(true)
+})
+
+test('autenticadoDoProvedor: ollama nao tem conceito de login, sempre passa', () => {
+  expect(autenticadoDoProvedor('ollama')).toBe(true)
 })
 
 test('ollama: sonda que nao responde devolve desabilitado em vez de travar', async () => {

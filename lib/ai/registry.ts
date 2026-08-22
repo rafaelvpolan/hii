@@ -5,6 +5,7 @@ import { OllamaProvider } from './adapters/ollama'
 import { KimiProvider } from './adapters/kimi'
 import type { AgentRole, AiProvider, AiProviderName, ProviderLimits } from './types'
 import { preferenciaDoPapel, esforcoPara } from './preferencias'
+import { modoResolvido, temModos } from './modos'
 
 export const DEFAULT_PROVIDER: AiProviderName = 'claude'
 
@@ -20,7 +21,6 @@ const ROLE_PROVIDER_ENV: Record<AgentRole, string> = {
   verify: 'HICODE_VERIFY_PROVIDER',
   gate: 'HICODE_GATE_PROVIDER',
   step: 'HICODE_STEP_PROVIDER',
-  classificacao: 'HICODE_CLASSIFY_PROVIDER',
 }
 
 const PROVIDER_MODEL_ENV: Record<Exclude<AiProviderName, 'claude'>, string> = {
@@ -81,6 +81,12 @@ export function modelFor(role: AgentRole, override?: string): string | undefined
 
 export function effortFor(role: AgentRole, doCard?: string): string | undefined {
   return esforcoPara(role, doCard)
+}
+
+export function modoFor(role: AgentRole, override?: string): string | undefined {
+  const provider = providerNameFor(role, override)
+  if (!temModos(provider)) return undefined
+  return modoResolvido(provider, preferenciaDoPapel(role).modo)
 }
 
 export function quotaFallbackProviderFor(role: AgentRole): AiProviderName | null {

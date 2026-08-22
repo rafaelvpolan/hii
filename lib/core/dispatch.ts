@@ -1,23 +1,28 @@
-import { readCard, allCards, normalizeId, listRepos } from '../runner/card-store'
+import { readCard, allCards, normalizeId, listRepos, repoPath } from '../runner/card-store'
 import * as core from './actions'
 import { planejarLote, removerLote } from './remover'
 import { renderRemocao, renderResultado } from './render/remocao'
 import { projetosConhecidos } from './projetos-conhecidos'
-import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco } from './escolher-ia'
-import { agentRoles } from '../ai/registry'
-import type { AgentRole } from '../ai/types'
+import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao } from './escolher-ia'
+import { agentRoles, isProviderName, providerNameFor } from '../ai/registry'
+import { COMANDO_DE_LOGIN, provedoresDisponiveis } from '../ai/disponibilidade'
+import { comandosDaIaAtiva } from '../ai/comandos-da-ia'
+import type { AgentRole, AiProviderName } from '../ai/types'
 import { pendencia, responder } from './responder'
 import { renderPergunta } from './render/clarify'
 import { instruir } from './instruir'
 import { renderHelp } from './render/help'
 import { esperandoVoce } from './render/rodape'
 import { newSession, seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './session'
-import { classificarPrompt } from './classificar'
 import { alvoDeRef, comandoRef } from './refs-comando'
 import { migrarRefsDaSessao, limparSessao } from '../runner/refs-anexo'
 import { reiniciarSessao, sessaoAtual } from '../runner/sessao'
-import { renderPergunta as renderPerguntaLida } from './render/pergunta-lida'
 import type { Effect, SessionState } from './session'
+
+export interface SituacaoDeEnvio {
+  ok: boolean
+  motivo: string
+}
 
 export interface DispatchIO {
   log: (linha: string) => void
@@ -25,8 +30,9 @@ export interface DispatchIO {
   color: boolean
   largura: () => number
   responder: (pergunta: string, conversa: { pergunta: string; resposta: string }[]) => Promise<string[]>
-  classificar?: (prompt: string) => Promise<string>
   plano: (id: string) => Promise<string[]>
+  daemonOnline: () => boolean
+  iaProntaParaEnviar: () => SituacaoDeEnvio
 }
 
 export interface DispatchResult {
@@ -35,6 +41,22 @@ export interface DispatchResult {
 }
 
 const FORA = ['quit', 'historico', 'none']
+
+const AVISO_DAEMON_OFFLINE = 'daemon offline — vai rodar quando voce subir com `hii start`'
+
+export function rotuloDoBloqueio(situacao: string): string {
+  if (situacao === 'ausente') return 'nao esta instalada'
+  if (situacao === 'nao-autenticado') return 'nao esta autenticada'
+  if (situacao === 'cota-esgotada') return 'esta com a cota estourada'
+  return 'nao esta pronta'
+}
+
+function resolverProvedorParaLogin(arg: string): AiProviderName | null {
+  if (!arg) return providerNameFor('implement')
+  if (isProviderName(arg)) return arg
+  if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)
+  return null
+}
 
 async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Promise<SessionState> {
   const id = effect.id ?? ''
@@ -52,9 +74,18 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       for (const l of linhas) io.log(l)
       return state
     }
-    case 'error':
+    case 'error': {
+      const cabecaDesconhecida = id ? `/${id}` : ''
+      const comandoDaIa = state.seguindo && cabecaDesconhecida && readCard(state.seguindo)
+        && comandosDaIaAtiva(repoPath(state.repo)).comandos.find(c => c.comando === cabecaDesconhecida)
+      if (comandoDaIa) {
+        const instrucao = effect.raw ? `/${effect.raw}` : cabecaDesconhecida
+        io.log(`  ${cabecaDesconhecida} e um comando de ${providerNameFor('implement')}, nao do hii — anotado como instrucao em #${state.seguindo}`)
+        return aplicar({ kind: 'instruct', id: state.seguindo, text: instrucao }, state, io)
+      }
       io.log(texto)
       return state
+    }
     case 'plan': {
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
@@ -72,7 +103,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'approve-plan': {
       const r = core.approvePlan(id)
       if (!r.ok) { io.log(r.reason); return state }
-      io.log(`#${id} aprovado e na fila — seguindo a execucao (/historico sai)`)
+      const aviso = io.daemonOnline() ? '' : ` — ${AVISO_DAEMON_OFFLINE}`
+      io.log(`#${id} aprovado e na fila — seguindo a execucao (/historico sai)${aviso}`)
       return seguir(state, id)
     }
     case 'approve-url': {
@@ -110,8 +142,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     }
     case 'instruct': {
       if (!readCard(id)) {
-        io.log(`#${id} nao existe mais — lendo a intencao do texto do zero`)
-        return aplicar({ kind: 'confirmar-tarefa', text: texto }, { ...state, seguindo: '' }, io)
+        io.log(`#${id} nao existe mais — o texto vira tarefa nova`)
+        return aplicar({ kind: 'submit', text: texto }, { ...state, seguindo: '' }, io)
       }
       const r = instruir(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
@@ -192,22 +224,20 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'submit': {
       if (!texto.trim()) { io.log('nada para criar'); return state }
       if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
+      const pronta = io.iaProntaParaEnviar()
+      if (!pronta.ok) { io.log(pronta.motivo); return state }
       const base = state.perguntando ? respondido(state) : state
       const novoId = core.submit({ title: texto, repo: base.repo })
-      io.log(`card #${novoId} criado`)
       const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
       if (refs.migrados > 0) {
         io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
       }
-      for (const l of await io.plano(novoId)) io.log(l)
-      io.log('enter aprova e enfileira · outra tarefa descarta')
-      return planShown(base, novoId)
-    }
-    case 'confirmar-tarefa': {
-      const leitura = await classificarPrompt(texto, io.classificar, state.conversa)
-      if (leitura.tipo === 'task') return aplicar({ kind: 'submit', text: texto }, state, io)
-      for (const l of renderPerguntaLida(leitura.motivo, { color: io.color, width: io.largura() })) io.log(l)
-      return aplicar({ kind: 'consultar', text: texto }, state, io)
+      const r = core.approvePlan(novoId)
+      const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
+      io.log(r.ok
+        ? `card #${novoId} criado e na fila — ${destino} (/historico sai)`
+        : `card #${novoId} criado — ${r.reason}`)
+      return seguir(base, novoId)
     }
     case 'modelo': {
       io.log(definirModelo(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
@@ -215,6 +245,25 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     }
     case 'esforco': {
       io.log(definirEsforco(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
+      return state
+    }
+    case 'modo': {
+      io.log(definirModoDeOperacao(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
+      return state
+    }
+    case 'login': {
+      const alvo = resolverProvedorParaLogin(texto.trim())
+      if (!alvo) { io.log(`ia desconhecida: "${texto.trim()}" — uso: /login [ia|papel]`); return state }
+      const estado = provedoresDisponiveis().find(p => p.nome === alvo)
+      if (estado?.situacao === 'disponivel') { io.log(`${alvo} ja esta autenticada e dentro da cota — nada a fazer`); return state }
+      const comando = COMANDO_DE_LOGIN[alvo]
+      if (!comando) {
+        io.log(`${alvo} nao tem um passo de login conhecido${estado ? ` — ${estado.comoObter}` : ''}`)
+        return state
+      }
+      io.log('hii ainda nao roda comando interativo dentro do proprio terminal')
+      io.log(`abra outro terminal neste mesmo projeto e rode: ${comando.join(' ')}`)
+      io.log('depois volte aqui e confira com /config ou /ia')
       return state
     }
     case 'nova-sessao': {
@@ -229,7 +278,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return state
     }
     case 'config': {
-      io.log(io.dim('  /config — ↑↓ escolhe a ia · enter aplica no papel implement · /board volta'))
+      io.log(io.dim('  /config — ↑↓ escolhe a ia · enter aplica no papel implement · esc sai'))
       return state
     }
     case 'consultar': {

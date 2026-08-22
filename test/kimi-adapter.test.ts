@@ -180,6 +180,13 @@ test('as capacidades declaradas batem com o que o --help do kimi mostra', () => 
   const p = new KimiProvider()
   expect(p.name).toBe('kimi')
   expect(p.agentic).toBe(true)
-  expect(p.supportsAgents).toBe(true)
+  expect(p.supportsAgents).toBe(false)
   expect(p.supportsVision).toBe(false)
+})
+
+test('kimi nao tem --agents: --agent/--agent-file selecionam UM perfil de sessao pre-existente, nao injetam o catalogo Nexus por chamada', () => {
+  const a = kimiArgv(pedido('edit', { agentsJson: '{"limpio":{"description":"d","prompt":"p"}}' }))
+  expect(a).not.toContain('--agents')
+  expect(a).not.toContain('--agent')
+  expect(a).not.toContain('--agent-file')
 })
