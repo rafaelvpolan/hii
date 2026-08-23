@@ -1,6 +1,7 @@
 import { isoNow } from '../../cdl'
 import type { Job, Fields } from '../../cdl'
 import { allCards, cardsByStatus, patchCard } from '../../cdl/store'
+import { marcarOrfao, prOrfaoDe } from '../../qlb/slv/compensacao'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
@@ -22,8 +23,20 @@ export function quantosEmVoo(): number {
 export function reconcileStranded(): void {
   for (const s of FINISH_STATES) {
     for (const c of cardsByStatus(s)) {
-      patchCard(c.id ?? '', { status: 'URL_OK' }, `${isoNow()} ${s}->URL_OK recuperado apos reinicio do daemon (finish reiniciado)`)
-      process.stdout.write(`[runner] #${c.id}: recuperado ${s}->URL_OK\n`)
+      const id = c.id ?? ''
+      // Antes de reiniciar o finish: o PR pode JA existir. O diario do card
+      // sabe disso mesmo quando o frontmatter nao sabe — foi o crash entre o
+      // `gh pr create` e o patchCard que deixou os dois em desacordo. Reiniciar
+      // o finish aqui abriria um segundo PR (Parte VI, secao 3).
+      const orfao = prOrfaoDe(id, String(c.pr_url ?? ''))
+      if (orfao) {
+        marcarOrfao(id, 'pr_orfao', `PR ${orfao.url} constava no diario mas nao no card; card estava em ${s}`)
+        patchCard(id, { status: 'PR_OPEN', pr_url: orfao.url }, `${isoNow()} ${s}->PR_OPEN o PR ${orfao.url} ja tinha sido aberto antes do reinicio — adotado em vez de reaberto`)
+        process.stdout.write(`[runner] #${id}: PR orfao adotado (${orfao.url}) — nao foi aberto de novo\n`)
+        continue
+      }
+      patchCard(id, { status: 'URL_OK' }, `${isoNow()} ${s}->URL_OK recuperado apos reinicio do daemon (finish reiniciado)`)
+      process.stdout.write(`[runner] #${id}: recuperado ${s}->URL_OK\n`)
     }
   }
   for (const s of RERUN_STATES) {
