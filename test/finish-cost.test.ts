@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -104,11 +105,11 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
   expect(apos3oGateBloqueado?.fm.tokens_total).toBe('800')
   expect(parseFloat(apos3oGateBloqueado?.fm.cost_usd ?? '0')).toBeGreaterThanOrEqual(parseFloat(apos2aExecucao?.fm.cost_usd ?? '0'))
   expect(existsSync(wt)).toBe(true)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO card com PR ja aberto nao tenta criar PR de novo', async () => {
   const { pularCriacaoDePr } = await import('../motor/qlb/ctr/pr')
   expect(pularCriacaoDePr('https://github.com/o/r/pull/20')).toBe(true)
   expect(pularCriacaoDePr('')).toBe(false)
   expect(pularCriacaoDePr('   ')).toBe(false)
-})
+}, TEMPO_COM_GIT_MS)

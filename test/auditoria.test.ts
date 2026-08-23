@@ -15,8 +15,7 @@ import {
   temTesteCorrespondente,
   type AchadoAuditoria,
   type LoteAuditoria,
-  type PlanoAuditoria,
-} from '../motor/agentes/ass/auditoria'
+  type PlanoAuditoria, coberturaDeTeste } from '../motor/agentes/ass/auditoria'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-auditoria-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -330,4 +329,51 @@ test('achados saem ordenados por gravidade', () => {
   ]
   const ordem = ordenarAchados(achados).map(a => `${a.gravidade}:${a.path}:${a.linha ?? 0}`)
   expect(ordem).toEqual(['alta:a.ts:3', 'alta:a.ts:10', 'media:c.ts:0', 'baixa:b.ts:0'])
+})
+
+test('REGRESSAO fonte renomeado com teste de nome antigo NAO e reportado como sem teste', () => {
+  // O cenario exato da Onda 1: motor/qlb/ctr/fechar.ts nasceu como finish.ts, e
+  // test/finish-cost.test.ts manteve o nome. Por stem, `fechar` nao casa com
+  // `finish-cost` e o auditor mentia "sem teste correspondente".
+  const listados = ['motor/qlb/ctr/fechar.ts', 'test/finish-cost.test.ts']
+  const fontes: Record<string, string> = {
+    'motor/qlb/ctr/fechar.ts': 'export const x = 1\n',
+    'test/finish-cost.test.ts': "import { handleFinish } from '../motor/qlb/ctr/fechar'\n",
+  }
+  const cobertura = coberturaDeTeste(listados, p => fontes[p] ?? null)
+  expect(temTesteCorrespondente('motor/qlb/ctr/fechar.ts', cobertura)).toBe(true)
+  expect([...cobertura.stems]).toContain('finish-cost')
+})
+
+test('import dinamico tambem conta — metade da suite usa await import()', () => {
+  const listados = ['motor/euc/registros.ts', 'test/x.test.ts']
+  const fontes: Record<string, string> = {
+    'motor/euc/registros.ts': 'export const x = 1\n',
+    'test/x.test.ts': "const m = await import('../motor/euc/registros')\n",
+  }
+  expect(temTesteCorrespondente('motor/euc/registros.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
+})
+
+test('import de diretorio resolve pelo index', () => {
+  const listados = ['motor/cdl/index.ts', 'test/y.test.ts']
+  const fontes: Record<string, string> = {
+    'motor/cdl/index.ts': 'export const x = 1\n',
+    'test/y.test.ts': "import type { Card } from '../motor/cdl'\n",
+  }
+  expect(temTesteCorrespondente('motor/cdl/index.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
+})
+
+test('arquivo que ninguem importa nem casa por nome continua sendo sem teste', () => {
+  const listados = ['motor/orfao.ts', 'test/z.test.ts']
+  const fontes: Record<string, string> = {
+    'motor/orfao.ts': 'export const x = 1\n',
+    'test/z.test.ts': "import { a } from '../motor/outro'\n",
+  }
+  expect(temTesteCorrespondente('motor/orfao.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(false)
+})
+
+test('o fallback por stem continua valendo para o que import nao alcanca', () => {
+  const listados = ['app/servico.py', 'tests/servico_test.py']
+  const cobertura = coberturaDeTeste(listados, () => null)
+  expect(temTesteCorrespondente('app/servico.py', cobertura)).toBe(true)
 })

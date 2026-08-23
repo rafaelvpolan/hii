@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { beforeEach, test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -81,7 +82,7 @@ test('REGRESSAO: falha terminal (classificacao desconhecida) descarta o worktree
   await handleExecute(id, agente)
   expect(readCard(id)?.fm.status).toBe('HALTED')
   expect(existsSync(wt)).toBe(false)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO: falha POR TIMEOUT e transiente — vira WAITING (nao HALT) e mantem o worktree para retomada automatica', async () => {
   resultadoDoAgente = falha({ reason: 'excedeu o tempo limite', timedOut: true, cost: '0.0200', failureClass: 'transient', failureReason: 'timeout — provedor nao respondeu a tempo' })
@@ -93,7 +94,7 @@ test('REGRESSAO: falha POR TIMEOUT e transiente — vira WAITING (nao HALT) e ma
   expect(card?.fm.wait_resume_status).toBe('EXECUTING')
   expect(card?.fm.wait_attempts).toBe('1')
   expect(existsSync(wt)).toBe(true)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('transiente que esgota as tentativas finalmente HALTa mas mantem o worktree para inspecao', async () => {
   resultadoDoAgente = falha({ timedOut: true, failureClass: 'transient', failureReason: 'timeout' })
@@ -105,7 +106,7 @@ test('transiente que esgota as tentativas finalmente HALTa mas mantem o worktree
   expect(card?.fm.status).toBe('HALTED')
   expect(card?.body).toContain(`esgotou ${maxWaitingAttempts()} tentativas de espera`)
   expect(existsSync(wt)).toBe(true)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('cota esgotada (sem fallback aplicavel, ja no provedor de fallback) para o card e descarta o worktree', async () => {
   resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'codex' }
@@ -116,7 +117,7 @@ test('cota esgotada (sem fallback aplicavel, ja no provedor de fallback) para o 
   expect(card?.fm.status).toBe('HALTED')
   expect(card?.body).toContain('cota do provedor codex esgotada')
   expect(existsSync(wt)).toBe(false)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): troca de provedor em vez de parar', async () => {
   process.env.HICODE_QUOTA_FALLBACK = 'on'
@@ -133,4 +134,4 @@ test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): troca d
   } finally {
     delete process.env.HICODE_QUOTA_FALLBACK
   }
-})
+}, TEMPO_COM_GIT_MS)

@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { beforeEach, test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -106,7 +107,7 @@ test('falha de rede do provedor grava classe transient no run em disco', async (
   expect(run.failure_reason).toBe('rede indisponivel')
   expect(run.provider).toBe('claude')
   expect(readCard(id)?.fm.status).toBe('WAITING')
-})
+}, TEMPO_COM_GIT_MS)
 
 test('cota esgotada grava classe quota no run e no card', async () => {
   resultadoDoAgente = saidaDoProvedor('claude', 'Claude AI usage limit reached. Your limit will reset at 5pm.')
@@ -116,7 +117,7 @@ test('cota esgotada grava classe quota no run e no card', async () => {
   expect(run.failure_class).toBe('quota')
   expect(run.failure_reason).toBe('limite de uso da assinatura Claude atingido')
   expect(readCard(id)?.fm.halt_class).toBe('quota')
-})
+}, TEMPO_COM_GIT_MS)
 
 test('binario ausente grava classe terminal no run', async () => {
   resultadoDoAgente = saidaDoProvedor('codex', 'Error: spawn codex ENOENT')
@@ -126,7 +127,7 @@ test('binario ausente grava classe terminal no run', async () => {
   expect(run.failure_class).toBe('terminal')
   expect(run.failure_reason).toBe('provedor nao instalado (binario nao encontrado)')
   expect(readCard(id)?.fm.status).toBe('HALTED')
-})
+}, TEMPO_COM_GIT_MS)
 
 test('run que deu certo grava classe vazia — nao "terminal" por acidente', async () => {
   resultadoDoAgente = {
@@ -144,7 +145,7 @@ test('run que deu certo grava classe vazia — nao "terminal" por acidente', asy
   expect(run.failure_class).toBe('')
   expect(run.failure_reason).toBe('')
   expect(readFailureAttempts(id)).toEqual([])
-})
+}, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO provedor que falha sem classificar grava terminal no run — o canal nunca fica vazio numa falha', async () => {
   resultadoDoAgente = { ok: false, reason: 'saida ilegivel do provedor', cost: '0.0100', provider: 'claude' }
@@ -156,7 +157,7 @@ test('REGRESSAO provedor que falha sem classificar grava terminal no run — o c
   expect(run.failure_reason).toBe(MOTIVO_SEM_CLASSIFICACAO)
   expect(card?.fm.halt_class).toBe('terminal')
   expect(card?.fm.halt_reason).toBe(MOTIVO_SEM_CLASSIFICACAO)
-})
+}, TEMPO_COM_GIT_MS)
 
 test('retentativa registra a classe de CADA tentativa, nao so a da ultima', async () => {
   resultadoDoAgente = saidaDoProvedor('claude', 'Error: connect ECONNRESET 160.79.104.10:443')
@@ -175,7 +176,7 @@ test('retentativa registra a classe de CADA tentativa, nao so a da ultima', asyn
   expect(tentativas.map(t => t.failureReason)).toEqual(['rede indisponivel', 'limite de uso da assinatura Claude atingido'])
   expect(tentativas.map(t => t.provider)).toEqual(['claude', 'claude'])
   expect(tentativas.map(t => t.fromStatus)).toEqual(['EXECUTING', 'EXECUTING'])
-})
+}, TEMPO_COM_GIT_MS)
 
 test('falha de provedor num step de polimento carimba o run que ja estava gravado como sucesso', () => {
   const id = createCard({ title: 'tarefa que quebra no polimento', status: 'TESTS_GREEN', repo: 'org/repo' }, '## Objetivo\nalgo\n')
@@ -212,7 +213,7 @@ test('PONTA A PONTA o run gravado sobrevive a releitura por cota-runs com a clas
   expect(registro?.motivoDaFalha).toBe('limite de uso da assinatura Claude atingido')
   expect(registro?.provedor).toBe('claude')
   expect(lote.registros.filter(r => r.card === id).map(r => r.classeDeFalha)).toEqual(['quota'])
-})
+}, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO cota de um provedor nao e carimbada no registro de outro provedor', () => {
   const id = createCard({ title: 'polimento noutro provedor', status: 'TESTS_GREEN', repo: 'org/repo' }, '## Objetivo\nalgo\n')

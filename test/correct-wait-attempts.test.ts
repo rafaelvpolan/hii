@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -64,4 +65,4 @@ test('REGRESSAO: correcao bem-sucedida limpa wait_attempts residual de um incide
   const c = readCard(id)
   expect(c?.fm.status).toBe('URL')
   expect(c?.fm.wait_attempts).toBe('')
-})
+}, TEMPO_COM_GIT_MS)

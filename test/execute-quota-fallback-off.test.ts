@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -83,4 +84,4 @@ test('DECISAO DE PRODUTO: cota esgotada sem HICODE_QUOTA_FALLBACK=on para o card
   expect(card?.fm.provider_override_implement).toBeUndefined()
   expect(card?.body).toContain('sem troca automatica de provedor')
   expect(existsSync(wt)).toBe(false)
-})
+}, TEMPO_COM_GIT_MS)

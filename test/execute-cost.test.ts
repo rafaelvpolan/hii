@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -81,7 +82,7 @@ test('REGRESSAO: custo e tokens ACUMULAM sobre o que ja estava no card, nao sobr
   expect(card?.fm.verify).toBe('sem-url')
   expect(card?.fm.cost_usd).toBe('1.2845')
   expect(card?.fm.tokens_total).toBe('530')
-})
+}, TEMPO_COM_GIT_MS)
 
 test('card sem custo previo comeca a contar do zero (nao gera NaN)', async () => {
   const id = createCard({
@@ -96,4 +97,4 @@ test('card sem custo previo comeca a contar do zero (nao gera NaN)', async () =>
   const card = readCard(id)
   expect(card?.fm.cost_usd).toBe('0.0500')
   expect(card?.fm.tokens_total).toBe('30')
-})
+}, TEMPO_COM_GIT_MS)

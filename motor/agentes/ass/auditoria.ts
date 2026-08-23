@@ -172,17 +172,80 @@ export function stemsDeTeste(paths: string[]): Set<string> {
   return stems
 }
 
-export function temTesteCorrespondente(path: string, stems: Set<string>): boolean {
+const ESPECIFICADOR = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"])(\.[^'"\n]*)\1/g
+const EXT_DE_MODULO = ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.vue']
+
+function normalizar(caminho: string): string {
+  const partes: string[] = []
+  for (const parte of caminho.split('/')) {
+    if (!parte || parte === '.') continue
+    if (parte === '..') { partes.pop(); continue }
+    partes.push(parte)
+  }
+  return partes.join('/')
+}
+
+// Resolve o especificador contra a LISTA de arquivos do repo, sem tocar no
+// disco: a auditoria ja recebe tudo que esta rastreado.
+function alvoDoImport(deArquivo: string, spec: string, existentes: ReadonlySet<string>): string | null {
+  const dir = deArquivo.split('/').slice(0, -1).join('/')
+  const base = normalizar(`${dir}/${spec}`)
+  if (existentes.has(base)) return base
+  for (const e of EXT_DE_MODULO) if (existentes.has(base + e)) return base + e
+  for (const e of EXT_DE_MODULO) if (existentes.has(`${base}/index${e}`)) return `${base}/index${e}`
+  return null
+}
+
+export interface CoberturaDeTeste {
+  // caminhos que ALGUM arquivo de teste importa, direta ou dinamicamente
+  readonly importados: ReadonlySet<string>
+  // fallback por nome, para o que import nao alcanca (python, vue, fixture)
+  readonly stems: ReadonlySet<string>
+}
+
+// Por que import e nao nome: o casamento por stem quebra no instante em que o
+// fonte e renomeado sem renomear o teste — foi o que a Onda 1 fez com 172
+// arquivos, e o auditor passou a reportar "sem teste" para arquivo que TEM
+// teste. Import e a relacao real; nome e uma convencao que envelhece.
+export function coberturaDeTeste(listados: string[], ler: (p: string) => string | null): CoberturaDeTeste {
+  const existentes = new Set(listados)
+  const importados = new Set<string>()
+  for (const p of listados) {
+    if (!ehArquivoDeTeste(p)) continue
+    const texto = ler(p)
+    if (texto === null) continue
+    for (const m of texto.matchAll(ESPECIFICADOR)) {
+      const spec = m[2]
+      if (!spec) continue
+      const alvo = alvoDoImport(p, spec, existentes)
+      if (alvo && !ehArquivoDeTeste(alvo)) importados.add(alvo)
+    }
+  }
+  return { importados, stems: stemsDeTeste(listados) }
+}
+
+export function temTesteCorrespondente(path: string, cobertura: CoberturaDeTeste | Set<string>): boolean {
   if (ehArquivoDeTeste(path)) return true
+  const stems = cobertura instanceof Set ? cobertura : cobertura.stems
+  if (!(cobertura instanceof Set) && cobertura.importados.has(path)) return true
   const alvo = stemDe(path)
   if (!alvo) return false
   for (const s of stems) {
-    if (s === alvo || s.startsWith(`${alvo}-`) || s.endsWith(`-${alvo}`) || s.includes(`-${alvo}-`)) return true
+    if (casaPorNome(s, alvo)) return true
   }
   return false
 }
 
-function metricasDe(path: string, texto: string, stems: Set<string>): ArquivoAuditavel {
+// `-` e `_` valem como o mesmo separador. Antes so `-` contava, o que fazia
+// tests/servico_test.py nunca casar com app/servico.py — o fallback para
+// Python estava morto desde sempre, sem ninguem notar.
+function casaPorNome(stemDoTeste: string, alvo: string): boolean {
+  const t = stemDoTeste.replace(/_/g, '-')
+  const a = alvo.replace(/_/g, '-')
+  return t === a || t.startsWith(`${a}-`) || t.endsWith(`-${a}`) || t.includes(`-${a}-`)
+}
+
+function metricasDe(path: string, texto: string, cobertura: CoberturaDeTeste): ArquivoAuditavel {
   const ext = extensaoDe(path)
   const codigo = ext === 'vue' ? scriptDeVue(texto) : texto
   const linhas = linhasDeCodigo(codigo)
@@ -191,7 +254,7 @@ function metricasDe(path: string, texto: string, stems: Set<string>): ArquivoAud
   const excedeLinhas = linhas > MAX_LINHAS
   const godFile = !EXT_SEM_EXPORT.has(ext) && funcoes >= GOD_FUNCS && exports < GOD_EXPORTS
   const ehTeste = ehArquivoDeTeste(path)
-  const semTeste = !temTesteCorrespondente(path, stems)
+  const semTeste = !temTesteCorrespondente(path, cobertura)
   const sancionado = ALLOW_MONOLITO.test(texto) && (excedeLinhas || godFile)
   const motivos: string[] = []
   if (excedeLinhas) motivos.push(`monolito: ${linhas} linhas (limite ${MAX_LINHAS})`)
@@ -249,7 +312,9 @@ export async function selecionarAuditoria(opts: OpcoesAuditoria = {}): Promise<P
   const ler = opts.ler ?? ((p: string) => lerTexto(raiz, p))
   const escopo = (opts.escopo ?? '').trim()
   const listados = unicos(await listar())
-  const stems = stemsDeTeste(listados)
+  // Le o repo INTEIRO para montar a cobertura, nao so o escopo pedido: um
+  // recorte de escopo nao pode fazer o auditor esquecer que o teste existe.
+  const cobertura = coberturaDeTeste(listados, ler)
   const paths = escopo ? listados.filter(p => p.startsWith(escopo)) : listados
   const fora: ForaDaAuditoria[] = []
   const auditaveis: ArquivoAuditavel[] = []
@@ -264,7 +329,7 @@ export async function selecionarAuditoria(opts: OpcoesAuditoria = {}): Promise<P
       fora.push({ path, motivo: 'maior-que-o-lote', detalhe: `${texto.length} chars > orcamento de ${orcamentoChars} por lote` })
       continue
     }
-    auditaveis.push(metricasDe(path, texto, stems))
+    auditaveis.push(metricasDe(path, texto, cobertura))
   }
   const lotes = montarLotes(ordenarPorRisco(auditaveis), orcamentoChars)
   const cortados = maxLotes > 0 ? lotes.splice(maxLotes) : []

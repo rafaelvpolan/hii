@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -93,4 +94,4 @@ test('REGRESSAO: finish bem-sucedido (PR_OPEN) limpa wait_attempts residual de u
   expect(c?.fm.pr_url).toBe(PR_FALSO)
   expect(c?.fm.wait_attempts).toBe('')
   expect(existsSync(wt)).toBe(false)
-})
+}, TEMPO_COM_GIT_MS)

@@ -190,7 +190,21 @@ function lerLoteDaJanelaAtual(): LoteDeRuns {
   return lerLoteDesde(Date.now() - JANELA_COTA_MS)
 }
 
-const lotePorDiretorio = memoChave(runsDir, (): (() => LoteDeRuns) => memoTempo(lerLoteDaJanelaAtual, ttlListagemMs()))
+function memoizarLote(): () => () => LoteDeRuns {
+  return memoChave(runsDir, (): (() => LoteDeRuns) => memoTempo(lerLoteDaJanelaAtual, ttlListagemMs()))
+}
+
+let lotePorDiretorio = memoizarLote()
+
+// Costura de teste, no mesmo espirito de definirEstadoDoOllama: descarta a
+// listagem em cache sem esperar o TTL passar. Existe porque teste que dorme
+// para expirar cache testa o escalonador do SO, nao o cache — e falhava nas
+// duas direcoes (cache que expirou cedo demais, cache que nao expirou). A
+// mecanica do TTL em si ja tem cobertura com relogio injetado em
+// test/cache.test.ts. Producao nunca chama isto.
+export function esquecerLoteEmCache(): void {
+  lotePorDiretorio = memoizarLote()
+}
 
 export function loteDesde(pedidoMs: number): LoteDeRuns {
   const guardado = lotePorDiretorio()()

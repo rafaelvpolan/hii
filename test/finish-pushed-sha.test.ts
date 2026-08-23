@@ -1,3 +1,4 @@
+import { TEMPO_COM_GIT_MS } from './tempo-de-teste'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -120,4 +121,4 @@ test('REGRESSAO: pushed_sha gravado pelo push anterior DESTE card ancora o push 
   expect(existsSync(join(checkout, 'mudanca2.txt'))).toBe(true)
   expect(existsSync(join(checkout, 'mudanca1.txt'))).toBe(false)
   expect(git(checkout, ['rev-parse', 'HEAD'])).toBe(segundoPushedSha)
-})
+}, TEMPO_COM_GIT_MS)

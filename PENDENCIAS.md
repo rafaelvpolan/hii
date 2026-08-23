@@ -6,65 +6,53 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## Rename da Onda 1 cega a deteccao de "sem teste correspondente"
+## DECISÃO SUA — os 6 commits de `fix/auditoria-altas` estão viajando junto
 
-**Sintoma.** `temTesteCorrespondente` (hoje `motor/agentes/ass/auditoria.ts`,
-ate 1.8 em `motor/agentes/ass/auditoria.ts`) casa fonte com teste pelo **stem do nome
-do arquivo**: `finish.ts` casa com `test/finish-cost.test.ts`. A Onda 1
-renomeia o fonte (`finish.ts` -> `motor/qlb/ctr/fechar.ts`) e deixa o nome do
-teste como esta, por decisao explicita (R4 — nome de arquivo de teste nao muda
-na Onda 1). Resultado: o auditor passa a reportar `sem teste correspondente`
-para arquivos que **tem** teste.
+**O que é.** A branch `feat/brazil-onda-0` foi criada a partir de
+`fix/auditoria-altas`, não de `main`. Aquela branch tem 6 commits sem PR aberto,
+e eles agora fazem parte deste trabalho.
 
-**Quanto dói.** Nao quebra build nem gate; degrada um relatorio. Mas e
-falso-negativo silencioso, que e justamente o tipo de coisa que este motor
-existe pra nao ter.
+**Por que foi assim.** Um rename de 172 arquivos partindo de `main` conflitaria
+de forma irrecuperável com aqueles 6 commits — qualquer um dos dois que
+mergeasse primeiro inviabilizaria o outro.
 
-**Duas saidas, nenhuma dentro da Onda 1.**
-1. Renomear os arquivos de teste junto com o fonte. Coerente, mas e uma onda
-   propria: 151 arquivos, e mistura dois riscos (R3).
-2. Trocar a heuristica de stem por um mapa explicito fonte->teste, ou por
-   leitura dos imports do teste. Mais robusto, e resolve tambem os testes que
-   ja hoje nao casam por nome.
-
-**Enquanto isso.** Nao confie na coluna `semTeste` do auditor para codigo
-sob `motor/`.
+**O que decidir.** Ou (a) os 6 commits saem num PR próprio antes, e este
+trabalho é rebaseado em cima; ou (b) tudo entra num PR só, assumindo um diff
+grande. Não dá para decidir isso sem saber se aqueles commits já foram
+revisados por alguém.
 
 ---
 
-## Flake de isolamento entre arquivos de teste
+## DECISÃO SUA — nome de arquivo de teste não acompanhou o rename
 
-**Sintoma.** Rodando a suíte inteira (`bun test ./test`), esporadicamente aparece
-`# Unhandled error between tests` com
-`nao deveria chamar runStep — steps: nada nao roda nenhum passo`.
-Observado 1 vez em 2 rodadas completas durante o baseline da Onda 0 do
-`WORKFLOW-EXECUCAO.md`. Os três arquivos que contêm essa mensagem
-(`finish-cost`, `finish-pushed-sha`, `finish-wait-attempts`) passam 6/6 quando
-rodados isolados — a falha só existe na suíte completa.
+**O que é.** A Onda 1 renomeou 172 arquivos de código e manteve os 158 arquivos
+de teste com os nomes antigos: `test/finish-cost.test.ts` exercita
+`motor/qlb/ctr/fechar.ts`, `test/kimi-adapter.test.ts` exercita
+`motor/tmd/harness/kimi.ts`.
 
-**Segunda instancia, causa diferente.** Durante a Onda 2b, `test/cota-cache.test.ts`
-("mtime diferente invalida o parse guardado") reprovou uma vez e passou nas duas
-rodadas seguintes. Causa provavel e granularidade de mtime, nao vazamento de env
-— sao dois flakes distintos convivendo na mesma suite.
+**O que já não é mais problema.** A detecção de "sem teste correspondente"
+deixou de depender do nome (agora casa por import), então isso não gera mais
+falso-negativo no auditor.
 
-**Onde mexer.** Os 34 arquivos que escrevem card definem
-`process.env.HICODE_CARDS_DIR` no **topo do módulo**, como global do processo.
-O guarda `test/isolamento-de-testes.test.ts` cobra que a variável seja isolada,
-mas não que o isolamento sobreviva a outro arquivo carregado depois. A hipótese
-mais provável é uma promessa de `handleExecute`/`handleFinish` que completa
-depois do fim do teste que a criou, já com o env apontando para o diretório de
-outro arquivo.
+**O que sobra.** Só coerência de leitura: quem abre `test/` não vê a taxonomia
+BRAZIL. Renomear são ~40 arquivos e um diff cego pelo repositório, com zero
+ganho funcional.
 
-**Por que dói.** Enquanto existir, uma reprovação de `bun run test` não
-distingue defeito real de flake — o que enfraquece o gate por commit da Onda 1
-(ver R2 no `WORKFLOW-EXECUCAO.md`, que hoje carrega a mitigação de reproduzir
-duas vezes).
-
-**Não fazer junto com o rename.** É investigação própria, em 34 arquivos, e
-misturar com a Onda 1 quebra a R3.
+**O que decidir.** Vale a onda de rename de testes, ou o custo não paga?
+Recomendação: não pagar agora, e renomear cada teste quando ele for tocado por
+outro motivo.
 
 ---
 
-As duas últimas saíram daqui porque não eram trabalho pendente, e sim conhecimento que pertence ao
-README: a ressalva de que só o clipboard do WSL foi verificado em execução real está junto do
-`/ref clipboard`, e a decisão de manter polling em vez de push está junto do contrato de máquina.
+## FALTA EXECUTAR — teste de aceitação manual da Onda 3
+
+**O que é.** `kill -9` no daemon durante um card em `EXECUTING`, durante `URL`,
+e depois de `PR_OPEN`. Reiniciar. Nos três casos o card tem de retomar na fase
+certa e **nenhum efeito externo pode duplicar**.
+
+**Por que não foi feito aqui.** Os automatizados cobrem a lógica
+(`test/pr-orfao.test.ts` reproduz a sequência exata do PR duplicado), mas
+nenhum deles mata um processo de verdade nem fala com o GitHub. Precisa de um
+repo-alvo real e de um `gh` autenticado.
+
+**Onde está registrado.** `WORKFLOW-EXECUCAO.md`, Onda 3.

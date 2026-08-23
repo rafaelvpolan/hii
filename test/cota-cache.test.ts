@@ -3,10 +3,15 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const TTL_MS = 300
+// TTL longo de proposito: os testes de "dentro da janela" assumem que chamadas
+// adjacentes caem no mesmo TTL, e com 300ms bastava uma pausa de GC entre elas
+// para o cache expirar sozinho. Quem vira a janela agora e esquecerLoteEmCache,
+// nao o relogio.
+const TTL_MS = 60_000
 process.env.HICODE_COTA_TTL_MS = String(TTL_MS)
 
 const { lerCota } = await import('../motor/euc/tsr/cota')
+const { esquecerLoteEmCache } = await import('../motor/euc/tsr/cota-runs')
 
 const HORA_MS = 60 * 60 * 1000
 const MTIME_FIXO_S = 1_000_000
@@ -55,8 +60,10 @@ function gravarRun(id: string, quandoMs: number, custo: string): string {
   return caminho
 }
 
-function passarAJanela(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, TTL_MS + 150))
+// Vira a janela do cache de forma deterministica, em vez de dormir esperando o
+// TTL. Ver o comentario em esquecerLoteEmCache.
+function passarAJanela(): void {
+  esquecerLoteEmCache()
 }
 
 test('dentro da janela do cache a leitura nao volta ao disco, e passada a janela o run reescrito aparece', async () => {
@@ -67,7 +74,7 @@ test('dentro da janela do cache a leitura nao volta ao disco, e passada a janela
   writeFileSync(caminho, conteudoDeRun('001', quando, '7.50'))
   expect(lerCota(agora()).custoUsd).toBe(2)
 
-  await passarAJanela()
+  passarAJanela()
   expect(lerCota(agora()).custoUsd).toBe(7.5)
 })
 
@@ -81,7 +88,7 @@ test('passada a janela, arquivo intacto NAO e lido de novo — a chave e ino+mti
   writeFileSync(caminho, corrompidoDoMesmoTamanho)
   utimesSync(caminho, MTIME_FIXO_S, MTIME_FIXO_S)
 
-  await passarAJanela()
+  passarAJanela()
   const cota = lerCota(agora())
   expect(cota.custoUsd).toBe(2)
   expect(cota.runsIgnorados).toBe(0)
@@ -96,7 +103,7 @@ test('mtime diferente invalida o parse guardado', async () => {
   writeFileSync(caminho, conteudoDeRun('001', quando, '7.5000'))
   utimesSync(caminho, MTIME_FIXO_S + 60, MTIME_FIXO_S + 60)
 
-  await passarAJanela()
+  passarAJanela()
   expect(lerCota(agora()).custoUsd).toBe(7.5)
 })
 
@@ -107,7 +114,7 @@ test('run novo so entra quando a janela do cache vira', async () => {
   gravarRun('002', agora() - HORA_MS + 1000, '1.0000')
   expect(lerCota(agora()).runs).toBe(1)
 
-  await passarAJanela()
+  passarAJanela()
   expect(lerCota(agora()).runs).toBe(2)
 })
 
