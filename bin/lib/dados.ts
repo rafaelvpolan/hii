@@ -5,7 +5,7 @@ import { allCards, listRepos, normalizeId } from '../../motor/cdl/store'
 import { memoArquivo, memoTempo } from '../../motor/tmd/eco/memo'
 import { parseLog } from '../../lib/core/activity'
 
-export { passosAtivos, planoDoCard, passosDe } from '../../lib/core/passos'
+export { passosAtivos, planoDoCard, passosDe } from '../../motor/nmy/passos'
 
 export const atividadeDe = memoArquivo(
   (id) => join(cardsDir(), 'runs', `${normalizeId(id)}.live.log`),

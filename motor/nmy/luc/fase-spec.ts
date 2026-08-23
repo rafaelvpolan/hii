@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs'
-import { objetivoComInstrucoes } from '../core/instruir'
-import { isoNow } from '../../motor/cdl'
-import { maxReajuste } from '../../motor/cdl/ali/config'
-import { readCard, patchCard, repoPath, repoBase } from '../../motor/cdl/store'
-import { ensureWorktree, runGit, stageAll, worktreePath } from '../../motor/qlb/git'
-import { runStep } from '../../motor/cic/agente'
-import { openspecAvailable, initOpenspec, validateChange } from '../spec/openspec'
-import type { SpecValidation } from '../spec/openspec'
+import { objetivoComInstrucoes } from '../../../lib/core/instruir'
+import { isoNow } from '../../cdl'
+import { maxReajuste } from '../../cdl/ali/config'
+import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store'
+import { ensureWorktree, runGit, stageAll, worktreePath } from '../../qlb/git'
+import { runStep } from '../../cic/agente'
+import { openspecAvailable, initOpenspec, validateChange } from './openspec'
+import type { SpecValidation } from './openspec'
 
 function specPrompt(name: string, desc: string, feedback: string): string {
   return [

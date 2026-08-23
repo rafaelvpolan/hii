@@ -1,4 +1,4 @@
-import type { Plan, PlanWave } from '../plan'
+import type { Plan, PlanWave } from '../../../motor/nmy/luc/plano'
 
 const DIM = '\x1b[2m'
 const BOLD = '\x1b[1m'

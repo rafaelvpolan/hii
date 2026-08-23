@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { planSteps } from '../lib/runner/analyze'
 import type { TaskInput } from '../lib/runner/analyze'
-import { DEFAULT_STEPS } from '../lib/runner/pipeline/config'
+import { DEFAULT_STEPS } from '../motor/nmy/config'
 
 function ids(task: TaskInput): string[] {
   return planSteps(task, DEFAULT_STEPS).steps.map(s => s.id)

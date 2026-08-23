@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { parseValidation } from '../lib/spec/openspec'
+import { parseValidation } from '../motor/nmy/luc/openspec'
 
 test('parseValidation: failed=0 -> ok', () => {
   const v = parseValidation(JSON.stringify({ items: [{ name: 'card-1', valid: true, issues: [] }], summary: { totals: { failed: 0, passed: 1 } } }))

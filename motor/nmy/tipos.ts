@@ -1,4 +1,4 @@
-import type { Status } from '../../../motor/cdl'
+import type { Status } from '../cdl'
 
 export type StepKind = 'quality' | 'security' | 'review' | 'cleanup' | 'custom'
 

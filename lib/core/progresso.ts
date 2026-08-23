@@ -1,6 +1,6 @@
 import type { Fields, StepMap } from '../../motor/cdl'
 import { STATUSES } from '../../motor/cdl'
-import type { PipelineStep } from '../runner/pipeline/types'
+import type { PipelineStep } from '../../motor/nmy/tipos'
 
 export type EstadoPasso = 'feito' | 'agora' | 'pendente' | 'pulado'
 

@@ -10,7 +10,7 @@ import { pushOwnedBranch, removeWorktree, run, runGit, stageAll, worktreePath } 
 import { pularCriacaoDePr } from './pr'
 import type { PushResult } from '../git'
 import { stopUrl } from '../../cic/crv/url-viva'
-import { activeSteps } from '../../../lib/runner/pipeline/config'
+import { activeSteps } from '../../nmy/config'
 import { planSteps } from '../../../lib/runner/analyze'
 import { SUFIXO_DO_GATE, runGatedStep } from '../../cic/passo-com-gate'
 import { updateRunSteps } from '../../euc/registros'

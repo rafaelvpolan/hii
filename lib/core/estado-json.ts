@@ -15,7 +15,7 @@ import type { SaudeDoMotor } from '../../motor/euc/rdr/saude'
 import { historicoDeSessoes } from './historico'
 import type { Sessao } from './historico'
 import { esperaHumano, isActive, phaseIndex, phaseLabel, waitsHuman } from './render/phases'
-import { passosDe } from './passos'
+import { passosDe } from '../../motor/nmy/passos'
 import type { Passo } from './progresso'
 import { floorProviders, formatProviders } from '../../motor/euc/tsr/lacuna'
 

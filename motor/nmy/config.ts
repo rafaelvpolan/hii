@@ -1,8 +1,8 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { STATUSES } from '../../../motor/cdl'
-import { ROOT } from '../../../motor/cdl/ali/config'
-import type { PipelineConfig, PipelineStep } from './types'
+import { STATUSES } from '../cdl'
+import { ROOT } from '../cdl/ali/config'
+import type { PipelineConfig, PipelineStep } from './tipos'
 
 interface ErroLido {
   message?: string

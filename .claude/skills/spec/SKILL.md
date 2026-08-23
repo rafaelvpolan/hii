@@ -11,7 +11,7 @@ argument-hint: "[o que a mudança faz]"
 ajuste de uma linha nasce **direto** (Direct mode) — sem spec. O spec fecha o **escopo** e a
 **verificação** antes do Crivo aprovar o plano (`PLAN_APPROVED`).
 
-Este skill é o equivalente **interativo** do que o motor gera sozinho em `lib/runner/spec-phase.ts`
+Este skill é o equivalente **interativo** do que o motor gera sozinho em `motor/nmy/luc/fase-spec.ts`
 (agente **glossia**) e valida com `openspec validate --strict`. Escreva no **mesmo formato**, senão
 a validação reprova e o card vai a `HALTED`.
 

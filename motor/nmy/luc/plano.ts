@@ -1,10 +1,10 @@
-import { extractObjetivo } from '../../motor/cdl'
-import type { Card } from '../../motor/cdl'
-import { planSteps } from '../runner/analyze'
-import { classifySurface } from '../runner/classify'
-import { activeSteps } from '../runner/pipeline/config'
-import { waves } from '../runner/pipeline/waves'
-import type { PipelineStep } from '../runner/pipeline/types'
+import { extractObjetivo } from '../../cdl'
+import type { Card } from '../../cdl'
+import { planSteps } from '../../../lib/runner/analyze'
+import { classifySurface } from '../../../lib/runner/classify'
+import { activeSteps } from '../config'
+import { waves } from './ondas'
+import type { PipelineStep } from '../tipos'
 
 export interface PlanWave {
   n: number

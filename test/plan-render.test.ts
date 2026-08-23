@@ -1,10 +1,10 @@
 import { test, expect } from 'bun:test'
-import { waves } from '../lib/runner/pipeline/waves'
-import { DEFAULT_STEPS } from '../lib/runner/pipeline/config'
-import { buildPlan } from '../lib/core/plan'
+import { waves } from '../motor/nmy/luc/ondas'
+import { DEFAULT_STEPS } from '../motor/nmy/config'
+import { buildPlan } from '../motor/nmy/luc/plano'
 import { renderPlan } from '../lib/core/render/plan'
 import type { Card } from '../motor/cdl'
-import type { PipelineStep } from '../lib/runner/pipeline/types'
+import type { PipelineStep } from '../motor/nmy/tipos'
 
 function card(fm: Record<string, string>, objetivo = 'fazer algo'): Card {
   return { fm: { id: '042', ...fm }, order: Object.keys(fm), body: `## Objetivo\n${objetivo}\n`, file: '042-x.md' }
