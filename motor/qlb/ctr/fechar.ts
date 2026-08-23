@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs'
 import { objetivoComInstrucoes } from '../../mir/instruir'
 import { isoNow } from '../../cdl'
 import type { StepMap, StepMetric } from '../../cdl'
-import { CARD_BUDGET_USD, MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from '../../cdl/ali/config'
+import { MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from '../../cdl/ali/config'
+import { tetoDoCard } from '../../euc/tsr/orcamento'
 import { appendProjectMemory } from '../../csd/memoria'
 import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store'
 import { warnBudgetWithoutGuarantee } from '../../euc/tsr/confianca'
@@ -53,11 +54,12 @@ function pushFailureDiagnostico(push: PushResult): string {
 export async function handleFinish(id: string, deps: FinishDeps = { runStep, runCodefoxGate }): Promise<void> {
   const card = readCard(id)
   if (!card) return
-  if (CARD_BUDGET_USD > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > CARD_BUDGET_USD) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${CARD_BUDGET_USD}) antes do polimento — decida se continua`)
+  const teto = tetoDoCard()
+  if (teto > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > teto) {
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes do polimento — decida se continua`)
     return
   }
-  warnBudgetWithoutGuarantee(id, card.fm, CARD_BUDGET_USD)
+  warnBudgetWithoutGuarantee(id, card.fm, teto)
   const repoName = card.fm.repo ?? ''
   const slug = card.fm.slug ?? ''
   const target = repoPath(repoName)

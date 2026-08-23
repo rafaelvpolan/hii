@@ -2,7 +2,8 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cdl'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cdl'
-import { CARD_BUDGET_USD, cardsDir, CLARIFY, EVAL, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cdl/ali/config'
+import { cardsDir, CLARIFY, EVAL, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cdl/ali/config'
+import { tetoDoCard } from '../euc/tsr/orcamento'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clr/clarificar'
 import { planSteps } from './rta/perfil'
 import { activeSteps } from '../nmy/config'
@@ -124,11 +125,12 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   abrirSessao(id)
   const baseCost = parseFloat(card.fm.cost_usd || '0') || 0
   const baseTokens = Number(card.fm.tokens_total || '0') || 0
-  if (CARD_BUDGET_USD > 0 && baseCost > CARD_BUDGET_USD) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${CARD_BUDGET_USD}) antes de (re)executar — decida se continua`)
+  const teto = tetoDoCard()
+  if (teto > 0 && baseCost > teto) {
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`)
     return
   }
-  warnBudgetWithoutGuarantee(id, card.fm, CARD_BUDGET_USD)
+  warnBudgetWithoutGuarantee(id, card.fm, teto)
   let auxCost = 0
   let auxTokens = 0
   const repoName = card.fm.repo ?? ''

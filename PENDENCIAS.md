@@ -39,6 +39,9 @@ nenhuma" — isso é honesto e pequeno: um campo `memoria: off` no frontmatter,
 lido no mesmo ponto onde `PROJECT_MEMORY` já é lido. Diga e eu faço; é uma
 linha e um teste.
 
+
+R: o /end seria para ele começar outra tarefa/conversa com outro contexto, sem manter memoria anterior enviando tudo para IA. Veja se faz sentido, caso contrario não faz.
+
 ---
 
 ## RECOMENDAÇÕES — os três itens que você mandou avaliar
@@ -62,6 +65,8 @@ conseguirá contar conflito recorrente como `ProblemSignature`.
 Três linhas, nenhuma mudança de abstração, e resolve o que de fato falta —
 invisibilidade, não falta de uniformidade.
 
+R: fazer recomendação
+
 ### 2. Reduzir os tetos de reparo — medir antes de automatizar
 
 **Os dois tetos já são ajustáveis sem código novo:**
@@ -80,6 +85,8 @@ mede direto, sem proxy.
 **Depende do item 1 acima** — sem os eventos do `sync.ts`, o laço de conflito
 fica fora da contagem, e ele é justamente um dos quatro pontos de reparo.
 
+R: FAzer recomendação
+
 ### 3. Ligar `executarEmBlocos` — recomendo NÃO ligar agora, e parar de contar como pronto
 
 O laço de polimento do `fechar.ts` **já** faz executa → valida → para cedo. Rotear
@@ -97,6 +104,7 @@ skill, não ao `core/`.
 consumidor chegar junto com o pack `backend-web` — o mesmo pack que o item 16
 está esperando.
 
+R: FAzer recomendação
 ---
 
 ## ESTADO — o que está atrás de `HICODE_RIGOR_ESTRITO=1`

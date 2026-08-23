@@ -1,5 +1,5 @@
 import { test, expect, afterAll } from 'bun:test'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -72,6 +72,47 @@ test('acao fora do catalogo NAO cai em tier barato — usa o padrao declarado no
   const escolha = G.tierPara('acao-que-nao-existe')
   expect(escolha.tier).toBe(G.lerGovernanca().padrao)
   expect(escolha.motivo).toContain('padrao')
+})
+
+test('o teto do card vem do arquivo versionado, nao mais de env com default zero', () => {
+  delete process.env.HICODE_CARD_BUDGET_USD
+  expect(G.tetoDoCard()).toBe(G.lerGovernanca().orcamentoPorCard.tetoUsd)
+  expect(G.tetoDoCard(), 'default zero era orcamento desligado — governanca que nao governa').toBeGreaterThan(0)
+})
+
+test('env continua vencendo o arquivo, para quem ja calibrou o proprio teto', () => {
+  process.env.HICODE_CARD_BUDGET_USD = '3'
+  try {
+    expect(G.tetoDoCard()).toBe(3)
+  } finally {
+    delete process.env.HICODE_CARD_BUDGET_USD
+  }
+})
+
+function arquivosDoMotor(raiz = 'motor'): string[] {
+  const fora: string[] = []
+  for (const nome of readdirSync(raiz)) {
+    const caminho = join(raiz, nome)
+    if (statSync(caminho).isDirectory()) fora.push(...arquivosDoMotor(caminho))
+    else if (nome.endsWith('.ts')) fora.push(caminho)
+  }
+  return fora
+}
+
+test('INVARIANTE nenhum ponto do motor le o teto de outro lugar que nao o governado', () => {
+  const todos = arquivosDoMotor()
+  expect(todos.length, 'a varredura precisa enxergar os arquivos').toBeGreaterThan(100)
+  const fora = todos
+    .filter(f => f !== join('motor', 'euc', 'tsr', 'orcamento.ts'))
+    .filter(f => readFileSync(f, 'utf8').includes('CARD_BUDGET_USD'))
+  expect(fora, 'teto lido de duas fontes vira orcamento que barra num ponto e nao no outro').toEqual([])
+})
+
+test('INVARIANTE quem barra por orcamento chama tetoDoCard', async () => {
+  for (const arquivo of ['motor/osw/executar.ts', 'motor/cic/corrigir.ts', 'motor/qlb/ctr/fechar.ts']) {
+    const fonte = await Bun.file(arquivo).text()
+    expect(fonte.includes('tetoDoCard()'), `${arquivo} tem de ler o teto governado`).toBe(true)
+  }
 })
 
 test('model_tier_selected e um tipo de evento do diario, nao texto solto', async () => {

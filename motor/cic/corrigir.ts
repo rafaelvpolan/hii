@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { isoNow } from '../cdl'
 import type { FailureClass, Usage, VerifyResult } from '../cdl'
-import { CARD_BUDGET_USD } from '../cdl/ali/config'
+import { tetoDoCard } from '../euc/tsr/orcamento'
 import { readCard, patchCard, repoPath } from '../cdl/store'
 import { warnBudgetWithoutGuarantee } from '../euc/tsr/confianca'
 import { runGit, stageAll } from '../qlb/git'
@@ -84,11 +84,12 @@ async function scopedFix(wt: string, instruction: string, file: string, line: st
 export async function handleCorrect(id: string, deps: CorrectDeps = { implement, runStep }): Promise<void> {
   const card = readCard(id)
   if (!card) return
-  if (CARD_BUDGET_USD > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > CARD_BUDGET_USD) {
-    patchCard(id, { status: 'HALTED', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${CARD_BUDGET_USD}) antes de refazer — decida se continua`)
+  const teto = tetoDoCard()
+  if (teto > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > teto) {
+    patchCard(id, { status: 'HALTED', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de refazer — decida se continua`)
     return
   }
-  warnBudgetWithoutGuarantee(id, card.fm, CARD_BUDGET_USD)
+  warnBudgetWithoutGuarantee(id, card.fm, teto)
   const instruction = card.fm.correction ?? ''
   const file = card.fm.correction_file ?? ''
   const line = card.fm.correction_line ?? ''

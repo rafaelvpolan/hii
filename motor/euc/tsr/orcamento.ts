@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
+import { ROOT, numeroDeEnv } from '../../cdl/ali/config'
 import { ENV_TIER_FILE } from '../../cdl/ali/contrato'
 
 // TSR — governanca de custo como DADO versionado, nao habito no codigo.
@@ -104,5 +104,6 @@ export function tierPara(acao: string, g: Governanca = lerGovernanca()): Escolha
 }
 
 export function tetoDoCard(g: Governanca = lerGovernanca()): number {
-  return g.orcamentoPorCard.tetoUsd
+  const doOperador = numeroDeEnv('HICODE_CARD_BUDGET_USD', 0)
+  return doOperador > 0 ? doOperador : g.orcamentoPorCard.tetoUsd
 }
