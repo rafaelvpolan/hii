@@ -1,7 +1,7 @@
 import { isoNow } from '../../motor/cdl'
 import type { FailureClass } from '../../motor/cdl'
 import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../motor/cdl/ali/config'
-import { runGit, stageAll } from './git'
+import { runGit, stageAll } from '../../motor/qlb/git'
 import { patchCard } from '../../motor/cdl/store'
 import { modelFor, providerFor, effortFor } from '../../motor/tmd/registro'
 import { runProvider } from '../../motor/euc/tsr/confianca'

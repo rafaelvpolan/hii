@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { MAX_FILESIZE_BYTES, bytesEmDisco } from './download'
+import { MAX_FILESIZE_BYTES, bytesEmDisco } from '../../motor/qlb/alf/download'
 
 export type Ambiente = 'wsl' | 'wayland' | 'x11' | 'macos' | 'nenhum'
 

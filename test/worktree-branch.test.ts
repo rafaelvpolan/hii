@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { worktreePathsForBranch } from '../lib/runner/git'
+import { worktreePathsForBranch } from '../motor/qlb/git'
 
 const PORCELAIN = `worktree /home/u/projects/hicode-site
 HEAD abc

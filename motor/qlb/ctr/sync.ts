@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../../motor/cdl'
-import type { Card, StepMap } from '../../motor/cdl'
-import { MAX_CONFLICT } from '../../motor/cdl/ali/config'
-import { patchCard } from '../../motor/cdl/store'
-import { runGit, withGitLock } from './git'
-import { runStep } from './agent'
-import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from './url-vivo'
-import { isNonVisual } from './classify'
-import { addMetric } from '../../motor/euc/metricas-de-fecho'
+import { isoNow } from '../../cdl'
+import type { Card, StepMap } from '../../cdl'
+import { MAX_CONFLICT } from '../../cdl/ali/config'
+import { patchCard } from '../../cdl/store'
+import { runGit, withGitLock } from '../git'
+import { runStep } from '../../../lib/runner/agent'
+import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from '../../../lib/runner/url-vivo'
+import { isNonVisual } from '../../../lib/runner/classify'
+import { addMetric } from '../../euc/metricas-de-fecho'
 
 export interface SyncResult {
   ok: boolean

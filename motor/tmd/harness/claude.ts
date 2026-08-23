@@ -1,6 +1,6 @@
 import { claudeArgv } from './claude-argv'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv'
-import { run } from '../../../lib/runner/git'
+import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN, readReportedCost } from '../../euc/tsr/custo'
 import { runClaudeStream } from './claude-stream'

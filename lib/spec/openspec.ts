@@ -1,4 +1,4 @@
-import { run } from '../runner/git'
+import { run } from '../../motor/qlb/git'
 
 interface OsIssue {
   level?: string

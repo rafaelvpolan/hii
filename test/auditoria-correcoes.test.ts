@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process'
 import { numeroDeEnv } from '../motor/cdl/ali/config'
 import { disponibilidadeExterna } from '../motor/tmd/pnt/estado'
 import type { ConsultaMcp, ServidorMcp } from '../motor/tmd/pnt/estado'
-import { syncWithBase } from '../lib/runner/finish-sync'
+import { syncWithBase } from '../motor/qlb/ctr/sync'
 import { runCodefoxGate } from '../lib/runner/codefox-gate'
 
 const criados: string[] = []

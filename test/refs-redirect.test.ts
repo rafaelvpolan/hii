@@ -2,16 +2,16 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MAX_REDIRECTS } from '../lib/runner/redirect'
-import { isBlockedHost, validateHttpUrl } from '../lib/runner/url-guard'
-import { curlArgs, downloadToFile, parseHop } from '../lib/runner/download'
-import { run } from '../lib/runner/git'
+import { MAX_REDIRECTS } from '../motor/qlb/alf/redirect'
+import { isBlockedHost, validateHttpUrl } from '../motor/qlb/alf/url-guard'
+import { curlArgs, downloadToFile, parseHop } from '../motor/qlb/alf/download'
+import { run } from '../motor/qlb/git'
 import { LOGO, METADADOS, METADADOS_GCP_PONTO, destino, movedTo, net, recusa, segue } from './fixtures/rede-falsa'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-refs-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { refPaths, resolveRefs } = await import('../lib/runner/refs')
+const { refPaths, resolveRefs } = await import('../motor/qlb/alf/refs')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

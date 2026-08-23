@@ -1,4 +1,4 @@
-import { run } from '../../../lib/runner/git'
+import { run } from '../../qlb/git'
 import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado'
 import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado'
 

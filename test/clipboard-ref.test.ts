@@ -129,7 +129,7 @@ test('/ref sem tarefa aberta guarda na sessao e avisa que vai junto com a proxim
 
 test('/ref clipboard anexa a imagem colada na tarefa aberta', async () => {
   const { comandoRef } = await import('../lib/core/refs-comando')
-  const { readRefSources } = await import('../lib/runner/refs')
+  const { readRefSources } = await import('../motor/qlb/alf/refs')
   const r = await comandoRef('clipboard', { tarefa: '010', sessao: 's1' }, {
     clipboard: deps(),
     colar: async (destinoSemExt) => {

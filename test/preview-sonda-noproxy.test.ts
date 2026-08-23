@@ -1,6 +1,6 @@
 import { test, expect, afterAll } from 'bun:test'
 import { httpOk, waitHttp, probeArgs } from '../lib/runner/url-vivo'
-import { isLoopbackUrl, noProxyArgs } from '../lib/runner/loopback'
+import { isLoopbackUrl, noProxyArgs } from '../motor/qlb/alf/loopback'
 import { probeProviderHealth } from '../motor/tmd/sonda'
 
 let acessosAoProxy = 0

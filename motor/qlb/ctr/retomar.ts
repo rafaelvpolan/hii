@@ -1,6 +1,6 @@
-import { isoNow } from '../../motor/cdl'
-import { patchCard } from '../../motor/cdl/store'
-import type { PipelineStep } from './pipeline/types'
+import { isoNow } from '../../cdl'
+import { patchCard } from '../../cdl/store'
+import type { PipelineStep } from '../../../lib/runner/pipeline/types'
 
 export const RESUME_POST_STEPS = '__apos_passos__'
 

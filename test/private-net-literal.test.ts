@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { isPrivateNetworkHost } from '../lib/runner/private-net'
-import { isLoopbackHost } from '../lib/runner/loopback'
-import { isBlockedHost, validateHttpUrl } from '../lib/runner/url-guard'
+import { isPrivateNetworkHost } from '../motor/qlb/alf/rede-privada'
+import { isLoopbackHost } from '../motor/qlb/alf/loopback'
+import { isBlockedHost, validateHttpUrl } from '../motor/qlb/alf/url-guard'
 
 test('REGRESSAO: nome de dominio que so comeca como faixa privada deixa de ser bloqueado', () => {
   for (const h of ['127.evil.com', '10.evil.com', '192.168.evil.com']) {

@@ -1,5 +1,5 @@
 import { lookup } from 'node:dns/promises'
-import { isPrivateNetworkHost } from './private-net'
+import { isPrivateNetworkHost } from './rede-privada'
 import { clip, refuse } from './url-guard'
 import type { Refusal, UrlOk } from './url-guard'
 

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import type { GateResult } from '../lib/runner/codefox-gate'
 import type { ImplementResult } from '../motor/cdl'
 import type { ExecuteDeps } from '../lib/runner/execute'
-import type { FinishDeps } from '../lib/runner/finish'
+import type { FinishDeps } from '../motor/qlb/ctr/fechar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishcost-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -47,7 +47,7 @@ const GATE_BLOCKED: GateResult = { ok: true, verdict: 'BLOCKED', reason: 'defeit
 
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
-const { handleFinish } = await import('../lib/runner/finish')
+const { handleFinish } = await import('../motor/qlb/ctr/fechar')
 
 const agenteExecute: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => {
@@ -107,7 +107,7 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
 })
 
 test('REGRESSAO card com PR ja aberto nao tenta criar PR de novo', async () => {
-  const { pularCriacaoDePr } = await import('../lib/runner/finish-pr')
+  const { pularCriacaoDePr } = await import('../motor/qlb/ctr/pr')
   expect(pularCriacaoDePr('https://github.com/o/r/pull/20')).toBe(true)
   expect(pularCriacaoDePr('')).toBe(false)
   expect(pularCriacaoDePr('   ')).toBe(false)

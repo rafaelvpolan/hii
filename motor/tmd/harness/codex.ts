@@ -1,4 +1,4 @@
-import { run } from '../../../lib/runner/git'
+import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN } from '../../euc/tsr/custo'
 import { modoResolvido } from '../modos'

@@ -29,8 +29,8 @@ function imagemFora(nome: string, bytes = PNG): string {
 }
 
 test('url entra como fonte sem baixar nada na hora', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
-  const { readRefSources } = await import('../lib/runner/refs')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
+  const { readRefSources } = await import('../motor/qlb/alf/refs')
   const a = anexarNaTarefa('010', 'https://exemplo.com/tela.png')
   expect(a.ok).toBe(true)
   expect(a.total).toBe(1)
@@ -39,7 +39,7 @@ test('url entra como fonte sem baixar nada na hora', async () => {
 })
 
 test('arquivo local e copiado para dentro do estado do motor', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
   const origem = imagemFora('print.png')
   const a = anexarNaTarefa('010', origem)
   expect(a.ok).toBe(true)
@@ -50,8 +50,8 @@ test('arquivo local e copiado para dentro do estado do motor', async () => {
 })
 
 test('INTEGRACAO: o que o /ref grava passa inteiro pelo resolveRefs, sem recusa', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
-  const { resolveRefs, refPaths } = await import('../lib/runner/refs')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
+  const { resolveRefs, refPaths } = await import('../motor/qlb/alf/refs')
   anexarNaTarefa('010', imagemFora('um.png'))
   anexarNaTarefa('010', imagemFora('dois.jpg'))
   const saida = await resolveRefs('010')
@@ -61,8 +61,8 @@ test('INTEGRACAO: o que o /ref grava passa inteiro pelo resolveRefs, sem recusa'
 })
 
 test('recusa o que nao e imagem, o que nao existe e o que passa do teto de tamanho', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
-  const { MAX_FILESIZE_BYTES } = await import('../lib/runner/download')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
+  const { MAX_FILESIZE_BYTES } = await import('../motor/qlb/alf/download')
   const texto = join(fora, 'notas.txt')
   writeFileSync(texto, 'nao sou imagem')
   expect(anexarNaTarefa('010', texto).motivo).toContain('extensao de imagem')
@@ -73,7 +73,7 @@ test('recusa o que nao e imagem, o que nao existe e o que passa do teto de taman
 })
 
 test('o teto de 8 referencias por tarefa e respeitado', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
   const { MAX_REFS_POR_TAREFA } = await import('../motor/euc/estado-em-disco')
   for (let i = 0; i < MAX_REFS_POR_TAREFA; i++) {
     expect(anexarNaTarefa('010', `https://exemplo.com/${i}.png`).ok).toBe(true)
@@ -84,8 +84,8 @@ test('o teto de 8 referencias por tarefa e respeitado', async () => {
 })
 
 test('sem tarefa aberta a ref fica na sessao e migra para a tarefa depois', async () => {
-  const { anexarNaSessao, fontesDaSessao, migrarRefsDaSessao } = await import('../lib/runner/refs-anexo')
-  const { readRefSources } = await import('../lib/runner/refs')
+  const { anexarNaSessao, fontesDaSessao, migrarRefsDaSessao } = await import('../motor/qlb/alf/anexo')
+  const { readRefSources } = await import('../motor/qlb/alf/refs')
   anexarNaSessao('s1', imagemFora('print.png'))
   anexarNaSessao('s1', 'https://exemplo.com/tela.png')
   expect(fontesDaSessao('s1').length).toBe(2)
@@ -101,7 +101,7 @@ test('sem tarefa aberta a ref fica na sessao e migra para a tarefa depois', asyn
 })
 
 test('migrar preserva as refs que a tarefa ja tinha', async () => {
-  const { anexarNaSessao, anexarNaTarefa, migrarRefsDaSessao } = await import('../lib/runner/refs-anexo')
+  const { anexarNaSessao, anexarNaTarefa, migrarRefsDaSessao } = await import('../motor/qlb/alf/anexo')
   anexarNaTarefa('010', 'https://exemplo.com/antiga.png')
   anexarNaSessao('s2', 'https://exemplo.com/nova.png')
   const m = migrarRefsDaSessao('s2', '010')
@@ -109,7 +109,7 @@ test('migrar preserva as refs que a tarefa ja tinha', async () => {
 })
 
 test('duas refs locais nao colidem de nome, nem com o ref-N que o download usa', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
   const a = anexarNaTarefa('010', imagemFora('a.png'))
   const b = anexarNaTarefa('010', imagemFora('b.png'))
   expect(basename(a.copiado)).not.toBe(basename(b.copiado))
@@ -133,7 +133,7 @@ test('o uso de disco soma por area e acende alerta e teto', async () => {
 })
 
 test('no teto de disco a ref e recusada em vez de encher o disco', async () => {
-  const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
+  const { anexarNaTarefa } = await import('../motor/qlb/alf/anexo')
   mkdirSync(join(estado, 'refs', '009'), { recursive: true })
   writeFileSync(join(estado, 'refs', '009', 'gordo.png'), Buffer.alloc(2 * 1024 * 1024))
   process.env.HICODE_DISCO_TETO_MB = '1'

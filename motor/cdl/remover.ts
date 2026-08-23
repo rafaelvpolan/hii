@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { readCard, listRepos, findCardFile, normalizeId } from './store'
 import { cardsDir } from './ali/config'
 import { stopUrl } from '../../lib/runner/url-vivo'
-import { removeWorktree } from '../../lib/runner/git'
+import { removeWorktree } from '../qlb/git'
 import { remove } from '../../lib/core/actions'
 import { floorProviders, formatProviders } from '../euc/tsr/lacuna'
 

@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { GateResult } from '../lib/runner/codefox-gate'
-import type { FinishDeps } from '../lib/runner/finish'
+import type { FinishDeps } from '../motor/qlb/ctr/fechar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-pushedsha-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -53,10 +53,10 @@ chmodSync(ghFalso, 0o755)
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${ghBinDir}:${pathOriginal}`
 
-const realGit = await import('../lib/runner/git')
+const realGit = await import('../motor/qlb/git')
 
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
-const { handleFinish } = await import('../lib/runner/finish')
+const { handleFinish } = await import('../motor/qlb/ctr/fechar')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

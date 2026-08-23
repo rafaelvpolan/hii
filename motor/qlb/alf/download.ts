@@ -5,8 +5,8 @@ import { clip, refuse } from './url-guard'
 import type { Refusal } from './url-guard'
 import { followRedirects, MAX_REDIRECTS } from './redirect'
 import type { HopFetcher, HopResponse } from './redirect'
-import { lookupReal, pinnedResolveArg } from './host-resolve'
-import type { AddressPin, HostResolver } from './host-resolve'
+import { lookupReal, pinnedResolveArg } from './host'
+import type { AddressPin, HostResolver } from './host'
 
 export const MAX_FILESIZE_BYTES = 10485760
 const MAX_FILESIZE = String(MAX_FILESIZE_BYTES)

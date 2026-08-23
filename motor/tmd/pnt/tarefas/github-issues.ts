@@ -1,4 +1,4 @@
-import { run } from '../../../../lib/runner/git'
+import { run } from '../../../qlb/git'
 import type { Fields } from '../../../cdl'
 import type { ExternalTask, TaskSync } from './tipos'
 

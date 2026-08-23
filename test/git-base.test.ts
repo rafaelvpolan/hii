@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { ensureWorktree, pushOwnedBranch, refreshFromBase, removeWorktree, runGit, settleWorktree } from '../lib/runner/git'
+import { ensureWorktree, pushOwnedBranch, refreshFromBase, removeWorktree, runGit, settleWorktree } from '../motor/qlb/git'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-git-'))
 let seq = 0

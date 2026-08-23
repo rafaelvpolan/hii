@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
-import { providerFor, modelFor, effortFor } from '../../motor/tmd/registro'
-import { runProvider } from '../../motor/euc/tsr/confianca'
-import { readProjectRules } from '../../motor/cdl/ali/home'
-import { readContract } from '../../motor/cdl/bss/armazenar'
-import { ROOT } from '../../motor/cdl/ali/config'
-import { snapshotDoAmbiente } from '../../motor/cdl/ali/ambiente'
+import { providerFor, modelFor, effortFor } from '../../tmd/registro'
+import { runProvider } from '../../euc/tsr/confianca'
+import { readProjectRules } from '../../cdl/ali/home'
+import { readContract } from '../../cdl/bss/armazenar'
+import { ROOT } from '../../cdl/ali/config'
+import { snapshotDoAmbiente } from '../../cdl/ali/ambiente'
 
 export interface RespostaDePergunta {
   ok: boolean

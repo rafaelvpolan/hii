@@ -19,8 +19,8 @@ import { readProjectMemory } from './memory'
 import { readContract } from '../../motor/cdl/bss/armazenar'
 import { DESIGN_SYSTEM_BRIEF } from './design'
 import { clarifyAnswersPrompt } from './clarify'
-import { refPaths, resolveRefs } from './refs'
-import { markRefsRefused } from './ref-trust'
+import { refPaths, resolveRefs } from '../../motor/qlb/alf/refs'
+import { markRefsRefused } from '../../motor/qlb/alf/confianca'
 import { lerAcaoExterna } from './externo'
 
 export interface StepResult {

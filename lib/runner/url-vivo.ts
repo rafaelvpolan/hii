@@ -2,10 +2,10 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../motor/cdl/ali/config'
-import { run } from './git'
+import { run } from '../../motor/qlb/git'
 import { readContract } from '../../motor/cdl/bss/armazenar'
 import { devCommand, devCwd, hasCommand } from './commands'
-import { noProxyArgs } from './loopback'
+import { noProxyArgs } from '../../motor/qlb/alf/loopback'
 
 export interface UrlHealth {
   ok: boolean

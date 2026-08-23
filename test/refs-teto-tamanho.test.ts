@@ -2,9 +2,9 @@ import { test, expect, afterAll } from 'bun:test'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MAX_FILESIZE_BYTES, bytesEmDisco, curlArgs, curlHopFetcher, downloadToFile } from '../lib/runner/download'
-import type { HopFetcher, HopResponse } from '../lib/runner/redirect'
-import { refuse } from '../lib/runner/url-guard'
+import { MAX_FILESIZE_BYTES, bytesEmDisco, curlArgs, curlHopFetcher, downloadToFile } from '../motor/qlb/alf/download'
+import type { HopFetcher, HopResponse } from '../motor/qlb/alf/redirect'
+import { refuse } from '../motor/qlb/alf/url-guard'
 import { DNS, LOGO } from './fixtures/rede-falsa'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-teto-'))

@@ -2,10 +2,10 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { HopFetcher, HopResponse } from '../lib/runner/redirect'
-import type { AddressPin } from '../lib/runner/host-resolve'
-import { curlArgs, downloadToFile, parseHop } from '../lib/runner/download'
-import { run } from '../lib/runner/git'
+import type { HopFetcher, HopResponse } from '../motor/qlb/alf/redirect'
+import type { AddressPin } from '../motor/qlb/alf/host'
+import { curlArgs, downloadToFile, parseHop } from '../motor/qlb/alf/download'
+import { run } from '../motor/qlb/git'
 import {
   DNS,
   LOGO,

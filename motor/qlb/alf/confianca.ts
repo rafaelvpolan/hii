@@ -1,7 +1,7 @@
-import { isoNow } from '../../motor/cdl'
+import { isoNow } from '../../cdl'
 import { clip } from './url-guard'
 import type { Refusal } from './url-guard'
-import { patchCard } from '../../motor/cdl/store'
+import { patchCard } from '../../cdl/store'
 import type { RefOutcome } from './refs'
 
 export function refRefusalLine(source: string, refusal: Refusal): string {

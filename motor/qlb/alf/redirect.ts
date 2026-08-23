@@ -1,7 +1,7 @@
 import { clip, refuse, validateHttpUrl } from './url-guard'
 import type { Refusal, UrlCheck, UrlOk } from './url-guard'
-import { approveAddress, lookupReal } from './host-resolve'
-import type { AddressPin, HostResolver } from './host-resolve'
+import { approveAddress, lookupReal } from './host'
+import type { AddressPin, HostResolver } from './host'
 
 export const MAX_REDIRECTS = 3
 

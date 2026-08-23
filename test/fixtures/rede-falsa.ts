@@ -1,7 +1,7 @@
-import { followRedirects, MAX_REDIRECTS } from '../../lib/runner/redirect'
-import type { FinalHop, FollowResult, HopFetcher, HopResponse } from '../../lib/runner/redirect'
-import type { AddressPin, HostResolver } from '../../lib/runner/host-resolve'
-import type { Refusal } from '../../lib/runner/url-guard'
+import { followRedirects, MAX_REDIRECTS } from '../../motor/qlb/alf/redirect'
+import type { FinalHop, FollowResult, HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect'
+import type { AddressPin, HostResolver } from '../../motor/qlb/alf/host'
+import type { Refusal } from '../../motor/qlb/alf/url-guard'
 
 export const PUBLICO = '93.184.216.34'
 export const PUBLICO_V6 = '2606:2800:220:1:248:1893:25c8:1946'

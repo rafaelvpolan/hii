@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { run } from '../lib/runner/git'
+import { run } from '../motor/qlb/git'
 
 test('run mata o processo no timeout (err.killed) e retorna rapido', async () => {
   const t0 = Date.now()

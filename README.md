@@ -493,7 +493,7 @@ estourou timeout contam como **não concluído** — o gate **falha fechado**.
 O motor abre o PR e para em `PR_OPEN`.
 
 > **Merge é SEMPRE humano.** Não existe `gh pr merge` no motor. `MERGED` só aparece quando
-> `lib/runner/merge.ts` **observa** no GitHub que uma pessoa mergeou. PR fechada sem merge marca
+> `motor/qlb/ctr/merge.ts` **observa** no GitHub que uma pessoa mergeou. PR fechada sem merge marca
 > `pr_closed` e mantém o card em `PR_OPEN`.
 
 ---

@@ -1,4 +1,4 @@
-import { isPrivateNetworkHost } from './private-net'
+import { isPrivateNetworkHost } from './rede-privada'
 
 export type RefusalReason =
   | 'url-invalida'
