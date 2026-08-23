@@ -109,10 +109,75 @@ function varrerPack(raiz: string, pack: string, origem: string): Skill[] {
   return fora
 }
 
-export function carregarAcervo(raiz: string = join(diretorioDeSkills(), '_resolved')): Skill[] {
+// `_resolved/` e CACHE, nao requisito. Quando existe, e o que se le. Quando
+// nao existe — clone novo, CI, primeira execucao — a fusao acontece ao vivo,
+// com o mesmo resolver e o mesmo resultado.
+//
+// A alternativa seria versionar `_resolved/`, mas isso duplicaria o conteudo
+// de toda skill no git e criaria deriva possivel entre as duas copias. Aqui a
+// fonte e uma so: `_native` + `_sources`.
+export function carregarAcervo(raiz?: string): readonly Skill[] {
+  const alvo = raiz ?? join(diretorioDeSkills(), '_resolved')
+  if (existsSync(alvo)) {
+    const packs = readdirSync(alvo).filter(n => statSync(join(alvo, n)).isDirectory())
+    return packs.flatMap(p => varrerPack(alvo, p, '_resolved')).sort((a, b) => a.id.localeCompare(b.id))
+  }
+  if (raiz) return []
+  // Sem cache: funde agora, com a mesma regra. A fusao mora AQUI e nao no
+  // resolver para nao fechar ciclo — o resolver depende deste modulo, nunca o
+  // contrario.
+  return fundirOrigens().skills
+}
+
+export interface ColisaoDeSkill {
+  readonly id: string
+  readonly origens: readonly string[]
+}
+
+export interface Fusao {
+  readonly skills: readonly Skill[]
+  readonly colisoes: readonly ColisaoDeSkill[]
+  readonly porOrigem: Readonly<Record<string, number>>
+}
+
+export function varrerOrigem(base: string, origem: string): Skill[] {
+  const raiz = join(base, origem)
   if (!existsSync(raiz)) return []
-  const packs = readdirSync(raiz).filter(n => statSync(join(raiz, n)).isDirectory())
-  return packs.flatMap(p => varrerPack(raiz, p, '_resolved')).sort((a, b) => a.id.localeCompare(b.id))
+  const fora: Skill[] = []
+  for (const pack of readdirSync(raiz)) {
+    const dirPack = join(raiz, pack)
+    if (!statSync(dirPack).isDirectory()) continue
+    for (const nome of readdirSync(dirPack)) {
+      const arquivo = join(dirPack, nome, 'SKILL.md')
+      if (!existsSync(arquivo)) continue
+      fora.push(lerSkill(readFileSync(arquivo, 'utf8'), arquivo, pack, origem))
+    }
+  }
+  return fora
+}
+
+// Primeira origem da ordem vence em empate de id. Empate SEM `_native` nao e
+// resolvido aqui: vira colisao, e quem escreve o `_resolved` decide reprovar.
+export function fundirOrigens(base: string = diretorioDeSkills(), ordem: readonly string[] = ['_native']): Fusao {
+  if (ordem[0] !== '_native') {
+    throw new Error('_native tem de ser o primeiro em resolutionOrder — skill sua sempre vence adaptacao externa')
+  }
+  const escolhida = new Map<string, Skill>()
+  const vistas = new Map<string, string[]>()
+  const porOrigem: Record<string, number> = {}
+  for (const origem of ordem) {
+    for (const s of varrerOrigem(base, origem)) {
+      vistas.set(s.id, [...(vistas.get(s.id) ?? []), origem])
+      if (!escolhida.has(s.id)) {
+        escolhida.set(s.id, s)
+        porOrigem[origem] = (porOrigem[origem] ?? 0) + 1
+      }
+    }
+  }
+  const colisoes = [...vistas.entries()]
+    .filter(([, origens]) => origens.length > 1 && !origens.includes('_native'))
+    .map(([id, origens]) => ({ id, origens }))
+  return { skills: [...escolhida.values()].sort((a, b) => a.id.localeCompare(b.id)), colisoes, porOrigem }
 }
 
 export interface ContextoDeGatilho {

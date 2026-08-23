@@ -1,5 +1,5 @@
 import { test, expect, afterAll } from 'bun:test'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { carregarAcervo, gatilhoBate, lerSkill, renderizarSkills, skillsPara } from '../../motor/csd/acervo'
@@ -110,4 +110,19 @@ test('INVARIANTE o motor injeta o acervo no prompt — senao o conteudo nunca ch
   expect(fonte).toContain("skillsPara('implementador'")
   expect(fonte, 'os passos de polimento tambem carregam skill').toContain('skillsDoAgente(agent, wt, repo)')
   expect(fonte, 'o contexto do gatilho tem de vir do disco').toContain('contextoDeSkill(')
+})
+
+test('REGRESSAO clone sem _resolved ainda carrega o acervo — _resolved e cache, nao requisito', () => {
+  // A CI pegou isto: `_resolved/` esta no .gitignore, entao num clone novo ele
+  // nao existe. Se o loader dependesse dele, o motor rodaria com zero skill em
+  // producao e ninguem notaria — o prompt so ficaria mais pobre em silencio.
+  const semCache = mkdtempSync(join(tmpdir(), 'hii-semcache-')); criados.push(semCache)
+  expect(existsSync(join(semCache, '_resolved'))).toBe(false)
+  expect(carregarAcervo().length, 'o acervo real tem de carregar sem cache nenhum').toBeGreaterThan(8)
+})
+
+test('a fusao ao vivo e a partir do cache dao o mesmo conjunto de ids', async () => {
+  const { fundirOrigens } = await import('../../motor/csd/acervo')
+  const aoVivo = fundirOrigens().skills.map(s => s.id).sort()
+  expect(carregarAcervo().map(s => s.id).sort()).toEqual(aoVivo)
 })
