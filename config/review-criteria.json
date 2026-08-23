@@ -1,0 +1,24 @@
+{
+  "versao": 1,
+  "sobre": "Criterio ESCRITO do CRIVO. Existe para o gate reprovar contra algo auditavel em vez de 'parece bom' — quem reprova cita o id, e quem le a reprovacao sabe o que consertar. Item 8 do MODERNIZATION.md (Parte I secao 3.5). A matriz de cenario e o item 21.",
+  "criterios": [
+    { "id": "c-tipos", "titulo": "Tipagem estrita", "checa": "Nada de any nem unknown. Tipo que descreve o dado de verdade, nao um molde frouxo." },
+    { "id": "c-tamanho", "titulo": "Arquivo nao vira monolito", "checa": "Arquivo com mais de 350 linhas, ou com muitas funcoes e poucos exports (god-file), precisa de justificativa explicita." },
+    { "id": "c-comentario", "titulo": "Sem comentario de prosa", "checa": "Comentario explica o PORQUE de uma decisao nao obvia. Comentario que narra o que a linha faz sai." },
+    { "id": "c-erro", "titulo": "Erro nunca silenciado", "checa": "catch vazio, erro engolido, ou fallback que esconde falha sao reprovacao. Falhar visivel e melhor que passar errado." },
+    { "id": "c-costura", "titulo": "Costura entre etapas", "checa": "A refatoracao desfez a feature? O teste cobre o caminho que a mudanca abriu? Ha regressao entre um passo e o seguinte?" },
+    { "id": "c-acoplamento", "titulo": "Acoplamento e nivel de abstracao", "checa": "Modulo novo importa o que precisa, no nivel certo. Nada de detalhe de implementacao vazando entre camadas." },
+    { "id": "c-vue", "titulo": "Vue 3 Composition API", "checa": "Frontend em Vue 3 com script setup. Nunca React neste repositorio." },
+    { "id": "c-guarda-vazia", "titulo": "Guarda que pode nao guardar nada", "checa": "Varredura, filtro ou laco que aprova quando nao encontra nada precisa de assercao anti-vacuidade. Guarda que vira no-op em silencio e pior que guarda nenhuma." }
+  ],
+  "matrizDeCenario": {
+    "sobre": "Item 21 — o RED do TDD precisa cobrir isto, nao 'um teste qualquer que falha'. O avaliador reprova quando a matriz nao esta coberta e a feature pedia.",
+    "obrigatorios": [
+      { "id": "m-acerto", "cenario": "Caminho de acerto", "quando": "sempre" },
+      { "id": "m-erro", "cenario": "Caminho de erro conhecido", "quando": "sempre" },
+      { "id": "m-entrada", "cenario": "Validacao de entrada", "quando": "sempre" },
+      { "id": "m-saida", "cenario": "Validacao de saida", "quando": "sempre" },
+      { "id": "m-borda", "cenario": "Caminho alternativo ou de borda", "quando": "quando a matriz de entendimento identificou um" }
+    ]
+  }
+}

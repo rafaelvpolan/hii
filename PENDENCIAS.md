@@ -6,6 +6,31 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
+## DECISÃO SUA — ligar o rigor estrito da Onda 5
+
+**O que é.** `HICODE_RIGOR_ESTRITO=1` liga as duas exigências da Onda 5 que
+*barram* em vez de só registrar:
+
+- **item 5** — perfil `completo` exige teste que FALHOU antes de passar
+  (evidência no diário, produzida por `testGate` quando a suíte do alvo reprova
+  na primeira rodada);
+- **item 22** — área nova (todo arquivo do diff é novo) exige comando de teste
+  no contrato do alvo.
+
+**Por que está desligado.** Nenhum card existente satisfaz nenhum dos dois.
+Ligar hoje pararia todo trabalho em voo. Verificado: com o interruptor ligado,
+dois testes de fechamento passam a reprovar — e isso é a feature agindo, não
+defeito.
+
+**Enquanto desligado**, as duas exigências ficam gravadas no card
+(`red_antes_do_green`, `setup_ferramental`), então já dá para ver quem passou
+sem provar antes de decidir apertar.
+
+**O que decidir.** Ligar agora e absorver a parada, ligar depois de uma
+migração (rodar os cards em voo até o fim primeiro), ou manter só como registro.
+
+---
+
 ## Custo por card no pior caso é ~2,5× maior do que o teto que a Onda 9 vai usar
 
 **O que é.** O Celer mediu, na auditoria do Nexus: o pior caso de um card não é

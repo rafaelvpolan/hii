@@ -43,6 +43,16 @@ export const PREVIEW_BASE_PORT = numeroDeEnv('HICODE_PREVIEW_BASE', 5200)
 export const POLL_MS = numeroDeEnv('HICODE_POLL_MS', 5000)
 export const RUN_TIMEOUT_MS = numeroDeEnv('HICODE_RUN_TIMEOUT_MS', 900000)
 export const MAX_CONCURRENCY = numeroDeEnv('HICODE_CONCURRENCY', 3)
+// Liga as exigencias da Onda 5 que BARRAM em vez de so registrar: RED antes do
+// GREEN (item 5) e setup ferramental em area nova (item 22). Desligado por
+// padrao porque nenhum card existente satisfaz as duas, e ligar hoje pararia
+// todo trabalho em voo — a ativacao e decisao de operacao, nao de codigo.
+// Enquanto desligado, as duas exigencias ficam REGISTRADAS no card, o que ja
+// torna visivel quem passou sem provar.
+export function rigorEstrito(): boolean {
+  return process.env.HICODE_RIGOR_ESTRITO === '1'
+}
+
 export function maxReajuste(): number {
   return numeroDeEnv('HICODE_REAJUSTE_RETRIES', 2)
 }

@@ -11,7 +11,7 @@ import { pularCriacaoDePr } from './pr'
 import type { PushResult } from '../git'
 import { stopUrl } from '../../cic/crv/url-viva'
 import { activeSteps } from '../../nmy/config'
-import { planSteps } from '../../osw/rta/perfil'
+import { aplicarLei, planSteps } from '../../osw/rta/perfil'
 import { SUFIXO_DO_GATE, runGatedStep } from '../../cic/passo-com-gate'
 import { updateRunSteps } from '../../euc/registros'
 import { runCodefoxGate, runGatedReview, persistGate, buildPrBody, gateOutcome, gateHaltReason, withGateRetry } from '../../cic/crv/gate'
@@ -25,6 +25,10 @@ import { syncWithBase, revalidate } from './sync'
 import { resumeStart, RESUME_POST_STEPS } from './retomar'
 import { runStep } from '../../cic/agente'
 import { executarComIdempotencia } from '../slv/idempotencia'
+import { avaliarDiff } from '../../csd/lei/guarda'
+import { rigorEstrito } from '../../cdl/ali/config'
+import { conferirSetup, relatoDoSetup } from '../../cdl/bss/setup-ferramental'
+import { exigirRedAntesDoGreen } from '../../agentes/chg/red-primeiro'
 
 export interface FinishDeps {
   runStep: typeof runStep
@@ -79,9 +83,38 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const pkg = affectedPackage(contract, changed)
   const ctx: RunCtx = { contract, pkg, target, arquivos: changed }
   patchCard(id, {}, `${isoNow()} contrato: ${contract.stack}${pkg ? ` · pacote afetado: ${pkg.name}` : ''}`)
+
+  // BSS / Pilar 3: ferramenta de teste e de debug no momento em que a area
+  // nasce, nao depois. So vale para area NOVA — todo arquivo do diff foi
+  // criado. Card que toca codigo existente nao paga esse pedagio, senao todo
+  // trabalho num repo legado travaria aqui para sempre.
+  const criados = (await runGit(wt, ['diff', '--name-only', '--diff-filter=A', `origin/${base}...HEAD`])).stdout.split('\n').filter(Boolean)
+  if (changed.length > 0 && criados.length === changed.length) {
+    const setup = conferirSetup(wt, contract)
+    patchCard(id, { setup_ferramental: setup.pronto ? 'ok' : 'incompleto' }, `${isoNow()} BSS (area nova): ${relatoDoSetup(setup)}`)
+    // Barra so por falta de COMANDO DE TESTE, e so com rigor estrito ligado.
+    // Falta de documento de debug e julgamento, nao criterio de bloqueio.
+    if (setup.semTeste && rigorEstrito()) {
+      patchCard(id, { status: 'HALTED' }, `${isoNow()} CLEANED->HALTED area nova sem comando de teste no contrato do alvo`)
+      process.stdout.write(`[runner] #${id}: HALTED — area nova sem comando de teste\n`)
+      return
+    }
+  }
   const all = activeSteps(wt)
-  const plan = planSteps({ title: card.fm.title, objetivo: desc, risk: card.fm.risk, surface: card.fm.surface, override: card.fm.steps }, all)
+  // LEI antes de decidir os passos: a guarda olha o DIFF, nao o que o card
+  // declarou. `risk` e escrito no card, e quem escreve o card muitas vezes e a
+  // propria IA — subdeclarar risco pulava gate. So SOBE o rigor, nunca baixa.
+  const lei = avaliarDiff(changed)
+  const plan = aplicarLei(
+    planSteps({ title: card.fm.title, objetivo: desc, risk: card.fm.risk, surface: card.fm.surface, override: card.fm.steps }, all),
+    lei,
+    all,
+  )
   const steps = plan.steps
+  if (lei.motivos.length) {
+    patchCard(id, { lei_forcou: 'completo' }, `${isoNow()} LEI: rigor elevado a completo pelo diff, independente do que o card declarou — ${lei.motivos.join(' · ')}`)
+    process.stdout.write(`[runner] #${id}: LEI elevou o rigor (${lei.motivos.length} motivo(s))\n`)
+  }
   patchCard(id, { steps_profile: plan.profile }, `${isoNow()} analise de passos: perfil "${plan.profile}" — roda [${steps.map(s => s.label).join(', ') || 'nenhum'}]${plan.skipped.length ? ` · pula [${plan.skipped.join(', ')}]` : ''} (${plan.reason})`)
   const startIdx = resumeStart(steps, all, resumeFrom, id, plan.profile)
   process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${steps.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}\n`)
@@ -131,6 +164,19 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     }
     fsteps[step.label] = { time: r.time, cost: r.cost, tokens: r.tokens, costMeasured: r.costMeasured }
     if (gateDoPasso && (gateDoPasso.cost || gateDoPasso.tokens)) fsteps[step.label + SUFIXO_DO_GATE] = gateDoPasso
+    if (step.gate === 'test') {
+      // CHG / item 5: no perfil completo, o teste tem de ter FALHADO antes de
+      // passar. A evidencia vem do diario, nao do relato do modelo.
+      const red = exigirRedAntesDoGreen(id, plan.profile)
+      if (red.exigido) {
+        patchCard(id, { red_antes_do_green: red.satisfeito ? 'sim' : 'nao' }, `${isoNow()} CHG: ${red.motivo}`)
+        if (!red.satisfeito && rigorEstrito()) {
+          patchCard(id, { status: 'HALTED' }, `${isoNow()} ${step.label}->HALTED ${red.motivo}`)
+          process.stdout.write(`[runner] #${id}: HALTED — sem RED antes do GREEN\n`)
+          return
+        }
+      }
+    }
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
       haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`)
       return

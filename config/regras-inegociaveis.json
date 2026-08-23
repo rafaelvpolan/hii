@@ -1,0 +1,5 @@
+{
+  "versao": 1,
+  "sobre": "Regras que o gate cobra SEMPRE, sem interpretacao de modelo. Cada uma nasce de recorrencia provada (>= N cards) e de decisao humana explicita — nunca de um caso isolado. Ver MODERNIZATION.md Parte III secao 6 (item 13) e ARQUITETURA-BRAZIL.md, codigo LEI.",
+  "regras": []
+}

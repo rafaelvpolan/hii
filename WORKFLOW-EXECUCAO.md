@@ -47,7 +47,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco | ✅ feita |
 | **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim | ✅ feita |
 | **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
-| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | — |
+| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
 | **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | — |
 | **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | — |
 | **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | — |
@@ -357,7 +357,15 @@ bun test ./test/chg-red-primeiro.test.ts      # GREEN sem RED registrado é repr
 bun test ./test/bss-setup-ferramental.test.ts # projeto novo sem config de teste não sai da Fase 1
 ```
 
-**Reprova se:** existir qualquer caminho em que `regras-inegociaveis.json` deixe de ser cobrado. O teste `lei-nunca-baixa` é o mais importante desta onda.
+**Reprova se:** existir qualquer caminho em que `regras-inegociaveis.json` deixe de ser cobrado. O teste da invariante "só sobe, nunca baixa" é o mais importante desta onda — ele roda `aplicarLei` contra os quatro perfis e cobra que nenhum passo que ia rodar deixe de rodar.
+
+### Ajustes de escopo feitos ao executar
+
+**Um interruptor, não dois.** Os itens 5 (RED antes do GREEN) e 22 (setup ferramental) *barram* o pipeline. Nenhum card existente satisfaz nenhum dos dois, então ligá-los hoje pararia todo trabalho em voo. Os dois ficam atrás de `HICODE_RIGOR_ESTRITO=1`, **desligado por padrão** — e enquanto desligado o motor **registra** a exigência no card (`red_antes_do_green`, `setup_ferramental`), o que já torna visível quem passou sem provar. A ativação é decisão de operação, registrada em `PENDENCIAS.md`.
+
+**O item 22 barra só pelo que é objetivo.** A primeira versão bloqueava por falta de teste *ou* de documento de debug, e derrubou dois testes de fechamento na hora: a heurística "todo arquivo do diff é novo" dispara em qualquer card que só adiciona arquivos, não só em área nova de verdade. Falta de comando de teste é checável no contrato; falta de `DEBUG.md` é julgamento. Só a primeira barra; a segunda vira nota no card.
+
+**A evidência de RED vem do motor, não do modelo.** `testGate` registra `gate_verdict` na fase `red` quando a suíte do alvo reprova na *primeira* rodada, antes de qualquer reparo. É a única evidência de RED que o motor consegue produzir sozinho — "o modelo disse que fez TDD" é exatamente o autorrelato que nenhum gate daqui aceita.
 
 ---
 

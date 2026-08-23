@@ -7,6 +7,7 @@ import { modelFor, providerFor, effortFor } from '../../tmd/registro'
 import { runProvider } from '../../euc/tsr/confianca'
 import { sumTokens } from '../../tmd/uso'
 import { classifyFailure } from '../rpr/classe-de-falha'
+import { renderizarCriterios } from './criterios'
 
 export type GateVerdict = 'APPROVED' | 'CONDITIONAL' | 'BLOCKED'
 
@@ -116,9 +117,8 @@ function primeiraLinha(texto: string): string {
 
 function buildPrompt(desc: string, diff: DiffParts): string {
   return [
-    'Voce e o CRIVO — revisor adversarial read-only. Revise o diff ACUMULADO abaixo (toda a cadeia de alteracoes da branch vs a base) contra a tarefa e os padroes do hicode.',
-    'PADROES: tudo tipado strict, proibido any/unknown; arquivo <=350 linhas e nunca god-file; sem comentario de prosa; Vue 3 Composition API (nunca React); erro nunca silenciado; merge sempre humano.',
-    'Julgue a COSTURA entre etapas: uma refatoracao desfez a feature? acoplamento espalhado? cenario sem cobertura? regressao?',
+    'Voce e o CRIVO — revisor adversarial read-only. Revise o diff ACUMULADO abaixo (toda a cadeia de alteracoes da branch vs a base) contra a tarefa e o criterio escrito.',
+    renderizarCriterios(),
     `TAREFA (objetivo do card): "${desc}"`,
     '',
     `ARQUIVOS ALTERADOS:\n${diff.names}`,
@@ -127,7 +127,7 @@ function buildPrompt(desc: string, diff: DiffParts): string {
     '',
     'Emita 1-3 PERGUNTAS que forcem o revisor humano a LER o diff antes do merge (anti-rendicao-cognitiva) — coisas que so quem leu o diff sabe responder.',
     'Responda APENAS um JSON em uma unica linha, sem prosa antes ou depois:',
-    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","questions":["p1","p2"]}',
+    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","criterio":"id do criterio violado, ou vazio","questions":["p1","p2"]}',
     'BLOCKED apenas para defeito real/regressao/violacao de alta confianca. Em duvida, CONDITIONAL.',
   ].join('\n')
 }
