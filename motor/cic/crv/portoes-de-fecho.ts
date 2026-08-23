@@ -8,6 +8,7 @@ import { resolveCommand } from '../../mir/comandos'
 import { addMetric } from '../../euc/metricas-de-fecho'
 import { APROVADO, relatoParaHumano, repararAteOTeto, reprovado } from '../reparo'
 import { escolherReparador } from '../rpr/reparadores'
+import { cercarSaida } from '../rpr/reparadores/tipos'
 import type { VeredictoDeGate } from '../reparo'
 import type { Contract, PackageInfo } from '../../cdl/bss/tipos'
 
@@ -37,7 +38,7 @@ const PORTAO_DE_BUILD: Portao = {
   agente: 'rufus',
   rotuloDoReajuste: 'REAJUSTE',
   instrucao: (saida, rotulo) =>
-    `O build/typecheck/lint falhou (${rotulo}). Saida:\n${saida}\nCorrija os erros de tipo/lint/build no codigo alterado sem mudar o comportamento. Nao use any nem unknown.`,
+    `O build/typecheck/lint falhou (${rotulo}).\n${cercarSaida(saida)}\nCorrija os erros de tipo/lint/build no codigo alterado sem mudar o comportamento. Nao use any nem unknown.`,
 }
 
 const PORTAO_DE_TESTE: Portao = {
@@ -46,7 +47,7 @@ const PORTAO_DE_TESTE: Portao = {
   agente: 'testudo',
   rotuloDoReajuste: 'REAJUSTE testes',
   instrucao: (saida, rotulo) =>
-    `Os testes do projeto falharam (${rotulo}). Saida:\n${saida}\nCorrija os testes ou o codigo alterado sem mudar o comportamento pretendido. Nao use any nem unknown.`,
+    `Os testes do projeto falharam (${rotulo}).\n${cercarSaida(saida)}\nCorrija os testes ou o codigo alterado sem mudar o comportamento pretendido. Nao use any nem unknown.`,
 }
 
 interface OpcoesDoPortao {

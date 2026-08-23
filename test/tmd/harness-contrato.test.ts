@@ -8,6 +8,10 @@ const CHAVES: (keyof HarnessCapabilities)[] = [
   'restrictsTools', 'isolatesReadonly', 'acceptsEffort', 'reportsCostUsd', 'reportsTokens', 'mcp',
 ]
 
+test('o registro nao esta vazio — sem isto todos os for-of deste arquivo passariam vazios', () => {
+  expect(providerNames().length, 'este arquivo dependia de registro-provedores.test.ts para nao ser vacuo').toBeGreaterThan(0)
+})
+
 test('todo harness registrado declara o contrato inteiro — nada fica implicito', () => {
   for (const nome of providerNames()) {
     const h = harnessPorNome(nome)
@@ -97,4 +101,15 @@ test('registrar um harness e so somar uma linha: o registro nao guarda nada alem
   const fonte = await Bun.file('motor/tmd/registro.ts').text()
   const tabelas = fonte.match(/Record<HarnessId,/g) ?? []
   expect(tabelas, 'voltou tabela indexada por nome de harness no registro').toEqual([])
+})
+
+test('harnessPorNome lanca para id desconhecido — a guarda documentada nunca era exercitada', () => {
+  expect(() => harnessPorNome('provedor-que-nao-existe')).toThrow('harness nao registrado')
+})
+
+test('harnessSeExistir devolve undefined em vez de lancar — os dois contratos convivem', async () => {
+  const { harnessSeExistir } = await import('../../motor/tmd/registro')
+  expect(harnessSeExistir('provedor-que-nao-existe')).toBeUndefined()
+  expect(harnessSeExistir(undefined)).toBeUndefined()
+  expect(harnessSeExistir('claude')?.name).toBe('claude')
 })

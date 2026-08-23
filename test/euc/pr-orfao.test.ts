@@ -59,3 +59,38 @@ test('card que ja tinha pr_url no frontmatter continua nao reabrindo PR', async 
   expect(url).toBe('https://github.com/org/repo/pull/99')
   expect(chamadas.n).toBe(0)
 })
+
+const { prOrfaoDe, temOrfao, ehUrlDePr } = await import('../../motor/qlb/slv/compensacao')
+
+// A auditoria (Escudo, confirmado pelo Crivo) mostrou o caminho completo: o
+// diario e JSONL sem assinatura, entao quem tem escrita no diretorio de runs
+// anexa um efeito_registrado forjado e reconcileStranded grava a url dele no
+// pr_url do card — o campo que o humano abre para revisar e mergear.
+test('REGRESSAO url forjada no diario NAO vira pr_url do card', async () => {
+  const { anexarEvento } = await import('../../motor/euc/eventos')
+  const id = 'forjado-1'
+  anexarEvento({
+    card: id, evento: 'efeito_registrado', fase: 'ctr',
+    chave: `${id}:ctr:pr_create`, resultado: 'https://phishing.example/pull/1',
+  })
+  expect(prOrfaoDe(id, ''), 'a url do atacante chegaria ao card').toBeNull()
+  expect(temOrfao(id, 'notificacao_incerta'), 'recusar em silencio esconderia a adulteracao').toBe(true)
+})
+
+test('url de PR legitima continua passando', () => {
+  expect(ehUrlDePr('https://github.com/org/repo/pull/42')).toBe(true)
+  expect(ehUrlDePr('https://github.com/org-x/repo.js/pull/7')).toBe(true)
+})
+
+test('o que nao e url de PR do host git e recusado', () => {
+  for (const ruim of [
+    'https://phishing.example/pull/1',
+    'javascript:alert(1)',
+    'https://github.com/org/repo/issues/42',
+    'http://github.com/org/repo/pull/42',
+    'https://github.com.evil.com/org/repo/pull/42',
+    '',
+  ]) {
+    expect(ehUrlDePr(ruim), `deixou passar: ${ruim}`).toBe(false)
+  }
+})

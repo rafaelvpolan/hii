@@ -90,3 +90,24 @@ test('com porta configurada, o servidor sobe e responde de verdade', async () =>
     s.parar()
   }
 })
+
+const { categoriaDoErro, enderecoDeSaude } = await import('../../motor/euc/rdr/servidor')
+
+// Achados do Escudo, confirmados pelo Crivo com linha exata.
+test('REGRESSAO /health nao devolve a mensagem crua de erro — ela carrega caminho e usuario do host', () => {
+  expect(categoriaDoErro('checkMerged: ENOENT /home/fulano/projects/x/.hii/y')).toBe('falha em checkMerged')
+  expect(categoriaDoErro('')).toBe('')
+  const corpo = JSON.stringify(lerSaude())
+  expect(corpo).not.toContain('/home/')
+})
+
+test('REGRESSAO /health liga em loopback por padrao — Bun.serve sem hostname abre em 0.0.0.0', () => {
+  delete process.env.HICODE_HEALTH_BIND
+  expect(enderecoDeSaude()).toBe('127.0.0.1')
+})
+
+test('expor o /health alem do loopback exige intencao explicita do operador', () => {
+  process.env.HICODE_HEALTH_BIND = '0.0.0.0'
+  expect(enderecoDeSaude()).toBe('0.0.0.0')
+  delete process.env.HICODE_HEALTH_BIND
+})

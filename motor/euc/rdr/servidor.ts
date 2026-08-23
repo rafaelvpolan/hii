@@ -19,6 +19,18 @@ export interface Saude {
   readonly ultimoErro: string
 }
 
+// O /health nao devolve a mensagem crua de erro. reportTickFailure grava
+// `${context}: ${error.message}` (motor/euc/rdr/tick.ts), o que tipicamente
+// carrega caminho absoluto, nome de usuario do host e codigo de erro do SO —
+// informacao de reconhecimento para quem alcanca a porta. O contexto (a fase
+// que falhou) basta para o orquestrador decidir reiniciar; o texto completo
+// continua no arquivo de saude local, para quem tem acesso ao disco.
+export function categoriaDoErro(mensagem: string): string {
+  if (!mensagem) return ''
+  const contexto = mensagem.split(':')[0] ?? ''
+  return contexto.trim() ? `falha em ${contexto.trim()}` : 'erro interno'
+}
+
 export function lerSaude(): Saude {
   const h = readDaemonHealth()
   return {
@@ -29,12 +41,19 @@ export function lerSaude(): Saude {
     emVoo: quantosEmVoo(),
     pendentes: pending().length,
     falhasSeguidasNoTick: h.consecutiveFailures,
-    ultimoErro: h.lastError,
+    ultimoErro: categoriaDoErro(h.lastError),
   }
 }
 
 export function portaDeSaude(): number {
   return Number(process.env.HICODE_HEALTH_PORT || 0)
+}
+
+// Loopback por padrao. Bun.serve sem `hostname` liga em 0.0.0.0, o que exporia
+// o /health a qualquer cliente que alcance a porta na rede — sem autenticacao.
+// Expor alem do loopback passa a exigir intencao explicita do operador.
+export function enderecoDeSaude(): string {
+  return process.env.HICODE_HEALTH_BIND || '127.0.0.1'
 }
 
 export function respostaDeSaude(caminho: string): Response {
@@ -59,6 +78,7 @@ export function subirServidorDeSaude(porta: number | null = null): ServidorDeSau
   if (porta === null && !alvo) return null
   const s = Bun.serve({
     port: alvo,
+    hostname: enderecoDeSaude(),
     fetch: (req): Response => respostaDeSaude(new URL(req.url).pathname),
   })
   return { porta: s.port ?? alvo, parar: (): void => { void s.stop(true) } }

@@ -84,9 +84,24 @@ export function eOMotor(argv: readonly string[]): boolean {
   return argv.slice(1).some(arg => arg === ENGINE_MARK || arg.endsWith(`/${ENGINE_MARK}`))
 }
 
+// Quando /proc nao deixa ler o argv do alvo (hidepid, namespace de PID em
+// container, ou o processo morreu entre o alive() e a leitura), assumimos que
+// E o motor. Fail-closed no sentido que importa: recusar destravar e recusar
+// subir um segundo daemon.
+//
+// O codigo anterior devolvia `argvDoProcesso(process.pid) === null` — condicionar
+// a decisao sobre OUTRO processo a legibilidade do PROPRIO nao tem relacao
+// causal nenhuma, e na pratica dava `false`, ou seja "nao e o motor": apagava a
+// trava de um motor vivo e deixava subir uma segunda instancia na mesma fila.
+// A logica estava duplicada aqui e em trava-instancia.ts, entao falhava nas
+// duas guardas ao mesmo tempo.
+export function argvIlegivelEhOMotor(): boolean {
+  return true
+}
+
 function eOMotorDaRaiz(pid: number, raiz: string): boolean {
   const argv = argvDoProcesso(pid)
-  if (argv === null) return argvDoProcesso(process.pid) === null
+  if (argv === null) return argvIlegivelEhOMotor()
   return eOMotor(argv) && rodaNaRaiz(pid, raiz)
 }
 

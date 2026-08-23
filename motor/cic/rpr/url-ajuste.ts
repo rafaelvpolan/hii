@@ -1,5 +1,6 @@
 import { numeroDeEnv } from '../../cdl/ali/config'
 import { ensureUrl, waitHttp } from '../crv/url-viva'
+import { anexarEvento } from '../../euc/eventos'
 
 export const TENTATIVAS_DE_AJUSTE = numeroDeEnv('HICODE_URL_AJUSTES', 2)
 
@@ -34,13 +35,19 @@ export function instrucaoDeAjuste(porta: number, tentativa: number): string {
   ].join(' ')
 }
 
-export async function subirUrlComAjuste(deps: DepsDoAjuste, pidConhecido?: string): Promise<TentativaDeUrl> {
+// Recebe o card para escrever no diario. Este era o unico dos quatro laços de
+// reparo do motor que nao registrava tentativa nenhuma: se o processo caisse no
+// meio de um ajuste de URL, a retomada nao tinha como saber que ja houve
+// tentativa, e o `aprendiz` (item 12) nao veria a recorrencia. Os outros tres
+// (repararAteOTeto, runGatedStep e os portoes de build/teste) ja registram.
+export async function subirUrlComAjuste(deps: DepsDoAjuste, pidConhecido?: string, card = ''): Promise<TentativaDeUrl> {
   const ajustes: string[] = []
   let pid = await deps.subir(pidConhecido)
   let noAr = pid ? await deps.responde(pid) : false
   let tentativas = 1
   while (!noAr && tentativas <= TENTATIVAS_DE_AJUSTE) {
     const motivo = pid ? 'subiu mas nao respondeu' : 'nao subiu'
+    if (card) anexarEvento({ card, evento: 'repair_attempt', fase: 'url', detalhe: `tentativa ${tentativas}/${TENTATIVAS_DE_AJUSTE}: ${motivo}` })
     ajustes.push(await deps.ajustar(motivo, tentativas))
     pid = await deps.subir()
     noAr = pid ? await deps.responde(pid) : false

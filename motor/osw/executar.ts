@@ -276,7 +276,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
         steps.Url.tokens += tokensOf(r.usage)
         return r.ok ? `ajuste ${n} aplicado` : `ajuste ${n} falhou`
       },
-    }, urlPid ? String(urlPid) : card.fm.url_pid)
+    }, urlPid ? String(urlPid) : card.fm.url_pid, id)
     : { pid: 0, noAr: false, tentativas: 0, ajustes: [] }
   const pid = tentativa.pid
   const url = pid ? `http://localhost:${port}` : ''

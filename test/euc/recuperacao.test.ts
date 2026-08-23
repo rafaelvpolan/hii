@@ -95,7 +95,11 @@ test('card sem evento final conta como em andamento; com card_fechado, nao', () 
 test('INVARIANTE toda saida de passoComCrivo fecha a fase — senao falha limpa parece crash', async () => {
   const fonte = await Bun.file('motor/cic/passo-com-gate.ts').text()
   const saidas = (fonte.match(/return \{ metric:/g) ?? []).length
-  const fechamentos = (fonte.match(/evento: 'fase_fim'/g) ?? []).length
+  // Conta so linha de CODIGO: um comentario contendo o literal inflaria o
+  // numero e mascararia uma saida de verdade sem fechamento.
+  const fechamentos = fonte.split('\n')
+    .filter(l => !l.trimStart().startsWith('//'))
+    .filter(l => l.includes("evento: 'fase_fim'")).length
   expect(saidas, 'a varredura nao achou as saidas — o invariante passaria vazio').toBeGreaterThan(2)
   expect(fechamentos, `${saidas} saida(s) e ${fechamentos} fase_fim: alguma saida deixa a fase aberta`).toBe(saidas)
 })
