@@ -1,15 +1,15 @@
 import { isoNow } from '../../motor/cdl'
 import type { Fields } from '../../motor/cdl'
 import { classifyFailure } from '../ai/failure'
-import type { AgentRequest, AgentResult, AiProvider } from '../ai/types'
+import type { AgentRequest, AgentResult, AiProvider } from '../../motor/tmd/tipos'
 import { COST_UNKNOWN } from '../ai/cost'
-import { emptyUsage } from '../ai/usage'
+import { emptyUsage } from '../../motor/tmd/uso'
 import { patchCard, patchCardWith, readCard } from '../../motor/cdl/store'
 import { addProvider, classifyCostGap, floorProviders, formatProviders, parseProviders, removeProvider } from './cost-gap'
 import { registrarChamada, sessaoDoCard } from './ias-da-sessao'
 import type { PapelDeChamada } from './ias-da-sessao'
 import { sessaoAtual } from './sessao'
-import { sumTokens } from '../ai/usage'
+import { sumTokens } from '../../motor/tmd/uso'
 import { atualizarRegistroDeConversa } from './runs'
 
 function semReporte(fm: Fields, provider: string): boolean {

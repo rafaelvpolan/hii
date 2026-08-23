@@ -1,6 +1,6 @@
-import { run } from '../runner/git'
-import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './mcp-estado'
-import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './mcp-estado'
+import { run } from '../../../lib/runner/git'
+import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado'
+import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado'
 
 const MCP_PREFIX = 'mcp__'
 const MCP_LIST_TIMEOUT_MS = 20000

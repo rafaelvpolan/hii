@@ -7,7 +7,7 @@ import type { Terminal } from '../lib/core/tui/screen'
 import { telaVirtual } from './fixtures/tela-virtual'
 import { navegarNaTela, alvoDeEntrada } from '../bin/lib/board-tui'
 import { selecionado, selecionar } from '../bin/lib/estado'
-import { providerNameFor } from '../lib/ai/registry'
+import { providerNameFor } from '../motor/tmd/registro'
 import { aplicar as aplicarIa, ciclarModo } from '../lib/core/escolher-ia'
 import { newSession } from '../lib/core/session'
 

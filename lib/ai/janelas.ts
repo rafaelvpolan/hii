@@ -1,6 +1,6 @@
 import { planoDoProvedor } from './planos'
 import type { JanelaDeUso } from './planos'
-import type { AiProviderName } from './types'
+import type { AiProviderName } from '../../motor/tmd/tipos'
 
 const HORA_MS = 3600_000
 const DIA_MS = 24 * HORA_MS

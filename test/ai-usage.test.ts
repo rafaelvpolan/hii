@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { emptyUsage, sumTokens } from '../lib/ai/usage'
+import { emptyUsage, sumTokens } from '../motor/tmd/uso'
 
 test('emptyUsage zera tudo', () => {
   expect(emptyUsage()).toEqual({ tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 })

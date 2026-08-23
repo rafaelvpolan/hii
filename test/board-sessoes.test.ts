@@ -155,7 +155,7 @@ test('projeto sem nenhuma sessao mostra um aviso especifico, nao a lista generic
 
 test('REGRESSAO: enter no /config com selecao invalida ou de outra tela aplica o mesmo provedor que a lista realca', async () => {
   const { alvoDeEntrada } = await import('../bin/lib/board-tui')
-  const { providerNames } = await import('../lib/ai/registry')
+  const { providerNames } = await import('../motor/tmd/registro')
   const { newSession } = await import('../lib/core/session')
   const { selecionar } = await import('../bin/lib/estado')
   const naConfig = { ...newSession('org/app'), tela: 'config' as const }
@@ -168,7 +168,7 @@ test('REGRESSAO: enter no /config com selecao invalida ou de outra tela aplica o
 
 test('com /config aberto, a seta de baixo continua escolhendo provedor na tela', async () => {
   const { navegarNaTela, alvoDeEntrada } = await import('../bin/lib/board-tui')
-  const { providerNames } = await import('../lib/ai/registry')
+  const { providerNames } = await import('../motor/tmd/registro')
   const { newSession } = await import('../lib/core/session')
   const { selecionado, selecionar } = await import('../bin/lib/estado')
   const naConfig = { ...newSession('org/app'), tela: 'config' as const }

@@ -28,8 +28,8 @@ afterEach(() => {
 })
 
 test('/ia lista os provedores com a situacao real de cada um', async () => {
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
-  const { providerNames } = await import('../lib/ai/registry')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
+  const { providerNames } = await import('../motor/tmd/registro')
   const lista = provedoresDisponiveis()
   expect(lista.map(p => p.nome).sort()).toEqual([...providerNames()].sort())
   const situacoesValidas = ['disponivel', 'ausente', 'precisa-servidor', 'nao-autenticado', 'cota-esgotada']
@@ -37,7 +37,7 @@ test('/ia lista os provedores com a situacao real de cada um', async () => {
 })
 
 test('provedor de CLI ausente nao e apresentado como disponivel', async () => {
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   const guardado = process.env.PATH
   process.env.PATH = '/caminho/que/nao/existe'
   const lista = provedoresDisponiveis()
@@ -48,7 +48,7 @@ test('provedor de CLI ausente nao e apresentado como disponivel', async () => {
 
 test('provedor que depende de servidor nao mente que esta pronto', async () => {
   const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
-  const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
+  const { definirEstadoDoOllama } = await import('../motor/tmd/harness/ollama-estado')
   const instalado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
   definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
   expect(habilitadoDe('ollama', instalado)).toBe(false)
@@ -58,7 +58,7 @@ test('provedor que depende de servidor nao mente que esta pronto', async () => {
 
 test('binario instalado mas sem oauthAccount aparece como nao-autenticado', async () => {
   writeFileSync(claudeJson, JSON.stringify({}))
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   const claude = provedoresDisponiveis().find(p => p.nome === 'claude')
   expect(claude?.situacao).toBe('nao-autenticado')
   expect(claude?.comoObter).toContain('login')
@@ -73,7 +73,7 @@ test('autenticado mas com a janela de 5h em 100% e ainda sem resetar aparece com
       utilization: { five_hour: { utilization: 100, resets_at: '2026-08-19T20:00:00Z' } },
     },
   }))
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   const claude = provedoresDisponiveis(agora).find(p => p.nome === 'claude')
   expect(claude?.situacao).toBe('cota-esgotada')
   expect(claude?.comoObter).toContain('cota')
@@ -88,7 +88,7 @@ test('autenticado e com uso normal segue disponivel', async () => {
       utilization: { five_hour: { utilization: 12, resets_at: '2026-08-19T20:00:00Z' } },
     },
   }))
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   const claude = provedoresDisponiveis(agora).find(p => p.nome === 'claude')
   expect(claude?.situacao).toBe('disponivel')
 })
@@ -119,7 +119,7 @@ test('o rotulo da situacao no painel /config diferencia sem-login de cota estour
 
 test('binario ausente nunca conta como habilitado, mesmo com servidor no ar', async () => {
   const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
-  const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
+  const { definirEstadoDoOllama } = await import('../motor/tmd/harness/ollama-estado')
   definirEstadoDoOllama({ habilitado: true, modelos: ['x'], verificadoEm: Date.now() })
   const ausente = { nome: 'ollama' as const, situacao: 'ausente' as const, instalado: false, comoObter: '', modelo: '', papeis: [] }
   expect(habilitadoDe('ollama', ausente)).toBe(false)

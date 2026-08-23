@@ -1,6 +1,6 @@
-import { run } from '../../runner/git'
-import type { Fields } from '../../../motor/cdl'
-import type { ExternalTask, TaskSync } from '../types'
+import { run } from '../../../../lib/runner/git'
+import type { Fields } from '../../../cdl'
+import type { ExternalTask, TaskSync } from './tipos'
 
 interface GhIssue {
   number?: number

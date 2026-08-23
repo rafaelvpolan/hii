@@ -6,7 +6,7 @@ import {
   autenticadoDoProvedor, claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
   modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
 } from '../lib/ai/planos'
-import { sondarOllama } from '../lib/ai/ollama-estado'
+import { sondarOllama } from '../motor/tmd/harness/ollama-estado'
 
 const dir = mkdtempSync(join(tmpdir(), 'hicode-planos-'))
 

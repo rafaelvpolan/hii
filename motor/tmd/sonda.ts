@@ -1,5 +1,5 @@
-import { run } from '../runner/git'
-import { noProxyArgs } from '../runner/loopback'
+import { run } from '../../lib/runner/git'
+import { noProxyArgs } from '../../lib/runner/loopback'
 
 const PROBE_TIMEOUT_MS = Number(process.env.HICODE_HEALTH_PROBE_TIMEOUT_MS || 5000)
 

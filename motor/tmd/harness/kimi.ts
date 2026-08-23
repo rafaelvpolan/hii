@@ -1,9 +1,9 @@
 import { appendFileSync } from 'node:fs'
-import { run } from '../../runner/git'
-import { emptyUsage } from '../usage'
-import { COST_UNKNOWN } from '../cost'
+import { run } from '../../../lib/runner/git'
+import { emptyUsage } from '../uso'
+import { COST_UNKNOWN } from '../../../lib/ai/cost'
 import { modoResolvido } from '../modos'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName, ProviderLimits } from '../types'
+import type { AgentRequest, AgentResult, AiProvider, AiProviderName, ProviderLimits } from '../tipos'
 
 interface KimiStreamLine {
   role?: string

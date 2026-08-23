@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Card } from '../motor/cdl'
-import type { AgentRequest, AgentResult, AgentRole } from '../lib/ai/types'
+import type { AgentRequest, AgentResult, AgentRole } from '../motor/tmd/tipos'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-cego-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -47,7 +47,7 @@ const { clarify } = await import('../lib/runner/clarify')
 const { evaluate } = await import('../lib/runner/eval')
 const { idear } = await import('../lib/runner/ideate-run')
 const { runProvider } = await import('../lib/runner/cost-trust')
-const { providerFor, modelFor } = await import('../lib/ai/registry')
+const { providerFor, modelFor } = await import('../motor/tmd/registro')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

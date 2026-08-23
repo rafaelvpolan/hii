@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { modelFor, providerNameFor, providerNames } from '../lib/ai/registry'
+import { modelFor, providerNameFor, providerNames } from '../motor/tmd/registro'
 
 function comEnv(vars: Record<string, string>, fn: () => void): void {
   const anterior = new Map<string, string | undefined>()

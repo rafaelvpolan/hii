@@ -1,4 +1,4 @@
-import type { AgentRole, AiProviderName } from './types'
+import type { AgentRole, AiProviderName } from './tipos'
 
 export interface CatalogoDeModo {
   readonly modos: readonly string[]

@@ -2,11 +2,11 @@ import { FORMATO_STREAM, claudeArgv } from './claude-argv'
 import { spawn } from 'node:child_process'
 import { appendFileSync, writeFileSync, readFileSync, statSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { emptyUsage } from '../usage'
-import { COST_UNKNOWN, readReportedCost } from '../cost'
-import type { CostReading } from '../cost'
-import type { AgentRequest, AgentResult } from '../types'
-import type { Usage } from '../../../motor/cdl'
+import { emptyUsage } from '../uso'
+import { COST_UNKNOWN, readReportedCost } from '../../../lib/ai/cost'
+import type { CostReading } from '../../../lib/ai/cost'
+import type { AgentRequest, AgentResult } from '../tipos'
+import type { Usage } from '../../cdl'
 
 const NONINTERACTIVE_ENV: Record<string, string> = {
   GIT_TERMINAL_PROMPT: '0',

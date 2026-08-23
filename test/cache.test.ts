@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { memoTempo, memoArquivo, memoChave } from '../lib/core/cache'
+import { memoTempo, memoArquivo, memoChave } from '../motor/tmd/eco/memo'
 
 let dir = ''
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'hicode-cache-')) })

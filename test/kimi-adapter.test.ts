@@ -2,9 +2,9 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { KimiProvider, KIMI_LIMITS, kimiArgv } from '../lib/ai/adapters/kimi'
-import { isProviderName, modelFor, providerLimits, providerNames } from '../lib/ai/registry'
-import type { AgentMode, AgentRequest } from '../lib/ai/types'
+import { KimiProvider, KIMI_LIMITS, kimiArgv } from '../motor/tmd/harness/kimi'
+import { isProviderName, modelFor, providerLimits, providerNames } from '../motor/tmd/registro'
+import type { AgentMode, AgentRequest } from '../motor/tmd/tipos'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-kimi-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')

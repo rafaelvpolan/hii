@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { repoStatus } from '../../motor/cdl/repos'
 import { readContract } from '../../motor/cdl/bss/armazenar'
 import { daemonStatus } from './daemon'
-import { providerNameFor } from '../ai/registry'
+import { providerNameFor } from '../../motor/tmd/registro'
 
 export type Severity = 'ok' | 'aviso' | 'erro'
 

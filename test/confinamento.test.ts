@@ -87,8 +87,8 @@ afterAll(() => {
 
 const { implement, runStep, AGENTES_IMPLEMENT } = await import('../lib/runner/agent')
 const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../lib/ai/agentes-nexus')
-const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../lib/ai/mcp')
-const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../lib/ai/adapters/claude')
+const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../motor/tmd/pnt/mcp')
+const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../motor/tmd/harness/claude')
 const { verifyVisual } = await import('../lib/runner/agent')
 const { ROOT } = await import('../motor/cdl/ali/config')
 const CARTAO = { file: '', fm: { title: 'ajustar o rodape da pagina' }, order: [], body: '' }

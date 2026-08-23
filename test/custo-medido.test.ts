@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, readdir
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Run } from '../motor/cdl'
-import type { AgentRequest } from '../lib/ai/types'
+import type { AgentRequest } from '../motor/tmd/tipos'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-medido-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -32,8 +32,8 @@ echo '{"response":"resposta gerada localmente","prompt_eval_count":800,"eval_cou
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${binDir}:${pathOriginal}`
 
-const { CodexProvider } = await import('../lib/ai/adapters/codex')
-const { OllamaProvider } = await import('../lib/ai/adapters/ollama')
+const { CodexProvider } = await import('../motor/tmd/harness/codex')
+const { OllamaProvider } = await import('../motor/tmd/harness/ollama')
 const { writeRun, updateRunSteps } = await import('../lib/runner/runs')
 const { createCard, readCard } = await import('../motor/cdl/store')
 const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')

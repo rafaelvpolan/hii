@@ -1,4 +1,4 @@
-import type { AgentResult } from '../ai/types'
+import type { AgentResult } from '../../motor/tmd/tipos'
 import type { Fields } from '../../motor/cdl'
 
 export type CostGap = 'measured' | 'call_failed' | 'unreported'

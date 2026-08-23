@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../motor/cdl/ali/config'
-import { memoArquivo } from '../core/cache'
-import { modelFor, providerNameFor, agentRoles } from './registry'
-import type { AiProviderName } from './types'
+import { ROOT } from '../cdl/ali/config'
+import { memoArquivo } from './eco/memo'
+import { modelFor, providerNameFor, agentRoles } from './registro'
+import type { AiProviderName } from './tipos'
 
 export type CatalogoDeModelos = Partial<Record<AiProviderName, string[]>>
 

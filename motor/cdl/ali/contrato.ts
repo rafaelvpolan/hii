@@ -27,8 +27,8 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_RUNNER_PIDFILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/core/daemon.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOCK, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/runner/instance-lock.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOG, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['scripts/runner-daemon.sh'], lado: 'motor' },
-  { nome: ENV_IA_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/ai/preferencias.ts'], lado: 'ambos' },
-  { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/catalogo.ts'], lado: 'motor' },
-  { nome: ENV_CLAUDE_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/comandos-da-ia.ts'], lado: 'motor' },
-  { nome: ENV_KIMI_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/comandos-da-ia.ts'], lado: 'motor' },
+  { nome: ENV_IA_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/tmd/preferencias.ts'], lado: 'ambos' },
+  { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/catalogo.ts'], lado: 'motor' },
+  { nome: ENV_CLAUDE_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/map/comandos.ts'], lado: 'motor' },
+  { nome: ENV_KIMI_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/map/comandos.ts'], lado: 'motor' },
 ]

@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { AgentRequest, AgentResult } from '../lib/ai/types'
+import type { AgentRequest, AgentResult } from '../motor/tmd/tipos'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-marca-custo-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -37,9 +37,9 @@ FIM
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${binDir}:${pathOriginal}`
 
-const { ClaudeProvider } = await import('../lib/ai/adapters/claude')
-const { CodexProvider } = await import('../lib/ai/adapters/codex')
-const { emptyUsage } = await import('../lib/ai/usage')
+const { ClaudeProvider } = await import('../motor/tmd/harness/claude')
+const { CodexProvider } = await import('../motor/tmd/harness/codex')
+const { emptyUsage } = await import('../motor/tmd/uso')
 const { createCard, readCard } = await import('../motor/cdl/store')
 const { runProvider, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')
 const { classifyCostGap } = await import('../lib/runner/cost-gap')

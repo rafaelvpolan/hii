@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { argv } from '../lib/ai/adapters/codex'
-import { claudeArgv } from '../lib/ai/adapters/claude-argv'
-import { kimiArgv } from '../lib/ai/adapters/kimi'
-import { modosDoProvedor } from '../lib/ai/modos'
-import type { AgentMode, AgentRequest } from '../lib/ai/types'
+import { argv } from '../motor/tmd/harness/codex'
+import { claudeArgv } from '../motor/tmd/harness/claude-argv'
+import { kimiArgv } from '../motor/tmd/harness/kimi'
+import { modosDoProvedor } from '../motor/tmd/modos'
+import type { AgentMode, AgentRequest } from '../motor/tmd/tipos'
 
 function pedido(mode: AgentMode = 'edit', extra: Partial<AgentRequest> = {}): AgentRequest {
   return { prompt: 'faca algo', cwd: '/tmp/wt', dirs: ['/tmp/wt'], mode, useAgents: false, timeoutMs: 20000, ...extra }

@@ -1,4 +1,4 @@
-import { agentRoles, DEFAULT_PROVIDER, isProviderName, providerNameFor, providerNames, roleProviderEnv, roleQuotaFallbackEnv } from './registry'
+import { agentRoles, DEFAULT_PROVIDER, isProviderName, providerNameFor, providerNames, roleProviderEnv, roleQuotaFallbackEnv } from './registro'
 
 export interface ProviderConfigIssue {
   origin: string

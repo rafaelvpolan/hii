@@ -18,7 +18,7 @@ import { resolvedFailure, writeRun } from './runs'
 import { abrirSessao } from './ias-da-sessao'
 import { warnBudgetWithoutGuarantee } from './cost-trust'
 import { applyFailurePolicy } from './failure-policy'
-import { quotaFallbackProviderFor } from '../ai/registry'
+import { quotaFallbackProviderFor } from '../../motor/tmd/registro'
 
 export interface ExecuteDeps {
   implement: typeof implement

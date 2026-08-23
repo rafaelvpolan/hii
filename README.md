@@ -503,7 +503,7 @@ O motor abre o PR e para em `PR_OPEN`.
 Papéis: `implement`, `verify`, `gate`, `step` — cada um escolhe provedor por env. Provedores:
 `claude` (default), `codex`, `ollama`, `kimi`. Veja tudo com `/config` na TUI.
 
-Capacidade é **declarada**, não presumida: `providerLimits` (`lib/ai/registry.ts`) diz quem restringe
+Capacidade é **declarada**, não presumida: `providerLimits` (`motor/tmd/registro.ts`) diz quem restringe
 tools, isola leitura, reporta custo e aceita nível de esforço; `recusaPorLimite`
 (`lib/runner/cost-trust.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
 vez de mandar e tratar o lixo que volta como resultado.
@@ -511,7 +511,7 @@ vez de mandar e tratar o lixo que volta como resultado.
 **Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo
 e qualidade sem ninguém autorizar. Travado por teste.
 
-Saúde é sondada antes do uso (`lib/ai/health-probe.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
+Saúde é sondada antes do uso (`motor/tmd/sonda.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
 `claude` e `codex` por alcançabilidade da API, timeout de 5 s
 (`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** provedor fora desse mapa — hoje `kimi` —
 cai no `return true` e é reportado como saudável sem ter sido testado.

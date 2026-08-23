@@ -1,5 +1,5 @@
 import type { FailureClass } from '../../motor/cdl'
-import type { AiProviderName } from './types'
+import type { AiProviderName } from '../../motor/tmd/tipos'
 
 export interface FailureContext {
   timedOut: boolean

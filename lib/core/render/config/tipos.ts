@@ -1,5 +1,5 @@
 import type { ConsumoDoProvedor } from '../../../ai/consumo'
-import type { Situacao } from '../../../ai/disponibilidade'
+import type { Situacao } from '../../../../motor/tmd/disponibilidade'
 
 
 export interface JanelaDoPainel {

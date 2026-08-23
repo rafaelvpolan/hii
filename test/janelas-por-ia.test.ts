@@ -147,7 +147,7 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
 })
 
 test('REGRESSAO classificacao saiu dos papeis configuraveis junto com a leitura de intencao', async () => {
-  const { agentRoles } = await import('../lib/ai/registry')
+  const { agentRoles } = await import('../motor/tmd/registro')
   expect(agentRoles()).not.toContain('classificacao')
   expect(agentRoles()).toEqual(['implement', 'verify', 'gate', 'step'])
 })

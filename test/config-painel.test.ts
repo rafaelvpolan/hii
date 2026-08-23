@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { renderConfig } from '../lib/core/render/config'
 import type { EstadoDaConfig, LinhaDeProvedor } from '../lib/core/render/config'
 import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
-import { provedoresDisponiveis } from '../lib/ai/disponibilidade'
+import { provedoresDisponiveis } from '../motor/tmd/disponibilidade'
 
 const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor => ({
   nome, situacao: 'disponivel', habilitado: true, motivo: '', papeis: [], modelo: '', esforco: '',
@@ -234,7 +234,7 @@ test('plano nao descoberto e dito, nao chutado', () => {
 })
 
 test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
-  const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
+  const { definirEstadoDoOllama } = await import('../motor/tmd/harness/ollama-estado')
   const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
   const conectado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
 

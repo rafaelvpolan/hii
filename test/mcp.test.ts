@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { prefixoDe, servidoresPara } from '../lib/ai/mcp'
+import { prefixoDe, servidoresPara } from '../motor/tmd/pnt/mcp'
 
 const SERVIDORES = ['claude.ai Notion', 'plugin:Notion:notion', 'claude.ai Slack']
 

@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Card } from '../motor/cdl'
-import { warnProviderConfig } from '../lib/ai/provider-config'
+import { warnProviderConfig } from '../motor/tmd/config'
 import { createCard, readCard } from '../motor/cdl/store'
 
 const REPO = join(import.meta.dir, '..')

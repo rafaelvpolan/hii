@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { cardsDir } from '../../motor/cdl/ali/config'
 import { findCardFile, readCard } from '../../motor/cdl/store'
-import { memoArquivo, memoTempo } from './cache'
+import { memoArquivo, memoTempo } from '../../motor/tmd/eco/memo'
 import { extractObjetivo } from '../../motor/cdl'
 import type { Fields } from '../../motor/cdl'
 import { planSteps } from '../runner/analyze'

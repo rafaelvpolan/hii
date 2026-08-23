@@ -2,12 +2,12 @@ import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './motor/cdl/ali/config
 import { pending, reconcileStranded, runJob, tick } from './lib/runner/queue'
 import { renderProgress } from './lib/runner/progress'
 import { initHicodeHome } from './motor/cdl/ali/home'
-import { runSync } from './lib/tasks/sync'
-import { taskSyncName } from './lib/tasks/registry'
+import { runSync } from './motor/tmd/pnt/tarefas/sync'
+import { taskSyncName } from './motor/tmd/pnt/tarefas/registro'
 import { reportTickFailure } from './lib/runner/health'
 import { wakeDueWaiting } from './lib/runner/waiting'
 import { holdInstanceLock, refusalMessage } from './lib/runner/instance-lock'
-import { warnProviderConfig } from './lib/ai/provider-config'
+import { warnProviderConfig } from './motor/tmd/config'
 
 process.on('uncaughtException', (e) => {
   reportTickFailure('excecao nao tratada', e)

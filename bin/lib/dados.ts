@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cardsDir } from '../../motor/cdl/ali/config'
 import { allCards, listRepos, normalizeId } from '../../motor/cdl/store'
-import { memoArquivo, memoTempo } from '../../lib/core/cache'
+import { memoArquivo, memoTempo } from '../../motor/tmd/eco/memo'
 import { parseLog } from '../../lib/core/activity'
 
 export { passosAtivos, planoDoCard, passosDe } from '../../lib/core/passos'

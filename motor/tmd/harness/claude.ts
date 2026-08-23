@@ -1,11 +1,11 @@
 import { claudeArgv } from './claude-argv'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv'
-import { run } from '../../runner/git'
-import { emptyUsage } from '../usage'
-import { COST_UNKNOWN, readReportedCost } from '../cost'
+import { run } from '../../../lib/runner/git'
+import { emptyUsage } from '../uso'
+import { COST_UNKNOWN, readReportedCost } from '../../../lib/ai/cost'
 import { runClaudeStream } from './claude-stream'
-import type { CostReading } from '../cost'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../types'
+import type { CostReading } from '../../../lib/ai/cost'
+import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
 
 interface ClaudeJson {
   total_cost_usd?: number

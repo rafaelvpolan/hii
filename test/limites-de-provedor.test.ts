@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import { recusaPorLimite } from '../lib/runner/cost-trust'
-import { KimiProvider } from '../lib/ai/adapters/kimi'
-import { ClaudeProvider } from '../lib/ai/adapters/claude'
-import type { AgentRequest } from '../lib/ai/types'
+import { KimiProvider } from '../motor/tmd/harness/kimi'
+import { ClaudeProvider } from '../motor/tmd/harness/claude'
+import type { AgentRequest } from '../motor/tmd/tipos'
 
 const pedido = (mode: AgentRequest['mode']): AgentRequest => ({
   prompt: 'x', cwd: '/tmp', dirs: [], mode, useAgents: false, timeoutMs: 1000,
@@ -24,13 +24,13 @@ test('claude passa nos dois modos', () => {
 })
 
 test('kimi em modo de edicao passa --auto — sem isso ele trava esperando aprovacao', async () => {
-  const { kimiArgv } = await import('../lib/ai/adapters/kimi')
+  const { kimiArgv } = await import('../motor/tmd/harness/kimi')
   expect(kimiArgv(pedido('edit'))).toContain('--auto')
   expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
 })
 
 test('kimi nunca recebe flag que o CLI dele nao tem', async () => {
-  const { kimiArgv } = await import('../lib/ai/adapters/kimi')
+  const { kimiArgv } = await import('../motor/tmd/harness/kimi')
   const argv = kimiArgv({ ...pedido('edit'), effort: 'high', model: 'kimi-for-coding' }).join(' ')
   expect(argv).not.toContain('--allowedTools')
   expect(argv).not.toContain('--effort')

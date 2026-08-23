@@ -4,7 +4,7 @@ import { splitFrontMatter, serializeCard, appendLog, isoNow } from './'
 import type { Card, Fields } from './'
 import { cardsDir, reposFile, ROOT } from './ali/config'
 import { withFileLock, writeFileAtomic } from '../../lib/runner/file-lock'
-import { memoArquivo } from '../../lib/core/cache'
+import { memoArquivo } from '../tmd/eco/memo'
 
 interface RepoConfig {
   name: string

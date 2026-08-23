@@ -13,7 +13,7 @@ beforeEach(() => {
 })
 
 test('claude, kimi e codex tem catalogo de modos — ollama nao tem nenhum', async () => {
-  const { modosDoProvedor, temModos } = await import('../lib/ai/modos')
+  const { modosDoProvedor, temModos } = await import('../motor/tmd/modos')
   expect(modosDoProvedor('claude').length).toBeGreaterThan(0)
   expect(modosDoProvedor('kimi').length).toBeGreaterThan(0)
   expect(modosDoProvedor('codex').length).toBeGreaterThan(0)
@@ -21,28 +21,28 @@ test('claude, kimi e codex tem catalogo de modos — ollama nao tem nenhum', asy
 })
 
 test('modoResolvido cai no padrao quando o valor escolhido nao existe no provedor', async () => {
-  const { modoResolvido, modoPadraoDoProvedor } = await import('../lib/ai/modos')
+  const { modoResolvido, modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   expect(modoResolvido('claude', 'nao-existe')).toBe(modoPadraoDoProvedor('claude'))
   expect(modoResolvido('claude', undefined)).toBe(modoPadraoDoProvedor('claude'))
 })
 
 test('modoFor do implement resolve o padrao do provedor ativo sem nenhuma preferencia salva', async () => {
-  const { modoFor } = await import('../lib/ai/registry')
-  const { modoPadraoDoProvedor } = await import('../lib/ai/modos')
+  const { modoFor } = await import('../motor/tmd/registro')
+  const { modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   expect(modoFor('implement')).toBe(modoPadraoDoProvedor('claude'))
 })
 
 test('modoFor do ollama e undefined — o provedor nao tem modo nenhum', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
+  const { modoFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], provider: 'ollama' })
   expect(modoFor('implement')).toBeUndefined()
 })
 
 test('REGRESSAO: um modo valido so no provedor antigo nao escapa para o novo provedor', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
-  const { modoPadraoDoProvedor } = await import('../lib/ai/modos')
+  const { modoFor } = await import('../motor/tmd/registro')
+  const { modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   aplicar({ papeis: ['implement'], provider: 'claude', modo: 'acceptEdits' })
   expect(modoFor('implement')).toBe('acceptEdits')
   aplicar({ papeis: ['implement'], provider: 'kimi' })
@@ -58,14 +58,14 @@ test('/mode sem argumento lista os modos da ia atual', async () => {
 
 test('/mode define o modo do papel atual', async () => {
   const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
+  const { modoFor } = await import('../motor/tmd/registro')
   definirModoDeOperacao(['plan'])
   expect(modoFor('implement')).toBe('plan')
 })
 
 test('/mode <papel> <modo> mira o papel pedido', async () => {
   const { definirModoDeOperacao, aplicar } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
+  const { modoFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['step'], provider: 'claude' })
   definirModoDeOperacao(['step', 'plan'])
   expect(modoFor('step')).toBe('plan')
@@ -74,7 +74,7 @@ test('/mode <papel> <modo> mira o papel pedido', async () => {
 
 test('/mode recusa modo invalido do provedor em vez de mandar lixo para o CLI', async () => {
   const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
+  const { modoFor } = await import('../motor/tmd/registro')
   const r = definirModoDeOperacao(['modo-que-nao-existe'])
   expect(r.ok).toBe(false)
   expect(modoFor('implement')).not.toBe('modo-que-nao-existe')
@@ -90,8 +90,8 @@ test('/mode recusa quando o provedor atual nao tem modo de operacao', async () =
 
 test('/mode padrao volta ao modo padrao do provedor', async () => {
   const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
-  const { modoPadraoDoProvedor } = await import('../lib/ai/modos')
+  const { modoFor } = await import('../motor/tmd/registro')
+  const { modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   definirModoDeOperacao(['plan'])
   definirModoDeOperacao(['padrao'])
   expect(modoFor('implement')).toBe(modoPadraoDoProvedor('claude'))
@@ -99,8 +99,8 @@ test('/mode padrao volta ao modo padrao do provedor', async () => {
 
 test('ciclarModo passa pelos modos do provedor ativo e da a volta', async () => {
   const { ciclarModo } = await import('../lib/core/escolher-ia')
-  const { modoFor } = await import('../lib/ai/registry')
-  const { modosDoProvedor } = await import('../lib/ai/modos')
+  const { modoFor } = await import('../motor/tmd/registro')
+  const { modosDoProvedor } = await import('../motor/tmd/modos')
   const total = modosDoProvedor('claude').length
   const inicial = modoFor('implement')
   const vistos = new Set<string | undefined>([inicial])
@@ -123,14 +123,14 @@ test('ciclarModo do ollama avisa que o provedor nao tem modo, sem quebrar', asyn
 
 test('autocompletar de /mode oferece os modos da ia atual', async () => {
   const { complete } = await import('../lib/core/complete')
-  const { agentRoles } = await import('../lib/ai/registry')
-  const { modosDoProvedor } = await import('../lib/ai/modos')
+  const { agentRoles } = await import('../motor/tmd/registro')
+  const { modosDoProvedor } = await import('../motor/tmd/modos')
   const ctx = { repos: [], cards: [], modos: [...modosDoProvedor('claude')], papeis: agentRoles() }
   expect(complete('/mode ', ctx)[0]).toContain('plan')
 })
 
 test('claudeArgv sem modo escolhido preserva o comportamento de hoje: acceptEdits', async () => {
-  const { claudeArgv } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv } = await import('../motor/tmd/harness/claude-argv')
   const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1 }
   const argv = claudeArgv(req)
   expect(argv).toContain('--permission-mode')
@@ -138,32 +138,32 @@ test('claudeArgv sem modo escolhido preserva o comportamento de hoje: acceptEdit
 })
 
 test('claudeArgv no modo "default" nao manda --permission-mode nenhum', async () => {
-  const { claudeArgv } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv } = await import('../motor/tmd/harness/claude-argv')
   const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1, modo: 'default' }
   expect(claudeArgv(req)).not.toContain('--permission-mode')
 })
 
 test('claudeArgv repassa o modo escolhido direto para --permission-mode', async () => {
-  const { claudeArgv } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv } = await import('../motor/tmd/harness/claude-argv')
   const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1, modo: 'plan' }
   const argv = claudeArgv(req)
   expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('plan')
 })
 
 test('claudeArgv readonly nunca manda --permission-mode, mesmo com modo escolhido', async () => {
-  const { claudeArgv } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv } = await import('../motor/tmd/harness/claude-argv')
   const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'readonly' as const, useAgents: false, timeoutMs: 1, modo: 'plan' }
   expect(claudeArgv(req)).not.toContain('--permission-mode')
 })
 
 test('kimiArgv sem modo escolhido preserva o comportamento de hoje: --auto', async () => {
-  const { kimiArgv } = await import('../lib/ai/adapters/kimi')
+  const { kimiArgv } = await import('../motor/tmd/harness/kimi')
   const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1 }
   expect(kimiArgv(req)).toContain('--auto')
 })
 
 test('kimiArgv troca de flag conforme o modo escolhido', async () => {
-  const { kimiArgv } = await import('../lib/ai/adapters/kimi')
+  const { kimiArgv } = await import('../motor/tmd/harness/kimi')
   const base = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1 }
   expect(kimiArgv({ ...base, modo: 'yolo' })).toContain('--yolo')
   expect(kimiArgv({ ...base, modo: 'plan' })).toContain('--plan')
@@ -174,14 +174,14 @@ test('kimiArgv troca de flag conforme o modo escolhido', async () => {
 })
 
 test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita o modo, com "never" como padrao de hoje', async () => {
-  const fonte = await Bun.file('lib/ai/adapters/codex.ts').text()
+  const fonte = await Bun.file('motor/tmd/harness/codex.ts').text()
   expect(fonte).toContain('approval_policy')
   expect(fonte).not.toContain("'-a', 'never'")
   expect(fonte).toContain("modoResolvido('codex'")
 })
 
 test('o papel step tambem envia o modo — ele edita arquivos como o implement', async () => {
-  const { papelHonraModo } = await import('../lib/ai/modos')
+  const { papelHonraModo } = await import('../motor/tmd/modos')
   expect(papelHonraModo('implement')).toBe(true)
   expect(papelHonraModo('step')).toBe(true)
 })

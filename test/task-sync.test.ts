@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { parseIssues } from '../lib/tasks/adapters/github-issues'
-import { taskSync, taskSyncName, taskSyncNames } from '../lib/tasks/registry'
+import { parseIssues } from '../motor/tmd/pnt/tarefas/github-issues'
+import { taskSync, taskSyncName, taskSyncNames } from '../motor/tmd/pnt/tarefas/registro'
 
 test('parseIssues mapeia JSON do gh para ExternalTask', () => {
   const json = JSON.stringify([

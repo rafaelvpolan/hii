@@ -1,4 +1,4 @@
-import type { AgentRequest } from '../types'
+import type { AgentRequest } from '../tipos'
 import { modoResolvido } from '../modos'
 
 const EDIT_TOOLS_AGENTS = 'Task,Read,Edit,Write,Glob,Grep,Bash'

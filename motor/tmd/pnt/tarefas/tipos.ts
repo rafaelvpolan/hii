@@ -1,4 +1,4 @@
-import type { Fields } from '../../motor/cdl'
+import type { Fields } from '../../../cdl'
 
 export interface ExternalTask {
   externalId: string

@@ -1,9 +1,9 @@
-import { run } from '../../runner/git'
-import { emptyUsage } from '../usage'
-import { COST_UNKNOWN } from '../cost'
+import { run } from '../../../lib/runner/git'
+import { emptyUsage } from '../uso'
+import { COST_UNKNOWN } from '../../../lib/ai/cost'
 import { modoResolvido } from '../modos'
-import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../types'
-import type { Usage } from '../../../motor/cdl'
+import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
+import type { Usage } from '../../cdl'
 
 interface CodexEvent {
   type?: string

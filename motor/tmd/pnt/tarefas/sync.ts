@@ -1,5 +1,5 @@
-import { allCards, createCard } from '../../motor/cdl/store'
-import { taskSync } from './registry'
+import { allCards, createCard } from '../../../cdl/store'
+import { taskSync } from './registro'
 
 export interface SyncReport {
   pulled: number

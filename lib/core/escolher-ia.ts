@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { arquivoDePreferencias, ehEsforco, ESFORCOS } from '../ai/preferencias'
-import type { PreferenciasDeIa } from '../ai/preferencias'
-import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modoFor } from '../ai/registry'
-import { provedoresDisponiveis } from '../ai/disponibilidade'
-import { modelosDe, arquivoDoCatalogo } from '../ai/catalogo'
-import { modosDoProvedor, modoPadraoDoProvedor, temModos, ehModoValido, papelHonraModo } from '../ai/modos'
-import type { AgentRole } from '../ai/types'
+import { arquivoDePreferencias, ehEsforco, ESFORCOS } from '../../motor/tmd/preferencias'
+import type { PreferenciasDeIa } from '../../motor/tmd/preferencias'
+import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modoFor } from '../../motor/tmd/registro'
+import { provedoresDisponiveis } from '../../motor/tmd/disponibilidade'
+import { modelosDe, arquivoDoCatalogo } from '../../motor/tmd/catalogo'
+import { modosDoProvedor, modoPadraoDoProvedor, temModos, ehModoValido, papelHonraModo } from '../../motor/tmd/modos'
+import type { AgentRole } from '../../motor/tmd/tipos'
 
 export interface ResultadoEscolha {
   ok: boolean

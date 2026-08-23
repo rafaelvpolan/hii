@@ -1,4 +1,4 @@
-import type { Usage } from '../../motor/cdl'
+import type { Usage } from '../cdl'
 
 export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 

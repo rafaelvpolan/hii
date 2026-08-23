@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { providerFor, modelFor, effortFor } from '../ai/registry'
+import { providerFor, modelFor, effortFor } from '../../motor/tmd/registro'
 import { runProvider } from './cost-trust'
 import { readProjectRules } from '../../motor/cdl/ali/home'
 import { readContract } from '../../motor/cdl/bss/armazenar'

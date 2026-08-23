@@ -14,7 +14,7 @@ beforeEach(() => {
 
 test('a troca vale sem reiniciar: a leitura seguinte ja ve o novo valor', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { providerNameFor, modelFor } = await import('../lib/ai/registry')
+  const { providerNameFor, modelFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex', model: 'gpt-5.5' })
   expect(providerNameFor('gate')).toBe('codex')
   expect(modelFor('gate')).toBe('gpt-5.5')
@@ -23,7 +23,7 @@ test('a troca vale sem reiniciar: a leitura seguinte ja ve o novo valor', async 
 test('preferencia em arquivo vence a env', async () => {
   process.env.HICODE_GATE_PROVIDER = 'ollama'
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { providerNameFor } = await import('../lib/ai/registry')
+  const { providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   expect(providerNameFor('gate')).toBe('codex')
   delete process.env.HICODE_GATE_PROVIDER
@@ -32,7 +32,7 @@ test('preferencia em arquivo vence a env', async () => {
 test('padrao limpa a preferencia e a env volta a valer', async () => {
   process.env.HICODE_GATE_PROVIDER = 'ollama'
   const { aplicar, limpar } = await import('../lib/core/escolher-ia')
-  const { providerNameFor } = await import('../lib/ai/registry')
+  const { providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   limpar(['gate'])
   expect(providerNameFor('gate')).toBe('ollama')
@@ -48,7 +48,7 @@ test('interpretar entende papel, provedor, modelo e esforco em qualquer ordem', 
 
 test('sem papel, o ajuste vale para todos', async () => {
   const { interpretar } = await import('../lib/core/escolher-ia')
-  const { agentRoles } = await import('../lib/ai/registry')
+  const { agentRoles } = await import('../motor/tmd/registro')
   expect(interpretar(['claude']).ajuste?.papeis).toEqual(agentRoles())
 })
 
@@ -60,25 +60,25 @@ test('argumento vazio ou sem sentido nao muda nada em silencio', async () => {
 
 test('esforco escolhido chega ao pedido do provedor', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'xhigh' })
   expect(effortFor('implement')).toBe('xhigh')
 })
 
 test('esforco do card vence a preferencia global', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'low' })
   expect(effortFor('implement', 'max')).toBe('max')
 })
 
 test('esforco invalido e ignorado em vez de virar argumento de CLI', async () => {
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   expect(effortFor('implement', 'altissimo')).toBeUndefined()
 })
 
 test('REGRESSAO esforco vira argumento real do CLI nos DOIS caminhos, nao so enfeite no rodape', async () => {
-  const { claudeArgv, FORMATO_JSON, FORMATO_STREAM } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv, FORMATO_JSON, FORMATO_STREAM } = await import('../motor/tmd/harness/claude-argv')
   const req = {
     prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false,
     timeoutMs: 1, effort: 'high', agentsJson: '{"rufus":{"description":"d","prompt":"p"}}',
@@ -89,12 +89,12 @@ test('REGRESSAO esforco vira argumento real do CLI nos DOIS caminhos, nao so enf
     expect(argv[argv.indexOf('--effort') + 1]).toBe('high')
     expect(argv).toContain('--agents')
   }
-  const codex = await Bun.file('lib/ai/adapters/codex.ts').text()
+  const codex = await Bun.file('motor/tmd/harness/codex.ts').text()
   expect(codex).toContain('model_reasoning_effort')
 })
 
 test('REGRESSAO um construtor de argv so — o caminho de live-log e o de json nao podem divergir', async () => {
-  const { claudeArgv, FORMATO_JSON, FORMATO_STREAM } = await import('../lib/ai/adapters/claude-argv')
+  const { claudeArgv, FORMATO_JSON, FORMATO_STREAM } = await import('../motor/tmd/harness/claude-argv')
   const req = {
     prompt: 'x', cwd: '/tmp', dirs: ['/wt'], mode: 'edit' as const, useAgents: true,
     timeoutMs: 1, model: 'opus', effort: 'high', agentsJson: '{"rufus":{}}', extraTools: ['mcp__omc'],
@@ -104,13 +104,13 @@ test('REGRESSAO um construtor de argv so — o caminho de live-log e o de json n
 })
 
 test('o pedido do provedor carrega o campo de esforco', async () => {
-  const tipos = await Bun.file('lib/ai/types.ts').text()
+  const tipos = await Bun.file('motor/tmd/tipos.ts').text()
   expect(tipos).toContain('effort?: string')
 })
 
 test('/ia mostra quais papeis usam cada provedor', async () => {
   const { aplicar } = await import('../lib/core/escolher-ia')
-  const { provedoresDisponiveis } = await import('../lib/ai/disponibilidade')
+  const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   const codex = provedoresDisponiveis().find(p => p.nome === 'codex')
   expect(codex?.papeis).toContain('gate')
@@ -118,19 +118,19 @@ test('/ia mostra quais papeis usam cada provedor', async () => {
 
 test('a listagem do /ia nao esconde provedor sem papel', async () => {
   const { estadoDaIa } = await import('../lib/core/escolher-ia')
-  const { providerNames } = await import('../lib/ai/registry')
+  const { providerNames } = await import('../motor/tmd/registro')
   const texto = estadoDaIa().join('\n')
   for (const n of providerNames()) expect(texto, n).toContain(n)
 })
 
 test('REGRESSAO o rodape nao pode inventar "medium" quando nada esta configurado', async () => {
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   expect(effortFor('implement')).toBeUndefined()
 })
 
 test('o rodape reflete o esforco escolhido, e volta ao padrao quando limpo', async () => {
   const { aplicar, limpar } = await import('../lib/core/escolher-ia')
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'xhigh' })
   expect(effortFor('implement')).toBe('xhigh')
   limpar(['implement'])
@@ -138,12 +138,12 @@ test('o rodape reflete o esforco escolhido, e volta ao padrao quando limpo', asy
 })
 
 test('o esforco do card aparece no rodape quando a tarefa esta aberta', async () => {
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   expect(effortFor('implement', 'max')).toBe('max')
 })
 
 test('a env continua valendo como configuracao inicial no rodape', async () => {
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   process.env.HICODE_EFFORT = 'low'
   expect(effortFor('implement')).toBe('low')
   delete process.env.HICODE_EFFORT
@@ -151,9 +151,9 @@ test('a env continua valendo como configuracao inicial no rodape', async () => {
 
 test('REGRESSAO rodape e motor leem a MESMA fonte de esforco', async () => {
   const { esforcoAtual } = await import('../bin/lib/rodape-tui')
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   const { newSession } = await import('../lib/core/session')
-  const { ESFORCO_PADRAO } = await import('../lib/ai/preferencias')
+  const { ESFORCO_PADRAO } = await import('../motor/tmd/preferencias')
   expect(esforcoAtual(newSession('org/app'))).toBe(effortFor('implement') ?? ESFORCO_PADRAO)
 })
 
@@ -172,14 +172,14 @@ test('/model sem argumento lista os modelos da ia atual', async () => {
 
 test('/model define o modelo do papel atual', async () => {
   const { definirModelo } = await import('../lib/core/escolher-ia')
-  const { modelFor } = await import('../lib/ai/registry')
+  const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['opus'])
   expect(modelFor('implement')).toBe('opus')
 })
 
 test('/model <papel> <modelo> mira o papel pedido', async () => {
   const { definirModelo } = await import('../lib/core/escolher-ia')
-  const { modelFor } = await import('../lib/ai/registry')
+  const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['gate', 'sonnet'])
   expect(modelFor('gate')).toBe('sonnet')
   expect(modelFor('implement')).not.toBe('sonnet')
@@ -187,7 +187,7 @@ test('/model <papel> <modelo> mira o papel pedido', async () => {
 
 test('/model fora do catalogo funciona, mas avisa', async () => {
   const { definirModelo } = await import('../lib/core/escolher-ia')
-  const { modelFor } = await import('../lib/ai/registry')
+  const { modelFor } = await import('../motor/tmd/registro')
   const r = definirModelo(['modelo-que-eu-inventei'])
   expect(r.ok).toBe(true)
   expect(r.mensagem).toContain('fora do catalogo')
@@ -196,7 +196,7 @@ test('/model fora do catalogo funciona, mas avisa', async () => {
 
 test('/model padrao devolve o modelo do CLI', async () => {
   const { definirModelo } = await import('../lib/core/escolher-ia')
-  const { modelFor } = await import('../lib/ai/registry')
+  const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['opus'])
   definirModelo(['padrao'])
   expect(modelFor('implement')).toBeUndefined()
@@ -211,7 +211,7 @@ test('/effort sem argumento lista os niveis', async () => {
 
 test('/effort recusa nivel invalido em vez de mandar lixo para o CLI', async () => {
   const { definirEsforco } = await import('../lib/core/escolher-ia')
-  const { effortFor } = await import('../lib/ai/registry')
+  const { effortFor } = await import('../motor/tmd/registro')
   const r = definirEsforco(['altissimo'])
   expect(r.ok).toBe(false)
   expect(effortFor('implement')).toBeUndefined()
@@ -219,7 +219,7 @@ test('/effort recusa nivel invalido em vez de mandar lixo para o CLI', async () 
 
 test('/effort padrao limpa so o esforco, preservando a ia escolhida', async () => {
   const { definirEsforco, aplicar } = await import('../lib/core/escolher-ia')
-  const { effortFor, providerNameFor } = await import('../lib/ai/registry')
+  const { effortFor, providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], provider: 'codex' })
   definirEsforco(['high'])
   definirEsforco(['padrao'])
@@ -228,23 +228,23 @@ test('/effort padrao limpa so o esforco, preservando a ia escolhida', async () =
 })
 
 test('o catalogo de modelos vem de arquivo quando existe', async () => {
-  const { modelosDe, origemDoCatalogo } = await import('../lib/ai/catalogo')
+  const { modelosDe, origemDoCatalogo } = await import('../motor/tmd/catalogo')
   expect(origemDoCatalogo('claude')).toBe('semente')
   expect(modelosDe('claude')).toContain('opus')
 })
 
 test('modelo em uso entra no catalogo mesmo sem estar na semente', async () => {
   const { definirModelo } = await import('../lib/core/escolher-ia')
-  const { modelosDe } = await import('../lib/ai/catalogo')
+  const { modelosDe } = await import('../motor/tmd/catalogo')
   definirModelo(['implement', 'meu-modelo-local'])
   expect(modelosDe('claude')).toContain('meu-modelo-local')
 })
 
 test('autocompletar de /ia, /model e /effort oferece as opcoes certas', async () => {
   const { complete } = await import('../lib/core/complete')
-  const { providerNames, agentRoles } = await import('../lib/ai/registry')
-  const { modelosDe } = await import('../lib/ai/catalogo')
-  const { ESFORCOS } = await import('../lib/ai/preferencias')
+  const { providerNames, agentRoles } = await import('../motor/tmd/registro')
+  const { modelosDe } = await import('../motor/tmd/catalogo')
+  const { ESFORCOS } = await import('../motor/tmd/preferencias')
   const ctx = {
     repos: [], cards: [], statuses: [],
     provedores: providerNames(), modelos: modelosDe('claude'),

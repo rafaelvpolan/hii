@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import type { FailureClass, IaDaSessao, TrocaDeProvedor } from '../../motor/cdl'
 import { cardsDir } from '../../motor/cdl/ali/config'
-import { memoArquivo, memoChave, memoTempo } from './cache'
+import { memoArquivo, memoChave, memoTempo } from '../../motor/tmd/eco/memo'
 
 function ttlListagemMs(): number {
   return Number(process.env.HICODE_COTA_TTL_MS ?? '2000')

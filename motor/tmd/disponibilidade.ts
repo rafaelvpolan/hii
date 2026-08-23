@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { providerNames, providerNameFor, modelFor, agentRoles } from './registry'
+import { providerNames, providerNameFor, modelFor, agentRoles } from './registro'
 import { preferenciaDoPapel } from './preferencias'
-import { autenticadoDoProvedor } from './planos'
-import { janelasDoProvedor } from './janelas'
-import type { AgentRole, AiProviderName } from './types'
+import { autenticadoDoProvedor } from '../../lib/ai/planos'
+import { janelasDoProvedor } from '../../lib/ai/janelas'
+import type { AgentRole, AiProviderName } from './tipos'
 
 const BINARIO: Partial<Record<AiProviderName, string>> = {
   claude: 'claude',

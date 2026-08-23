@@ -6,7 +6,7 @@ import { handle, newSession } from '../lib/core/session'
 import { dispatch } from '../lib/core/dispatch'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
 import { allCards } from '../motor/cdl/store'
-import { providerNameFor } from '../lib/ai/registry'
+import { providerNameFor } from '../motor/tmd/registro'
 
 let saida: string[] = []
 

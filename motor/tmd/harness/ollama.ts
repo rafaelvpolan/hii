@@ -1,10 +1,10 @@
-import { run } from '../../runner/git'
-import { isPrivateNetworkHost } from '../../runner/private-net'
-import { noProxyArgs } from '../../runner/loopback'
-import { emptyUsage } from '../usage'
-import { COST_FREE_LOCAL, COST_UNKNOWN } from '../cost'
-import type { CostReading } from '../cost'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../types'
+import { run } from '../../../lib/runner/git'
+import { isPrivateNetworkHost } from '../../../lib/runner/private-net'
+import { noProxyArgs } from '../../../lib/runner/loopback'
+import { emptyUsage } from '../uso'
+import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../../lib/ai/cost'
+import type { CostReading } from '../../../lib/ai/cost'
+import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
 
 interface OllamaResponse {
   response?: string

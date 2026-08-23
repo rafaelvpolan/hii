@@ -1,7 +1,7 @@
 import { ROOT } from '../../motor/cdl/ali/config'
-import { providerFor, modelFor } from '../ai/registry'
+import { providerFor, modelFor } from '../../motor/tmd/registro'
 import { runProvider } from './cost-trust'
-import { sumTokens } from '../ai/usage'
+import { sumTokens } from '../../motor/tmd/uso'
 import {
   escolherLentes, promptDivergir, promptConvergir,
   parseIdeias, parseConvergencia,

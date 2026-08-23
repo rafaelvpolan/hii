@@ -3,11 +3,11 @@ import { objetivoComInstrucoes } from '../core/instruir'
 import { join } from 'node:path'
 import type { Card, ClarifyQuestion } from '../../motor/cdl'
 import { cardsDir, ROOT } from '../../motor/cdl/ali/config'
-import { providerFor, modelFor } from '../ai/registry'
+import { providerFor, modelFor } from '../../motor/tmd/registro'
 import { runProvider } from './cost-trust'
 import { preflight, comoOpcoes } from '../core/ideate'
 import { idear } from './ideate-run'
-import { sumTokens } from '../ai/usage'
+import { sumTokens } from '../../motor/tmd/uso'
 
 export interface ClarifyResult {
   questions: ClarifyQuestion[]
