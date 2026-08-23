@@ -97,12 +97,15 @@ const SMELL = /code[\s_-]?smell/i;
 const TASK = /^\s*(todo|fixme|hack|xxx|wip|optimize|optimise|deprecated|refactor|review|temp)\b/i;
 const TICKET = /^\s*[A-Z][A-Z0-9]+-\d+\b/;
 
-function allowed(t, line) {
+const CABECALHO_MAX_LINHA = 40;
+
+function allowed(t, line, tool) {
   if (DIRECTIVE.test(t)) return true;
   if (TASK.test(t)) return true;
   if (TICKET.test(t)) return true;
   if (line <= 15 && LICENSE.test(t)) return true;
   if (SMELL.test(t)) return true;
+  if (tool === 'Write' && line <= CABECALHO_MAX_LINHA) return true;
   return false;
 }
 
@@ -125,7 +128,7 @@ process.stdin.on('end', () => {
     const ext = (path.split('.').pop() || '').toLowerCase();
     const o = styleFor(ext);
     if (!o) process.exit(0);
-    const hits = newTexts(tool, input).flatMap(t => scan(t, o)).filter(h => !allowed(h.text, h.line));
+    const hits = newTexts(tool, input).flatMap(t => scan(t, o)).filter(h => !allowed(h.text, h.line, tool));
     if (!hits.length) process.exit(0);
     const list = hits.slice(0, 8).map(h => `  L${h.line}: ${h.text.replace(/\s+/g, ' ').slice(0, 90)}`).join('\n');
     process.stderr.write(
@@ -137,9 +140,13 @@ ${list}
 Remova. Se voce acha que precisa explicar algo aqui, ISSO E CODE SMELL:
 extraia para uma funcao/variavel com nome revelador em vez de comentar.
 
-Permitido: cabecalho de licenca, diretivas de tooling (eslint-disable, @ts-expect-error,
-type: ignore, pragma...), e — APENAS em ultimo caso absoluto — um comentario que contenha
-explicitamente a palavra "code-smell" reconhecendo a divida tecnica.
+Permitido: o BLOCO DE CABECALHO do arquivo (ate a linha ${CABECALHO_MAX_LINHA}, e so ao escrever o
+arquivo inteiro com Write) — e onde mora o porque da peca existir, que o criterio
+c-comentario do crivo cobra. Tambem passam: cabecalho de licenca, diretivas de tooling
+(eslint-disable, @ts-expect-error, type: ignore, pragma...), TODO/FIXME, e — APENAS em
+ultimo caso absoluto — um comentario com a palavra "code-smell" reconhecendo a divida.
+
+Comentario no MEIO do arquivo continua bloqueado: ali a correcao e nome revelador.
 `);
     process.exit(2);
   } catch {
