@@ -1,6 +1,6 @@
 ---
 name: verificar
-description: "Auditoria manual do repositório INTEIRO (não do diff). Seleciona todo o código versionado com lib/runner/auditoria.ts — respeitando .gitignore, filtrando config/IaC/docs, ordenando por risco (monolito, god-file, arquivo sem teste) e dividindo em lotes por orçamento de caracteres —, roda o crivo (read-only) lote a lote e consolida um relatório que declara quantos arquivos entraram, quantos ficaram fora e por quê, com os achados ordenados por gravidade. Execução manual, sob pedido: NÃO gateia push, NÃO instala hook, NÃO conserta código. Use quando o usuário pedir /verificar, auditoria do repo, revisão do repositório inteiro, varredura de qualidade geral."
+description: "Auditoria manual do repositório INTEIRO (não do diff). Seleciona todo o código versionado com motor/agentes/ass/auditoria.ts — respeitando .gitignore, filtrando config/IaC/docs, ordenando por risco (monolito, god-file, arquivo sem teste) e dividindo em lotes por orçamento de caracteres —, roda o crivo (read-only) lote a lote e consolida um relatório que declara quantos arquivos entraram, quantos ficaram fora e por quê, com os achados ordenados por gravidade. Execução manual, sob pedido: NÃO gateia push, NÃO instala hook, NÃO conserta código. Use quando o usuário pedir /verificar, auditoria do repo, revisão do repositório inteiro, varredura de qualidade geral."
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[prefixo de caminho] [--lotes N] [--orcamento CHARS]"
@@ -36,12 +36,12 @@ vue/py` — config, IaC, docs, `.d.ts` e binário ficam fora **com motivo**), or
 >350 linhas, god-file ≥20 funções e <3 exports, arquivo sem teste correspondente; teste tem risco
 reduzido para produção vir antes) e divide em lotes que **nunca** passam do orçamento de caracteres.
 
-Argumentos (`$ARGUMENTS`, todos opcionais): um **prefixo de caminho** (recorte, ex.: `lib/runner/`),
+Argumentos (`$ARGUMENTS`, todos opcionais): um **prefixo de caminho** (recorte, ex.: `motor/agentes/`),
 `--lotes N` (teto de lotes desta execução) e `--orcamento CHARS` (default: `GATE_DIFF_LIMIT`, o mesmo
 orçamento do gate). Sem argumentos = repositório inteiro, sem teto. Traduza `$ARGUMENTS` para `AUD_ESCOPO`/`AUD_LOTES`/
 `AUD_ORCAMENTO` no comando abaixo — argumento que você não repassar simplesmente não vale.
 
-O prefixo é comparado com `startsWith` cru (não é glob): `lib/runner/` recorta o diretório,
+O prefixo é comparado com `startsWith` cru (não é glob): `motor/agentes/` recorta o diretório,
 `lib/runner` também casaria `lib/runner-x.ts`. Se o recorte não casar com nada, o resumo emite
 `ATENCAO: o recorte ... nao casou com nenhum arquivo` — nunca leia "0 de 0" como auditoria limpa.
 Rode **da raiz do repo** (o `bun -e` importa por caminho relativo ao `cwd`):
@@ -49,7 +49,7 @@ Rode **da raiz do repo** (o `bun -e` importa por caminho relativo ao `cwd`):
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 AUD_ESCOPO="" AUD_LOTES=0 AUD_ORCAMENTO=0 bun -e '
-const a = await import(process.cwd() + "/lib/runner/auditoria.ts")
+const a = await import(process.cwd() + "/motor/agentes/ass/auditoria.ts")
 const p = await a.selecionarAuditoria({
   escopo: process.env.AUD_ESCOPO || "",
   maxLotes: Number(process.env.AUD_LOTES || 0),

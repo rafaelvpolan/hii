@@ -485,13 +485,29 @@ Fonte de verdade da Onda 1. `scripts/renomear-brazil.mjs` consome exatamente est
 | `bin/lib/saida.ts` | `motor/mir/cli/saida.ts` | MIR |
 | `bin/lib/tela-tarefa.ts` | `motor/mir/cli/tela-tarefa.ts` | MIR |
 
-### 5.6 Fora de `.ts` — precisam de varredura manual
+### 5.6 O que reescrita de import NÃO alcança
 
-`lib/` aparece em texto nestes arquivos e **não** é pego por reescrita de import:
+Lista fechada, levantada durante a execução da Onda 1 — não é estimativa. O
+`scripts/renomear-brazil.mjs` detecta e **reporta** os dois primeiros padrões
+em vez de deixá-los quebrar em silêncio; os demais foram varridos à mão.
 
-`tsconfig.json` · `README.md` · `MODERNIZATION.md` · `scripts/setup/{rm,contract,repo,card,archive,doctor}.mjs` · `.claude/skills/{spec,new-card,verificar}/SKILL.md`
+| Padrão | Onde apareceu | Por que escapa |
+|---|---|---|
+| `import()` com template literal e cache-buster | `test/config-root.test.ts:9` | O especificador é `` `../…/config?${SUFIXO}` `` — interpolado, não é string literal |
+| Caminho montado por segmentos em `join()` | `test/refs-recusa-no-card.ts`, `test/provedor-removido.ts`, `test/daemon-arranque.ts` | `join(REPO, 'lib', 'runner', 'agent')` — não existe string única para casar |
+| Import de runtime concatenado | `.claude/skills/verificar/SKILL.md:52` | `import(process.cwd() + "/lib/runner/auditoria.ts")` — a barra inicial quebra o casamento exato |
+| Raiz de varredura de ferramenta | `tsconfig.json` (`include`), `scripts/check-no-any.mjs` (`ROOTS`) | É diretório, não módulo. Durante a Onda 1 apontam para os **dois** lados; `lib` sai no commit 1.10 |
+| Caminho como **dado** entre aspas | `motor/cdl/ali/contrato.ts` (`resolvidoPor: ['…']`) | Não é import — mas `test/environment-contract.test.ts:45` valida que o caminho existe em disco, então tem de acompanhar. O script cobre isso |
+| Prosa em documentação | `README.md`, `.claude/skills/*/SKILL.md` | Cobertos pelo passo de caminho-como-dado quando entre aspas ou crases; o resto é manual |
 
-`scripts/check-no-any.mjs` e `scripts/check-clone-limpo.mjs` varrem diretório — conferir se o caminho raiz está hardcoded.
+**Os três documentos de plano** (`ARQUITETURA-BRAZIL.md`, `WORKFLOW-EXECUCAO.md`,
+`MODERNIZATION.md`) ficam **fora** de qualquer reescrita automática: a §5 acima
+cita origem *e* destino entre crases e é a fonte do mapa — reescrevê-la
+destruiria o próprio mapa. Isso já aconteceu uma vez durante a Onda 1 e o
+commit 1.1 registra a correção.
+
+**Falso positivo conhecido do detector:** `test/contract-probe.test.ts:93` usa
+`join(r, 'node_modules', 'lib')` — é caminho de dependência, não do motor.
 
 ---
 

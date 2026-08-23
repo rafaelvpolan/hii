@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../../motor/cdl'
+import { isoNow } from '../cdl'
 
 function memDir(target: string): string {
   return join(target, '.hii', 'memory')

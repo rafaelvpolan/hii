@@ -396,7 +396,7 @@ INBOX → READY → [CLARIFY] → [SPECCED] → PLAN_APPROVED → EXECUTING → 
       → REVIEWED → CLEANED → PR_OPEN ┃ parede ┃ MERGED → DEPLOYED
 ```
 
-`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Lista completa em `lib/card/types.ts`.
+`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Lista completa em `motor/cdl/tipos.ts`.
 
 ### 1. Executar primeiro
 
@@ -521,7 +521,7 @@ cai no `return true` e é reportado como saudável sem ter sido testado.
 ## Contrato de ambiente (estado fora do clone)
 
 O motor resolve `cards/`, `config/repos.json` e `config/ia.json` relativo ao próprio `ROOT`. Para
-apontar noutro lugar, use as variáveis do contrato — `lib/runner/environment-contract.ts` é a fonte
+apontar noutro lugar, use as variáveis do contrato — `motor/cdl/ali/contrato.ts` é a fonte
 da verdade de quais existem, quem as resolve e de que **lado** vivem:
 
 | Variável | Lado | Precisa ser a mesma nos dois clones |

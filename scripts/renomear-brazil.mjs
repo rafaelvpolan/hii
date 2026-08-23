@@ -33,6 +33,9 @@ export function lerMapaDoDoc() {
     if (!m) continue
     const [, origem, destino] = m
     if (!destino) continue                      // *inalterado*
+    // Estrito de proposito: a secao 5 tambem tem tabelas de prosa cujas celulas
+    // comecam com crase. So conta linha que seja de fato um par de rename.
+    if (!/^(lib|bin)\//.test(origem) || !destino.startsWith('motor/')) continue
     if (origem.endsWith('/**')) prefixos.push([origem.slice(0, -2), destino.slice(0, -2)])
     else pares.push([origem, destino])
   }
