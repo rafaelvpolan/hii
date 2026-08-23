@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { lerAcaoExterna, instrucaoDe } from '../lib/runner/externo'
-import { planSteps } from '../lib/runner/analyze'
-import { classifySurface } from '../lib/runner/classify'
+import { lerAcaoExterna, instrucaoDe } from '../motor/osw/rta/externo'
+import { planSteps } from '../motor/osw/rta/perfil'
+import { classifySurface } from '../motor/osw/rta/superficie'
 import type { PipelineStep } from '../motor/nmy/tipos'
 
 const passo = (id: string, label: string, kind: PipelineStep['kind'], agent: string): PipelineStep => ({

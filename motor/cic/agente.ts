@@ -21,7 +21,7 @@ import { DESIGN_SYSTEM_BRIEF } from '../../lib/runner/design'
 import { clarifyAnswersPrompt } from '../../lib/runner/clarify'
 import { refPaths, resolveRefs } from '../qlb/alf/refs'
 import { markRefsRefused } from '../qlb/alf/confianca'
-import { lerAcaoExterna } from '../../lib/runner/externo'
+import { lerAcaoExterna } from '../osw/rta/externo'
 
 export interface StepResult {
   time: number

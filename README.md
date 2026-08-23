@@ -159,7 +159,7 @@ Nenhum token de IA é gasto nisso — é determinístico.
 | `hii run` | roda em **foreground**, sem daemonizar — é aqui que se depura |
 | `hii once` | processa a fila **uma vez** e sai (bom para cron) |
 
-Uma instância por estado, garantida por lock (`lib/runner/instance-lock.ts`). O lock discrimina
+Uma instância por estado, garantida por lock (`motor/osw/mtr/trava-instancia.ts`). O lock discrimina
 errno: só `EEXIST` espera; qualquer outro erro **sobe**, em vez de virar espera infinita.
 
 ### Acompanhamento
@@ -406,7 +406,7 @@ URL aprovada: valida-se a **intenção** cedo, quando errar é barato.
 ### 2. A URL
 
 O app sobe no worktree e o card recebe `url: http://localhost:<porta>`. Quem decide se há URL é
-`lib/runner/classify.ts`, determinístico:
+`motor/osw/rta/superficie.ts`, determinístico:
 
 | Superfície | Quando | URL? |
 |---|---|---|
@@ -466,7 +466,7 @@ Passos configuráveis em `config/pipeline.json` (override por alvo em `<alvo>/.h
 | review | crivo | — | `REVIEWED` |
 | limpeza | pura | — | `CLEANED` |
 
-**Quais** rodam sai de `lib/runner/analyze.ts` (determinístico, zero token), na ordem em que
+**Quais** rodam sai de `motor/osw/rta/perfil.ts` (determinístico, zero token), na ordem em que
 `profileOf` decide — o primeiro que casa ganha:
 
 | Perfil | Quando | O que roda |

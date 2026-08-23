@@ -7,7 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-queue-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { reconcileStranded, pending } = await import('../lib/runner/queue-state')
+const { reconcileStranded, pending } = await import('../motor/osw/mtr/estado-da-fila')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

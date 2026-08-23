@@ -7,7 +7,7 @@ import { patchCard } from '../../cdl/store'
 import { runGit, withGitLock } from '../git'
 import { runStep } from '../../cic/agente'
 import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from '../../cic/crv/url-viva'
-import { isNonVisual } from '../../../lib/runner/classify'
+import { isNonVisual } from '../../osw/rta/superficie'
 import { addMetric } from '../../euc/metricas-de-fecho'
 
 export interface SyncResult {

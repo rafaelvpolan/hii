@@ -8,7 +8,7 @@ const CARDS_QUEBRADO = join(BASE, 'cards-e-um-arquivo')
 writeFileSync(CARDS_QUEBRADO, 'isto e um arquivo, nao um diretorio de cards\n')
 process.env.HICODE_CARDS_DIR = CARDS_QUEBRADO
 
-const { tick } = await import('../lib/runner/queue')
+const { tick } = await import('../motor/osw/mtr/fila')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

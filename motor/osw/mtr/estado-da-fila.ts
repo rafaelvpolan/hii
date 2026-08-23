@@ -1,6 +1,6 @@
-import { isoNow } from '../../motor/cdl'
-import type { Job, Fields } from '../../motor/cdl'
-import { allCards, cardsByStatus, patchCard } from '../../motor/cdl/store'
+import { isoNow } from '../../cdl'
+import type { Job, Fields } from '../../cdl'
+import { allCards, cardsByStatus, patchCard } from '../../cdl/store'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']

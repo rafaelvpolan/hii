@@ -20,7 +20,7 @@ symlinkSync(join(REPO, 'scripts', 'runner-daemon.sh'), SCRIPT)
 writeFileSync(SEM_PROC, readFileSync(join(REPO, 'scripts', 'runner-daemon.sh'), 'utf8').replaceAll('/proc', '/nao-existe-proc'))
 
 const MOTOR = [
-  `import { holdInstanceLock, refusalMessage } from ${JSON.stringify(join(REPO, 'lib', 'runner', 'instance-lock'))}`,
+  `import { holdInstanceLock, refusalMessage } from ${JSON.stringify(join(REPO, 'motor', 'osw', 'mtr', 'trava-instancia'))}`,
   'const trava = holdInstanceLock()',
   'if (!trava.acquired) {',
   '  process.stderr.write(refusalMessage(trava.holder))',

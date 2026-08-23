@@ -1,8 +1,8 @@
 import { linkSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { alive, argvDoProcesso, eOMotor } from '../core/daemon'
-import { ROOT } from '../../motor/cdl/ali/config'
-import { ENV_RUNNER_LOCK } from '../../motor/cdl/ali/contrato'
+import { alive, argvDoProcesso, eOMotor } from './daemon'
+import { ROOT } from '../../cdl/ali/config'
+import { ENV_RUNNER_LOCK } from '../../cdl/ali/contrato'
 
 const STEAL_ATTEMPTS = 3
 

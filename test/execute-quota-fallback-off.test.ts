@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ImplementResult } from '../motor/cdl'
-import type { ExecuteDeps } from '../lib/runner/execute'
+import type { ExecuteDeps } from '../motor/osw/executar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-quotalock-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -40,7 +40,7 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0', usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 } }
 
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { handleExecute } = await import('../lib/runner/execute')
+const { handleExecute } = await import('../motor/osw/executar')
 const { quotaFallbackLigado } = await import('../motor/cdl/ali/config')
 
 const agente: ExecuteDeps = {

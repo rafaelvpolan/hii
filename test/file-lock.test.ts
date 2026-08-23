@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, rmSync, existsSync, closeSync, openSync, utimesSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { withFileLock } from '../lib/runner/file-lock'
+import { withFileLock } from '../motor/osw/mtr/trava-arquivo'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-filelock-'))
 

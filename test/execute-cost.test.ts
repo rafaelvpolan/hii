@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ImplementResult } from '../motor/cdl'
-import type { ExecuteDeps } from '../lib/runner/execute'
+import type { ExecuteDeps } from '../motor/osw/executar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-execcost-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -45,7 +45,7 @@ const IMPLEMENT_RESULT: ImplementResult = {
 }
 
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { handleExecute } = await import('../lib/runner/execute')
+const { handleExecute } = await import('../motor/osw/executar')
 
 const agente: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => Promise.resolve(IMPLEMENT_RESULT),

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { GateResult } from '../motor/cic/crv/gate'
 import type { ImplementResult } from '../motor/cdl'
-import type { ExecuteDeps } from '../lib/runner/execute'
+import type { ExecuteDeps } from '../motor/osw/executar'
 import type { FinishDeps } from '../motor/qlb/ctr/fechar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishcost-'))
@@ -46,7 +46,7 @@ const SUCESSO: ImplementResult = { ok: true, resultText: 'mudou algo', fullText:
 const GATE_BLOCKED: GateResult = { ok: true, verdict: 'BLOCKED', reason: 'defeito real encontrado pelo crivo', questions: [], cost: 0.05, costMeasured: true, tokens: 500 }
 
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
-const { handleExecute } = await import('../lib/runner/execute')
+const { handleExecute } = await import('../motor/osw/executar')
 const { handleFinish } = await import('../motor/qlb/ctr/fechar')
 
 const agenteExecute: ExecuteDeps = {

@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { planSteps } from '../lib/runner/analyze'
-import type { TaskInput } from '../lib/runner/analyze'
+import { planSteps } from '../motor/osw/rta/perfil'
+import type { TaskInput } from '../motor/osw/rta/perfil'
 import { DEFAULT_STEPS } from '../motor/nmy/config'
 
 function ids(task: TaskInput): string[] {

@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ImplementResult, Run } from '../motor/cdl'
-import type { ExecuteDeps } from '../lib/runner/execute'
+import type { ExecuteDeps } from '../motor/osw/executar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telemfalha-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -39,7 +39,7 @@ process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
-const { handleExecute } = await import('../lib/runner/execute')
+const { handleExecute } = await import('../motor/osw/executar')
 const { classifyFailure } = await import('../motor/cic/rpr/classe-de-falha')
 const { readFailureAttempts } = await import('../motor/cic/rpr/tentativas')
 const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../motor/euc/registros')

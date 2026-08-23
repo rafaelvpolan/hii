@@ -3,14 +3,14 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Card, ImplementResult } from '../motor/cdl'
-import type { ExecuteDeps } from '../lib/runner/execute'
+import type { ExecuteDeps } from '../motor/osw/executar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hii-conserto-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
 
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { consertarUmaVez } = await import('../lib/runner/execute')
+const { consertarUmaVez } = await import('../motor/osw/executar')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

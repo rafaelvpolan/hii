@@ -1,4 +1,4 @@
-import type { PipelineStep } from '../../motor/nmy/tipos'
+import type { PipelineStep } from '../../nmy/tipos'
 import { lerAcaoExterna } from './externo'
 
 export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'externo'

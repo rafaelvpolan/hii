@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { repoStatus } from '../../cdl/repos'
 import { readContract } from '../../cdl/bss/armazenar'
-import { daemonStatus } from '../../../lib/core/daemon'
+import { daemonStatus } from '../../osw/mtr/daemon'
 import { providerNameFor } from '../../tmd/registro'
 
 export type Severity = 'ok' | 'aviso' | 'erro'
