@@ -23,6 +23,7 @@ Estas regras valem em **todas** as ondas. Violar qualquer uma reprova a onda, me
 | R5 | **Nada vira "modo" novo** | Sprawl de modos é o modo de falha nº 1 documentado (MODERNIZATION Parte III, Princípio 1) |
 | R6 | **Ordem é dependência, não preferência.** Onda N só começa com o gate de N-1 fechado | As dependências abaixo são reais, não estéticas |
 | R7 | **Onda que estourar o escopo para e vira duas.** Nunca alarga a onda em andamento | Mesma disciplina do repair-loop: teto, não loop aberto |
+| R8 | **Rename de símbolo (`ARQUITETURA-BRAZIL.md` §6) anda junto com a onda que já mexe naquele arquivo**, nunca sozinho | A Onda 1 renomeou arquivos, não símbolos. Fazer os símbolos numa onda própria seria um segundo diff cego pelo repositório inteiro; fazê-los onde a feature já está tocando o código é revisável |
 
 ### Gate de saída padrão
 
@@ -42,7 +43,8 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 |---|---|---|---|---|
 | **0** | Rede de segurança | — | — | Não |
 | **1** | Rename estrutural BRAZIL | — | todos | Não (mecânico) |
-| **2** | Fundação plugável | 1, 24, §3.7 | TMD, NMY | Pouco |
+| **2** | Fundação plugável | 1 (parcial), 24, §3.7 | TMD, NMY | Pouco |
+| **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco |
 | **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim |
 | **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim |
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim |
@@ -183,6 +185,49 @@ bun test ./test/topologia.test.ts           # transição fora da topologia é r
 ```
 
 **Reprova se:** `topologia.json` divergir das transições que o `OSW` realmente executa. O teste compara os dois — o arquivo é a foto do motor, não uma intenção.
+
+---
+
+## ONDA 2b — Descritor completo do harness (TMD)
+
+**Por que existe.** A Onda 2 estourou o escopo e virou duas, aplicando a R7. A
+terceira bala do item 1 — *`HarnessId` como string registrável* — não é uma
+mudança de tipo: exige tirar de tabelas centrais e cadeias `if (nome === …)`
+tudo que ainda é conhecimento **sobre** cada harness. Levantamento real feito
+durante a Onda 2:
+
+| Onde | O quê |
+|---|---|
+| `motor/tmd/modos.ts` | `CATALOGO: Record<HarnessId, CatalogoDeModo>` |
+| `motor/tmd/map/comandos.ts` | `CORES_DE_MARCA: Record<HarnessId, Rgb>` |
+| `motor/tmd/disponibilidade.ts` | `BINARIO`, `COMANDO_DE_LOGIN`, e `if (nome === …)` na mensagem de instalação |
+| `motor/euc/tsr/planos.ts` | `COM_LEITOR_DE_PLANO` + `if (nome === …)` para leitor de plano e autenticação |
+| `motor/euc/rdr/doctor.ts` | `n !== 'ollama'`, `n === 'claude'` |
+| `motor/cdl/ali/ambiente.ts` | `SEMPRE = ['claude', 'codex', 'ollama', …]` |
+| `motor/cdl/ali/snapshot.ts` | `nome === 'ollama'` |
+
+Enquanto isso não migrar para o descritor do harness, abrir `HarnessId` só
+trocaria erro de compilação por erro de runtime — pior que o estado atual.
+
+### Escopo
+
+| Entrega | Arquivo |
+|---|---|
+| `Harness` ganha `modos`, `cor`, `binario`, `comandoDeLogin`, `leitorDePlano`, `autenticado()` | `motor/tmd/tipos.ts` |
+| Cada harness passa a declarar os seus | `motor/tmd/harness/*.ts` |
+| Tabelas centrais e cadeias `if (nome === …)` somem | os 7 arquivos acima |
+| `HarnessId = string`; `PROVIDERS` vira `Map` | `motor/tmd/{tipos,registro}.ts` |
+
+### Gate de saída
+
+```bash
+bun run test
+bun test ./test/harness-novo.test.ts   # harness ficticio registrado no Map funciona ponta a ponta
+# INVARIANTE da onda: nome de harness so aparece dentro de tmd/harness/
+grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v '^motor/tmd/harness/'
+```
+
+**Reprova se:** sobrar nome de harness fora de `motor/tmd/harness/`.
 
 ---
 
@@ -488,7 +533,7 @@ bun test ./test/qlb-limites.test.ts
 
 | # | Item | Onda | Dono |
 |---|---|---|---|
-| 1 | Harness interface formal | 2 | TMD |
+| 1 | Harness interface formal | 2 + 2b | TMD |
 | 2 | Guarda de risco sobre o diff | 5 | LEI |
 | 3 | `search-first` em `common/` | 6 | CSD |
 | 4 | Confirmação humana do plano | 7 | CTR |
