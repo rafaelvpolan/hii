@@ -2,9 +2,10 @@ import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../cdl'
 import type { Fields } from '../cdl'
-import { cardsDir } from '../cdl/ali/config'
-import { createCard, findCardFile, readCard, updateCard } from '../cdl/store'
+import { cardsDir, rigorEstrito } from '../cdl/ali/config'
+import { createCard, findCardFile, patchCard, readCard, updateCard } from '../cdl/store'
 import { readClarify, writeClarify } from '../agentes/clr/clarificar'
+import { conferirParedeDoPlano } from '../qlb/ctr/aprovar-plano'
 
 export interface NewCardInput {
   title: string
@@ -60,9 +61,12 @@ export function resumeFrom(id: string, step: string): ActionResult {
 
 export const PRE_EXECUCAO = ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED', 'PAUSED']
 
+export type MotivoDeRecusa = 'nao-encontrado' | 'estado' | 'parede'
+
 export interface GuardedResult {
   ok: boolean
   reason: string
+  motivo?: MotivoDeRecusa
   card?: Fields
 }
 
@@ -99,13 +103,18 @@ export function canApprovePlan(status: string): boolean {
 
 export function approvePlan(id: string): GuardedResult {
   const card = readCard(id)
-  if (!card) return { ok: false, reason: `card #${id} nao encontrado` }
+  if (!card) return { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
   const status = card.fm.status ?? 'INBOX'
   if (!canApprovePlan(status)) {
-    return { ok: false, reason: `#${id} esta em ${status} — o plano ja foi executado; aprovar aqui descartaria o trabalho e pagaria de novo` }
+    return { ok: false, reason: `#${id} esta em ${status} — o plano ja foi executado; aprovar aqui descartaria o trabalho e pagaria de novo`, motivo: 'estado' }
+  }
+  const parede = conferirParedeDoPlano(id)
+  patchCard(id, { matriz_entendimento: parede.satisfeito ? 'ok' : 'incompleta' }, `${isoNow()} CTR (Fase 4): ${parede.motivo}`)
+  if (!parede.satisfeito && rigorEstrito()) {
+    return { ok: false, reason: `#${id} nao pode ser aprovado: ${parede.motivo}`, motivo: 'parede' }
   }
   const r = transition(id, 'EXECUTING', 'plano aprovado')
-  return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado` }
+  return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
 }
 
 export function halt(id: string, reason: string): ActionResult {

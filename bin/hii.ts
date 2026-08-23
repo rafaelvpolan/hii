@@ -12,6 +12,7 @@ import { linhasDoDisco } from '../motor/mir/render/disco'
 import { snapshotDoMotor, revisaoDoEstado } from '../motor/mir/estado-json'
 import { executarAcao, criarTarefa } from '../motor/mir/comandos-de-tarefa'
 import type { AcaoDeTarefa } from '../motor/mir/comandos-de-tarefa'
+import { prepararMatriz } from '../motor/qlb/ctr/aprovar-plano'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -78,16 +79,36 @@ function tarefa(acao: AcaoDeTarefa, extra: string[]): number {
   return r.ok ? 0 : 1
 }
 
-function tarefaNova(extra: string[]): number {
+async function matriz(extra: string[]): Promise<number> {
+  const id = extra.filter(a => !a.startsWith('--'))[0] ?? ''
+  if (!id) {
+    process.stderr.write('uso: hii matriz <id>\n')
+    return 2
+  }
+  const r = await prepararMatriz(id)
+  if (!r.ok) {
+    process.stderr.write(`${r.relato}\n`)
+    return 1
+  }
+  process.stdout.write(`${r.caminho}\n${r.relato}\n`)
+  return r.parede.satisfeito ? 0 : 1
+}
+
+async function tarefaNova(extra: string[]): Promise<number> {
   const repo = valorDaFlag(extra, '--repo')
   const texto = extra.filter(a => !a.startsWith('--') && a !== repo).join(' ')
   const r = criarTarefa(texto, repo)
-  if (extra.includes('--json')) process.stdout.write(`${JSON.stringify(r)}\n`)
-  else process.stdout.write(`${r.mensagem}\n`)
+  const paredeSegurou = r.motivo === 'parede'
+  const preparada = paredeSegurou ? await prepararMatriz(r.id) : null
+  if (extra.includes('--json')) process.stdout.write(`${JSON.stringify({ ...r, matriz: preparada?.caminho ?? '' })}\n`)
+  else {
+    process.stdout.write(`${r.mensagem}\n`)
+    if (preparada?.ok) process.stdout.write(`responda a matriz e aprove: ${preparada.caminho}\n`)
+  }
   return r.ok ? 0 : 1
 }
 
-function comandoDeTarefa(extra: string[]): number {
+async function comandoDeTarefa(extra: string[]): Promise<number> {
   const sub = extra[0] ?? ''
   if (sub === 'nova' || sub === 'new') return tarefaNova(extra.slice(1))
   process.stderr.write('uso: hii tarefa nova "<o que mudar>" --repo <owner/nome> [--json]\n')
@@ -122,6 +143,7 @@ function usage(): void {
     '',
     'Portas humanas do card:',
     '  tarefa nova "<t>" --repo <owner/nome> [--json]   cria a tarefa e ja enfileira',
+    '  matriz <id>              cria/confere a matriz de entendimento do card (Pilar 1)',
     '  approve <id>             aprova a url entregue (URL -> URL_OK)',
     '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
     '  reject <id> [o que]      rejeita; com motivo, pede correcao',
@@ -224,6 +246,8 @@ async function main(): Promise<number> {
     case 'repo':
     case 'project':
       return script('repo', args.slice(1))
+    case 'matriz':
+      return matriz(args.slice(1))
     case 'approve':
     case 'aprovar':
       return tarefa(args.includes('--plan') || args.includes('--plano') ? 'aprovar-plano' : 'aprovar-url', args.slice(1))

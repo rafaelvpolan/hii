@@ -1,5 +1,6 @@
 import { readCard, listRepos, repoRegistered } from '../cdl/store'
 import * as core from './acoes'
+import type { MotivoDeRecusa } from './acoes'
 import { responder } from './responder'
 
 export type AcaoDeTarefa = 'aprovar-url' | 'aprovar-plano' | 'recusar' | 'parar' | 'responder' | 'criar'
@@ -10,6 +11,7 @@ export interface ResultadoDeAcao {
   id: string
   status: string
   mensagem: string
+  motivo?: MotivoDeRecusa
 }
 
 function statusDe(id: string): string {
@@ -59,7 +61,8 @@ export function criarTarefa(titulo: string, repo: string): ResultadoDeAcao {
   }
   const id = core.submit({ title: texto, repo })
   const r = core.approvePlan(id)
-  return resultado(r.ok, 'criar', id, r.ok ? `#${id} criado e na fila` : `#${id} criado — ${r.reason}`)
+  const criado = resultado(r.ok, 'criar', id, r.ok ? `#${id} criado e na fila` : `#${id} criado — ${r.reason}`)
+  return r.ok ? criado : { ...criado, motivo: r.motivo }
 }
 
 export function executarAcao(acao: AcaoDeTarefa, id: string, texto = ''): ResultadoDeAcao {

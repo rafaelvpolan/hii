@@ -49,7 +49,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
 | **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | ✅ feita |
-| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | — |
+| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ 20 e 4 feitos · 16 adiado |
 | **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | — |
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | — |
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | — |
@@ -425,6 +425,46 @@ O checklist de stack (item 7) só entra no papel `seguranca` — um checklist de
 | 4 | Fase 4: humano aprova ou edita o plano antes da implementação começar | `motor/qlb/ctr/aprovar-plano.ts` |
 | 16 | `/orquestrador-{jogos,dev-web,android,devops}` — **atalhos de intake**, não orquestradores | `motor/mir/comandos-manuais.ts` |
 | 16 | `/layout` como método padrão de entrada na Fase 3 | `motor/mir/comandos-manuais.ts` |
+
+### Estado
+
+**Item 20 — feito.** `motor/nmy/luc/matriz-entendimento.ts` + 24 testes em
+`test/nmy/luc-matriz-entendimento.test.ts`. Suíte 1907 → 1931, zero falha.
+A escrita do template passa pela chave de idempotência do item 25
+(`<card>:luc:matriz_criada`), então reexecutar o card nunca sobrescreve o que o
+humano respondeu, e falha real de disco propaga em vez de virar efeito
+registrado que não aconteceu.
+
+Três rodadas de revisão adversarial acharam bypass da guarda anti-vacuidade e
+todas estão fechadas por teste: denylist finita (`0`, `N/D`, zero-width),
+igualdade exata de linha (`TODO!`, `wip wip`), e fragmentação por marca
+combinante invisível (`todًo`). A regra final é positiva — pelo menos uma
+palavra de 3+ letras que não seja marcador de adiamento nem eco do texto que o
+próprio motor escreveu. O que ela **não** faz está registrado em `PENDENCIAS.md`:
+não julga semântica, porque isso exigiria um modelo dentro do gate.
+
+**Item 4 — feito.** `motor/qlb/ctr/aprovar-plano.ts` + 14 testes em
+`test/qlb/aprovar-plano.test.ts`. `approvePlan` (`motor/mir/acoes.ts:101`) passa
+a consultar a parede **antes** de transicionar, grava
+`matriz_entendimento: ok|incompleta` no card sempre, e só **recusa** com
+`HICODE_RIGOR_ESTRITO=1` — mesma política dos itens 5 e 22. Recusar deixa o card
+em `READY`, não o move.
+
+Porta pelo humano: `hii matriz <id>` cria o template (idempotente, nunca
+sobrescreve resposta) e sai com código 1 enquanto a matriz estiver incompleta.
+`hii tarefa nova` já cria o template quando a parede segura o card, para o
+humano ter o arquivo na mão em vez de só a mensagem de recusa.
+
+Verificado de ponta a ponta com o binário real: com rigor ligado, o card nasce
+em `READY`, o template aparece em `<cards>/matrizes/`, `approve --plan` recusa
+citando a matriz, e depois de respondida a aprovação passa.
+
+**Item 16 — adiado, com motivo.** Os `skillPacksPadrao` de
+`/orquestrador-{android,dev-web,devops}` apontam para os packs `mobile`,
+`backend-web`, `frontend-web` e `devops-deploy`, que **não existem** hoje: o
+acervo da Onda 6 entregou só `common/` e `games-multiplatform/`. Ligar os
+comandos agora criaria atalho de intake que pré-carrega vazio. Depende da parte
+do item 15 que ficou de fora da Onda 6.
 
 ### Pilar 1, traduzido
 
