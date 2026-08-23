@@ -8,6 +8,8 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 Nada em aberto.
 
-As duas últimas saíram daqui porque não eram trabalho pendente, e sim conhecimento que pertence ao
-README: a ressalva de que só o clipboard do WSL foi verificado em execução real está junto do
-`/ref clipboard`, e a decisão de manter polling em vez de push está junto do contrato de máquina.
+As três últimas saíram daqui resolvidas: o destino dos commits de
+`fix/auditoria-altas` (decidido: trabalho linear, um PR único — aberto em
+`rafaelvpolan/hii#5`), o rename dos arquivos de teste (feito na Onda 1b) e o
+teste de aceitação da Onda 3 (executado contra `hicode-site` com `gh` real, e
+achou o defeito do SIGTERM).

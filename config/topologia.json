@@ -1,0 +1,49 @@
+{
+  "versao": 1,
+  "sobre": "Foto inspecionavel da topologia de estados do card. DADO, nunca motor: nada aqui executa nada. Serve para auditar deriva — transicao nova no codigo sem linha aqui reprova em test/topologia.test.ts. Ver ARQUITETURA-BRAZIL.md, codigo NMY, e MODERNIZATION.md Parte I secao 3.9 (item 24).",
+  "nos": [
+    "INBOX", "READY", "CLARIFY", "SPECCED", "PLAN_APPROVED", "EXECUTING", "PAUSED",
+    "WAITING", "EXECUTED", "URL", "CORRECTING", "URL_OK", "REFINED", "TESTS_GREEN",
+    "SEC_CLEARED", "REVIEWED", "CLEANED", "PR_OPEN", "MERGED", "DEPLOYED", "HALTED"
+  ],
+  "transicoes": [
+    ["INBOX", "READY"],
+    ["READY", "EXECUTING"],
+    ["READY", "CLARIFY"],
+    ["CLARIFY", "EXECUTING"],
+    ["CLARIFY", "CORRECTING"],
+    ["SPECCED", "EXECUTING"],
+    ["PLAN_APPROVED", "EXECUTING"],
+    ["PAUSED", "EXECUTING"],
+    ["EXECUTING", "CLARIFY"],
+    ["EXECUTING", "SPECCED"],
+    ["EXECUTING", "URL"],
+    ["EXECUTING", "EXECUTED"],
+    ["EXECUTING", "WAITING"],
+    ["EXECUTING", "PAUSED"],
+    ["EXECUTED", "EXECUTING"],
+    ["EXECUTED", "URL_OK"],
+    ["WAITING", "EXECUTING"],
+    ["URL", "URL_OK"],
+    ["URL", "EXECUTING"],
+    ["URL", "CORRECTING"],
+    ["CORRECTING", "URL"],
+    ["CORRECTING", "EXECUTING"],
+    ["URL_OK", "REFINED"],
+    ["REFINED", "TESTS_GREEN"],
+    ["TESTS_GREEN", "SEC_CLEARED"],
+    ["SEC_CLEARED", "REVIEWED"],
+    ["REVIEWED", "CLEANED"],
+    ["CLEANED", "PR_OPEN"],
+    ["URL_OK", "PR_OPEN"],
+    ["PR_OPEN", "MERGED"],
+    ["MERGED", "DEPLOYED"]
+  ],
+  "sempreAlcancavel": ["HALTED", "PAUSED"],
+  "checkpointsHumanos": ["URL", "PR_OPEN"],
+  "semEscritaNoMotor": {
+    "sobre": "Estados declarados em STATUSES que nenhum arquivo de motor/ escreve hoje. Ficam listados de proposito: deriva declarada e deriva visivel.",
+    "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED"],
+    "nota": "EXECUTED e LIDO por motor/osw/mtr/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel."
+  }
+}

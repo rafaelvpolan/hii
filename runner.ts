@@ -1,13 +1,15 @@
-import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './lib/runner/config'
-import { pending, reconcileStranded, runJob, tick } from './lib/runner/queue'
-import { renderProgress } from './lib/runner/progress'
-import { initHicodeHome } from './lib/runner/hicode-home'
-import { runSync } from './lib/tasks/sync'
-import { taskSyncName } from './lib/tasks/registry'
-import { reportTickFailure } from './lib/runner/health'
-import { wakeDueWaiting } from './lib/runner/waiting'
-import { holdInstanceLock, refusalMessage } from './lib/runner/instance-lock'
-import { warnProviderConfig } from './lib/ai/provider-config'
+import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './motor/cdl/ali/config'
+import { pending, reconcileStranded, runJob, tick } from './motor/osw/mtr/fila'
+import { renderProgress } from './motor/euc/rdr/progresso'
+import { initHicodeHome } from './motor/cdl/ali/home'
+import { runSync } from './motor/tmd/pnt/tarefas/sync'
+import { taskSyncName } from './motor/tmd/pnt/tarefas/registro'
+import { reportTickFailure } from './motor/euc/rdr/tick'
+import { wakeDueWaiting } from './motor/cic/rpr/espera'
+import { holdInstanceLock, refusalMessage } from './motor/osw/mtr/trava-instancia'
+import { warnProviderConfig } from './motor/tmd/config'
+import { instalarShutdownGracioso } from './motor/osw/mtr/encerramento'
+import { subirServidorDeSaude } from './motor/euc/rdr/servidor'
 
 process.on('uncaughtException', (e) => {
   reportTickFailure('excecao nao tratada', e)
@@ -46,6 +48,12 @@ if (process.argv.includes('--init')) {
       .then(() => process.exit(0))
   } else {
     process.stdout.write(`hicode runner ativo — worktrees + paralelo (max ${MAX_CONCURRENCY}, poll ${POLL_MS}ms, timeout ${RUN_TIMEOUT_MS}ms)\n`)
+    const saude = subirServidorDeSaude()
+    if (saude) process.stdout.write(`[runner] GET /health em :${saude.porta}\n`)
+    instalarShutdownGracioso({
+      log: linha => process.stdout.write(linha),
+      sair: codigo => { saude?.parar(); process.exit(codigo) },
+    })
     setInterval(tick, POLL_MS)
     tick()
   }
