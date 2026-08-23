@@ -41,6 +41,7 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../motor/osw/executar')
 const { classifyFailure } = await import('../motor/cic/rpr/classe-de-falha')
+const { harnessPorNome } = await import('../motor/tmd/registro')
 const { readFailureAttempts } = await import('../motor/cic/rpr/tentativas')
 const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../motor/euc/registros')
 const { applyFailurePolicy } = await import('../motor/cic/rpr/politica')
@@ -72,7 +73,7 @@ function cardExecutando(titulo: string): string {
 }
 
 function saidaDoProvedor(provider: 'claude' | 'codex', saidaCrua: string): ImplementResult {
-  const cls = classifyFailure(provider, { timedOut: false, detail: saidaCrua, text: '' })
+  const cls = classifyFailure(harnessPorNome(provider), { timedOut: false, detail: saidaCrua, text: '' })
   return {
     ok: false,
     reason: saidaCrua,

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { memoArquivo } from '../../tmd/eco/memo'
-import type { AiProviderName } from '../../tmd/tipos'
+import type { HarnessId } from '../../tmd/tipos'
 
 export interface JanelaDeUso {
   rotulo: string
@@ -153,17 +153,17 @@ export function planoDoKimi(): PlanoDoProvedor {
   }
 }
 
-export function planoLocal(nome: AiProviderName): PlanoDoProvedor {
+export function planoLocal(nome: HarnessId): PlanoDoProvedor {
   return { provedor: nome, plano: 'local, sem plano', detalhe: '', janelas: [], medidoEm: '', idadeHoras: -1, modelos: [] }
 }
 
-const COM_LEITOR_DE_PLANO: readonly AiProviderName[] = ['claude', 'kimi', 'ollama']
+const COM_LEITOR_DE_PLANO: readonly HarnessId[] = ['claude', 'kimi', 'ollama']
 
-export function temLeitorDePlano(nome: AiProviderName): boolean {
+export function temLeitorDePlano(nome: HarnessId): boolean {
   return COM_LEITOR_DE_PLANO.includes(nome)
 }
 
-export function planoDoProvedor(nome: AiProviderName, agoraMs: number = Date.now()): PlanoDoProvedor {
+export function planoDoProvedor(nome: HarnessId, agoraMs: number = Date.now()): PlanoDoProvedor {
   if (nome === 'claude') return planoDoClaude(agoraMs)
   if (nome === 'kimi') return planoDoKimi()
   if (nome === 'ollama') return planoLocal(nome)
@@ -178,7 +178,7 @@ export function codexAutenticado(): boolean {
   return existsSync(join(raizDoCodex(), 'auth.json'))
 }
 
-export function autenticadoDoProvedor(nome: AiProviderName): boolean {
+export function autenticadoDoProvedor(nome: HarnessId): boolean {
   if (nome === 'claude') return claudeAutenticado()
   if (nome === 'kimi') return kimiAutenticado()
   if (nome === 'codex') return codexAutenticado()

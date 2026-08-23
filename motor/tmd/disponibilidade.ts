@@ -4,16 +4,16 @@ import { providerNames, providerNameFor, modelFor, agentRoles } from './registro
 import { preferenciaDoPapel } from './preferencias'
 import { autenticadoDoProvedor } from '../euc/tsr/planos'
 import { janelasDoProvedor } from '../euc/tsr/janelas'
-import type { AgentRole, AiProviderName } from './tipos'
+import type { AgentRole, HarnessId } from './tipos'
 
-const BINARIO: Partial<Record<AiProviderName, string>> = {
+const BINARIO: Partial<Record<HarnessId, string>> = {
   claude: 'claude',
   codex: 'codex',
   kimi: 'kimi',
   ollama: 'ollama',
 }
 
-export const COMANDO_DE_LOGIN: Partial<Record<AiProviderName, string[]>> = {
+export const COMANDO_DE_LOGIN: Partial<Record<HarnessId, string[]>> = {
   claude: ['claude', '/login'],
   codex: ['codex', 'login'],
   kimi: ['kimi', 'login'],
@@ -22,7 +22,7 @@ export const COMANDO_DE_LOGIN: Partial<Record<AiProviderName, string[]>> = {
 export type Situacao = 'disponivel' | 'ausente' | 'precisa-servidor' | 'nao-autenticado' | 'cota-esgotada'
 
 export interface ProvedorDisponivel {
-  nome: AiProviderName
+  nome: HarnessId
   situacao: Situacao
   instalado: boolean
   comoObter: string
@@ -35,23 +35,23 @@ function noPath(binario: string): boolean {
   return caminhos.some(dir => existsSync(join(dir, binario)))
 }
 
-function cotaEsgotadaEm(nome: AiProviderName, agoraMs: number): boolean {
+function cotaEsgotadaEm(nome: HarnessId, agoraMs: number): boolean {
   return janelasDoProvedor(nome, agoraMs).some(j =>
     j.limiteConfiavel && j.percentualDoLimite !== null && j.percentualDoLimite >= 100 && j.restamMs > 0)
 }
 
-function situacaoDoInstalado(nome: AiProviderName, agoraMs: number): Situacao {
+function situacaoDoInstalado(nome: HarnessId, agoraMs: number): Situacao {
   if (!autenticadoDoProvedor(nome)) return 'nao-autenticado'
   if (cotaEsgotadaEm(nome, agoraMs)) return 'cota-esgotada'
   return 'disponivel'
 }
 
-function comandoDeLoginTexto(nome: AiProviderName): string {
+function comandoDeLoginTexto(nome: HarnessId): string {
   const partes = COMANDO_DE_LOGIN[nome]
   return partes ? partes.join(' ') : ''
 }
 
-function comoObter(nome: AiProviderName, situacao: Situacao): string {
+function comoObter(nome: HarnessId, situacao: Situacao): string {
   if (situacao === 'nao-autenticado') {
     const login = comandoDeLoginTexto(nome)
     return login ? `nao autenticado — rode \`${login}\` (ou /login aqui no hii)` : 'nao autenticado'

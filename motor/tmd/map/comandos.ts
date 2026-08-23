@@ -7,7 +7,7 @@ import type { Rgb } from '../../mir/tui/paleta'
 import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cdl/ali/contrato'
 import { raizDoCodex } from '../../euc/tsr/planos'
 import { providerNameFor } from '../registro'
-import type { AiProviderName } from '../tipos'
+import type { HarnessId } from '../tipos'
 
 export interface ComandoDaIa {
   comando: string
@@ -15,20 +15,20 @@ export interface ComandoDaIa {
 }
 
 export interface ComandosDaIa {
-  provedor: AiProviderName
+  provedor: HarnessId
   comandos: ComandoDaIa[]
 }
 
 const TTL_MS = 30_000
 
-const CORES_DE_MARCA: Record<AiProviderName, Rgb> = {
+const CORES_DE_MARCA: Record<HarnessId, Rgb> = {
   claude: { r: 218, g: 119, b: 86 },
   codex: { r: 16, g: 163, b: 127 },
   kimi: { r: 91, g: 141, b: 239 },
   ollama: { r: 148, g: 163, b: 184 },
 }
 
-export function corDaIa(nome: AiProviderName): Rgb {
+export function corDaIa(nome: HarnessId): Rgb {
   return CORES_DE_MARCA[nome]
 }
 
@@ -99,7 +99,7 @@ function raizDoKimi(): string {
 
 type Fonte = (repoPath: string) => ComandoDaIa[]
 
-const FONTES: Partial<Record<AiProviderName, Fonte[]>> = {
+const FONTES: Partial<Record<HarnessId, Fonte[]>> = {
   claude: [
     () => comandosDeArquivos(join(raizDoClaude(), 'commands')),
     repoPath => repoPath ? comandosDeArquivos(join(repoPath, '.claude', 'commands')) : [],
@@ -115,7 +115,7 @@ const FONTES: Partial<Record<AiProviderName, Fonte[]>> = {
   ],
 }
 
-function descobrirComandos(provedor: AiProviderName, repoPath: string): ComandoDaIa[] {
+function descobrirComandos(provedor: HarnessId, repoPath: string): ComandoDaIa[] {
   const vistos = new Set<string>()
   const out: ComandoDaIa[] = []
   for (const fonte of FONTES[provedor] ?? []) {
@@ -130,7 +130,7 @@ function descobrirComandos(provedor: AiProviderName, repoPath: string): ComandoD
 
 const memorizadoPorChave = new Map<string, () => ComandoDaIa[]>()
 
-function memorizadoDe(provedor: AiProviderName, repoPath: string): () => ComandoDaIa[] {
+function memorizadoDe(provedor: HarnessId, repoPath: string): () => ComandoDaIa[] {
   const chave = `${provedor}::${repoPath}`
   const existente = memorizadoPorChave.get(chave)
   if (existente) return existente

@@ -3,7 +3,8 @@ import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN } from '../../euc/tsr/custo'
 import { modoResolvido } from '../modos'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName, ProviderLimits } from '../tipos'
+import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { alcancavelPorHttp } from '../sonda'
 
 interface KimiStreamLine {
   role?: string
@@ -23,12 +24,25 @@ interface KimiStreamRead {
 
 const OUTPUT_FORMAT = 'stream-json'
 
-export const KIMI_LIMITS: ProviderLimits = {
+// Endpoint sondado pelo healthCheck. Sobrescrevivel porque o Kimi Code tem host
+// diferente por regiao — o motor nao adivinha qual e o seu.
+export function urlDoKimi(): string {
+  return process.env.HICODE_KIMI_URL || 'https://api.moonshot.ai'
+}
+
+export const KIMI_CAPACIDADES: HarnessCapabilities = {
   restrictsTools: false,
-  isolatesReadonly: false,
+  isolatesReadonly: false,   // por isso recusaPorLimite barra papel de verificacao nele
   acceptsEffort: false,
   reportsCostUsd: false,
   reportsTokens: false,
+  mcp: false,
+}
+
+export const KIMI_SINAIS: SinaisDoHarness = {
+  terminal: [{ pattern: /kimi login|device.?code|not authenticated/i, reason: 'kimi sem autenticacao (rode: kimi login)' }],
+  quota: [],
+  transient: [],
 }
 
 function modoArgv(modo: string | undefined): string[] {
@@ -91,12 +105,18 @@ function gravarLiveLog(caminho: string, stdout: string): void {
   if (linhas.length) appendFileSync(caminho, linhas.join('\n') + '\n')
 }
 
-export class KimiProvider implements AiProvider {
-  readonly name: AiProviderName = 'kimi'
+export class KimiProvider implements Harness {
+  readonly name: HarnessId = 'kimi'
   readonly supportsAgents = false
   readonly supportsVision = false
   readonly agentic = true
-  readonly limits: ProviderLimits = KIMI_LIMITS
+
+  capabilities(): HarnessCapabilities { return KIMI_CAPACIDADES }
+  // Antes isto caia no `return true` implicito de probeProviderHealth: kimi nao
+  // tinha entrada na tabela de URLs, e "sem entrada" valia como "esta de pe".
+  // Item 3.7 da Parte I do MODERNIZATION.md.
+  healthCheck(): Promise<boolean> { return alcancavelPorHttp(urlDoKimi()) }
+  sinaisDeFalha(): SinaisDoHarness { return KIMI_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const { err, stdout, stderr } = await run('kimi', kimiArgv(req), { cwd: req.cwd, timeout: req.timeoutMs })

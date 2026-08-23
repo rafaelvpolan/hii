@@ -2,7 +2,7 @@ import { isoAt, isoNow } from '../../cdl'
 import type { Fields } from '../../cdl'
 import { maxWaitingAttempts } from '../../cdl/ali/config'
 import { cardsByStatus, patchCard, patchCardWith } from '../../cdl/store'
-import { probeProviderHealth } from '../../tmd/sonda'
+import { probeProviderHealth } from '../../tmd/registro'
 import { backoffMsFor } from './politica'
 
 function isDue(waitUntil: string): boolean {

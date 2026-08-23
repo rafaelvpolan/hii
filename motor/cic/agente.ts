@@ -7,7 +7,7 @@ import { cardsDir, ROOT, RUN_TIMEOUT_MS, PROJECT_MEMORY } from '../cdl/ali/confi
 import { isProviderName, modelFor, providerFor, effortFor, modoFor } from '../tmd/registro'
 import { sumTokens } from '../tmd/uso'
 import { classifyFailure } from './rpr/classe-de-falha'
-import type { AiProvider } from '../tmd/tipos'
+import type { Harness } from '../tmd/tipos'
 import { conectorExterno, navegacaoSemantica } from '../tmd/pnt/mcp'
 import { agentesNexusPor } from '../agentes/registro'
 import type { AgenteInjetado } from '../agentes/registro'
@@ -56,7 +56,7 @@ function roteamentoImplement(nomesInjetados: readonly string[]): string {
     .join('; ')
 }
 
-function agentesInjetaveis(provider: AiProvider, nomes: readonly string[], ferramentasExtra: readonly string[]): Record<string, AgenteInjetado> {
+function agentesInjetaveis(provider: Harness, nomes: readonly string[], ferramentasExtra: readonly string[]): Record<string, AgenteInjetado> {
   return provider.supportsAgents ? agentesNexusPor(nomes, ferramentasExtra) : {}
 }
 
@@ -167,7 +167,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     const reason = res.isError
       ? `${provider.name} is_error: ${firstLine(res.text, 140)}`
       : `${provider.name} ${res.timedOut ? 'timeout' : 'falhou: ' + res.detail}`
-    const cls = classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text })
+    const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
     return { ok: false, reason, cost, costMeasured: res.costMeasured, usage: res.usage, timedOut: res.timedOut, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name, model }
   }
   return { ok: true, resultText: firstLine(res.text, 140), fullText: String(res.text || '').slice(0, 8000), cost, costMeasured: res.costMeasured, usage: res.usage, provider: provider.name, model }
@@ -242,7 +242,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const time = Math.round((Date.now() - t) / 1000)
   const tokens = sumTokens(res.usage)
   if (!res.ok) {
-    const cls = classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text })
+    const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
     return { time, cost: res.cost, costMeasured: res.costMeasured, tokens, text: firstLine(res.text, 120) || res.detail, ok: false, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
   }
   return { time, cost: res.cost, costMeasured: res.costMeasured, tokens, text: firstLine(res.text, 120), ok: true, provider: provider.name }

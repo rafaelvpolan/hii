@@ -164,7 +164,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
   }, 'gate')
   const tokens = sumTokens(res.usage)
   if (res.failed) {
-    const cls = classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text })
+    const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
     return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
   }
   const parsed = buildParsed(res.text, res.cost, tokens)

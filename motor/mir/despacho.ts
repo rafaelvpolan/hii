@@ -7,7 +7,7 @@ import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDe
 import { agentRoles, isProviderName, providerNameFor } from '../tmd/registro'
 import { COMANDO_DE_LOGIN, provedoresDisponiveis } from '../tmd/disponibilidade'
 import { comandosDaIaAtiva } from '../tmd/map/comandos'
-import type { AgentRole, AiProviderName } from '../tmd/tipos'
+import type { AgentRole, HarnessId } from '../tmd/tipos'
 import { pendencia, responder } from './responder'
 import { renderPergunta } from './render/clarify'
 import { instruir } from './instruir'
@@ -51,7 +51,7 @@ export function rotuloDoBloqueio(situacao: string): string {
   return 'nao esta pronta'
 }
 
-function resolverProvedorParaLogin(arg: string): AiProviderName | null {
+function resolverProvedorParaLogin(arg: string): HarnessId | null {
   if (!arg) return providerNameFor('implement')
   if (isProviderName(arg)) return arg
   if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)

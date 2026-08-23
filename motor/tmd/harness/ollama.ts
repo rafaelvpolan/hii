@@ -4,7 +4,8 @@ import { noProxyArgs } from '../../qlb/alf/loopback'
 import { emptyUsage } from '../uso'
 import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euc/tsr/custo'
 import type { CostReading } from '../../euc/tsr/custo'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
+import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { alcancavelPorHttp, urlDoOllama } from '../sonda'
 
 interface OllamaResponse {
   response?: string
@@ -29,11 +30,30 @@ function costOfEndpoint(): CostReading {
   return endpointRodaNaRedeLocal() ? COST_FREE_LOCAL : COST_UNKNOWN
 }
 
-export class OllamaProvider implements AiProvider {
-  readonly name: AiProviderName = 'ollama'
+export const OLLAMA_CAPACIDADES: HarnessCapabilities = {
+  restrictsTools: false,     // nao ha mecanismo de ferramenta pra restringir
+  isolatesReadonly: true,    // ...e por isso mesmo nao consegue editar nada
+  acceptsEffort: false,
+  reportsCostUsd: true,      // COST_FREE_LOCAL: zero medido, quando o endpoint e local
+  reportsTokens: true,       // prompt_eval_count / eval_count
+  mcp: false,
+}
+
+export const OLLAMA_SINAIS: SinaisDoHarness = {
+  terminal: [{ pattern: /model not found|no such model/i, reason: 'modelo ollama nao encontrado localmente' }],
+  quota: [],
+  transient: [{ pattern: /connection refused/i, reason: 'ollama nao esta respondendo (servidor local fora do ar)' }],
+}
+
+export class OllamaProvider implements Harness {
+  readonly name: HarnessId = 'ollama'
   readonly supportsAgents = false
   readonly supportsVision = false
   readonly agentic = false
+
+  capabilities(): HarnessCapabilities { return OLLAMA_CAPACIDADES }
+  healthCheck(): Promise<boolean> { return alcancavelPorHttp(urlDoOllama()) }
+  sinaisDeFalha(): SinaisDoHarness { return OLLAMA_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const model = req.model || process.env.HICODE_OLLAMA_MODEL || 'llama3.1'

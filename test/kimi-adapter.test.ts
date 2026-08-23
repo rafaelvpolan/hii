@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { KimiProvider, KIMI_LIMITS, kimiArgv } from '../motor/tmd/harness/kimi'
+import { KimiProvider, KIMI_CAPACIDADES, kimiArgv } from '../motor/tmd/harness/kimi'
 import { isProviderName, modelFor, providerLimits, providerNames } from '../motor/tmd/registro'
 import type { AgentMode, AgentRequest } from '../motor/tmd/tipos'
 
@@ -72,8 +72,8 @@ test('flags que o CLI TEM mas o motor nao usa ficam de fora de proposito', () =>
 test('modo readonly NAO ganha --auto, e o motor recusa o kimi nesse modo em vez de deixar editar', async () => {
   const { recusaPorLimite } = await import('../motor/euc/tsr/confianca')
   expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
-  expect(KIMI_LIMITS.isolatesReadonly).toBe(false)
-  expect(KIMI_LIMITS.restrictsTools).toBe(false)
+  expect(KIMI_CAPACIDADES.isolatesReadonly).toBe(false)
+  expect(KIMI_CAPACIDADES.restrictsTools).toBe(false)
   expect(recusaPorLimite(new KimiProvider(), pedido('readonly'))).toContain('somente-leitura')
 })
 
@@ -100,7 +100,7 @@ test('effort e ignorado: nao existe --effort no kimi, e o argv nao muda por caus
   const comEffort = kimiArgv(pedido('edit', { effort: 'xhigh' }))
   expect(comEffort).toEqual(semEffort)
   expect(comEffort).not.toContain('xhigh')
-  expect(KIMI_LIMITS.acceptsEffort).toBe(false)
+  expect(KIMI_CAPACIDADES.acceptsEffort).toBe(false)
 })
 
 test('useAgents e extraTools nao viram flag — sem --allowedTools nao ha o que restringir', () => {
@@ -134,8 +134,8 @@ test('HICODE_KIMI_MODEL escolhe o modelo do kimi por papel', () => {
 })
 
 test('as limitacoes do kimi ficam visiveis pelo registry — o motor ve, nao adivinha', () => {
-  expect(providerLimits('kimi')).toEqual(KIMI_LIMITS)
-  expect(providerLimits('kimi')?.reportsCostUsd).toBe(false)
+  expect(providerLimits('kimi')).toEqual(KIMI_CAPACIDADES)
+  expect(providerLimits('kimi').reportsCostUsd).toBe(false)
 })
 
 test('rodada de sucesso: texto vem da ultima mensagem assistant do stream-json', async () => {

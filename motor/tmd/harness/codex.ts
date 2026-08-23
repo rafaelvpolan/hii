@@ -2,7 +2,8 @@ import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN } from '../../euc/tsr/custo'
 import { modoResolvido } from '../modos'
-import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
+import type { AgentMode, AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { alcancavelPorHttp } from '../sonda'
 import type { Usage } from '../../cdl'
 
 interface CodexEvent {
@@ -46,11 +47,32 @@ function parse(stdout: string): { text: string; usage: Usage; isError: boolean }
   return { text, usage, isError }
 }
 
-export class CodexProvider implements AiProvider {
-  readonly name: AiProviderName = 'codex'
+const URL_DA_API = 'https://api.openai.com'
+
+export const CODEX_CAPACIDADES: HarnessCapabilities = {
+  restrictsTools: true,      // --sandbox
+  isolatesReadonly: true,    // --sandbox read-only quando mode !== edit
+  acceptsEffort: true,       // model_reasoning_effort
+  reportsCostUsd: false,     // devolve COST_UNKNOWN
+  reportsTokens: true,
+  mcp: false,                // o CLI suporta, mas este motor nao liga extraTools nele
+}
+
+export const CODEX_SINAIS: SinaisDoHarness = {
+  terminal: [],
+  quota: [{ pattern: /insufficient_quota|exceeded_quota/i, reason: 'cota da API OpenAI esgotada' }],
+  transient: [{ pattern: /rate_limit_exceeded/i, reason: 'limite de taxa da API OpenAI' }],
+}
+
+export class CodexProvider implements Harness {
+  readonly name: HarnessId = 'codex'
   readonly supportsAgents = false
   readonly supportsVision = false
   readonly agentic = true
+
+  capabilities(): HarnessCapabilities { return CODEX_CAPACIDADES }
+  healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
+  sinaisDeFalha(): SinaisDoHarness { return CODEX_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const workdir = req.dirs[0] ?? req.cwd

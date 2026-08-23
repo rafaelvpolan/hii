@@ -1,7 +1,7 @@
 import { isoNow } from '../../cdl'
 import type { Fields } from '../../cdl'
 import { classifyFailure } from '../../cic/rpr/classe-de-falha'
-import type { AgentRequest, AgentResult, AiProvider } from '../../tmd/tipos'
+import type { AgentRequest, AgentResult, Harness } from '../../tmd/tipos'
 import { COST_UNKNOWN } from './custo'
 import { emptyUsage } from '../../tmd/uso'
 import { patchCard, patchCardWith, readCard } from '../../cdl/store'
@@ -71,10 +71,11 @@ export function recordCostTrust(id: string, provider: string, res: AgentResult):
   else if (gap === 'call_failed') markCostFloor(id, provider)
 }
 
-export function recusaPorLimite(provider: AiProvider, req: AgentRequest): string {
-  const limites = provider.limits
-  if (!limites) return ''
-  if (req.mode === 'readonly' && !limites.isolatesReadonly) {
+export function recusaPorLimite(provider: Harness, req: AgentRequest): string {
+  // capabilities() e obrigatoria: nao existe mais o caso "nao declarou, entao
+  // pode tudo", que era permissividade silenciosa.
+  const capacidades = provider.capabilities()
+  if (req.mode === 'readonly' && !capacidades.isolatesReadonly) {
     return `${provider.name} nao sabe rodar em modo somente-leitura (nao restringe ferramenta) — um papel de verificacao nele poderia editar arquivo`
   }
   return ''
@@ -92,7 +93,7 @@ function semPropagarFalhaDeRegistro(registro: () => void): void {
   }
 }
 
-function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
+function anotarChamada(id: string, provider: Harness, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {
   semPropagarFalhaDeRegistro(() => {
     registrarChamada(sessaoParaChamada(id), {
       ts: isoNow(),
@@ -109,13 +110,13 @@ function anotarChamada(id: string, provider: AiProvider, req: AgentRequest, pape
       ok: res.ok === true,
       classeDeFalha: res.ok === true
         ? ''
-        : classifyFailure(provider.name, { timedOut: res.timedOut, detail: res.detail, text: res.text }).failureClass,
+        : classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text }).failureClass,
     })
     if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
   })
 }
 
-export async function runProvider(id: string, provider: AiProvider, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {
+export async function runProvider(id: string, provider: Harness, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {
   const recusa = recusaPorLimite(provider, req)
   if (recusa) {
     return {

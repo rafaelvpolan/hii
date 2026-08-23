@@ -9,7 +9,7 @@ import { resumoDaSessao } from '../../euc/ias-da-sessao'
 import { sessaoParaChamada } from '../../euc/tsr/confianca'
 import { dailySpend } from '../../euc/tsr/lacuna'
 import { emExecucao } from '../../mir/render/rodape'
-import type { AgentRole, AiProviderName } from '../../tmd/tipos'
+import type { AgentRole, HarnessId } from '../../tmd/tipos'
 import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from '../../mir/render/config'
 import { janelasDoProvedor } from '../../euc/tsr/janelas'
 import { gastoDoMotorNoIntervalo } from '../../euc/tsr/consumo'
@@ -25,7 +25,7 @@ function papelPrincipal(provedor: string): AgentRole | undefined {
   return papeisDe(provedor)[0] as AgentRole | undefined
 }
 
-function janelasDoPainel(nome: AiProviderName, agoraMs: number): JanelaDoPainel[] {
+function janelasDoPainel(nome: HarnessId, agoraMs: number): JanelaDoPainel[] {
   return janelasDoProvedor(nome, agoraMs).map((j): JanelaDoPainel => {
     const gasto = gastoDoMotorNoIntervalo(nome, j.inicioMs, j.fimMs)
     return {
@@ -39,7 +39,7 @@ function janelasDoPainel(nome: AiProviderName, agoraMs: number): JanelaDoPainel[
   })
 }
 
-function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisponivel>, agoraMs: number): LinhaDeProvedor {
+function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponivel>, agoraMs: number): LinhaDeProvedor {
   const limites = providerLimits(nome)
   const papel = papelPrincipal(nome)
   const estado = estados.get(nome)
@@ -64,7 +64,7 @@ function linhaDeProvedor(nome: AiProviderName, estados: Map<string, ProvedorDisp
   }
 }
 
-export function habilitadoDe(nome: AiProviderName, estado: ProvedorDisponivel | undefined): boolean {
+export function habilitadoDe(nome: HarnessId, estado: ProvedorDisponivel | undefined): boolean {
   if (!estado || estado.situacao !== 'disponivel') return false
   if (nome === 'ollama') return estadoDoOllama().habilitado
   return true

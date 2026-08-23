@@ -1,6 +1,6 @@
 import { planoDoProvedor } from './planos'
 import type { JanelaDeUso } from './planos'
-import type { AiProviderName } from '../../tmd/tipos'
+import type { HarnessId } from '../../tmd/tipos'
 
 const HORA_MS = 3600_000
 const DIA_MS = 24 * HORA_MS
@@ -57,7 +57,7 @@ function idadeDaMedicaoMs(idadeHoras: number): number {
   return idadeHoras >= 0 ? idadeHoras * HORA_MS : Number.POSITIVE_INFINITY
 }
 
-export function janelasDoProvedor(nome: AiProviderName, agoraMs: number = Date.now()): JanelaDeProvedor[] {
+export function janelasDoProvedor(nome: HarnessId, agoraMs: number = Date.now()): JanelaDeProvedor[] {
   const plano = planoDoProvedor(nome, agoraMs)
   const idadeMs = idadeDaMedicaoMs(plano.idadeHoras)
   return rotulosDoProvedor(nome).map((rotulo): JanelaDeProvedor => {

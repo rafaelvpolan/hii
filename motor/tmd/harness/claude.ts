@@ -5,7 +5,8 @@ import { emptyUsage } from '../uso'
 import { COST_UNKNOWN, readReportedCost } from '../../euc/tsr/custo'
 import { runClaudeStream } from './claude-stream'
 import type { CostReading } from '../../euc/tsr/custo'
-import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
+import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { alcancavelPorHttp } from '../sonda'
 
 interface ClaudeJson {
   total_cost_usd?: number
@@ -20,11 +21,32 @@ interface ClaudeJson {
 }
 
 
-export class ClaudeProvider implements AiProvider {
-  readonly name: AiProviderName = 'claude'
+const URL_DA_API = 'https://api.anthropic.com'
+
+export const CLAUDE_CAPACIDADES: HarnessCapabilities = {
+  restrictsTools: true,      // --allowedTools em toda chamada
+  isolatesReadonly: true,    // modo readonly cai em Read,Glob,Grep
+  acceptsEffort: true,       // --effort
+  reportsCostUsd: true,      // total_cost_usd no JSON
+  reportsTokens: true,
+  mcp: true,                 // unico harness com extraTools ligado hoje
+}
+
+export const CLAUDE_SINAIS: SinaisDoHarness = {
+  terminal: [],
+  quota: [{ pattern: /claude ai usage limit reached|5-hour limit reached|weekly limit reached/i, reason: 'limite de uso da assinatura Claude atingido' }],
+  transient: [{ pattern: /overloaded_error|\bapi_error\b/i, reason: 'erro transitorio da API Anthropic' }],
+}
+
+export class ClaudeProvider implements Harness {
+  readonly name: HarnessId = 'claude'
   readonly supportsAgents = true
   readonly supportsVision = true
   readonly agentic = true
+
+  capabilities(): HarnessCapabilities { return CLAUDE_CAPACIDADES }
+  healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
+  sinaisDeFalha(): SinaisDoHarness { return CLAUDE_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     if (req.liveLog) return runClaudeStream(req, req.liveLog)

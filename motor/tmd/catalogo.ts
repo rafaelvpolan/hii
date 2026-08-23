@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { ROOT } from '../cdl/ali/config'
 import { memoArquivo } from './eco/memo'
 import { modelFor, providerNameFor, agentRoles } from './registro'
-import type { AiProviderName } from './tipos'
+import type { HarnessId } from './tipos'
 
-export type CatalogoDeModelos = Partial<Record<AiProviderName, string[]>>
+export type CatalogoDeModelos = Partial<Record<HarnessId, string[]>>
 
 const SEMENTE: CatalogoDeModelos = {
   claude: ['opus', 'sonnet', 'haiku'],
@@ -33,7 +33,7 @@ export function catalogo(): CatalogoDeModelos {
   return lerMemorizado(arquivoDoCatalogo())
 }
 
-function emUso(provedor: AiProviderName): string[] {
+function emUso(provedor: HarnessId): string[] {
   const usados: string[] = []
   for (const papel of agentRoles()) {
     if (providerNameFor(papel) !== provedor) continue
@@ -43,14 +43,14 @@ function emUso(provedor: AiProviderName): string[] {
   return usados
 }
 
-export function modelosDe(provedor: AiProviderName): string[] {
+export function modelosDe(provedor: HarnessId): string[] {
   const doArquivo = catalogo()[provedor] ?? []
   const daSemente = SEMENTE[provedor] ?? []
   const conhecidos = doArquivo.length ? doArquivo : daSemente
   return [...new Set([...conhecidos, ...emUso(provedor)])]
 }
 
-export function origemDoCatalogo(provedor: AiProviderName): 'arquivo' | 'semente' | 'vazio' {
+export function origemDoCatalogo(provedor: HarnessId): 'arquivo' | 'semente' | 'vazio' {
   if ((catalogo()[provedor] ?? []).length) return 'arquivo'
   if ((SEMENTE[provedor] ?? []).length) return 'semente'
   return 'vazio'
