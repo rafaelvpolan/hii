@@ -22,6 +22,10 @@ import { clarifyAnswersPrompt } from '../agentes/clr/clarificar'
 import { refPaths, resolveRefs } from '../qlb/alf/refs'
 import { markRefsRefused } from '../qlb/alf/confianca'
 import { lerAcaoExterna } from '../osw/rta/externo'
+import { execFileSync } from 'node:child_process'
+import { renderizarSkills, skillsPara } from '../csd/acervo'
+import { checklistParaStack, renderizarChecklist } from '../agentes/vtb/checklist'
+import type { ContextoDeGatilho, PapelDeSkill } from '../csd/acervo'
 
 export interface StepResult {
   time: number
@@ -60,12 +64,31 @@ function agentesInjetaveis(provider: Harness, nomes: readonly string[], ferramen
   return provider.supportsAgents ? agentesNexusPor(nomes, ferramentasExtra) : {}
 }
 
+// Contexto do gatilho de skill: DETERMINISTICO, lido do disco. Arquivos que o
+// card ja tocou no worktree, mais as dependencias declaradas pelo alvo. Nunca
+// se pergunta a uma IA se a skill se aplica.
+export function contextoDeSkill(workdir: string, repo: string): ContextoDeGatilho {
+  const c = repo ? readContract(repo) : null
+  // O contrato guarda framework e linguagem por pacote, nao a lista crua de
+  // dependencias. Isso ja e o sinal que os gatilhos usam ("laravel", "vue"),
+  // e vem de deteccao deterministica em disco.
+  const deps = [...new Set((c?.packages ?? []).flatMap(p => [p.framework, p.language]).filter(Boolean))]
+  let arquivos: string[] = []
+  try {
+    arquivos = execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: workdir, encoding: 'utf8' })
+      .split('\n').filter(Boolean)
+  } catch {
+    arquivos = []
+  }
+  return { arquivos, deps }
+}
+
 function stackOf(repo: string): string {
   const c = repo ? readContract(repo) : null
   return c?.stack ?? 'stack nao detectado — inspecione o projeto antes de editar'
 }
 
-function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string): string {
+function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
     : ''
@@ -81,6 +104,7 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
       ]
   return [
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
+    skills ? `${skills}\n` : '',
     memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : '',
     clarifications ? clarifications : '',
     refs,
@@ -147,7 +171,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const nomesInjetados = Object.keys(agentesInjetados)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target))
+    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', contextoDeSkill(workdir, card.fm.repo ?? ''))))
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,
@@ -205,12 +229,35 @@ export async function verifyVisual(card: Card, shotPath: string): Promise<Verify
   return { ok: false, conclusive: false, reason: 'verify inconclusivo (sem veredito parseavel)', cost: res.cost, tokens }
 }
 
-function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruction: string, rules: string, stack: string): string {
+// Mapa agente -> papel de skill. Deterministico e explicito: um agente novo
+// sem entrada aqui simplesmente nao recebe skill, em vez de receber a errada.
+const PAPEL_DO_AGENTE: Record<string, PapelDeSkill> = {
+  rufus: 'reparador',
+  testudo: 'avaliador',
+  escudo: 'seguranca',
+  crivo: 'avaliador',
+  pura: 'reparador',
+  glossia: 'documentador',
+}
+
+function skillsDoAgente(agent: string, wt: string, repo: string): string {
+  const papel = PAPEL_DO_AGENTE[agent]
+  if (!papel) return ''
+  const skills = renderizarSkills(skillsPara(papel, contextoDeSkill(wt, repo)))
+  // VTB: o checklist da stack roda DEPOIS do security-baseline generico, e so
+  // para o papel de seguranca. Um checklist de Laravel num passo de limpeza
+  // seria ruido caro.
+  const checklist = papel === 'seguranca' ? renderizarChecklist(checklistParaStack(stackOf(repo))) : ''
+  return [skills, checklist].filter(Boolean).join('\n\n')
+}
+
+function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruction: string, rules: string, stack: string, skills: string): string {
   const head = agenteInjetado
     ? `Use o agente Nexus ${agent} no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
     : `Atue no papel "${agent}" no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
   return [
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
+    skills ? `${skills}\n` : '',
     head,
     'NAO rode git/commit, NAO inicie servidores. Sem comentarios de prosa no codigo. Se nao houver nada a fazer, responda "nada a fazer".',
     instruction,
@@ -226,7 +273,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const agenteInjetado = agentesInjetaveis(provider, [agent], navegacao)
   const injetou = Object.keys(agenteInjetado).length > 0
   const res = await runProvider(id, provider, {
-    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo || wt)),
+    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo || wt), skillsDoAgente(agent, wt, repo)),
     cwd: wt,
     dirs: [wt],
     mode: 'edit',
