@@ -2,6 +2,7 @@ import { isoNow } from '../../cdl'
 import type { Job, Fields } from '../../cdl'
 import { allCards, cardsByStatus, patchCard } from '../../cdl/store'
 import { marcarOrfao, prOrfaoDe } from '../../qlb/slv/compensacao'
+import { encerrando } from './encerramento'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
@@ -54,6 +55,9 @@ export function reconcileStranded(): void {
 }
 
 export function pending(): Job[] {
+  // Drenando: nao entrega trabalho novo. O que ja esta em voo termina; o resto
+  // fica no disco esperando o proximo arranque.
+  if (encerrando()) return []
   const cards = allCards()
   const porStatus = (status: string): Array<Fields & { file: string }> => cards.filter(c => c.status === status)
   const ex: Job[] = porStatus('EXECUTING').map(c => ({ kind: 'execute', id: c.id ?? '' }))

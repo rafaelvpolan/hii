@@ -8,6 +8,8 @@ import { reportTickFailure } from './motor/euc/rdr/tick'
 import { wakeDueWaiting } from './motor/cic/rpr/espera'
 import { holdInstanceLock, refusalMessage } from './motor/osw/mtr/trava-instancia'
 import { warnProviderConfig } from './motor/tmd/config'
+import { instalarShutdownGracioso } from './motor/osw/mtr/encerramento'
+import { subirServidorDeSaude } from './motor/euc/rdr/servidor'
 
 process.on('uncaughtException', (e) => {
   reportTickFailure('excecao nao tratada', e)
@@ -46,6 +48,12 @@ if (process.argv.includes('--init')) {
       .then(() => process.exit(0))
   } else {
     process.stdout.write(`hicode runner ativo — worktrees + paralelo (max ${MAX_CONCURRENCY}, poll ${POLL_MS}ms, timeout ${RUN_TIMEOUT_MS}ms)\n`)
+    const saude = subirServidorDeSaude()
+    if (saude) process.stdout.write(`[runner] GET /health em :${saude.porta}\n`)
+    instalarShutdownGracioso({
+      log: linha => process.stdout.write(linha),
+      sair: codigo => { saude?.parar(); process.exit(codigo) },
+    })
     setInterval(tick, POLL_MS)
     tick()
   }
