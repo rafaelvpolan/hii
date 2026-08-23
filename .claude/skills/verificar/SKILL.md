@@ -8,7 +8,7 @@ argument-hint: "[prefixo de caminho] [--lotes N] [--orcamento CHARS]"
 
 # /verificar — auditoria manual do repositório inteiro
 
-O gate do motor (`lib/runner/codefox-gate.ts`) só olha o **diff** da branch: `git diff --name-status`
+O gate do motor (`motor/cic/crv/gate.ts`) só olha o **diff** da branch: `git diff --name-status`
 mais o patch truncado em `GATE_DIFF_LIMIT`. Nada no hicode olha o **repositório inteiro**. Este skill
 é essa varredura — e é **manual**.
 
@@ -89,7 +89,7 @@ arquivo`. Se não puder garantir isso, use só o crivo e registre a lacuna no re
 Não invente agente novo: o catálogo é `.claude/agents/`.
 
 Para cada lote, delegue via Agent tool reaproveitando a **forma do prompt do gate** (não reescreva a
-política — a fonte é `buildPrompt` em `lib/runner/codefox-gate.ts`):
+política — a fonte é `buildPrompt` em `motor/cic/crv/gate.ts`):
 
 - mesma linha de **PADRÕES**: tudo tipado strict, proibido `any`/`unknown`; arquivo ≤350 linhas e
   nunca god-file; sem comentário de prosa; Vue 3 Composition API (nunca React); erro nunca silenciado;
@@ -101,7 +101,7 @@ política — a fonte é `buildPrompt` em `lib/runner/codefox-gate.ts`):
 - mesma regra de calibragem do gate: `BLOCKED` só para defeito real/violação de alta confiança; em
   dúvida, `CONDITIONAL`. Achado sem evidência citável (arquivo:linha) é descartado, não "suspeita".
 
-Para **parsear** o veredito, use `extractVerdictJson` de `lib/runner/codefox-gate.ts` — é o parser que
+Para **parsear** o veredito, use `extractVerdictJson` de `motor/cic/crv/gate.ts` — é o parser que
 já existe (varre o texto e pega o último objeto JSON válido com `verdict`). Não escreva outro.
 
 Narre o progresso (`[lote 2/5] 12 arquivos…`). Lote cujo agente falhou/estourou timeout **não conta

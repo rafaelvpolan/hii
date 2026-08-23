@@ -1,10 +1,10 @@
-import { extractObjetivo } from '../../motor/cdl'
-import type { Card } from '../../motor/cdl'
-import { ROOT, GATE_DIFF_LIMIT } from '../../motor/cdl/ali/config'
-import { runGit } from '../../motor/qlb/git'
-import { providerFor, modelFor } from '../../motor/tmd/registro'
-import { runProvider } from '../../motor/euc/tsr/confianca'
-import { sumTokens } from '../../motor/tmd/uso'
+import { extractObjetivo } from '../../cdl'
+import type { Card } from '../../cdl'
+import { ROOT, GATE_DIFF_LIMIT } from '../../cdl/ali/config'
+import { runGit } from '../../qlb/git'
+import { providerFor, modelFor } from '../../tmd/registro'
+import { runProvider } from '../../euc/tsr/confianca'
+import { sumTokens } from '../../tmd/uso'
 
 export interface EvalResult {
   score: number

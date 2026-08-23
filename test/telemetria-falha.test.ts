@@ -40,10 +40,10 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 
 const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
-const { classifyFailure } = await import('../lib/ai/failure')
-const { readFailureAttempts } = await import('../lib/runner/attempts')
+const { classifyFailure } = await import('../motor/cic/rpr/classe-de-falha')
+const { readFailureAttempts } = await import('../motor/cic/rpr/tentativas')
 const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../motor/euc/registros')
-const { applyFailurePolicy } = await import('../lib/runner/failure-policy')
+const { applyFailurePolicy } = await import('../motor/cic/rpr/politica')
 const { loteDesde } = await import('../motor/euc/tsr/cota-runs')
 const { lerCota } = await import('../motor/euc/tsr/cota')
 

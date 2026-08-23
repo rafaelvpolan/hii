@@ -5,7 +5,7 @@ import { initHicodeHome } from './motor/cdl/ali/home'
 import { runSync } from './motor/tmd/pnt/tarefas/sync'
 import { taskSyncName } from './motor/tmd/pnt/tarefas/registro'
 import { reportTickFailure } from './motor/euc/rdr/tick'
-import { wakeDueWaiting } from './lib/runner/waiting'
+import { wakeDueWaiting } from './motor/cic/rpr/espera'
 import { holdInstanceLock, refusalMessage } from './lib/runner/instance-lock'
 import { warnProviderConfig } from './motor/tmd/config'
 

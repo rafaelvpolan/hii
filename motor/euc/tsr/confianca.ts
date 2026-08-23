@@ -1,6 +1,6 @@
 import { isoNow } from '../../cdl'
 import type { Fields } from '../../cdl'
-import { classifyFailure } from '../../../lib/ai/failure'
+import { classifyFailure } from '../../cic/rpr/classe-de-falha'
 import type { AgentRequest, AgentResult, AiProvider } from '../../tmd/tipos'
 import { COST_UNKNOWN } from './custo'
 import { emptyUsage } from '../../tmd/uso'

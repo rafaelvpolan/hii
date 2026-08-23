@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ImplementResult } from '../motor/cdl'
-import type { CorrectDeps } from '../lib/runner/correct'
+import type { CorrectDeps } from '../motor/cic/corrigir'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-correctwait-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -38,9 +38,9 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 
 const SUCESSO: ImplementResult = { ok: true, resultText: 'refeito', fullText: 'refeito', cost: '0.0500', usage: { tokens_in: 10, tokens_out: 10, tokens_cache_create: 0, tokens_cache_read: 0 } }
 
-const { runStep } = await import('../lib/runner/agent')
+const { runStep } = await import('../motor/cic/agente')
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { handleCorrect } = await import('../lib/runner/correct')
+const { handleCorrect } = await import('../motor/cic/corrigir')
 
 const agente: CorrectDeps = {
   implement: (): Promise<ImplementResult> => Promise.resolve(SUCESSO),

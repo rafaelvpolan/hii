@@ -40,7 +40,7 @@ writeFileSync(join(BIN, 'curl'), [
 ].join('\n'))
 chmodSync(join(BIN, 'curl'), 0o755)
 writeFileSync(IMPLEMENTA, [
-  `import { implement } from ${JSON.stringify(join(REPO, 'lib', 'runner', 'agent'))}`,
+  `import { implement } from ${JSON.stringify(join(REPO, 'motor', 'cic', 'agente'))}`,
   `import { readCard } from ${JSON.stringify(join(REPO, 'motor', 'cdl', 'store'))}`,
   'const card = readCard(process.argv[2] ?? String())',
   'if (!card) { process.stderr.write("card nao encontrado\\n"); process.exit(2) }',

@@ -484,7 +484,7 @@ No card: `steps: all` força tudo, `steps: <ids>` roda só esses, `steps: auto` 
 
 ### 4. O gate é vinculante e fecha em disco
 
-Build, teste e o gate **codefox** (`lib/runner/codefox-gate.ts`) fecham lendo **exit code real em
+Build, teste e o gate **codefox** (`motor/cic/crv/gate.ts`) fecham lendo **exit code real em
 disco**, não a afirmação do modelo. Veredito ausente, diff que falhou ao montar ou agente que
 estourou timeout contam como **não concluído** — o gate **falha fechado**.
 

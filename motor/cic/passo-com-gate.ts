@@ -1,10 +1,10 @@
-import { isoNow } from '../../motor/cdl'
-import type { FailureClass, StepMetric } from '../../motor/cdl'
-import { maxReajuste, GATE_RETRIES } from '../../motor/cdl/ali/config'
-import { patchCard } from '../../motor/cdl/store'
-import { runStep } from './agent'
-import { runGatedReview, withGateRetry } from './codefox-gate'
-import type { GateResult } from './codefox-gate'
+import { isoNow } from '../cdl'
+import type { FailureClass, StepMetric } from '../cdl'
+import { maxReajuste, GATE_RETRIES } from '../cdl/ali/config'
+import { patchCard } from '../cdl/store'
+import { runStep } from './agente'
+import { runGatedReview, withGateRetry } from './crv/gate'
+import type { GateResult } from './crv/gate'
 
 export interface GatedDeps {
   runStep: typeof runStep

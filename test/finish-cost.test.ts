@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { GateResult } from '../lib/runner/codefox-gate'
+import type { GateResult } from '../motor/cic/crv/gate'
 import type { ImplementResult } from '../motor/cdl'
 import type { ExecuteDeps } from '../lib/runner/execute'
 import type { FinishDeps } from '../motor/qlb/ctr/fechar'

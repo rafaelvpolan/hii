@@ -1,5 +1,5 @@
-import { numeroDeEnv } from '../../motor/cdl/ali/config'
-import { ensureUrl, waitHttp } from './url-vivo'
+import { numeroDeEnv } from '../../cdl/ali/config'
+import { ensureUrl, waitHttp } from '../crv/url-viva'
 
 export const TENTATIVAS_DE_AJUSTE = numeroDeEnv('HICODE_URL_AJUSTES', 2)
 

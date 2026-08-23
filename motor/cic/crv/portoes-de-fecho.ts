@@ -1,12 +1,12 @@
-import { isoNow } from '../../motor/cdl'
-import type { StepMap } from '../../motor/cdl'
-import { maxReajuste } from '../../motor/cdl/ali/config'
-import { patchCard } from '../../motor/cdl/store'
-import { run } from '../../motor/qlb/git'
-import { runStep } from './agent'
-import { resolveCommand } from './commands'
-import { addMetric } from '../../motor/euc/metricas-de-fecho'
-import type { Contract, PackageInfo } from '../../motor/cdl/bss/tipos'
+import { isoNow } from '../../cdl'
+import type { StepMap } from '../../cdl'
+import { maxReajuste } from '../../cdl/ali/config'
+import { patchCard } from '../../cdl/store'
+import { run } from '../../qlb/git'
+import { runStep } from '../agente'
+import { resolveCommand } from '../../../lib/runner/commands'
+import { addMetric } from '../../euc/metricas-de-fecho'
+import type { Contract, PackageInfo } from '../../cdl/bss/tipos'
 
 export interface RunCtx {
   contract: Contract

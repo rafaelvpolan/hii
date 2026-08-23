@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync } 
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { GateResult } from '../lib/runner/codefox-gate'
+import type { GateResult } from '../motor/cic/crv/gate'
 import type { FinishDeps } from '../motor/qlb/ctr/fechar'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-pushedsha-'))

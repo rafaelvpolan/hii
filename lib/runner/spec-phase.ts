@@ -4,7 +4,7 @@ import { isoNow } from '../../motor/cdl'
 import { maxReajuste } from '../../motor/cdl/ali/config'
 import { readCard, patchCard, repoPath, repoBase } from '../../motor/cdl/store'
 import { ensureWorktree, runGit, stageAll, worktreePath } from '../../motor/qlb/git'
-import { runStep } from './agent'
+import { runStep } from '../../motor/cic/agente'
 import { openspecAvailable, initOpenspec, validateChange } from '../spec/openspec'
 import type { SpecValidation } from '../spec/openspec'
 

@@ -2,9 +2,9 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { GateResult } from '../lib/runner/codefox-gate'
-import type { StepResult } from '../lib/runner/agent'
-import type { GatedDeps } from '../lib/runner/gated'
+import type { GateResult } from '../motor/cic/crv/gate'
+import type { StepResult } from '../motor/cic/agente'
+import type { GatedDeps } from '../motor/cic/passo-com-gate'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-gated-'))
 process.env.HICODE_CARDS_DIR = CARDS
@@ -27,7 +27,7 @@ function gate(over: Partial<GateResult>): GateResult {
 }
 
 const { createCard } = await import('../motor/cdl/store')
-const { runGatedStep } = await import('../lib/runner/gated')
+const { runGatedStep } = await import('../motor/cic/passo-com-gate')
 
 const agente: GatedDeps = {
   runStep: (_wt: string, _agent: string, instruction: string): Promise<StepResult> => {

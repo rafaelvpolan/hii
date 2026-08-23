@@ -44,7 +44,7 @@ git(clone, ['commit', '-qm', 'mudanca do card'])
 
 const { createCard, readCard } = await import('../motor/cdl/store')
 const { clarify } = await import('../lib/runner/clarify')
-const { evaluate } = await import('../lib/runner/eval')
+const { evaluate } = await import('../motor/cic/crv/avaliar')
 const { idear } = await import('../lib/runner/ideate-run')
 const { runProvider } = await import('../motor/euc/tsr/confianca')
 const { providerFor, modelFor } = await import('../motor/tmd/registro')

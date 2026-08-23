@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { extractVerdictJson, gateOutcome, timeoutForDiff, withGateRetry } from '../lib/runner/codefox-gate'
-import type { GateResult } from '../lib/runner/codefox-gate'
+import { extractVerdictJson, gateOutcome, timeoutForDiff, withGateRetry } from '../motor/cic/crv/gate'
+import type { GateResult } from '../motor/cic/crv/gate'
 
 function gate(over: Partial<GateResult>): GateResult {
   return { ok: true, verdict: 'APPROVED', reason: '', questions: [], cost: 0, costMeasured: true, tokens: 0, ...over }

@@ -1,10 +1,10 @@
-import { isoAt, isoNow } from '../../motor/cdl'
-import type { Fields, FailureClass } from '../../motor/cdl'
-import { maxWaitingAttempts } from '../../motor/cdl/ali/config'
-import { patchCard, readCard } from '../../motor/cdl/store'
-import { appendFailureAttempt } from './attempts'
-import type { FailureOutcome } from './attempts'
-import { stampRunFailure } from '../../motor/euc/registros'
+import { isoAt, isoNow } from '../../cdl'
+import type { Fields, FailureClass } from '../../cdl'
+import { maxWaitingAttempts } from '../../cdl/ali/config'
+import { patchCard, readCard } from '../../cdl/store'
+import { appendFailureAttempt } from './tentativas'
+import type { FailureOutcome } from './tentativas'
+import { stampRunFailure } from '../../euc/registros'
 
 export type ResumeStatus = 'EXECUTING' | 'URL_OK' | 'CORRECTING' | 'SPECCED'
 

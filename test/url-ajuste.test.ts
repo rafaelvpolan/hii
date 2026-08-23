@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, TENTATIVAS_DE_AJUSTE } from '../lib/runner/url-ajuste'
+import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, TENTATIVAS_DE_AJUSTE } from '../motor/cic/rpr/url-ajuste'
 
 function deps(sobeNaTentativa: number) {
   const chamadas = { subir: 0, ajustar: 0 }
