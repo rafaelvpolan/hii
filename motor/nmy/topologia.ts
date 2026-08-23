@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from '../cdl/ali/config'
+import { ENV_TOPOLOGIA_FILE } from '../cdl/ali/contrato'
 import { STATUSES } from '../cdl'
 import type { Status } from '../cdl'
 
@@ -23,7 +24,7 @@ interface TopologiaCrua {
 }
 
 export function arquivoDaTopologia(): string {
-  return process.env.HICODE_TOPOLOGIA_FILE || join(ROOT, 'config', 'topologia.json')
+  return process.env[ENV_TOPOLOGIA_FILE] || join(ROOT, 'config', 'topologia.json')
 }
 
 function ehStatus(v: string): v is Status {

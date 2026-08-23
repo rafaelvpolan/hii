@@ -9,6 +9,7 @@ export const ENV_IA_FILE = 'HICODE_IA_FILE'
 export const ENV_MODELOS_FILE = 'HICODE_MODELOS_FILE'
 export const ENV_CLAUDE_HOME_DIR = 'HICODE_CLAUDE_HOME_DIR'
 export const ENV_KIMI_HOME_DIR = 'HICODE_KIMI_HOME_DIR'
+export const ENV_TOPOLOGIA_FILE = 'HICODE_TOPOLOGIA_FILE'
 
 export type LadoDoContrato = 'motor' | 'painel' | 'ambos'
 
@@ -31,4 +32,5 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_MODELOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/catalogo.ts'], lado: 'motor' },
   { nome: ENV_CLAUDE_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/map/comandos.ts'], lado: 'motor' },
   { nome: ENV_KIMI_HOME_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/tmd/map/comandos.ts'], lado: 'motor' },
+  { nome: ENV_TOPOLOGIA_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/nmy/topologia.ts'], lado: 'motor' },
 ]
