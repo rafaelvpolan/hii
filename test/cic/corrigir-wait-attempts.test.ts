@@ -8,6 +8,10 @@ import type { ImplementResult } from '../../motor/cdl'
 import type { CorrectDeps } from '../../motor/cic/corrigir'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-correctwait-'))
+// Rigor estrito muda o comportamento do fechamento de proposito (barra area
+// nova sem comando de teste). Fixado aqui para o teste nao depender do env de
+// quem roda a suite.
+delete process.env.HICODE_RIGOR_ESTRITO
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
 

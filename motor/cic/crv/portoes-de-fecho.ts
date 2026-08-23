@@ -8,6 +8,7 @@ import { resolveCommand } from '../../mir/comandos'
 import { addMetric } from '../../euc/metricas-de-fecho'
 import { APROVADO, relatoParaHumano, repararAteOTeto, reprovado } from '../reparo'
 import { escolherReparador } from '../rpr/reparadores'
+import { registrarRed } from '../../agentes/chg/red-primeiro'
 import { cercarSaida } from '../rpr/reparadores/tipos'
 import type { VeredictoDeGate } from '../reparo'
 import type { Contract, PackageInfo } from '../../cdl/bss/tipos'
@@ -91,6 +92,9 @@ async function portaoComReparo(portao: Portao, o: OpcoesDoPortao): Promise<boole
       if (primeira) {
         addMetric(o.fsteps, o.chaveDeTempo, { time: Math.round((Date.now() - t0) / 1000), cost: 0, tokens: 0 })
         primeira = false
+        // Teste que reprova na PRIMEIRA rodada e a unica evidencia de RED que
+        // o motor produz sozinho — CHG (item 5) le isto do diario depois.
+        if (r.err && portao.id === 'testes' && o.id) registrarRed(o.id, `${cmd.label} reprovou antes do reparo`)
       }
       return r.err ? reprovado(String(r.stderr || r.stdout || '').slice(0, MAX_SAIDA)) : APROVADO
     },

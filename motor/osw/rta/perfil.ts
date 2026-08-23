@@ -1,5 +1,6 @@
 import type { PipelineStep } from '../../nmy/tipos'
 import { lerAcaoExterna } from './externo'
+import type { VeredictoDaLei } from '../../csd/lei/guarda'
 
 export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'externo'
 
@@ -142,5 +143,24 @@ export function planSteps(task: TaskInput, steps: PipelineStep[]): StepPlan {
     reason: reasonOf(s),
     steps: kept,
     skipped: steps.filter(step => !keptIds.has(step.id)).map(step => step.label),
+  }
+}
+
+// A unica porta por onde a LEI mexe no plano. Funcao propria, e nao inline no
+// chamador, para que a invariante "so sobe, nunca baixa" tenha um lugar unico
+// onde ser testada.
+export function aplicarLei(plano: StepPlan, lei: VeredictoDaLei, todos: PipelineStep[]): StepPlan {
+  if (lei.forca !== 'completo') return plano
+  // Uniao com o plano anterior, sempre: nenhum passo que ja ia rodar pode
+  // deixar de rodar por causa da LEI. Como 'completo' e o conjunto inteiro,
+  // isto e `todos` — mas escrito como uniao para o dia em que 'completo'
+  // deixar de ser o superconjunto.
+  const idsAtuais = new Set(plano.steps.map(p => p.id))
+  const steps = todos.filter(p => idsAtuais.has(p.id) || true)
+  return {
+    profile: 'completo',
+    reason: `${plano.reason} · LEI elevou para completo (${lei.motivos.length} motivo(s))`,
+    steps,
+    skipped: [],
   }
 }
