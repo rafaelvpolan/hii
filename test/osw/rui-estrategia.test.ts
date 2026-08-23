@@ -34,8 +34,17 @@ test('tier invalido no card nao vira tier barato calado — fica o do catalogo, 
   expect(e.motivo).toContain('tier_de_mentira')
 })
 
+test('todo passo de config/pipeline.json tem tier declarado — passo novo nao roda sem governanca', async () => {
+  const { activeSteps } = await import('../../motor/nmy/config')
+  const { lerGovernanca } = await import('../../motor/euc/tsr/orcamento')
+  const g = lerGovernanca()
+  for (const passo of activeSteps()) {
+    expect(g.criterios[passo.id], `passo "${passo.id}" do pipeline sem tier em model-tier.json`).toBeDefined()
+  }
+})
+
 test('LEI que elevou o rigor eleva o tier junto, mesmo em acao barata', () => {
-  const e = tierDoCard('cleanup', { leiForcou: true })
+  const e = tierDoCard('limpeza', { leiForcou: true })
   expect(e.tier).toBe('tier1_caro')
   expect(e.motivo).toContain('LEI')
 })

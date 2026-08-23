@@ -21,7 +21,7 @@ export type Tier = (typeof TIERS)[number]
 
 export const ACOES_GOVERNADAS = [
   'arquitetura', 'seguranca', 'review', 'implementacao',
-  'reparo_build', 'testes', 'documentacao', 'cleanup', 'classificacao',
+  'reparo_build', 'testes', 'documentacao', 'limpeza', 'classificacao',
 ] as const
 
 export interface CriterioDeTier {

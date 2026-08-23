@@ -4,6 +4,7 @@ import { isoNow } from '../../cdl'
 import type { StepMap, StepMetric } from '../../cdl'
 import { MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from '../../cdl/ali/config'
 import { tetoDoCard } from '../../euc/tsr/orcamento'
+import { registrarTier, tierDoCard } from '../../osw/rui'
 import { appendProjectMemory } from '../../csd/memoria'
 import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store'
 import { warnBudgetWithoutGuarantee } from '../../euc/tsr/confianca'
@@ -122,6 +123,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${steps.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}\n`)
   const fsteps: StepMap = {}
   for (const step of steps.slice(startIdx)) {
+    registrarTier(id, step.id, tierDoCard(step.id, { leiForcou: lei.forca === 'completo', pedidoDoCard: card.fm.tier }))
     const instruction = step.instruction.replace('%s', desc ?? '')
     let r: { time: number; cost: number; costMeasured?: boolean; tokens: number; text: string }
     let gateDoPasso: StepMetric | null = null

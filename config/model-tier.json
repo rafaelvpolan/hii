@@ -10,7 +10,7 @@
     "reparo_build": { "tier": "tier2_padrao", "motivo": "escopo estreito por narrowFix" },
     "testes": { "tier": "tier2_padrao", "motivo": "escopo definido pela matriz de cenario" },
     "documentacao": { "tier": "tier3_barato", "motivo": "baixo risco de erro caro" },
-    "cleanup": { "tier": "tier3_barato", "motivo": "baixo risco de erro caro" },
+    "limpeza": { "tier": "tier3_barato", "motivo": "baixo risco de erro caro" },
     "classificacao": { "tier": "tier3_barato", "motivo": "decisao curta e verificavel pelo passo seguinte" }
   },
   "regraDeSubida": "card ou regra de config/regras-inegociaveis.json pode forcar tier acima do padrao, NUNCA abaixo. Mesma politica da LEI sobre o perfil de risco.",
