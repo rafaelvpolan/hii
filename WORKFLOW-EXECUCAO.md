@@ -50,8 +50,8 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
 | **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | ✅ feita |
 | **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ 20 e 4 feitos · 16 adiado |
-| **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | — |
-| **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | — |
+| **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | ✅ feita |
+| **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | ✅ feita |
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | — |
 | **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) | — |
 | **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | — |
@@ -499,6 +499,20 @@ bun test ./test/mir-comandos-manuais.test.ts   # comando manual só pré-carrega
 | 23 | Múltiplos críticos com lentes distintas → `RDA` consenso / `VTO` voto | `motor/cic/{rda,vto}.ts` |
 | 23 | Boundary obrigatório: recusa iniciar sem `orcamentoPorCard.tetoUsd` configurado | `motor/cic/cnd/gauntlet.ts` |
 
+### Estado
+
+Os três mecanismos existem e têm teste: `motor/cic/vto.ts` (apuração),
+`motor/cic/rda.ts` (consenso) e `motor/cic/cnd/gauntlet.ts` (cegueira, boundary
+e gatilho de domínio). **Ainda não estão ligados ao pipeline** — falta o passo
+que colhe candidatos e chama os críticos, e ele depende de existir de onde tirar
+a referência externa (captura de tela de produto real, exemplo publicado). Sem
+referência não há comparação cega, só opinião com nome novo.
+
+Duas recusas deliberadas, cada uma com teste: empate no `VTO` **não elege
+ninguém** (desempatar sozinho é fabricar veredicto onde os críticos não
+produziram um) e `podeIniciar()` recusa quando o teto não é legível, em vez de
+assumir infinito.
+
 ### Onde o modo gauntlet vale, e onde não
 
 | Domínio | Modo |
@@ -510,10 +524,15 @@ bun test ./test/mir-comandos-manuais.test.ts   # comando manual só pré-carrega
 
 ```bash
 bun run test
-bun test ./test/cnd-boundary.test.ts        # sem teto de orçamento, CND recusa iniciar (exit != 0)
-bun test ./test/cnd-comparacao-cega.test.ts # o crítico não sabe qual candidato é o do motor
-bun test ./test/cnd-dominio.test.ts         # domínio de lógica pura NÃO habilita gauntlet
+bun test ./test/cic/cnd-boundary.test.ts        # sem teto legível, CND recusa iniciar
+bun test ./test/cic/cnd-comparacao-cega.test.ts # o crítico não sabe qual candidato é o do motor
+bun test ./test/cic/cnd-dominio.test.ts         # domínio de lógica pura NÃO habilita gauntlet
+bun test ./test/cic/rda-vto.test.ts             # empate não elege ninguém; votação vazia lança
 ```
+
+> Os caminhos acima corrigem os que este documento trazia (`test/cnd-*.test.ts`):
+> desde a Onda 1b, `test/` espelha os domínios de `motor/`, e
+> `test/mapa-de-testes.test.ts` reprova arquivo solto na raiz.
 
 **Reprova se:** CND puder rodar sem teto de custo. Relatos de mercado registram sessões de centenas de dólares sem boundary — é o risco declarado do item.
 
