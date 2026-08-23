@@ -39,21 +39,21 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 
 ## 1. Mapa das ondas
 
-| Onda | Tema | Itens | Dono principal | Muda comportamento? |
-|---|---|---|---|---|
-| **0** | Rede de segurança | — | — | Não |
-| **1** | Rename estrutural BRAZIL | — | todos | Não (mecânico) |
-| **2** | Fundação plugável | 1 (parcial), 24, §3.7 | TMD, NMY | Pouco |
-| **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco |
-| **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim |
-| **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim |
-| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim |
-| **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim |
-| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim |
-| **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim |
-| **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim |
-| **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim |
-| **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) |
+| Onda | Tema | Itens | Dono principal | Muda comportamento? | Estado |
+|---|---|---|---|---|---|
+| **0** | Rede de segurança | — | — | Não | ✅ feita |
+| **1** | Rename estrutural BRAZIL | — | todos | Não (mecânico) | ✅ feita |
+| **2** | Fundação plugável | 1 (parcial), 24, §3.7 | TMD, NMY | Pouco | ✅ feita |
+| **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco | ✅ feita |
+| **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim | ✅ feita |
+| **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | — |
+| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | — |
+| **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | — |
+| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | — |
+| **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | — |
+| **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | — |
+| **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | — |
+| **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) | — |
 
 **Caminho crítico:** 0 → 1 → 2 → 3 → 4 → 5. As ondas 6 a 11 têm folga de ordem entre si depois da 5, com duas exceções travadas: **8 depende de 9** (o modo gauntlet não liga sem `orcamentoPorCard`) e **10 depende de 3** (o `aprendiz` lê o diário por evento).
 
@@ -268,7 +268,9 @@ bun test ./test/shutdown-gracioso.test.ts   # SIGTERM grava checkpoint antes de 
 curl -sf localhost:$PORTA/health            # exit 0
 ```
 
-**Teste de aceitação manual, obrigatório:** `kill -9` no daemon durante um card em `EXECUTING`, `URL`, e depois de `PR_OPEN`. Reinicia. Nos três casos o card retoma na fase correta e **nenhum efeito externo duplica**.
+**Teste de aceitação manual, obrigatório — AINDA NÃO FEITO:** `kill -9` no daemon durante um card em `EXECUTING`, `URL`, e depois de `PR_OPEN`. Reinicia. Nos três casos o card retoma na fase correta e **nenhum efeito externo duplica**.
+
+Os automatizados cobrem a lógica (`test/pr-orfao.test.ts` reproduz a sequência exata do PR duplicado), mas nenhum deles mata um processo de verdade nem fala com o GitHub. Precisa de um repo-alvo real e de um `gh` autenticado — é o único item da Onda 3 que fica pendente de execução humana.
 
 ---
 

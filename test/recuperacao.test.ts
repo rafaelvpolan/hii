@@ -91,3 +91,20 @@ test('card sem evento final conta como em andamento; com card_fechado, nao', () 
   anexarEvento({ card: id, evento: 'card_fechado' })
   expect(emAndamento(id)).toBe(false)
 })
+
+test('INVARIANTE toda saida de passoComCrivo fecha a fase — senao falha limpa parece crash', async () => {
+  const fonte = await Bun.file('motor/cic/passo-com-gate.ts').text()
+  const saidas = (fonte.match(/return \{ metric:/g) ?? []).length
+  const fechamentos = (fonte.match(/evento: 'fase_fim'/g) ?? []).length
+  expect(saidas, 'a varredura nao achou as saidas — o invariante passaria vazio').toBeGreaterThan(2)
+  expect(fechamentos, `${saidas} saida(s) e ${fechamentos} fase_fim: alguma saida deixa a fase aberta`).toBe(saidas)
+})
+
+test('gate_start sem gate_verdict e o unico jeito de a fase ficar aberta no diario', () => {
+  const id = cardEm('EXECUTING')
+  anexarEvento({ card: id, evento: 'fase_inicio', fase: 'testes' })
+  anexarEvento({ card: id, evento: 'gate_start', fase: 'testes' })
+  anexarEvento({ card: id, evento: 'gate_verdict', fase: 'testes', detalhe: 'APPROVED' })
+  anexarEvento({ card: id, evento: 'fase_fim', fase: 'testes', detalhe: 'aprovada' })
+  expect(faseInterrompida(id)).toBeNull()
+})
