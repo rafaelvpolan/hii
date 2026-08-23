@@ -77,7 +77,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const contract = ensureContract(target, isoNow())
   const changed = (await runGit(wt, ['diff', '--name-only', `origin/${base}...HEAD`])).stdout.split('\n').filter(Boolean)
   const pkg = affectedPackage(contract, changed)
-  const ctx: RunCtx = { contract, pkg, target }
+  const ctx: RunCtx = { contract, pkg, target, arquivos: changed }
   patchCard(id, {}, `${isoNow()} contrato: ${contract.stack}${pkg ? ` · pacote afetado: ${pkg.name}` : ''}`)
   const all = activeSteps(wt)
   const plan = planSteps({ title: card.fm.title, objetivo: desc, risk: card.fm.risk, surface: card.fm.surface, override: card.fm.steps }, all)

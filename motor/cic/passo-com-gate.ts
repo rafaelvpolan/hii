@@ -5,6 +5,7 @@ import { patchCard } from '../cdl/store'
 import { runStep } from './agente'
 import { runGatedReview, withGateRetry } from './crv/gate'
 import { anexarEvento } from '../euc/eventos'
+import { abrirPrompt, anexarInstrucao, montar } from '../tmd/eco/prefixo'
 import type { GateResult } from './crv/gate'
 
 export interface GatedDeps {
@@ -47,11 +48,19 @@ export async function runGatedStep(id: string, wt: string, base: string, agent: 
   const metric = (): StepMetric => ({ time: Math.max(0, Math.round((Date.now() - t0) / 1000) - tempoNoGate), cost, tokens, costMeasured })
   const metricaDoGate = (): StepMetric => ({ time: tempoNoGate, cost: custoDoGate, tokens: tokensDoGate, costMeasured: medidoNoGate })
   anexarEvento({ card: id, evento: 'fase_inicio', fase: label, detalhe: agent })
+  // ECO: a instrucao vira prefixo fixo e cada reprovacao do crivo e ANEXADA.
+  // Antes o sufixo era substituido a cada volta, entao o prompt da tentativa 3
+  // nao era extensao do da tentativa 2 e o cache de prefixo do provedor so
+  // pegava a instrucao inicial. Anexando, o trecho cacheavel cresce a cada
+  // volta — e o agente ainda passa a ver o que ja foi rejeitado antes.
+  let prompt = abrirPrompt(instruction)
   while (attempt <= maxReajuste()) {
     // repair_attempt so a partir da 2a volta: a 1a e execucao, nao reparo.
-    if (attempt > 0) anexarEvento({ card: id, evento: 'repair_attempt', fase: label, detalhe: `tentativa ${attempt + 1}: ${reason}` })
-    const suffix = attempt === 0 ? '' : `\n\nO revisor CRIVO reprovou a etapa anterior: ${reason}. Corrija exatamente isso, sem quebrar o resto.`
-    const r = await deps.runStep(wt, agent, instruction + suffix, id)
+    if (attempt > 0) {
+      anexarEvento({ card: id, evento: 'repair_attempt', fase: label, detalhe: `tentativa ${attempt + 1}: ${reason}` })
+      prompt = anexarInstrucao(prompt, `\nO revisor CRIVO reprovou a tentativa ${attempt}: ${reason}. Corrija exatamente isso, sem quebrar o resto nem desfazer o que ja estava certo.`)
+    }
+    const r = await deps.runStep(wt, agent, montar(prompt), id)
     cost += r.cost
     costMeasured = costMeasured && r.costMeasured
     tokens += r.tokens

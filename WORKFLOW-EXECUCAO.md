@@ -46,7 +46,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **2** | Fundação plugável | 1 (parcial), 24, §3.7 | TMD, NMY | Pouco | ✅ feita |
 | **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco | ✅ feita |
 | **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim | ✅ feita |
-| **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | — |
+| **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | — |
 | **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | — |
 | **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | — |
@@ -300,14 +300,25 @@ Os automatizados cobrem a lógica (`test/pr-orfao.test.ts` reproduz a sequência
 
 ```bash
 bun run test
-bun test ./test/reparo-generico.test.ts     # gate falho → 1 tentativa estreita → gate roda de novo
-bun test ./test/reparo-teto.test.ts         # esgotou tentativas → sobe pro humano COM o relato do que tentou
+bun test ./test/reparo-generico.test.ts     # 1 tentativa estreita; teto respeitado; relato do que tentou
 bun test ./test/eco-prefixo.test.ts         # prefixo byte-idêntico entre chamadas do mesmo card
 bun test ./test/tjl-blocos.test.ts          # bloco 2 falho → blocos 3..N não executam
-bun test ./test/reparador-laravel.test.ts
+bun test ./test/reparador-laravel.test.ts   # domínio detectado; e o portão de build o consulta de fato
 ```
 
-**Reprova se:** o repair-loop rodar sem teto, ou reescrever o prefixo (mata o cache e o item 17 junto).
+`reparo-teto` não virou arquivo próprio: os dois casos (teto respeitado, relato ao esgotar) vivem em `reparo-generico.test.ts`, junto do resto do contrato do loop.
+
+**Reprova se:** o repair-loop rodar sem teto, ou reescrever o prefixo (mata o cache e o item 17 junto). Os dois têm invariante automatizada — uma varre `motor/` atrás de `while` de retry sem limite, a outra cobra que `passoComCrivo` use `abrirPrompt`/`anexarInstrucao` em vez de concatenar sufixo solto.
+
+### Correção de premissa
+
+O `MODERNIZATION.md` (Parte I, §3.2) diz que o repair loop *"só está aplicado a um caso (subida do servidor)"*. Não está: o motor já tinha **quatro** cópias — `buildWithReajuste`, `testGate`, `passoComCrivo` e o conserto de URL. Eram estruturalmente iguais e já divergiam no que importa: só uma tinha veredicto `inconclusivo`, nenhuma levava o relato do que foi tentado ao humano, nenhuma escrevia no diário.
+
+Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/cic/reparo.ts` é a versão única; `buildWithReajuste` e `testGate` passaram a chamá-la e viraram um portão só, parametrizado.
+
+### TJL ainda não tem chamador — e isso é dependência real, não esquecimento
+
+`motor/nmy/tjl/blocos.ts` está pronto e testado, mas nada o invoca ainda: **quem fatia uma tarefa em blocos é o `core/agent-executor.ts` do item 11**, que é Onda 10. Ligar TJL antes disso exigiria inventar aqui um critério de fatiamento que o item 11 vai definir — e aí seriam dois critérios brigando.
 
 ---
 
