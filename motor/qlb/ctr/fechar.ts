@@ -24,6 +24,7 @@ import type { RunCtx } from '../../cic/crv/portoes-de-fecho'
 import { syncWithBase, revalidate } from './sync'
 import { resumeStart, RESUME_POST_STEPS } from './retomar'
 import { runStep } from '../../cic/agente'
+import { executarComIdempotencia } from '../slv/idempotencia'
 
 export interface FinishDeps {
   runStep: typeof runStep
@@ -200,15 +201,33 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     : `${isoNow()} push: branch atualizada`)
   const body = buildPrBody(id, desc ?? '', gate)
   const prExistente = String(card.fm.pr_url ?? '').trim()
-  const pr = pularCriacaoDePr(prExistente)
-    ? { err: null, stdout: prExistente, stderr: '' }
-    : await run('gh', ['pr', 'create', '--repo', repoName, '--base', base, '--head', branch, '--title', msg, '--body', body], { cwd: wt, timeout: 60000 })
   if (pularCriacaoDePr(prExistente)) {
     patchCard(id, {}, `${isoNow()} PR ja aberto para esta branch — push atualizou ${prExistente}`)
   }
-  const url = String(pr.stdout || '').trim().split('\n').filter(Boolean).pop() || ''
-  if (pr.err && !url) {
-    patchCard(id, { status: 'HALTED', ...totalsFields }, `${isoNow()} CLEANED->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${String(pr.stderr || '').slice(0, 120)}`)
+  // Abrir PR e efeito externo irreversivel: passa por SLV. O guarda antigo era
+  // so `card.fm.pr_url`, gravado DEPOIS do gh e depois de remover o worktree —
+  // morrer nesse meio deixava pr_url vazio, o reconcileStranded devolvia o card
+  // para URL_OK e o finish abria um SEGUNDO PR. Agora o diario registra a url
+  // no instante em que o gh devolve, antes de qualquer outra coisa.
+  let erroDoGh = ''
+  const abertura = await executarComIdempotencia({
+    card: id,
+    fase: 'ctr',
+    operacao: 'pr_create',
+    executar: async (): Promise<string> => {
+      if (prExistente) return prExistente
+      const pr = await run('gh', ['pr', 'create', '--repo', repoName, '--base', base, '--head', branch, '--title', msg, '--body', body], { cwd: wt, timeout: 60000 })
+      const saida = String(pr.stdout || '').trim().split('\n').filter(Boolean).pop() || ''
+      if (pr.err && !saida) erroDoGh = String(pr.stderr || '').slice(0, 120)
+      return saida
+    },
+  })
+  const url = abertura.resultado
+  if (abertura.reaproveitada && url) {
+    patchCard(id, {}, `${isoNow()} PR ja constava no diario de execucao (${url}) — nao foi aberto de novo`)
+  }
+  if (!url) {
+    patchCard(id, { status: 'HALTED', ...totalsFields }, `${isoNow()} CLEANED->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
     return
   }
   stopUrl(card.fm.url_pid)
