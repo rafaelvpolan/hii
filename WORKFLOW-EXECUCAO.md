@@ -54,6 +54,8 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | — |
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | — |
 | **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) | — |
+| **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | — |
+| **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | — |
 
 **Caminho crítico:** 0 → 1 → 2 → 3 → 4 → 5. As ondas 6 a 11 têm folga de ordem entre si depois da 5, com duas exceções travadas: **8 depende de 9** (o modo gauntlet não liga sem `orcamentoPorCard`) e **10 depende de 3** (o `aprendiz` lê o diário por evento).
 
@@ -605,7 +607,92 @@ bun test ./test/qlb-limites.test.ts
 
 ---
 
-## 2. Rastreamento — 32/32
+## ONDA 12 — Divergência antes de convergir (MCN)
+
+> **Origem:** pedido de trazer para o hii a ideia do `uditakhourii/adhd`, em versão
+> própria e com nome da taxonomia BRAZIL. Item **33**, novo — não estava nos 32.
+
+**O problema que resolve.** Convergência prematura. Cadeia de raciocínio linear
+ancora na primeira saída; árvore de pensamento ainda compartilha contexto entre
+ramos. O `adhd` trata isso como problema de arquitetura, não de prompt: gera N
+processos **isolados**, cada um sob um enquadramento cognitivo diferente, com
+**zero contexto compartilhado durante a divergência**; só depois um crítico
+separado pontua, marca armadilhas, agrupa e aprofunda os sobreviventes.
+
+A frase que importa do README de origem: *"the generator-critic split is
+mechanical — separate LLM calls with opposite system prompts — not promised in
+one prompt."* É exatamente a filosofia deste motor: separação real, não promessa
+dentro de um prompt só.
+
+### Por que versão própria, e não a dependência
+
+`npx skills add` traria pacote npm, CLI e biblioteca de terceiro para dentro do
+fluxo — viola a regra de zero dependência de runtime. E metade do mecanismo **já
+existe aqui**: o crítico é o `CRV`, o voto é o `VTO`, o consenso é a `RDA`, o
+debate é a `ARN`. O que falta é só a metade divergente, com isolamento de
+contexto garantido.
+
+### Nome — **MCN, Macunaíma**
+
+Seguindo a regra do `brazil-orchestrator-naming.md` (§10): nome brasileiro =
+comportamento arquitetural, nunca homenagem solta. Macunaíma é o herói de muitas
+faces, sem caráter fixo, que atravessa o país mudando de forma — é literalmente
+um problema visto por N personagens diferentes, sem que nenhum seja "o" certo.
+O componente faz isso: um enunciado, N enquadramentos isolados.
+
+*Alternativa considerada e descartada:* `SMN` (Semana de 22) — pluralidade por
+design, mas descreve o evento, não o comportamento de ramificar.
+
+### Escopo
+
+| Item | Entrega | Arquivo |
+|---|---|---|
+| 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/` |
+| 33 | `despacharDivergencia(enunciado, frames)` — N invocações **sem contexto compartilhado**; teste prova que nenhum ramo enxerga o outro | `motor/cic/mcn/divergir.ts` |
+| 33 | Convergência **reusa** `CRV` (critério escrito) e `VTO`; nenhum juiz novo | `motor/cic/mcn/convergir.ts` |
+| 33 | Teto obrigatório: recusa iniciar sem `orcamentoPorCard` — N ramos multiplicam custo por N | `motor/cic/mcn/divergir.ts` |
+| 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/osw/rta/perfil.ts` |
+
+### Onde entra, e onde NÃO entra
+
+Entra na **Fase 3 (Plano)**, antes da matriz de entendimento — divergir depois de
+o plano estar escrito é tarde. Reaproveita o `TSL`/`ideacao`, que já produz
+alternativas e já leva divergência para decisão humana no `CLARIFY`; MCN é o
+`TSL` com isolamento real entre ramos e crítico separado.
+
+**Não entra** em card de lógica com resposta única (cálculo de comissão não tem
+"várias formas certas"), nem em reparo de build (o `narrowFix` é estreito de
+propósito — divergir ali é desperdício). O mesmo boundary do `CND`.
+
+**Trava:** depende da Onda 9 pelo mesmo motivo que a Onda 8 — N ramos sem teto
+de custo é a forma mais rápida de queimar orçamento.
+
+---
+
+## ONDA 13 — Superfície humana sem travamento (MIR)
+
+> **Origem:** pedido de teste completo de controle da TUI. Item **34**, novo.
+
+**O que já existe:** ~50 arquivos em `test/mir/` cobrindo board, `tui-app`,
+`tui-input`, `tui-layout`, `tui-pintura`, `tui-rolagem`, `tui-fluxo`, widgets,
+paleta, largura, help e cada render. A cobertura de **comportamento** é boa.
+
+**O que não existe, e é o que foi pedido:**
+
+| Item | Entrega | Arquivo |
+|---|---|---|
+| 34 | Varredura que prova que **todo** comando de `COMMANDS` tem teste — comando novo sem teste reprova | `test/mir/mapa-de-comandos.test.ts` |
+| 34 | Percurso end-to-end por todos os menus/modos/layouts numa tela virtual, sem exceção não tratada | `test/mir/percurso-completo.test.ts` |
+| 34 | **Orçamento de tempo por quadro**: pintura e rolagem sob teto medido, não "parece rápido" — mesmo princípio do Core Web Vitals virar número | `test/mir/tempo-de-pintura.test.ts` |
+| 34 | Guarda contra travamento: nenhuma operação de render pode bloquear além de N ms com estado grande (muitos cards, log longo, terminal estreito) | `test/mir/tui-sob-carga.test.ts` |
+| 34 | Redimensionamento extremo (largura mínima, altura 1 linha) não estoura nem corta o rodapé | `test/mir/largura.test.ts` (estende) |
+
+**Critério de pronto:** o teto de tempo é medido e falha por número, não por
+impressão — senão é o mesmo teatro de qualidade que o motor recusa em gate.
+
+---
+
+## 2. Rastreamento — 34 itens
 
 | # | Item | Onda | Dono |
 |---|---|---|---|

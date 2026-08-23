@@ -67,7 +67,6 @@ export const GATE_TIMEOUT_MAX_MS = numeroDeEnv('HICODE_GATE_TIMEOUT_MAX_MS', 600
 export const GATE_TIMEOUT_MS_PER_KB = numeroDeEnv('HICODE_GATE_TIMEOUT_MS_PER_KB', 4000)
 export const VISUAL_AI = (process.env.HICODE_VISUAL_AI || 'off') === 'on'
 export const CLARIFY = (process.env.HICODE_CLARIFY || 'on') !== 'off'
-export const CARD_BUDGET_USD = numeroDeEnv('HICODE_CARD_BUDGET_USD', 0)
 export const EVAL = (process.env.HICODE_EVAL || 'on') !== 'off'
 export const PROJECT_MEMORY = (process.env.HICODE_PROJECT_MEMORY || 'on') !== 'off'
 export function maxWaitingAttempts(): number {

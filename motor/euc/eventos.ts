@@ -17,6 +17,7 @@ export const TIPOS_DE_EVENTO = [
   'gate_verdict',
   'repair_attempt',
   'human_checkpoint',
+  'model_tier_selected',
   'efeito_registrado',
   'orfao',
   'card_fechado',

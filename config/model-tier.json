@@ -1,0 +1,22 @@
+{
+  "versao": 1,
+  "sobre": "Governanca de custo por acao. Tier vem com MOTIVO porque tier sem porque nao e auditavel — e a auditabilidade e o ponto do item 19 (MODERNIZATION.md Parte V secao 4). O diferencial entre tier premium e tier pequeno e de 100-300x, entao decidir tier por habito e caro; decidir errado para baixo e mais caro ainda, porque a economia evapora em retry e regressao silenciosa.",
+  "padrao": "tier2_padrao",
+  "criterios": {
+    "arquitetura": { "tier": "tier1_caro", "motivo": "decisao dificil de reverter, custo de erro alto" },
+    "seguranca": { "tier": "tier1_caro", "motivo": "custo de falso negativo e maior que custo de token" },
+    "review": { "tier": "tier1_caro", "motivo": "o crivo e a ultima leitura antes do humano; errar aqui vaza para o PR" },
+    "implementacao": { "tier": "tier2_padrao", "motivo": "volume alto, tarefa bem especificada pelo plano" },
+    "reparo_build": { "tier": "tier2_padrao", "motivo": "escopo estreito por narrowFix" },
+    "testes": { "tier": "tier2_padrao", "motivo": "escopo definido pela matriz de cenario" },
+    "documentacao": { "tier": "tier3_barato", "motivo": "baixo risco de erro caro" },
+    "limpeza": { "tier": "tier3_barato", "motivo": "baixo risco de erro caro" },
+    "classificacao": { "tier": "tier3_barato", "motivo": "decisao curta e verificavel pelo passo seguinte" }
+  },
+  "regraDeSubida": "card ou regra de config/regras-inegociaveis.json pode forcar tier acima do padrao, NUNCA abaixo. Mesma politica da LEI sobre o perfil de risco.",
+  "orcamentoPorCard": {
+    "tetoUsd": 16,
+    "acaoAoEstourar": "pausar e notificar humano",
+    "sobre": "Calibrado pelo pior caso medido, nao pelo tipico: quatro pontos de reparo independentes com teto 2 cada somam 8 chamadas de agente por card, ~US$ 15,52-15,67. Regimes observados: tipico US$ 2,87, observado US$ 1,55-1,96. Ver PENDENCIAS.md — reduzir os tetos de reparo e o caminho para baixar isto."
+  }
+}
