@@ -6,8 +6,8 @@ import type { Fields } from '../motor/cdl'
 
 process.env.HICODE_COTA_TTL_MS = '0'
 
-const { lerSaudeDoMotor } = await import('../lib/core/saude')
-const { PROVEDOR_DESCONHECIDO } = await import('../lib/core/cota')
+const { lerSaudeDoMotor } = await import('../motor/euc/rdr/saude')
+const { PROVEDOR_DESCONHECIDO } = await import('../motor/euc/tsr/cota')
 const { createCard } = await import('../motor/cdl/store')
 
 const criados: string[] = []

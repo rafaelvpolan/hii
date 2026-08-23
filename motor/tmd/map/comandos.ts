@@ -5,7 +5,7 @@ import { memoTempo } from '../eco/memo'
 import { stripAnsi } from '../../../lib/core/tui/layout'
 import type { Rgb } from '../../../lib/core/tui/paleta'
 import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cdl/ali/contrato'
-import { raizDoCodex } from '../../../lib/ai/planos'
+import { raizDoCodex } from '../../euc/tsr/planos'
 import { providerNameFor } from '../registro'
 import type { AiProviderName } from '../tipos'
 

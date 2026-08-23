@@ -5,7 +5,7 @@ import { cardsDir } from './ali/config'
 import { stopUrl } from '../../lib/runner/url-vivo'
 import { removeWorktree } from '../../lib/runner/git'
 import { remove } from '../../lib/core/actions'
-import { floorProviders, formatProviders } from '../../lib/runner/cost-gap'
+import { floorProviders, formatProviders } from '../euc/tsr/lacuna'
 
 const EM_VOO = ['EXECUTING', 'CORRECTING']
 

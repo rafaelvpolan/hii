@@ -46,7 +46,7 @@ const { createCard, readCard } = await import('../motor/cdl/store')
 const { clarify } = await import('../lib/runner/clarify')
 const { evaluate } = await import('../lib/runner/eval')
 const { idear } = await import('../lib/runner/ideate-run')
-const { runProvider } = await import('../lib/runner/cost-trust')
+const { runProvider } = await import('../motor/euc/tsr/confianca')
 const { providerFor, modelFor } = await import('../motor/tmd/registro')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))

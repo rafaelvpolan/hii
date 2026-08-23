@@ -1,8 +1,8 @@
 import type { Fields } from '../../../motor/cdl'
-import { fleetFloorProviders, formatProviders } from '../../runner/cost-gap'
+import { fleetFloorProviders, formatProviders } from '../../../motor/euc/tsr/lacuna'
 import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman } from './phases'
 import { marcaDoDisco } from './disco'
-import { usoDeDiscoCacheado } from '../../runner/estado-em-disco'
+import { usoDeDiscoCacheado } from '../../../motor/euc/estado-em-disco'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

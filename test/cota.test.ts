@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 
 process.env.HICODE_COTA_TTL_MS = '0'
 
-const { lerCota, JANELA_COTA_MS, PROVEDOR_DESCONHECIDO } = await import('../lib/core/cota')
+const { lerCota, JANELA_COTA_MS, PROVEDOR_DESCONHECIDO } = await import('../motor/euc/tsr/cota')
 
 const HORA_MS = 60 * 60 * 1000
 const criados: string[] = []

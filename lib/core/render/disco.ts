@@ -1,5 +1,5 @@
-import { mb } from '../../runner/estado-em-disco'
-import type { NivelDeDisco, UsoDeDisco } from '../../runner/estado-em-disco'
+import { mb } from '../../../motor/euc/estado-em-disco'
+import type { NivelDeDisco, UsoDeDisco } from '../../../motor/euc/estado-em-disco'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

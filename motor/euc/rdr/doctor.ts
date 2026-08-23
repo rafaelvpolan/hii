@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { repoStatus } from '../../motor/cdl/repos'
-import { readContract } from '../../motor/cdl/bss/armazenar'
-import { daemonStatus } from './daemon'
-import { providerNameFor } from '../../motor/tmd/registro'
+import { repoStatus } from '../../cdl/repos'
+import { readContract } from '../../cdl/bss/armazenar'
+import { daemonStatus } from '../../../lib/core/daemon'
+import { providerNameFor } from '../../tmd/registro'
 
 export type Severity = 'ok' | 'aviso' | 'erro'
 

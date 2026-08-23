@@ -41,8 +41,8 @@ const { ClaudeProvider } = await import('../motor/tmd/harness/claude')
 const { CodexProvider } = await import('../motor/tmd/harness/codex')
 const { emptyUsage } = await import('../motor/tmd/uso')
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { runProvider, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')
-const { classifyCostGap } = await import('../lib/runner/cost-gap')
+const { runProvider, warnBudgetWithoutGuarantee } = await import('../motor/euc/tsr/confianca')
+const { classifyCostGap } = await import('../motor/euc/tsr/lacuna')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

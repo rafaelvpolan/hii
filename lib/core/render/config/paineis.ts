@@ -1,6 +1,6 @@
 import { padVisible, truncVisible } from '../../tui/layout'
 import { barraRotulada } from '../widget/barra'
-import type { ConsumoDoProvedor } from '../../../ai/consumo'
+import type { ConsumoDoProvedor } from '../../../../motor/euc/tsr/consumo'
 import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LedgerDaSessao, LinhaDeProvedor, OpcoesConfig } from './tipos'
 
 const DIM = '\x1b[2m'

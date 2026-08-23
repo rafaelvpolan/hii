@@ -1,6 +1,6 @@
-import { isoAt } from '../../motor/cdl'
-import { contribuicoesDoRegistro, loteDesde } from '../core/cota-runs'
-import type { ContribuicaoDeProvedor, RegistroDeRun } from '../core/cota-runs'
+import { isoAt } from '../../cdl'
+import { contribuicoesDoRegistro, loteDesde } from './cota-runs'
+import type { ContribuicaoDeProvedor, RegistroDeRun } from './cota-runs'
 
 export const JANELA_5H = 5 * 60 * 60 * 1000
 export const JANELA_SEMANA = 7 * 24 * 60 * 60 * 1000

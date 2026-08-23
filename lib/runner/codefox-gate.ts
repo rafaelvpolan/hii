@@ -4,7 +4,7 @@ import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS
 import { runGit, stageAll } from './git'
 import { patchCard } from '../../motor/cdl/store'
 import { modelFor, providerFor, effortFor } from '../../motor/tmd/registro'
-import { runProvider } from './cost-trust'
+import { runProvider } from '../../motor/euc/tsr/confianca'
 import { sumTokens } from '../../motor/tmd/uso'
 import { classifyFailure } from '../ai/failure'
 

@@ -7,7 +7,7 @@ import type { Run } from '../motor/cdl'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-run-falha-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { writeRun } = await import('../lib/runner/runs')
+const { writeRun } = await import('../motor/euc/registros')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

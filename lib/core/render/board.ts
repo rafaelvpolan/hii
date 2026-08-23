@@ -1,6 +1,6 @@
 import type { Fields } from '../../../motor/cdl'
 import type { Passo } from '../progresso'
-import { fleetFloorProviders, floorProviders, formatProviders } from '../../runner/cost-gap'
+import { fleetFloorProviders, floorProviders, formatProviders } from '../../../motor/euc/tsr/lacuna'
 import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman, esperaHumano } from './phases'
 
 const RESET = '\x1b[0m'

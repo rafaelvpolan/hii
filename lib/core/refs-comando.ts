@@ -1,12 +1,12 @@
 import { basename } from 'node:path'
 import { colarImagem, comoObter, depsPadrao } from '../runner/clipboard'
 import type { DepsDeColagem } from '../runner/clipboard'
-import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, mb, refsDir, usoDeDisco } from '../runner/estado-em-disco'
+import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, mb, refsDir, usoDeDisco } from '../../motor/euc/estado-em-disco'
 import { textoDoDisco } from './render/disco'
 import { anexarNaSessao, anexarNaTarefa, ehUrlDeRef, escreverFontes, fontesDaSessao, proximoBaseLocal } from '../runner/refs-anexo'
 import type { Anexo } from '../runner/refs-anexo'
 import { readRefSources } from '../runner/refs'
-import { sessaoAtual } from '../runner/sessao'
+import { sessaoAtual } from '../../motor/euc/sessao'
 
 export const PALAVRAS_DE_CLIPBOARD = ['clipboard', 'cola', 'colar', 'paste', 'print']
 

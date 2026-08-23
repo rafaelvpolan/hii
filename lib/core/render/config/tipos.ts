@@ -1,4 +1,4 @@
-import type { ConsumoDoProvedor } from '../../../ai/consumo'
+import type { ConsumoDoProvedor } from '../../../../motor/euc/tsr/consumo'
 import type { Situacao } from '../../../../motor/tmd/disponibilidade'
 
 

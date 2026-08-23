@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import {
   autenticadoDoProvedor, claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
   modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
-} from '../lib/ai/planos'
+} from '../motor/euc/tsr/planos'
 import { sondarOllama } from '../motor/tmd/harness/ollama-estado'
 
 const dir = mkdtempSync(join(tmpdir(), 'hicode-planos-'))

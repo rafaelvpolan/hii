@@ -14,9 +14,9 @@ import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from './url-viv
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './classify'
 import { instrucaoDeAjuste, instrucaoDeConserto, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from './url-ajuste'
 import { implement, verifyVisual } from './agent'
-import { resolvedFailure, writeRun } from './runs'
-import { abrirSessao } from './ias-da-sessao'
-import { warnBudgetWithoutGuarantee } from './cost-trust'
+import { resolvedFailure, writeRun } from '../../motor/euc/registros'
+import { abrirSessao } from '../../motor/euc/ias-da-sessao'
+import { warnBudgetWithoutGuarantee } from '../../motor/euc/tsr/confianca'
 import { applyFailurePolicy } from './failure-policy'
 import { quotaFallbackProviderFor } from '../../motor/tmd/registro'
 

@@ -1,5 +1,5 @@
-import type { AgentResult } from '../../motor/tmd/tipos'
-import type { Fields } from '../../motor/cdl'
+import type { AgentResult } from '../../tmd/tipos'
+import type { Fields } from '../../cdl'
 
 export type CostGap = 'measured' | 'call_failed' | 'unreported'
 

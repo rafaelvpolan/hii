@@ -19,8 +19,8 @@ afterAll(() => {
 })
 
 test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pelo escritor de verdade', async () => {
-  const { registrarChamada } = await import('../lib/runner/ias-da-sessao')
-  const { sessaoParaChamada } = await import('../lib/runner/cost-trust')
+  const { registrarChamada } = await import('../motor/euc/ias-da-sessao')
+  const { sessaoParaChamada } = await import('../motor/euc/tsr/confianca')
   const { lerConfig } = await import('../motor/cdl/ali/snapshot')
 
   registrarChamada(sessaoParaChamada(''), {

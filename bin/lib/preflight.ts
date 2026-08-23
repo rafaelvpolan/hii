@@ -5,9 +5,9 @@ import { ROOT } from '../../motor/cdl/ali/config'
 import { provedoresDisponiveis } from '../../motor/tmd/disponibilidade'
 import { urlDoOllama } from '../../motor/tmd/harness/ollama-estado'
 import { rotuloDoBloqueio } from '../../lib/core/dispatch'
-import type { Check, Severity } from '../../lib/core/doctor'
+import type { Check, Severity } from '../../motor/euc/rdr/doctor'
 
-export type { Severity as Severidade, Check as ChecagemDeAmbiente } from '../../lib/core/doctor'
+export type { Severity as Severidade, Check as ChecagemDeAmbiente } from '../../motor/euc/rdr/doctor'
 
 function estaNoPath(binario: string): boolean {
   const caminhos = (process.env.PATH ?? '').split(delimiter).filter(Boolean)

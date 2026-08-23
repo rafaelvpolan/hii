@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { renderHistorico, linhasDasIas } from '../lib/core/render/historico'
 import { chaveDaSessao, idDaSessao } from '../lib/core/historico'
-import { idCurto } from '../lib/runner/ias-da-sessao'
+import { idCurto } from '../motor/euc/ias-da-sessao'
 import { stripAnsi } from '../lib/core/tui/layout'
 import type { HistoricoDeSessoes, Sessao } from '../lib/core/historico'
 import type { IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../motor/cdl/tipos'

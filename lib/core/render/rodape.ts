@@ -3,7 +3,7 @@ import { isActive, esperaHumano } from './phases'
 import { idadeDe } from './board'
 import { truncVisible } from '../tui/layout'
 import { marcaCurtaDoDisco } from './disco'
-import type { UsoDeDisco } from '../../runner/estado-em-disco'
+import type { UsoDeDisco } from '../../../motor/euc/estado-em-disco'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

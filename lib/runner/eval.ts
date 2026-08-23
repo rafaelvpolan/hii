@@ -3,7 +3,7 @@ import type { Card } from '../../motor/cdl'
 import { ROOT, GATE_DIFF_LIMIT } from '../../motor/cdl/ali/config'
 import { runGit } from './git'
 import { providerFor, modelFor } from '../../motor/tmd/registro'
-import { runProvider } from './cost-trust'
+import { runProvider } from '../../motor/euc/tsr/confianca'
 import { sumTokens } from '../../motor/tmd/uso'
 
 export interface EvalResult {

@@ -70,7 +70,7 @@ test('flags que o CLI TEM mas o motor nao usa ficam de fora de proposito', () =>
 })
 
 test('modo readonly NAO ganha --auto, e o motor recusa o kimi nesse modo em vez de deixar editar', async () => {
-  const { recusaPorLimite } = await import('../lib/runner/cost-trust')
+  const { recusaPorLimite } = await import('../motor/euc/tsr/confianca')
   expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
   expect(KIMI_LIMITS.isolatesReadonly).toBe(false)
   expect(KIMI_LIMITS.restrictsTools).toBe(false)

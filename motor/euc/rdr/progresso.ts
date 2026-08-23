@@ -1,7 +1,7 @@
-import { isoNow } from '../../motor/cdl'
-import type { Fields } from '../../motor/cdl'
-import { allCards } from '../../motor/cdl/store'
-import { floorProviders } from './cost-gap'
+import { isoNow } from '../../cdl'
+import type { Fields } from '../../cdl'
+import { allCards } from '../../cdl/store'
+import { floorProviders } from '../tsr/lacuna'
 
 const RESET = '\x1b[0m'
 const BOLD = '\x1b[1m'
@@ -9,7 +9,7 @@ const DIM = '\x1b[2m'
 const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
 
-import { PHASES, phaseIndex } from '../core/render/phases'
+import { PHASES, phaseIndex } from '../../../lib/core/render/phases'
 
 function track(status: string): string {
   if (status === 'HALTED') return `${RED}■ ■ ■ ■ ■ ■  parou${RESET}`

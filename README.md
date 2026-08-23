@@ -505,7 +505,7 @@ Papéis: `implement`, `verify`, `gate`, `step` — cada um escolhe provedor por 
 
 Capacidade é **declarada**, não presumida: `providerLimits` (`motor/tmd/registro.ts`) diz quem restringe
 tools, isola leitura, reporta custo e aceita nível de esforço; `recusaPorLimite`
-(`lib/runner/cost-trust.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
+(`motor/euc/tsr/confianca.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
 vez de mandar e tratar o lixo que volta como resultado.
 
 **Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo

@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from './estado-em-disco'
+import { garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from '../../motor/euc/estado-em-disco'
 import { downloadToFile } from './download'
 import { clip, refuse } from './url-guard'
 import type { Refusal } from './url-guard'

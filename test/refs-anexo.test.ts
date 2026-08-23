@@ -74,7 +74,7 @@ test('recusa o que nao e imagem, o que nao existe e o que passa do teto de taman
 
 test('o teto de 8 referencias por tarefa e respeitado', async () => {
   const { anexarNaTarefa } = await import('../lib/runner/refs-anexo')
-  const { MAX_REFS_POR_TAREFA } = await import('../lib/runner/estado-em-disco')
+  const { MAX_REFS_POR_TAREFA } = await import('../motor/euc/estado-em-disco')
   for (let i = 0; i < MAX_REFS_POR_TAREFA; i++) {
     expect(anexarNaTarefa('010', `https://exemplo.com/${i}.png`).ok).toBe(true)
   }
@@ -118,7 +118,7 @@ test('duas refs locais nao colidem de nome, nem com o ref-N que o download usa',
 })
 
 test('o uso de disco soma por area e acende alerta e teto', async () => {
-  const { usoDeDisco, nivelDe } = await import('../lib/runner/estado-em-disco')
+  const { usoDeDisco, nivelDe } = await import('../motor/euc/estado-em-disco')
   mkdirSync(join(estado, 'refs', '010'), { recursive: true })
   writeFileSync(join(estado, 'refs', '010', 'local-1.png'), Buffer.alloc(2048))
   mkdirSync(join(estado, 'tmp', 'transito'), { recursive: true })
@@ -143,7 +143,7 @@ test('no teto de disco a ref e recusada em vez de encher o disco', async () => {
 })
 
 test('a limpeza de tmp remove o antigo e preserva a sessao em uso', async () => {
-  const { limparTmpAntigo, dirDaSessao } = await import('../lib/runner/estado-em-disco')
+  const { limparTmpAntigo, dirDaSessao } = await import('../motor/euc/estado-em-disco')
   const velha = dirDaSessao('velha')
   const viva = dirDaSessao('viva')
   for (const d of [velha, viva]) {

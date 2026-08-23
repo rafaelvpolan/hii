@@ -1,6 +1,6 @@
 import { run } from '../../../lib/runner/git'
 import { emptyUsage } from '../uso'
-import { COST_UNKNOWN } from '../../../lib/ai/cost'
+import { COST_UNKNOWN } from '../../euc/tsr/custo'
 import { modoResolvido } from '../modos'
 import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
 import type { Usage } from '../../cdl'

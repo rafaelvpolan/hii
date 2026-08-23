@@ -2,7 +2,7 @@ import { larguraDeTexto } from '../tui/largura'
 import { pintar, type Tom } from '../tui/paleta'
 import { chaveDaSessao, idDaSessao } from '../historico'
 import type { HistoricoDeSessoes, Sessao } from '../historico'
-import { idCurto } from '../../runner/ias-da-sessao'
+import { idCurto } from '../../../motor/euc/ias-da-sessao'
 import type { IaDaSessao } from '../../../motor/cdl/tipos'
 
 export interface OpcoesDoHistorico {

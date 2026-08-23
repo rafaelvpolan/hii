@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { memoArquivo } from '../../motor/tmd/eco/memo'
-import type { AiProviderName } from '../../motor/tmd/tipos'
+import { memoArquivo } from '../../tmd/eco/memo'
+import type { AiProviderName } from '../../tmd/tipos'
 
 export interface JanelaDeUso {
   rotulo: string

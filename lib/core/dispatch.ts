@@ -16,7 +16,7 @@ import { esperandoVoce } from './render/rodape'
 import { newSession, seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './session'
 import { alvoDeRef, comandoRef } from './refs-comando'
 import { migrarRefsDaSessao, limparSessao } from '../runner/refs-anexo'
-import { reiniciarSessao, sessaoAtual } from '../runner/sessao'
+import { reiniciarSessao, sessaoAtual } from '../../motor/euc/sessao'
 import type { Effect, SessionState } from './session'
 
 export interface SituacaoDeEnvio {

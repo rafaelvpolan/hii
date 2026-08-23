@@ -2,9 +2,9 @@ import { claudeArgv } from './claude-argv'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv'
 import { run } from '../../../lib/runner/git'
 import { emptyUsage } from '../uso'
-import { COST_UNKNOWN, readReportedCost } from '../../../lib/ai/cost'
+import { COST_UNKNOWN, readReportedCost } from '../../euc/tsr/custo'
 import { runClaudeStream } from './claude-stream'
-import type { CostReading } from '../../../lib/ai/cost'
+import type { CostReading } from '../../euc/tsr/custo'
 import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
 
 interface ClaudeJson {

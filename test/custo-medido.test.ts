@@ -34,9 +34,9 @@ process.env.PATH = `${binDir}:${pathOriginal}`
 
 const { CodexProvider } = await import('../motor/tmd/harness/codex')
 const { OllamaProvider } = await import('../motor/tmd/harness/ollama')
-const { writeRun, updateRunSteps } = await import('../lib/runner/runs')
+const { writeRun, updateRunSteps } = await import('../motor/euc/registros')
 const { createCard, readCard } = await import('../motor/cdl/store')
-const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')
+const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../motor/euc/tsr/confianca')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

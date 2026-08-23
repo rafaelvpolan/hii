@@ -1,5 +1,5 @@
 import { truncVisible, padVisible, visibleLen } from '../tui/layout'
-import { formatProviders, unionProviders } from '../../runner/cost-gap'
+import { formatProviders, unionProviders } from '../../../motor/euc/tsr/lacuna'
 import type { PlanoLote, PlanoRemocao } from '../../../motor/cdl/remover'
 
 const RESET = '\x1b[0m'

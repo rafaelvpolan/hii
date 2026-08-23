@@ -9,10 +9,10 @@ import { handleCorrect } from './correct'
 import { handleSpec } from './spec-phase'
 import { checkMerged } from './merge'
 import { arquivar, precisaArquivar } from '../../motor/cdl/arquivar'
-import { recordTickSuccess, reportTickFailure } from './health'
+import { recordTickSuccess, reportTickFailure } from '../../motor/euc/rdr/tick'
 import { wakeDueWaiting } from './waiting'
-import { limparTmpAntigo, usoDeDisco } from './estado-em-disco'
-import { podarRegistrosAntigos } from './podar-registros'
+import { limparTmpAntigo, usoDeDisco } from '../../motor/euc/estado-em-disco'
+import { podarRegistrosAntigos } from '../../motor/euc/podar'
 
 export { reconcileStranded, pending } from './queue-state'
 

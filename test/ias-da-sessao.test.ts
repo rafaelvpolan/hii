@@ -10,7 +10,7 @@ beforeEach(async () => {
   estado = mkdtempSync(join(tmpdir(), 'hii-ias-'))
   mkdirSync(join(estado, 'runs'), { recursive: true })
   process.env.HICODE_CARDS_DIR = estado
-  const { esquecerSessoes } = await import('../lib/runner/ias-da-sessao')
+  const { esquecerSessoes } = await import('../motor/euc/ias-da-sessao')
   esquecerSessoes()
 })
 
@@ -33,7 +33,7 @@ function chamada(over: Partial<ChamadaDeIa> = {}): ChamadaDeIa {
 }
 
 test('a sessao de um card e estavel entre chamadas, e uma nova execucao abre outra', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const primeira = m.abrirSessao('010', Date.parse('2026-08-19T12:00:00Z'))
   expect(m.sessaoDoCard('010')).toBe(primeira)
   expect(m.sessaoDoCard('010')).toBe(primeira)
@@ -43,14 +43,14 @@ test('a sessao de um card e estavel entre chamadas, e uma nova execucao abre out
 })
 
 test('o id curto e deterministico — mesma sessao, mesmo id', async () => {
-  const { idCurto } = await import('../lib/runner/ias-da-sessao')
+  const { idCurto } = await import('../motor/euc/ias-da-sessao')
   expect(idCurto('010-20260819120000')).toBe(idCurto('010-20260819120000'))
   expect(idCurto('010-20260819120000')).not.toBe(idCurto('010-20260819130000'))
   expect(idCurto('010-20260819120000').length).toBe(4)
 })
 
 test('cada chamada vira uma linha do ledger, em ordem', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const sessao = m.abrirSessao('010')
   m.registrarChamada(sessao, chamada({ papel: 'implement' }))
   m.registrarChamada(sessao, chamada({ papel: 'gate', provedor: 'codex' }))
@@ -62,7 +62,7 @@ test('cada chamada vira uma linha do ledger, em ordem', async () => {
 })
 
 test('linha corrompida no ledger nao derruba a leitura das outras', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const sessao = m.abrirSessao('010')
   m.registrarChamada(sessao, chamada())
   writeFileSync(m.arquivoDoLedger(sessao), `${readFileSync(m.arquivoDoLedger(sessao), 'utf8')}{isto nao e json}\n`)
@@ -71,14 +71,14 @@ test('linha corrompida no ledger nao derruba a leitura das outras', async () => 
 })
 
 test('papel desconhecido no disco nao vira papel invalido em memoria', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const sessao = m.abrirSessao('010')
   writeFileSync(m.arquivoDoLedger(sessao), `${JSON.stringify({ papel: 'inventado', provedor: 'x' })}\n`)
   expect(m.chamadasDaSessao(sessao)[0]?.papel).toBe('desconhecido')
 })
 
 test('O CASO DO GATED STEP: duas IAs no mesmo passo aparecem separadas, nao somadas', async () => {
-  const { agregarPorIa } = await import('../lib/runner/ias-da-sessao')
+  const { agregarPorIa } = await import('../motor/euc/ias-da-sessao')
   const ias = agregarPorIa([
     chamada({ papel: 'step', provedor: 'claude', custoUsd: 0.2, tokens: 2000 }),
     chamada({ papel: 'gate', provedor: 'codex', modelo: 'gpt-5', custoUsd: 0.05, tokens: 500 }),
@@ -90,7 +90,7 @@ test('O CASO DO GATED STEP: duas IAs no mesmo passo aparecem separadas, nao soma
 })
 
 test('chamadas do mesmo papel, provedor e modelo somam numa linha so', async () => {
-  const { agregarPorIa } = await import('../lib/runner/ias-da-sessao')
+  const { agregarPorIa } = await import('../motor/euc/ias-da-sessao')
   const ias = agregarPorIa([
     chamada({ custoUsd: 0.1, tokens: 1000, duracaoS: 10 }),
     chamada({ custoUsd: 0.2, tokens: 2000, duracaoS: 20 }),
@@ -103,13 +103,13 @@ test('chamadas do mesmo papel, provedor e modelo somam numa linha so', async () 
 })
 
 test('custo nao medido em uma chamada contamina a linha agregada', async () => {
-  const { agregarPorIa } = await import('../lib/runner/ias-da-sessao')
+  const { agregarPorIa } = await import('../motor/euc/ias-da-sessao')
   const ias = agregarPorIa([chamada({ custoMedido: true }), chamada({ custoMedido: false })])
   expect(ias[0]?.custoMedido).toBe(false)
 })
 
 test('troca de provedor DENTRO do mesmo papel e evento; por papel diferente nao e', async () => {
-  const { trocasDeProvedor } = await import('../lib/runner/ias-da-sessao')
+  const { trocasDeProvedor } = await import('../motor/euc/ias-da-sessao')
   const semTroca = trocasDeProvedor([
     chamada({ papel: 'implement', provedor: 'claude' }),
     chamada({ papel: 'gate', provedor: 'codex' }),
@@ -125,7 +125,7 @@ test('troca de provedor DENTRO do mesmo papel e evento; por papel diferente nao 
 })
 
 test('o resumo da sessao fecha custo e tokens com o ledger', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const sessao = m.abrirSessao('010')
   m.registrarChamada(sessao, chamada({ papel: 'implement', custoUsd: 0.5, tokens: 5000 }))
   m.registrarChamada(sessao, chamada({ papel: 'gate', provedor: 'codex', custoUsd: 0.05, tokens: 500 }))
@@ -137,7 +137,7 @@ test('o resumo da sessao fecha custo e tokens com o ledger', async () => {
 })
 
 test('REINICIO DO DAEMON: o finish retoma o ledger em disco em vez de partir a sessao', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
+  const m = await import('../motor/euc/ias-da-sessao')
   const sessao = m.abrirSessao('010', Date.parse('2026-08-19T12:00:00Z'))
   m.registrarChamada(sessao, chamada({ papel: 'implement' }))
   m.esquecerSessoes()
@@ -147,7 +147,7 @@ test('REINICIO DO DAEMON: o finish retoma o ledger em disco em vez de partir a s
 })
 
 test('sessao de conversa e separada da sessao de card', async () => {
-  const { sessaoParaChamada } = await import('../lib/runner/cost-trust')
+  const { sessaoParaChamada } = await import('../motor/euc/tsr/confianca')
   const daConversa = sessaoParaChamada('')
   const doCard = sessaoParaChamada('010')
   expect(daConversa.startsWith('conversa-')).toBe(true)
@@ -156,8 +156,8 @@ test('sessao de conversa e separada da sessao de card', async () => {
 })
 
 test('o registro da run embute a sessao e as IAs que participaram', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
-  const { writeRun } = await import('../lib/runner/runs')
+  const m = await import('../motor/euc/ias-da-sessao')
+  const { writeRun } = await import('../motor/euc/registros')
   const sessao = m.abrirSessao('010')
   m.registrarChamada(sessao, chamada({ papel: 'implement', custoUsd: 0.4 }))
   m.registrarChamada(sessao, chamada({ papel: 'gate', provedor: 'codex', custoUsd: 0.02 }))
@@ -172,8 +172,8 @@ test('o registro da run embute a sessao e as IAs que participaram', async () => 
 })
 
 test('o finish refresca as IAs da run, sem perder o que ja estava', async () => {
-  const m = await import('../lib/runner/ias-da-sessao')
-  const { writeRun, updateRunSteps } = await import('../lib/runner/runs')
+  const m = await import('../motor/euc/ias-da-sessao')
+  const { writeRun, updateRunSteps } = await import('../motor/euc/registros')
   const sessao = m.abrirSessao('010')
   m.registrarChamada(sessao, chamada({ papel: 'implement' }))
   const rec = writeRun('010', {
@@ -183,7 +183,7 @@ test('o finish refresca as IAs da run, sem perder o que ja estava', async () => 
   expect(rec.ias?.length).toBe(1)
   m.registrarChamada(sessao, chamada({ papel: 'step', provedor: 'codex' }))
   updateRunSteps('010', { Testes: { time: 5, cost: 0.01, tokens: 100 } })
-  const { readRunSteps } = await import('../lib/runner/runs')
+  const { readRunSteps } = await import('../motor/euc/registros')
   expect(readRunSteps('010')?.Testes?.tokens).toBe(100)
   const arquivo = join(estado, 'runs', `010-${rec.ts.replace(/[^0-9]/g, '').slice(0, 14)}.json`)
   const lido = JSON.parse(readFileSync(arquivo, 'utf8')) as { ias?: { rotulo: string }[] }

@@ -5,7 +5,7 @@ import { patchCard } from '../../motor/cdl/store'
 import { run } from './git'
 import { runStep } from './agent'
 import { resolveCommand } from './commands'
-import { addMetric } from './finish-metrics'
+import { addMetric } from '../../motor/euc/metricas-de-fecho'
 import type { Contract, PackageInfo } from '../../motor/cdl/bss/tipos'
 
 export interface RunCtx {

@@ -1,5 +1,5 @@
 import { truncVisible, padVisible } from '../tui/layout'
-import { floorProviders, formatProviders } from '../../runner/cost-gap'
+import { floorProviders, formatProviders } from '../../../motor/euc/tsr/lacuna'
 import type { Card } from '../../../motor/cdl'
 
 const RESET = '\x1b[0m'

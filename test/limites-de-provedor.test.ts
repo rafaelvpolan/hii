@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { recusaPorLimite } from '../lib/runner/cost-trust'
+import { recusaPorLimite } from '../motor/euc/tsr/confianca'
 import { KimiProvider } from '../motor/tmd/harness/kimi'
 import { ClaudeProvider } from '../motor/tmd/harness/claude'
 import type { AgentRequest } from '../motor/tmd/tipos'

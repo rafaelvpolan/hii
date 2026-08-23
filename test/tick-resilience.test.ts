@@ -21,7 +21,7 @@ test('REGRESSAO: tick() repetido continua sem lancar (nao vira crash em loop)', 
 })
 
 test('reportTickFailure e recordTickSuccess nunca lancam mesmo sem conseguir gravar em disco', async () => {
-  const { reportTickFailure, recordTickSuccess } = await import('../lib/runner/health')
+  const { reportTickFailure, recordTickSuccess } = await import('../motor/euc/rdr/tick')
   expect(() => reportTickFailure('ctx', new Error('x'))).not.toThrow()
   expect(() => recordTickSuccess()).not.toThrow()
   expect(existsSync(join(CARDS_QUEBRADO, 'runs'))).toBe(false)

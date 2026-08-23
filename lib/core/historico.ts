@@ -5,7 +5,7 @@ import { allCards } from '../../motor/cdl/store'
 import { cardsDir } from '../../motor/cdl/ali/config'
 import { archiveDir } from '../../motor/cdl/arquivar'
 import { memoChave, memoTempo } from '../../motor/tmd/eco/memo'
-import { loteDesde, type RegistroDeRun } from './cota-runs'
+import { loteDesde, type RegistroDeRun } from '../../motor/euc/tsr/cota-runs'
 
 export const JANELA_HISTORICO_MS = 7 * 24 * 60 * 60 * 1000
 const TTL_MAPA_DE_REPOS_MS = 2000

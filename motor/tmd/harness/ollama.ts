@@ -2,8 +2,8 @@ import { run } from '../../../lib/runner/git'
 import { isPrivateNetworkHost } from '../../../lib/runner/private-net'
 import { noProxyArgs } from '../../../lib/runner/loopback'
 import { emptyUsage } from '../uso'
-import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../../lib/ai/cost'
-import type { CostReading } from '../../../lib/ai/cost'
+import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euc/tsr/custo'
+import type { CostReading } from '../../euc/tsr/custo'
 import type { AgentRequest, AgentResult, AiProvider, AiProviderName } from '../tipos'
 
 interface OllamaResponse {

@@ -8,7 +8,7 @@ import { runGit, withGitLock } from './git'
 import { runStep } from './agent'
 import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from './url-vivo'
 import { isNonVisual } from './classify'
-import { addMetric } from './finish-metrics'
+import { addMetric } from '../../motor/euc/metricas-de-fecho'
 
 export interface SyncResult {
   ok: boolean

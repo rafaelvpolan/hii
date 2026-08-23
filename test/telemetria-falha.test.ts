@@ -42,10 +42,10 @@ const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
 const { classifyFailure } = await import('../lib/ai/failure')
 const { readFailureAttempts } = await import('../lib/runner/attempts')
-const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../lib/runner/runs')
+const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../motor/euc/registros')
 const { applyFailurePolicy } = await import('../lib/runner/failure-policy')
-const { loteDesde } = await import('../lib/core/cota-runs')
-const { lerCota } = await import('../lib/core/cota')
+const { loteDesde } = await import('../motor/euc/tsr/cota-runs')
+const { lerCota } = await import('../motor/euc/tsr/cota')
 
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0' }
 

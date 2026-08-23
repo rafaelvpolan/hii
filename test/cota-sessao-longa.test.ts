@@ -39,7 +39,7 @@ function gravarConversa(abertaHaMs: number, ultimaChamadaHaMs: number): void {
 }
 
 test('REGRESSAO REPL aberto ha mais de 4h nao some da janela de cota', async () => {
-  const { lerCota } = await import('../lib/core/cota')
+  const { lerCota } = await import('../motor/euc/tsr/cota')
   gravarConversa(9 * HORA_MS, 10 * 60 * 1000)
   const cota = lerCota(Date.now())
   expect(cota.custoUsd).toBeCloseTo(3, 4)
@@ -47,7 +47,7 @@ test('REGRESSAO REPL aberto ha mais de 4h nao some da janela de cota', async () 
 })
 
 test('sessao de conversa realmente velha continua fora da janela', async () => {
-  const { lerCota } = await import('../lib/core/cota')
+  const { lerCota } = await import('../motor/euc/tsr/cota')
   gravarConversa(9 * HORA_MS, 8 * HORA_MS)
   expect(lerCota(Date.now()).runs).toBe(0)
 })

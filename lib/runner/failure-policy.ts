@@ -4,7 +4,7 @@ import { maxWaitingAttempts } from '../../motor/cdl/ali/config'
 import { patchCard, readCard } from '../../motor/cdl/store'
 import { appendFailureAttempt } from './attempts'
 import type { FailureOutcome } from './attempts'
-import { stampRunFailure } from './runs'
+import { stampRunFailure } from '../../motor/euc/registros'
 
 export type ResumeStatus = 'EXECUTING' | 'URL_OK' | 'CORRECTING' | 'SPECCED'
 

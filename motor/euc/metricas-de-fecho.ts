@@ -1,8 +1,8 @@
-import type { Card, StepMap, StepMetric } from '../../motor/cdl'
-import { patchCard } from '../../motor/cdl/store'
-import { updateRunSteps } from './runs'
-import { applyFailurePolicy } from './failure-policy'
-import type { FailurePolicyInput } from './failure-policy'
+import type { Card, StepMap, StepMetric } from '../cdl'
+import { patchCard } from '../cdl/store'
+import { updateRunSteps } from './registros'
+import { applyFailurePolicy } from '../../lib/runner/failure-policy'
+import type { FailurePolicyInput } from '../../lib/runner/failure-policy'
 
 export function addMetric(fsteps: StepMap, key: string, m: StepMetric): void {
   const p = fsteps[key] ?? { time: 0, cost: 0, tokens: 0 }
