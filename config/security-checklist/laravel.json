@@ -1,0 +1,13 @@
+{
+  "stack": "laravel",
+  "sobre": "Checklist versionado do VTB para esta stack. Roda DEPOIS do security-baseline generico, nao no lugar dele. Item 7.",
+  "itens": [
+    { "id": "lv-mass-assignment", "checa": "Campo novo entra em $fillable. $guarded = [] abre o model inteiro para o que vier do request." },
+    { "id": "lv-policy", "checa": "Autorizacao por Policy/Gate no servidor. Esconder o botao no Blade nao e controle de acesso." },
+    { "id": "lv-query", "checa": "Nada de concatenar em DB::raw ou whereRaw com dado do request. Binding sempre." },
+    { "id": "lv-migration-reversivel", "checa": "down() desfaz o que up() faz. Migration que nao volta trava rollback de producao." },
+    { "id": "lv-cache-invalidacao", "checa": "Cache com tag precisa da invalidacao escrita no MESMO commit — e o erro mais citado em producao neste stack." },
+    { "id": "lv-pii", "checa": "Dado pessoal com criptografia em nivel de banco e trilha de auditoria, por exigencia de compliance (GDPR e equivalentes)." },
+    { "id": "lv-versao", "checa": "Laravel 12/13 sao as versoes com suporte ativo em 2026 (PHP 8.3-8.5). Projeto em <11 esta fora do ciclo de seguranca — avise, nao bloqueie sozinho." }
+  ]
+}

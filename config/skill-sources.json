@@ -1,0 +1,6 @@
+{
+  "versao": 1,
+  "sobre": "Registry de origens do acervo de skills. `_native` SEMPRE primeiro: skill sua vence adaptacao externa em empate de id. Empate entre duas origens externas, sem _native para desempatar, e erro de build — nao resolucao silenciosa. Ver MODERNIZATION.md Parte IV.",
+  "resolutionOrder": ["_native"],
+  "sources": []
+}

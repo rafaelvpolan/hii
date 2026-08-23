@@ -48,7 +48,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim | ✅ feita |
 | **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
-| **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | — |
+| **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | ✅ feita |
 | **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | — |
 | **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | — |
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | — |
@@ -397,11 +397,19 @@ bun test ./test/bss-setup-ferramental.test.ts # projeto novo sem config de teste
 
 ```bash
 bun run test
-bun test ./test/csd-acervo.test.ts          # frontmatter inválido = erro de carga, não skill ignorada
-bun test ./test/csd-resolver.test.ts        # _native vence; empate sem _native = exit != 0
-bun test ./test/csd-trigger.test.ts         # trigger é função pura de (files, deps), sem chamada de IA
-bun run lint:clone                          # _resolved/ é gerada, não versionada suja
+bun test ./test/csd/acervo.test.ts          # frontmatter inválido = erro de carga; gatilho puro; acervo ligado
+bun test ./test/csd/resolver.test.ts        # _native vence; empate sem _native derruba o build
+bun test ./test/agentes/vtb-checklist.test.ts
+bun run lint:clone                          # _resolved/ é gerada, não versionada
 ```
+
+O teste de trigger não virou arquivo próprio: a pureza do gatilho é invariante do acervo e vive em `csd/acervo.test.ts`, junto do resto do contrato.
+
+### Onde o acervo pluga
+
+Skill é conteúdo; papel é quem age. `motor/cic/agente.ts` injeta as skills cujo gatilho bate — no prompt do implementador **e** nos passos de polimento, cada agente mapeado ao seu papel por uma tabela explícita (agente sem entrada não recebe skill, em vez de receber a errada). O contexto do gatilho vem do disco: arquivos que o card já tocou no worktree, mais framework e linguagem detectados no contrato do alvo.
+
+O checklist de stack (item 7) só entra no papel `seguranca` — um checklist de Laravel num passo de limpeza seria ruído caro.
 
 ---
 

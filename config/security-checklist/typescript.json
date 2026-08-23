@@ -1,0 +1,12 @@
+{
+  "stack": "typescript",
+  "sobre": "Checklist versionado do VTB para TypeScript/Node/Bun. Roda depois do security-baseline generico. Item 7.",
+  "itens": [
+    { "id": "ts-exec", "checa": "child_process com array de argumentos (execFile/spawn). exec com string monta shell e aceita injecao." },
+    { "id": "ts-any", "checa": "any e unknown desligam a verificacao justamente na fronteira onde dado externo entra." },
+    { "id": "ts-json", "checa": "JSON.parse de conteudo externo dentro de try/catch, e o resultado validado antes de ser usado como tipo." },
+    { "id": "ts-ssrf", "checa": "URL vinda de fora passa por validacao de host, bloqueio de rede privada e re-validacao a cada redirect." },
+    { "id": "ts-bind", "checa": "Servidor HTTP declara hostname. Sem isso a maioria dos runtimes liga em 0.0.0.0." },
+    { "id": "ts-proto", "checa": "Merge de objeto vindo de fora precisa recusar __proto__ e constructor." }
+  ]
+}
