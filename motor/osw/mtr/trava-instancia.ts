@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { alive, argvDoProcesso, eOMotor } from './daemon'
 import { ROOT } from '../../cdl/ali/config'
 import { ENV_RUNNER_LOCK } from '../../cdl/ali/contrato'
+import { temEncerramentoGracioso } from './encerramento'
 
 const STEAL_ATTEMPTS = 3
 
@@ -84,6 +85,11 @@ export function holdInstanceLock(): InstanceLock {
   process.on('exit', () => { releaseInstanceLock(file) })
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.on(signal, () => {
+      // Se ha encerramento gracioso instalado, ELE decide quando sair, e o
+      // handler de 'exit' acima libera a trava do mesmo jeito. Sair aqui
+      // matava o daemon antes de a fila drenar — e como este handler e
+      // registrado primeiro, o gracioso nunca chegava a rodar.
+      if (temEncerramentoGracioso()) return
       releaseInstanceLock(file)
       process.exit(0)
     })

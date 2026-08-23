@@ -268,9 +268,16 @@ bun test ./test/shutdown-gracioso.test.ts   # SIGTERM grava checkpoint antes de 
 curl -sf localhost:$PORTA/health            # exit 0
 ```
 
-**Teste de aceitação manual, obrigatório — AINDA NÃO FEITO:** `kill -9` no daemon durante um card em `EXECUTING`, `URL`, e depois de `PR_OPEN`. Reinicia. Nos três casos o card retoma na fase correta e **nenhum efeito externo duplica**.
+**Teste de aceitação com processo real — FEITO**, contra `hicode-site` com `gh` autenticado:
 
-Os automatizados cobrem a lógica (`test/pr-orfao.test.ts` reproduz a sequência exata do PR duplicado), mas nenhum deles mata um processo de verdade nem fala com o GitHub. Precisa de um repo-alvo real e de um `gh` autenticado — é o único item da Onda 3 que fica pendente de execução humana.
+| Cenário | Resultado |
+|---|---|
+| `kill -9` no daemon com cards em `EXECUTING`, `URL`, `CORRECTING`, `SPECCED`, `CLEANED`, `REVIEWED` | Reinício recuperou cada um na fase certa; trava órfã do `kill -9` não bloqueou o arranque; segundo boot foi idempotente |
+| `GET /health` num daemon de verdade | `{"ok":true,...,"pendentes":5}` |
+| `SIGTERM` | **Encontrou defeito** — ver abaixo |
+| 3 tentativas de `gh pr create` após crash simulado | **1 PR** criado (`hicode-site#22`), duas seguintes reaproveitaram a url do diário. Confirmado pela API do GitHub, e o PR descartável foi fechado |
+
+**O defeito que só o processo real acharia.** `holdInstanceLock()` registrava um handler de `SIGTERM` com `process.exit(0)` — e como ele é registrado *antes* de `instalarShutdownGracioso`, o daemon morria sem drenar a fila. **Todo teste unitário passava**, porque chamavam `encerrarComGraca` diretamente, sem passar pelo despacho de sinal. A trava agora cede a vez quando há um dono do encerramento, e `test/osw/mtr-shutdown-processo-real.test.ts` sobe o `runner.ts` de verdade para guardar isso — verificado que ele reprova quando a guarda é removida.
 
 ---
 

@@ -11,9 +11,16 @@ import { quantosEmVoo } from './estado-da-fila'
 const TETO_PADRAO_MS = Number(process.env.HICODE_SHUTDOWN_TIMEOUT_MS || 30_000)
 
 let drenando = false
+let graciosoInstalado = false
 
 export function encerrando(): boolean {
   return drenando
+}
+
+// Quem mais registra handler de sinal precisa saber que ha um dono do
+// encerramento — senao sai do processo antes de a fila drenar.
+export function temEncerramentoGracioso(): boolean {
+  return graciosoInstalado
 }
 
 export function pedirEncerramento(): void {
@@ -23,6 +30,7 @@ export function pedirEncerramento(): void {
 // so para teste: o daemon real nunca volta atras
 export function cancelarEncerramento(): void {
   drenando = false
+  graciosoInstalado = false
 }
 
 export interface Drenagem {
@@ -63,6 +71,7 @@ export async function encerrarComGraca(op: OpcoesDeEncerramento): Promise<void> 
 }
 
 export function instalarShutdownGracioso(op: OpcoesDeEncerramento): void {
+  graciosoInstalado = true
   for (const sinal of ['SIGTERM', 'SIGINT'] as const) {
     process.on(sinal, () => { void encerrarComGraca(op) })
   }
