@@ -6,89 +6,96 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## PRECISO DE VOCÊ — histórico de prompt por sessão e comando `/end`
+## RESPOSTA — `/end`: não faz sentido como comando, mas o seu instinto achou um defeito real
 
-Você pediu, junto com a resposta do hook: *"manter o histórico de mensagem de
-prompt em cada sessão quando iniciada, colocar também comando `/end` para
-determinar final de sessão e limpar memória e usar uma nova (veja o melhor
-método a se seguir com múltiplas IAs integradas)"*.
+Você descreveu: *"começar outra tarefa/conversa com outro contexto, sem manter
+memória anterior enviando tudo para IA"*.
 
-**Não implementei ainda porque três leituras diferentes dão trabalhos
-diferentes**, e errar sai caro. O que já existe hoje:
+**Não recomendo criar o `/end`**, por três motivos concretos:
 
-| Peça | Onde | O que guarda |
-|---|---|---|
-| Ledger por sessão | `motor/euc/ias-da-sessao.ts` | chamada de IA: papel, provedor, custo, tokens — **não o texto do prompt** |
-| Sessão da TUI | `motor/mir/sessao.ts:58` | já tem `/new-session` e `/historico` na lista de comandos |
-| Id de sessão | `motor/euc/sessao.ts` | `sessaoAtual()`, `reiniciarSessao()` |
-| Memória do projeto | `motor/csd/memoria.ts` | `.hii/memory/motor.md`, injetada no prompt do implementador |
+1. **O card já é a fronteira de contexto.** Cada card roda no próprio worktree
+   e monta o prompt do zero (`motor/cic/agente.ts`). Não existe conversa que
+   atravesse cards — não há o que "encerrar".
+2. **A TUI já tem `/new-session`** (`motor/mir/sessao.ts:58`), que faz
+   exatamente "outra conversa, contexto limpo".
+3. **A única coisa que de fato atravessa para o prompt da IA** é
+   `.hii/memory/motor.md` (`motor/cic/agente.ts:167`) — e **já existe o
+   interruptor** para não mandar nada: `HICODE_PROJECT_MEMORY=off`.
 
-**As três perguntas que mudam o que eu escrevo:**
+Um `/end` que apaga memória duplicaria esse interruptor e destruiria o rastro
+que o `aprendiz` (item 12, Onda 10) foi desenhado para ler.
 
-1. **O histórico de prompt é para auditoria ou para contexto?** Se é para você
-   ler depois ("o que foi pedido nesta sessão"), é só gravar o texto no ledger
-   e mostrar no `/historico` — barato. Se é para **alimentar as chamadas
-   seguintes**, colide de frente com o item 17 (prefixo estável): o prefixo
-   precisa bater byte a byte entre chamadas para o cache do provedor valer, e
-   histórico crescendo no meio dele mata o desconto e multiplica o token de
-   entrada a cada turno.
+**Mas investigar isso achou um defeito de verdade, e eu corrigi.**
+`readProjectMemory` cortava com `.slice(0, 2500)` — os 2500 caracteres **mais
+antigos**. Como o arquivo cresce por append cronológico, a memória do projeto
+**congelava no passado**: tudo que o motor aprendia depois nunca chegava ao
+prompt, e nada avisava. Agora mantém o recente e declara quando corta
+(`memoria truncada: N caracteres mais antigos omitidos`). Seu instinto estava
+certo na direção — não era "manda tudo", era "manda a fatia errada, para
+sempre, em silêncio".
 
-2. **`/end` limpa qual memória?** A sessão da TUI (`newSession`), o ledger da
-   sessão, ou a memória do projeto em `.hii/memory/motor.md`? A última é
-   aprendizado acumulado entre cards — apagar ali é perda real, não limpeza.
-
-3. **Com múltiplas IAs, o histórico é único ou por harness?** Único é mais
-   simples de ler, mas cada provedor tem janela e formato próprios, e um
-   histórico compartilhado que não cabe na janela do menor deles vira truncagem
-   silenciosa — exatamente o tipo de degradação invisível que este motor evita
-   em todo lugar.
-
-**Minha recomendação, se você não quiser detalhar:** gravar o texto do prompt
-no ledger da sessão (auditoria), expor no `/historico`, e fazer `/end` encerrar
-a sessão da TUI e abrir uma nova **sem tocar** em `.hii/memory/`. É a leitura
-mais barata, não briga com o item 17, e não apaga aprendizado. Diga se é isso.
+**Se quiser mesmo um controle por card** — "este card não recebe memória
+nenhuma" — isso é honesto e pequeno: um campo `memoria: off` no frontmatter,
+lido no mesmo ponto onde `PROJECT_MEMORY` já é lido. Diga e eu faço; é uma
+linha e um teste.
 
 ---
 
-## PRÓXIMA ONDA — três itens que você mandou verificar e resolver
+## RECOMENDAÇÕES — os três itens que você mandou avaliar
 
-**1. O laço de conflito de merge, fora do padrão de reparo.**
-`motor/qlb/ctr/sync.ts:41-64` tem laço próprio com teto próprio
-(`MAX_CONFLICT`), não usa `repararAteOTeto` e não escreve no diário. É a última
-cópia de reparo fora do padrão. Não foi migrada junto porque resolução de
-conflito mexe em arquivo em conflito, não em erro de build — semântica própria,
-merece olhar dedicado.
+### 1. Laço de conflito do `sync.ts` — NÃO migrar, mas fechar o buraco real
 
-**2. Reduzir `maxReajuste()`/`MAX_CONFLICT` para builds cronicamente
-instáveis.** Sua decisão sobre o custo de pior caso (US$ 15,52–15,67/card contra
-US$ 9,95–10,10 estimados, medido pelo Celer). São quatro pontos de reparo
-independentes com teto 2 cada — `testGate`, `buildWithReajuste` pós-teste,
-`buildWithReajuste` pós-sync e o laço do item 1 acima — somando 8 chamadas de
-agente por card. Falta definir o que conta como "cronicamente instável":
-provavelmente um contador por alvo no diário, não uma constante nova.
+**Não migre para `repararAteOTeto`.** `GateReparavel` modela "roda uma
+verificação → veredicto → conserto estreito → roda de novo". Resolução de
+conflito não tem verificação re-executável: o "veredicto" é `git diff
+--diff-filter=U` e o conserto edita os arquivos em conflito. Forçar no molde
+compra uniformidade pagando com abstração errada.
 
-**3. Ligar `executarEmBlocos` no `implementador`.** `motor/nmy/tjl/blocos.ts`
-(item 18) está implementado e testado, mas tem **zero chamadores em `motor/`** —
-o ganho de não pagar pela tarefa inteira quando a base já quebrou não está
-sendo colhido. A Onda 4 está fechada no sentido de "o módulo existe", não no de
-"o motor usa".
+**O buraco real é mais estreito.** Conferido: `motor/qlb/ctr/sync.ts` escreve
+no log do card (`CONFLITO n/MAX`) e registra métrica de custo
+(`addMetric(fsteps, 'Conflito', …)`), mas tem **zero** chamadas a
+`anexarEvento`. Consequências concretas: `motor/euc/recuperar.ts` não enxerga
+um laço de conflito interrompido por crash, e o `aprendiz` (item 12) não
+conseguirá contar conflito recorrente como `ProblemSignature`.
 
----
+**Recomendo:** emitir `repair_attempt` por tentativa e `gate_verdict` no fim.
+Três linhas, nenhuma mudança de abstração, e resolve o que de fato falta —
+invisibilidade, não falta de uniformidade.
 
-## Item 25 cobre 2 efeitos externos, e o resto continua fora
+### 2. Reduzir os tetos de reparo — medir antes de automatizar
 
-`executarComIdempotencia` tem dois chamadores: `pr_create`
-(`motor/qlb/ctr/fechar.ts:259`) e `matriz_criada`
-(`motor/nmy/luc/matriz-entendimento.ts`). Ficaram de fora `push`
-(`motor/qlb/git.ts:188-194`), o laço de conflito de `motor/qlb/ctr/sync.ts` e
-qualquer notificação futura.
+**Os dois tetos já são ajustáveis sem código novo:**
+`HICODE_REAJUSTE_RETRIES` e `HICODE_CONFLICT_RETRIES`, default 2 cada
+(`motor/cdl/ali/config.ts:56-59`). Então "reduzir para builds cronicamente
+instáveis" não precisa de implementação para ser *possível* — precisa de um
+jeito de saber **quais** alvos são instáveis.
 
-A Onda 7 achou o modo de falha que torna isso urgente: se a operação **falha**
-mas devolve resultado não-vazio, o diário grava `efeito_registrado` para um
-efeito que nunca aconteceu — e a chave então impede qualquer nova tentativa
-**para sempre**. Foi corrigido na matriz (falha real propaga), mas nada impede
-o próximo chamador de repetir o erro. Vale um teste de contrato sobre
-`executarComIdempotencia` antes de espalhar mais chamadas.
+**Não recomendo construir o detector automático.** Ele exigiria limiar, política
+de decaimento e armazenamento, e ainda seria um *proxy* para "isto está
+custando demais" — que o `orcamentoPorCard.tetoUsd` (entregue nesta onda) já
+mede direto, sem proxy.
+
+**Recomendo:** contar `repair_attempt` por alvo no diário e mostrar em
+`hii status`. Aí baixar o env para aquele alvo vira decisão sua com dado atrás.
+**Depende do item 1 acima** — sem os eventos do `sync.ts`, o laço de conflito
+fica fora da contagem, e ele é justamente um dos quatro pontos de reparo.
+
+### 3. Ligar `executarEmBlocos` — recomendo NÃO ligar agora, e parar de contar como pronto
+
+O laço de polimento do `fechar.ts` **já** faz executa → valida → para cedo. Rotear
+por TJL ali seria refatoração sem ganho de comportamento: cerimônia para dar um
+chamador ao módulo e um ✅ ao roadmap, sem entregar economia nenhuma.
+
+O valor real do TJL é fatiar **uma** chamada de implementação em blocos
+validados (schema → migration → model → controller → teste). Mas o plano exige
+que quem decide os blocos seja função determinística, nunca a IA — e essa
+decisão é conhecimento **por stack**. Ou seja: o fatiador pertence à camada de
+skill, não ao `core/`.
+
+**Recomendo:** marcar o item 18 como *"mecanismo pronto, sem consumidor"* no
+`WORKFLOW-EXECUCAO.md` em vez de fingir conclusão, e deixar o primeiro
+consumidor chegar junto com o pack `backend-web` — o mesmo pack que o item 16
+está esperando.
 
 ---
 
