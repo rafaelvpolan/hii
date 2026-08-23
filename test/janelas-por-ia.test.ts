@@ -128,7 +128,7 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
   const base = {
     provedores: [{
       nome: 'claude', situacao: 'disponivel' as const, habilitado: true, motivo: '',
-      plano: 'Max 5x', planoLido: true, detalheDoPlano: '', idadeDoUsoHoras: 0.2, modelosDisponiveis: [],
+      plano: 'Max 5x', planoLido: true, rodaLocal: false, detalheDoPlano: '', idadeDoUsoHoras: 0.2, modelosDisponiveis: [],
       papeis: [], modelo: '', esforco: '', restringeFerramenta: true, isolaLeitura: true, reportaCusto: true,
       janelas: [
         { rotulo: '5h', percentualDoLimite: 12, limiteConfiavel: true, gastoDoMotorUsd: 0.85, runsDoMotor: 1, restamMs: 3600_000 },

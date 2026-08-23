@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import { listRepos } from '../store'
+import { binariosDeHarness } from '../../tmd/registro'
 
-const SEMPRE = ['claude', 'codex', 'ollama', 'gh', 'git', 'node', 'bun']
+const FERRAMENTAS = ['gh', 'git', 'node', 'bun']
 const RUIDO = new Set([
   'tem', 'acesso', 'ao', 'a', 'o', 'qual', 'quais', 'projeto', 'projetos', 'esta', 'estao',
   'configurado', 'configurada', 'instalado', 'instalada', 'the', 'para', 'com', 'de', 'do', 'da',
@@ -23,7 +24,7 @@ export function candidatosNaPergunta(pergunta: string): string[] {
 }
 
 export function snapshotDoAmbiente(pergunta: string): string {
-  const alvos = [...new Set([...SEMPRE, ...candidatosNaPergunta(pergunta)])]
+  const alvos = [...new Set([...binariosDeHarness(), ...FERRAMENTAS, ...candidatosNaPergunta(pergunta)])]
   const linhas = alvos.map(c => `  ${c}: ${instalado(c) ? 'instalado' : 'NAO instalado'}`)
   const repos = listRepos().map(r => `  ${r.name} → ${r.path ?? '(sem caminho)'}`)
   return [

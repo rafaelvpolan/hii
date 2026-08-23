@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
+import { DEFAULT_PROVIDER } from '../../tmd/registro'
 
 export interface ProjectConfig {
   provider?: string
@@ -31,7 +32,7 @@ export function readProjectRules(repo: string): string {
   }
 }
 
-const DEFAULT_CONFIG: ProjectConfig = { provider: 'claude', base: 'main', taskSource: 'cards' }
+const DEFAULT_CONFIG: ProjectConfig = { provider: DEFAULT_PROVIDER, base: 'main', taskSource: 'cards' }
 
 const DEFAULT_RULES = `# Regras do projeto para o motor hicode
 

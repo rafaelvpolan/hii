@@ -1,22 +1,12 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { providerNames, providerNameFor, modelFor, agentRoles } from './registro'
+import { agentRoles, binarioDoHarness, comandoDeLoginDe, harnessPorNome, modelFor, providerNameFor, providerNames } from './registro'
 import { preferenciaDoPapel } from './preferencias'
-import { autenticadoDoProvedor } from '../euc/tsr/planos'
 import { janelasDoProvedor } from '../euc/tsr/janelas'
 import type { AgentRole, HarnessId } from './tipos'
 
-const BINARIO: Partial<Record<HarnessId, string>> = {
-  claude: 'claude',
-  codex: 'codex',
-  kimi: 'kimi',
-  ollama: 'ollama',
-}
-
-export const COMANDO_DE_LOGIN: Partial<Record<HarnessId, string[]>> = {
-  claude: ['claude', '/login'],
-  codex: ['codex', 'login'],
-  kimi: ['kimi', 'login'],
+export function comandoDeLoginDoProvedor(nome: HarnessId): readonly string[] {
+  return comandoDeLoginDe(nome)
 }
 
 export type Situacao = 'disponivel' | 'ausente' | 'precisa-servidor' | 'nao-autenticado' | 'cota-esgotada'
@@ -41,14 +31,13 @@ function cotaEsgotadaEm(nome: HarnessId, agoraMs: number): boolean {
 }
 
 function situacaoDoInstalado(nome: HarnessId, agoraMs: number): Situacao {
-  if (!autenticadoDoProvedor(nome)) return 'nao-autenticado'
+  if (!harnessPorNome(nome).autenticado()) return 'nao-autenticado'
   if (cotaEsgotadaEm(nome, agoraMs)) return 'cota-esgotada'
   return 'disponivel'
 }
 
 function comandoDeLoginTexto(nome: HarnessId): string {
-  const partes = COMANDO_DE_LOGIN[nome]
-  return partes ? partes.join(' ') : ''
+  return comandoDeLoginDe(nome).join(' ')
 }
 
 function comoObter(nome: HarnessId, situacao: Situacao): string {
@@ -57,11 +46,7 @@ function comoObter(nome: HarnessId, situacao: Situacao): string {
     return login ? `nao autenticado — rode \`${login}\` (ou /login aqui no hii)` : 'nao autenticado'
   }
   if (situacao === 'cota-esgotada') return 'cota da janela estourada — aguarde o reset ou troque de ia com /ia'
-  if (nome === 'claude') return 'instale o CLI do Claude Code'
-  if (nome === 'codex') return 'instale o CLI do Codex'
-  if (nome === 'ollama') return `suba o ollama (${process.env.HICODE_OLLAMA_URL || 'http://localhost:11434'})`
-  if (nome === 'kimi') return 'instale o CLI do Kimi Code'
-  return ''
+  return harnessPorNome(nome).comoObterQuandoAusente()
 }
 
 export function provedoresDisponiveis(agoraMs: number = Date.now()): ProvedorDisponivel[] {
@@ -71,7 +56,7 @@ export function provedoresDisponiveis(agoraMs: number = Date.now()): ProvedorDis
     papeisPorProvedor.set(p, [...(papeisPorProvedor.get(p) ?? []), papel])
   }
   return providerNames().map((nome): ProvedorDisponivel => {
-    const bin = BINARIO[nome]
+    const bin = binarioDoHarness(nome)
     const papeis = papeisPorProvedor.get(nome) ?? []
     const modeloDoPapel = papeis[0] ? modelFor(papeis[0]) : undefined
     const modeloEscolhido = papeis[0] ? preferenciaDoPapel(papeis[0]).model : undefined

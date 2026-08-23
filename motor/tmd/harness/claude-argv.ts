@@ -1,5 +1,8 @@
 import type { AgentRequest } from '../tipos'
-import { modoResolvido } from '../modos'
+import { resolverModo } from '../modo-puro'
+import type { CatalogoDeModo } from '../tipos'
+
+export const CLAUDE_MODOS: CatalogoDeModo = { modos: ['default', 'acceptEdits', 'plan'], padrao: 'acceptEdits' }
 
 const EDIT_TOOLS_AGENTS = 'Task,Read,Edit,Write,Glob,Grep,Bash'
 const EDIT_TOOLS = 'Read,Edit,Write,Glob,Grep,Bash'
@@ -25,7 +28,7 @@ export function agentsArgv(req: AgentRequest): string[] {
 }
 
 function permissaoArgv(modo: string | undefined): string[] {
-  const escolhido = modoResolvido('claude', modo)
+  const escolhido = resolverModo(CLAUDE_MODOS, modo)
   return escolhido === 'default' ? [] : ['--permission-mode', escolhido]
 }
 

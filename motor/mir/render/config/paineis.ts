@@ -34,7 +34,7 @@ function sim(v: boolean, o: OpcoesConfig): string {
 }
 
 function conectadoNaNuvem(p: LinhaDeProvedor): boolean {
-  return p.nome !== 'ollama' && (p.situacao === 'disponivel' || p.situacao === 'cota-esgotada')
+  return !p.rodaLocal && (p.situacao === 'disponivel' || p.situacao === 'cota-esgotada')
 }
 
 function semTierPago(p: LinhaDeProvedor): boolean {

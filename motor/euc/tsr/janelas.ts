@@ -1,4 +1,4 @@
-import { planoDoProvedor } from './planos'
+import { harnessPorNome } from '../../tmd/registro'
 import type { JanelaDeUso } from './planos'
 import type { HarnessId } from '../../tmd/tipos'
 
@@ -58,7 +58,7 @@ function idadeDaMedicaoMs(idadeHoras: number): number {
 }
 
 export function janelasDoProvedor(nome: HarnessId, agoraMs: number = Date.now()): JanelaDeProvedor[] {
-  const plano = planoDoProvedor(nome, agoraMs)
+  const plano = harnessPorNome(nome).plano(agoraMs)
   const idadeMs = idadeDaMedicaoMs(plano.idadeHoras)
   return rotulosDoProvedor(nome).map((rotulo): JanelaDeProvedor => {
     const ms = duracaoDaJanela(rotulo)

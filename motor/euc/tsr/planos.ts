@@ -2,23 +2,9 @@ import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { memoArquivo } from '../../tmd/eco/memo'
-import type { HarnessId } from '../../tmd/tipos'
 
-export interface JanelaDeUso {
-  rotulo: string
-  percentual: number
-  resetaEm: string
-}
-
-export interface PlanoDoProvedor {
-  provedor: string
-  plano: string
-  detalhe: string
-  janelas: JanelaDeUso[]
-  medidoEm: string
-  idadeHoras: number
-  modelos: string[]
-}
+export type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos'
+import type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos'
 
 const NOME_DO_TIER: Record<string, string> = {
   default_claude_max_5x: 'Max 5x',
@@ -153,22 +139,14 @@ export function planoDoKimi(): PlanoDoProvedor {
   }
 }
 
-export function planoLocal(nome: HarnessId): PlanoDoProvedor {
+export function planoLocal(nome: string): PlanoDoProvedor {
   return { provedor: nome, plano: 'local, sem plano', detalhe: '', janelas: [], medidoEm: '', idadeHoras: -1, modelos: [] }
 }
 
-const COM_LEITOR_DE_PLANO: readonly HarnessId[] = ['claude', 'kimi', 'ollama']
-
-export function temLeitorDePlano(nome: HarnessId): boolean {
-  return COM_LEITOR_DE_PLANO.includes(nome)
-}
-
-export function planoDoProvedor(nome: HarnessId, agoraMs: number = Date.now()): PlanoDoProvedor {
-  if (nome === 'claude') return planoDoClaude(agoraMs)
-  if (nome === 'kimi') return planoDoKimi()
-  if (nome === 'ollama') return planoLocal(nome)
-  return { provedor: nome, plano: '', detalhe: '', janelas: [], medidoEm: '', idadeHoras: -1, modelos: [] }
-}
+// Os leitores acima continuam morando aqui porque sao implementacao (parsear
+// ~/.claude.json, parsear config.toml do kimi). Quem DIZ que os tem e cada
+// harness, em motor/tmd/harness/*.ts — este arquivo nao conhece mais nome de
+// provedor nenhum.
 
 export function raizDoCodex(): string {
   return process.env.CODEX_HOME || join(homedir(), '.codex')
@@ -178,9 +156,4 @@ export function codexAutenticado(): boolean {
   return existsSync(join(raizDoCodex(), 'auth.json'))
 }
 
-export function autenticadoDoProvedor(nome: HarnessId): boolean {
-  if (nome === 'claude') return claudeAutenticado()
-  if (nome === 'kimi') return kimiAutenticado()
-  if (nome === 'codex') return codexAutenticado()
-  return true
-}
+

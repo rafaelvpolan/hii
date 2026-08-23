@@ -6,7 +6,7 @@ import { provedoresDisponiveis } from '../motor/tmd/disponibilidade'
 
 const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor => ({
   nome, situacao: 'disponivel', habilitado: true, motivo: '', papeis: [], modelo: '', esforco: '',
-  plano: '', planoLido: true, detalheDoPlano: '', janelas: [], idadeDoUsoHoras: -1, modelosDisponiveis: [],
+  plano: '', planoLido: true, rodaLocal: false, detalheDoPlano: '', janelas: [], idadeDoUsoHoras: -1, modelosDisponiveis: [],
   restringeFerramenta: true, isolaLeitura: true, reportaCusto: true, ...over,
 })
 
@@ -50,7 +50,7 @@ test('as tres situacoes de provedor aparecem distintas — nao viram todas "ause
     ...base,
     provedores: [
       ia('claude', { situacao: 'disponivel' }),
-      ia('ollama', { situacao: 'precisa-servidor', motivo: 'suba o ollama' }),
+      ia('ollama', { rodaLocal: true, situacao: 'precisa-servidor', motivo: 'suba o ollama' }),
       ia('codex', { situacao: 'ausente', motivo: 'instale o CLI do Codex' }),
     ],
   }
@@ -112,7 +112,7 @@ test('a coluna de ias mostra instalada, ligada e plano de cada uma', () => {
     ...base,
     provedores: [
       ia('claude', { plano: 'Max 5x', habilitado: true }),
-      ia('ollama', { plano: 'local, sem plano', habilitado: false }),
+      ia('ollama', { rodaLocal: true, plano: 'local, sem plano', habilitado: false }),
       ia('codex', { situacao: 'ausente', habilitado: false, plano: '' }),
     ],
   }
@@ -208,7 +208,7 @@ test('REGRESSAO: sem login sem plano NAO vira (free)', () => {
 test('REGRESSAO: ollama local nunca vira (free), mesmo sem plano', () => {
   const e: EstadoDaConfig = {
     ...base,
-    provedores: [ia('ollama', { situacao: 'disponivel', plano: '' })],
+    provedores: [ia('ollama', { rodaLocal: true, situacao: 'disponivel', plano: '' })],
   }
   const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
   expect(t).not.toContain('(free)')

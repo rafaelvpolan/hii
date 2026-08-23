@@ -1,6 +1,7 @@
 import { run } from '../../qlb/git'
 import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado'
 import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado'
+import { harnessPorNome, providerNames } from '../registro'
 
 const MCP_PREFIX = 'mcp__'
 const MCP_LIST_TIMEOUT_MS = 20000
@@ -19,9 +20,17 @@ export function servidoresPara(ferramenta: string, servidores: string[]): string
   return servidores.filter(servidor => normalizar(servidor).includes(alvo))
 }
 
+// Quem fala MCP e quem DECLARA mcp em capabilities — nao um nome fixo aqui.
+function binarioComMcp(): string {
+  const nome = providerNames().find(n => harnessPorNome(n).capabilities().mcp)
+  return nome ? harnessPorNome(nome).binario : ''
+}
+
 async function servidoresComEstado(): Promise<ServidorMcp[]> {
+  const bin = binarioComMcp()
+  if (!bin) return []
   try {
-    const { err, stdout } = await run('claude', ['mcp', 'list'], { timeout: MCP_LIST_TIMEOUT_MS })
+    const { err, stdout } = await run(bin, ['mcp', 'list'], { timeout: MCP_LIST_TIMEOUT_MS })
     if (err) return []
     return lerListaDeServidores(stdout)
   } catch {
@@ -30,8 +39,10 @@ async function servidoresComEstado(): Promise<ServidorMcp[]> {
 }
 
 async function escopoDe(nome: string): Promise<EscopoServidor> {
+  const bin = binarioComMcp()
+  if (!bin) return 'nao-verificavel'
   try {
-    const { err, stdout } = await run('claude', ['mcp', 'get', nome], { timeout: MCP_LIST_TIMEOUT_MS })
+    const { err, stdout } = await run(bin, ['mcp', 'get', nome], { timeout: MCP_LIST_TIMEOUT_MS })
     if (err) return 'nao-verificavel'
     return lerEscopo(stdout)
   } catch {

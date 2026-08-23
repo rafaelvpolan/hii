@@ -2,8 +2,12 @@ import { appendFileSync } from 'node:fs'
 import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN } from '../../euc/tsr/custo'
-import { modoResolvido } from '../modos'
-import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { resolverModo } from '../modo-puro'
+import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
+import { kimiAutenticado, planoDoKimi } from '../../euc/tsr/planos'
+
+export const KIMI_MODOS: CatalogoDeModo = { modos: ['default', 'yolo', 'auto', 'plan'], padrao: 'auto' }
+
 import { alcancavelPorHttp } from '../sonda'
 
 interface KimiStreamLine {
@@ -46,7 +50,7 @@ export const KIMI_SINAIS: SinaisDoHarness = {
 }
 
 function modoArgv(modo: string | undefined): string[] {
-  const escolhido = modoResolvido('kimi', modo)
+  const escolhido = resolverModo(KIMI_MODOS, modo)
   if (escolhido === 'yolo') return ['--yolo']
   if (escolhido === 'plan') return ['--plan']
   if (escolhido === 'default') return []
@@ -111,6 +115,20 @@ export class KimiProvider implements Harness {
   readonly supportsVision = false
   readonly agentic = true
 
+  readonly modos: CatalogoDeModo = KIMI_MODOS
+  readonly cor: CorDeMarca = { r: 91, g: 141, b: 239 }
+  readonly binario = 'kimi'
+  readonly exigeCliNoPath = true
+  readonly comandoDeLogin: readonly string[] = ['kimi', 'login']
+  readonly rodaLocal = false
+  readonly temLeitorDePlano = true
+
+  modeloPadraoPara(): string | undefined { return process.env.HICODE_KIMI_MODEL || undefined }
+  prontoParaUso(): boolean { return true }
+  comoObterQuandoAusente(): string { return 'instale o CLI do Kimi Code' }
+  autenticado(): boolean { return kimiAutenticado() }
+  plano(): PlanoDoProvedor { return planoDoKimi() }
+  modelosDisponiveis(): string[] { return this.plano().modelos }
   capabilities(): HarnessCapabilities { return KIMI_CAPACIDADES }
   // Antes isto caia no `return true` implicito de probeProviderHealth: kimi nao
   // tinha entrada na tabela de URLs, e "sem entrada" valia como "esta de pe".

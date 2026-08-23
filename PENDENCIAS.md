@@ -42,6 +42,11 @@ Observado 1 vez em 2 rodadas completas durante o baseline da Onda 0 do
 (`finish-cost`, `finish-pushed-sha`, `finish-wait-attempts`) passam 6/6 quando
 rodados isolados — a falha só existe na suíte completa.
 
+**Segunda instancia, causa diferente.** Durante a Onda 2b, `test/cota-cache.test.ts`
+("mtime diferente invalida o parse guardado") reprovou uma vez e passou nas duas
+rodadas seguintes. Causa provavel e granularidade de mtime, nao vazamento de env
+— sao dois flakes distintos convivendo na mesma suite.
+
 **Onde mexer.** Os 34 arquivos que escrevem card definem
 `process.env.HICODE_CARDS_DIR` no **topo do módulo**, como global do processo.
 O guarda `test/isolamento-de-testes.test.ts` cobra que a variável seja isolada,

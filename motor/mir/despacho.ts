@@ -5,7 +5,7 @@ import { renderRemocao, renderResultado } from './render/remocao'
 import { projetosConhecidos } from '../cdl/projetos-conhecidos'
 import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao } from './escolher-ia'
 import { agentRoles, isProviderName, providerNameFor } from '../tmd/registro'
-import { COMANDO_DE_LOGIN, provedoresDisponiveis } from '../tmd/disponibilidade'
+import { comandoDeLoginDoProvedor, provedoresDisponiveis } from '../tmd/disponibilidade'
 import { comandosDaIaAtiva } from '../tmd/map/comandos'
 import type { AgentRole, HarnessId } from '../tmd/tipos'
 import { pendencia, responder } from './responder'
@@ -53,7 +53,7 @@ export function rotuloDoBloqueio(situacao: string): string {
 
 function resolverProvedorParaLogin(arg: string): HarnessId | null {
   if (!arg) return providerNameFor('implement')
-  if (isProviderName(arg)) return arg
+  if (arg !== undefined && isProviderName(arg)) return arg
   if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)
   return null
 }
@@ -256,8 +256,9 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       if (!alvo) { io.log(`ia desconhecida: "${texto.trim()}" — uso: /login [ia|papel]`); return state }
       const estado = provedoresDisponiveis().find(p => p.nome === alvo)
       if (estado?.situacao === 'disponivel') { io.log(`${alvo} ja esta autenticada e dentro da cota — nada a fazer`); return state }
-      const comando = COMANDO_DE_LOGIN[alvo]
-      if (!comando) {
+      const comando = comandoDeLoginDoProvedor(alvo)
+      // .length, nao truthiness: harness sem login declara [], que e truthy.
+      if (!comando.length) {
         io.log(`${alvo} nao tem um passo de login conhecido${estado ? ` — ${estado.comoObter}` : ''}`)
         return state
       }

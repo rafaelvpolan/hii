@@ -4,7 +4,9 @@ import { noProxyArgs } from '../../qlb/alf/loopback'
 import { emptyUsage } from '../uso'
 import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euc/tsr/custo'
 import type { CostReading } from '../../euc/tsr/custo'
-import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
+import { planoLocal } from '../../euc/tsr/planos'
+import { estadoDoOllama } from './ollama-estado'
 import { alcancavelPorHttp, urlDoOllama } from '../sonda'
 
 interface OllamaResponse {
@@ -51,6 +53,23 @@ export class OllamaProvider implements Harness {
   readonly supportsVision = false
   readonly agentic = false
 
+  readonly modos: CatalogoDeModo = { modos: [], padrao: '' }
+  readonly cor: CorDeMarca = { r: 148, g: 163, b: 184 }
+  readonly binario = 'ollama'
+  // Roda como servidor local: o doctor nao cobra `ollama --version` no PATH.
+  readonly exigeCliNoPath = false
+  readonly comandoDeLogin: readonly string[] = []
+  readonly rodaLocal = true
+  readonly temLeitorDePlano = true
+
+  // Unico harness cuja prontidao depende de um servidor local estar de pe.
+  modeloPadraoPara(): string | undefined { return process.env.HICODE_OLLAMA_MODEL || undefined }
+  prontoParaUso(): boolean { return estadoDoOllama().habilitado }
+  comoObterQuandoAusente(): string { return `suba o ollama (${process.env.HICODE_OLLAMA_URL || 'http://localhost:11434'})` }
+  autenticado(): boolean { return true }
+  plano(): PlanoDoProvedor { return planoLocal('ollama') }
+  // Unico harness que descobre modelo ao vivo, sondando o servidor local.
+  modelosDisponiveis(): string[] { return estadoDoOllama().modelos }
   capabilities(): HarnessCapabilities { return OLLAMA_CAPACIDADES }
   healthCheck(): Promise<boolean> { return alcancavelPorHttp(urlDoOllama()) }
   sinaisDeFalha(): SinaisDoHarness { return OLLAMA_SINAIS }

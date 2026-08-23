@@ -1,9 +1,10 @@
+import { harnessPorNome } from '../motor/tmd/registro'
 import { test, expect, afterEach } from 'bun:test'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  autenticadoDoProvedor, claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
+  claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
   modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
 } from '../motor/euc/tsr/planos'
 import { sondarOllama } from '../motor/tmd/harness/ollama-estado'
@@ -135,8 +136,9 @@ test('codex: com auth.json em CODEX_HOME, conta como autenticado', () => {
   expect(codexAutenticado()).toBe(true)
 })
 
-test('autenticadoDoProvedor: ollama nao tem conceito de login, sempre passa', () => {
-  expect(autenticadoDoProvedor('ollama')).toBe(true)
+test('ollama nao tem conceito de login, sempre passa — quem declara isso e o proprio harness', () => {
+  expect(harnessPorNome('ollama').autenticado()).toBe(true)
+  expect(harnessPorNome('ollama').comandoDeLogin).toEqual([])
 })
 
 test('ollama: sonda que nao responde devolve desabilitado em vez de travar', async () => {

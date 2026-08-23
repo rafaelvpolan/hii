@@ -1,10 +1,14 @@
 import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN } from '../../euc/tsr/custo'
-import { modoResolvido } from '../modos'
-import type { AgentMode, AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import { resolverModo } from '../modo-puro'
+import { codexAutenticado } from '../../euc/tsr/planos'
+import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
+import { SEM_PLANO } from '../tipos'
 import { alcancavelPorHttp } from '../sonda'
 import type { Usage } from '../../cdl'
+
+export const CODEX_MODOS: CatalogoDeModo = { modos: ['untrusted', 'on-request', 'never'], padrao: 'never' }
 
 interface CodexEvent {
   type?: string
@@ -17,7 +21,7 @@ function sandbox(mode: AgentMode): string {
 }
 
 export function argv(req: AgentRequest, workdir: string): string[] {
-  const aprovacao = modoResolvido('codex', req.modo)
+  const aprovacao = resolverModo(CODEX_MODOS, req.modo)
   const a = ['exec', req.prompt, '-C', workdir, '--sandbox', sandbox(req.mode), '-c', `approval_policy="${aprovacao}"`, '--json']
   if (req.model) a.push('-m', req.model)
   if (req.effort) a.push('-c', `model_reasoning_effort="${req.effort}"`)
@@ -70,6 +74,20 @@ export class CodexProvider implements Harness {
   readonly supportsVision = false
   readonly agentic = true
 
+  readonly modos: CatalogoDeModo = CODEX_MODOS
+  readonly cor: CorDeMarca = { r: 16, g: 163, b: 127 }
+  readonly binario = 'codex'
+  readonly exigeCliNoPath = true
+  readonly comandoDeLogin: readonly string[] = ['codex', 'login']
+  readonly rodaLocal = false
+  readonly temLeitorDePlano = false
+
+  modeloPadraoPara(): string | undefined { return process.env.HICODE_CODEX_MODEL || undefined }
+  prontoParaUso(): boolean { return true }
+  comoObterQuandoAusente(): string { return 'instale o CLI do Codex' }
+  autenticado(): boolean { return codexAutenticado() }
+  plano(): PlanoDoProvedor { return { ...SEM_PLANO, provedor: 'codex' } }
+  modelosDisponiveis(): string[] { return [] }
   capabilities(): HarnessCapabilities { return CODEX_CAPACIDADES }
   healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CODEX_SINAIS }

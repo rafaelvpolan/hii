@@ -7,6 +7,7 @@ import type { Rgb } from '../../mir/tui/paleta'
 import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cdl/ali/contrato'
 import { raizDoCodex } from '../../euc/tsr/planos'
 import { providerNameFor } from '../registro'
+import { corDoHarness } from '../registro'
 import type { HarnessId } from '../tipos'
 
 export interface ComandoDaIa {
@@ -21,15 +22,8 @@ export interface ComandosDaIa {
 
 const TTL_MS = 30_000
 
-const CORES_DE_MARCA: Record<HarnessId, Rgb> = {
-  claude: { r: 218, g: 119, b: 86 },
-  codex: { r: 16, g: 163, b: 127 },
-  kimi: { r: 91, g: 141, b: 239 },
-  ollama: { r: 148, g: 163, b: 184 },
-}
-
 export function corDaIa(nome: HarnessId): Rgb {
-  return CORES_DE_MARCA[nome]
+  return corDoHarness(nome)
 }
 
 function semAspas(valor: string): string {

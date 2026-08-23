@@ -18,6 +18,7 @@ export interface LinhaDeProvedor {
   motivo: string
   plano: string
   planoLido: boolean
+  rodaLocal: boolean
   detalheDoPlano: string
   janelas: JanelaDoPainel[]
   idadeDoUsoHoras: number

@@ -103,7 +103,7 @@ test('/config nunca marca como habilitado uma ia sem login ou com cota estourada
 
 test('o rotulo da situacao no painel /config diferencia sem-login de cota estourada', async () => {
   const { painelDeIas } = await import('../motor/mir/render/config/paineis')
-  const base = { habilitado: false, motivo: '', plano: '', planoLido: true, detalheDoPlano: '', idadeDoUsoHoras: -1, modelosDisponiveis: [], papeis: [], modelo: '', esforco: '', restringeFerramenta: true, isolaLeitura: true, reportaCusto: true, janelas: [] }
+  const base = { habilitado: false, motivo: '', plano: '', planoLido: true, rodaLocal: false, detalheDoPlano: '', idadeDoUsoHoras: -1, modelosDisponiveis: [], papeis: [], modelo: '', esforco: '', restringeFerramenta: true, isolaLeitura: true, reportaCusto: true, janelas: [] }
   const estado = {
     provedores: [
       { ...base, nome: 'claude', situacao: 'nao-autenticado' as const },

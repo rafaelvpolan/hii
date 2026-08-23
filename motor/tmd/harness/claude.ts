@@ -1,12 +1,14 @@
-import { claudeArgv } from './claude-argv'
+import { claudeArgv, CLAUDE_MODOS } from './claude-argv'
+import { claudeAutenticado, planoDoClaude } from '../../euc/tsr/planos'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv'
 import { run } from '../../qlb/git'
 import { emptyUsage } from '../uso'
 import { COST_UNKNOWN, readReportedCost } from '../../euc/tsr/custo'
 import { runClaudeStream } from './claude-stream'
 import type { CostReading } from '../../euc/tsr/custo'
-import type { AgentRequest, AgentResult, Harness, HarnessCapabilities, HarnessId, SinaisDoHarness } from '../tipos'
+import type { AgentRole, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
 import { alcancavelPorHttp } from '../sonda'
+import { GATE_MODEL, VERIFY_MODEL } from '../../cdl/ali/config'
 
 interface ClaudeJson {
   total_cost_usd?: number
@@ -44,6 +46,26 @@ export class ClaudeProvider implements Harness {
   readonly supportsVision = true
   readonly agentic = true
 
+  readonly modos: CatalogoDeModo = CLAUDE_MODOS
+  readonly cor: CorDeMarca = { r: 218, g: 119, b: 86 }
+  readonly binario = 'claude'
+  readonly exigeCliNoPath = true
+  readonly comandoDeLogin: readonly string[] = ['claude', '/login']
+  readonly rodaLocal = false
+  readonly temLeitorDePlano = true
+
+  prontoParaUso(): boolean { return true }
+  // De proposito NAO le HICODE_CLAUDE_MODEL: o claude usa o modelo padrao do
+  // proprio CLI fora de verify/gate, e era assim antes desta refatoracao.
+  modeloPadraoPara(papel: AgentRole): string | undefined {
+    if (papel === 'verify') return VERIFY_MODEL
+    if (papel === 'gate') return GATE_MODEL
+    return undefined
+  }
+  comoObterQuandoAusente(): string { return 'instale o CLI do Claude Code' }
+  autenticado(): boolean { return claudeAutenticado() }
+  plano(agoraMs: number): PlanoDoProvedor { return planoDoClaude(agoraMs) }
+  modelosDisponiveis(): string[] { return this.plano(Date.now()).modelos }
   capabilities(): HarnessCapabilities { return CLAUDE_CAPACIDADES }
   healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CLAUDE_SINAIS }

@@ -1,3 +1,4 @@
+import type { AgentRequest } from '../motor/tmd/tipos'
 import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -174,10 +175,18 @@ test('kimiArgv troca de flag conforme o modo escolhido', async () => {
 })
 
 test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita o modo, com "never" como padrao de hoje', async () => {
-  const fonte = await Bun.file('motor/tmd/harness/codex.ts').text()
-  expect(fonte).toContain('approval_policy')
-  expect(fonte).not.toContain("'-a', 'never'")
-  expect(fonte).toContain("modoResolvido('codex'")
+  // Antes isto olhava o texto-fonte atras de `modoResolvido('codex'`, e por isso
+  // reprovou num refactor que preservou o comportamento. Agora exercita o argv:
+  // mais forte que grep, e nao amarra o teste a como o modo e resolvido.
+  const { argv } = await import('../motor/tmd/harness/codex')
+  const pedido = (modo?: string): AgentRequest => ({
+    prompt: 'p', cwd: '/tmp', dirs: ['/tmp'], mode: 'edit', useAgents: false, timeoutMs: 1000, modo,
+  })
+  const semModo = argv(pedido(), '/tmp')
+  expect(semModo).toContain('approval_policy="never"')
+  expect(semModo.some((a, i) => a === '-a' && semModo[i + 1] === 'never')).toBe(false)
+  expect(argv(pedido('untrusted'), '/tmp')).toContain('approval_policy="untrusted"')
+  expect(argv(pedido('modo-que-nao-existe'), '/tmp')).toContain('approval_policy="never"')
 })
 
 test('o papel step tambem envia o modo — ele edita arquivos como o implement', async () => {

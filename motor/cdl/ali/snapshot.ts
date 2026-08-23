@@ -1,7 +1,5 @@
-import { agentRoles, effortFor, modelFor, providerLimits, providerNameFor, providerNames } from '../../tmd/registro'
+import { agentRoles, effortFor, harnessPorNome, modelFor, providerLimits, providerNameFor, providerNames } from '../../tmd/registro'
 import { provedoresDisponiveis } from '../../tmd/disponibilidade'
-import { planoDoProvedor, temLeitorDePlano } from '../../euc/tsr/planos'
-import { estadoDoOllama } from '../../tmd/harness/ollama-estado'
 import type { ProvedorDisponivel } from '../../tmd/disponibilidade'
 import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../../euc/tsr/consumo'
 import { allCards } from '../store'
@@ -43,18 +41,20 @@ function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponive
   const limites = providerLimits(nome)
   const papel = papelPrincipal(nome)
   const estado = estados.get(nome)
-  const plano = planoDoProvedor(nome)
+  const harness = harnessPorNome(nome)
+  const plano = harness.plano(agoraMs)
   return {
     nome,
     situacao: estado ? estado.situacao : 'ausente',
     habilitado: habilitadoDe(nome, estado),
     motivo: estado && estado.situacao !== 'disponivel' ? estado.comoObter : '',
     plano: plano.plano,
-    planoLido: temLeitorDePlano(nome),
+    planoLido: harness.temLeitorDePlano,
+    rodaLocal: harness.rodaLocal,
     detalheDoPlano: plano.detalhe,
     janelas: janelasDoPainel(nome, agoraMs),
     idadeDoUsoHoras: plano.idadeHoras,
-    modelosDisponiveis: nome === 'ollama' ? estadoDoOllama().modelos : plano.modelos,
+    modelosDisponiveis: harness.modelosDisponiveis(),
     papeis: papeisDe(nome),
     modelo: papel ? modelFor(papel) ?? '' : '',
     esforco: papel ? effortFor(papel) ?? '' : '',
@@ -66,8 +66,7 @@ function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponive
 
 export function habilitadoDe(nome: HarnessId, estado: ProvedorDisponivel | undefined): boolean {
   if (!estado || estado.situacao !== 'disponivel') return false
-  if (nome === 'ollama') return estadoDoOllama().habilitado
-  return true
+  return harnessPorNome(nome).prontoParaUso()
 }
 
 export function estadosPorNome(): Map<string, ProvedorDisponivel> {

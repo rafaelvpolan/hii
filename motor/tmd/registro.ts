@@ -1,20 +1,19 @@
-import { GATE_MODEL, VERIFY_MODEL } from '../cdl/ali/config'
 import { ClaudeProvider } from './harness/claude'
 import { CodexProvider } from './harness/codex'
 import { OllamaProvider } from './harness/ollama'
 import { KimiProvider } from './harness/kimi'
-import type { AgentRole, Harness, HarnessId, HarnessCapabilities } from './tipos'
+import type { AgentRole, CorDeMarca, Harness, HarnessId, HarnessCapabilities } from './tipos'
 import { preferenciaDoPapel, esforcoPara } from './preferencias'
-import { modoResolvido, temModos } from './modos'
+import { resolverModo } from './modo-puro'
 
 export const DEFAULT_PROVIDER: HarnessId = 'claude'
 
-const PROVIDERS: Record<HarnessId, Harness> = {
-  claude: new ClaudeProvider(),
-  codex: new CodexProvider(),
-  ollama: new OllamaProvider(),
-  kimi: new KimiProvider(),
-}
+// Registrar um harness novo = importar a classe e somar uma linha aqui.
+// Nada mais no motor precisa saber que ele existe.
+const PROVIDERS: ReadonlyMap<HarnessId, Harness> = new Map<HarnessId, Harness>(
+  [new ClaudeProvider(), new CodexProvider(), new OllamaProvider(), new KimiProvider()]
+    .map(h => [h.name, h]),
+)
 
 const ROLE_PROVIDER_ENV: Record<AgentRole, string> = {
   implement: 'HICODE_IMPLEMENT_PROVIDER',
@@ -23,18 +22,15 @@ const ROLE_PROVIDER_ENV: Record<AgentRole, string> = {
   step: 'HICODE_STEP_PROVIDER',
 }
 
-const PROVIDER_MODEL_ENV: Record<Exclude<HarnessId, 'claude'>, string> = {
-  codex: 'HICODE_CODEX_MODEL',
-  ollama: 'HICODE_OLLAMA_MODEL',
-  kimi: 'HICODE_KIMI_MODEL',
-}
-
-export function isProviderName(s: string | undefined): s is HarnessId {
-  return s !== undefined && Object.prototype.hasOwnProperty.call(PROVIDERS, s)
+// Nao e mais type predicate de proposito: com HarnessId = string, um predicado
+// estreitaria o ramo negativo para `never` e quebraria todo `if/else` depois
+// dele (motor/mir/escolher-ia.ts era o caso real).
+export function isProviderName(s: string | undefined): boolean {
+  return s !== undefined && PROVIDERS.has(s)
 }
 
 export function providerNames(): HarnessId[] {
-  return Object.keys(PROVIDERS) as HarnessId[]
+  return [...PROVIDERS.keys()]
 }
 
 export function agentRoles(): AgentRole[] {
@@ -50,25 +46,63 @@ export function roleQuotaFallbackEnv(role: AgentRole): string {
 }
 
 export function providerNameFor(role: AgentRole, override?: string): HarnessId {
-  if (isProviderName(override)) return override
+  if (override !== undefined && isProviderName(override)) return override
   const escolhido = preferenciaDoPapel(role).provider
-  if (isProviderName(escolhido)) return escolhido
+  if (escolhido !== undefined && isProviderName(escolhido)) return escolhido
   const perRole = process.env[ROLE_PROVIDER_ENV[role]]
-  if (isProviderName(perRole)) return perRole
+  if (perRole !== undefined && isProviderName(perRole)) return perRole
   const dflt = process.env.HICODE_AI_PROVIDER
-  return isProviderName(dflt) ? dflt : DEFAULT_PROVIDER
+  return dflt !== undefined && isProviderName(dflt) ? dflt : DEFAULT_PROVIDER
 }
 
 export function providerFor(role: AgentRole, override?: string): Harness {
-  return PROVIDERS[providerNameFor(role, override)]
+  return harnessPorNome(providerNameFor(role, override))
 }
 
+// Lanca em vez de devolver undefined: id desconhecido e erro de programacao,
+// nao estado a ser tratado silenciosamente rio abaixo.
 export function harnessPorNome(name: HarnessId): Harness {
-  return PROVIDERS[name]
+  const h = PROVIDERS.get(name)
+  if (!h) throw new Error(`harness nao registrado: ${name}`)
+  return h
+}
+
+export function harnessSeExistir(name: string | undefined): Harness | undefined {
+  return name === undefined ? undefined : PROVIDERS.get(name)
+}
+
+// --- acessores por nome, para quem so tem o id em maos (painel, CLI) ---
+
+export function modosDoProvedor(nome: HarnessId): readonly string[] {
+  return harnessSeExistir(nome)?.modos.modos ?? []
+}
+
+export function modoPadraoDoProvedor(nome: HarnessId): string {
+  return harnessSeExistir(nome)?.modos.padrao ?? ''
+}
+
+export function temModos(nome: HarnessId): boolean {
+  return modosDoProvedor(nome).length > 0
+}
+
+export function corDoHarness(nome: HarnessId): CorDeMarca {
+  return harnessSeExistir(nome)?.cor ?? { r: 148, g: 163, b: 184 }
+}
+
+export function binarioDoHarness(nome: HarnessId): string {
+  return harnessSeExistir(nome)?.binario ?? ''
+}
+
+export function binariosDeHarness(): string[] {
+  return providerNames().map(binarioDoHarness).filter(Boolean)
+}
+
+export function comandoDeLoginDe(nome: HarnessId): readonly string[] {
+  return harnessSeExistir(nome)?.comandoDeLogin ?? []
 }
 
 export function providerLimits(name: HarnessId): HarnessCapabilities {
-  return PROVIDERS[name].capabilities()
+  return harnessPorNome(name).capabilities()
 }
 
 // Sonda de alcancabilidade. Mora aqui, e nao em sonda.ts, porque quem conhece os
@@ -76,20 +110,15 @@ export function providerLimits(name: HarnessId): HarnessCapabilities {
 // Harness desconhecido devolve true de proposito: nao saber sondar nao pode
 // impedir um card de acordar (mesmo comportamento de antes).
 export async function probeProviderHealth(nome: string): Promise<boolean> {
-  if (!isProviderName(nome)) return true
-  return PROVIDERS[nome].healthCheck()
+  const h = harnessSeExistir(nome)
+  return h ? h.healthCheck() : true
 }
 
 export function modelFor(role: AgentRole, override?: string): string | undefined {
   const name = providerNameFor(role, override)
   const escolhido = name === providerNameFor(role) ? preferenciaDoPapel(role).model : undefined
   if (escolhido) return escolhido
-  if (name === 'claude') {
-    if (role === 'verify') return VERIFY_MODEL
-    if (role === 'gate') return GATE_MODEL
-    return undefined
-  }
-  return process.env[PROVIDER_MODEL_ENV[name]] || undefined
+  return harnessSeExistir(name)?.modeloPadraoPara(role)
 }
 
 export function effortFor(role: AgentRole, doCard?: string): string | undefined {
@@ -97,12 +126,12 @@ export function effortFor(role: AgentRole, doCard?: string): string | undefined 
 }
 
 export function modoFor(role: AgentRole, override?: string): string | undefined {
-  const provider = providerNameFor(role, override)
-  if (!temModos(provider)) return undefined
-  return modoResolvido(provider, preferenciaDoPapel(role).modo)
+  const h = harnessSeExistir(providerNameFor(role, override))
+  if (!h || !h.modos.modos.length) return undefined
+  return resolverModo(h.modos, preferenciaDoPapel(role).modo)
 }
 
 export function quotaFallbackProviderFor(role: AgentRole): HarnessId | null {
   const env = process.env[roleQuotaFallbackEnv(role)]
-  return isProviderName(env) ? env : null
+  return env !== undefined && isProviderName(env) ? env : null
 }

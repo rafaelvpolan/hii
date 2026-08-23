@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { repoStatus } from '../../cdl/repos'
 import { readContract } from '../../cdl/bss/armazenar'
 import { daemonStatus } from '../../osw/mtr/daemon'
-import { providerNameFor } from '../../tmd/registro'
+import { harnessPorNome, providerNameFor } from '../../tmd/registro'
 
 export type Severity = 'ok' | 'aviso' | 'erro'
 
@@ -63,7 +63,10 @@ export function checkGitPush(repoPath: string, repoName: string): Check {
 export function checkProvider(): Check {
   const papeis = ['implement', 'verify', 'gate', 'step'] as const
   const nomes = [...new Set(papeis.map(p => providerNameFor(p)))]
-  const faltando = nomes.filter(n => n !== 'ollama' && !exec(n === 'claude' ? 'claude' : n, ['--version']).ok)
+  const faltando = nomes
+    .map(n => harnessPorNome(n))
+    .filter(h => h.exigeCliNoPath && !exec(h.binario, ['--version']).ok)
+    .map(h => h.name)
   if (faltando.length) {
     return check('IA', 'erro', `CLI ausente: ${faltando.join(', ')}`, `instale ou troque o provedor por papel (HICODE_*_PROVIDER)`)
   }
