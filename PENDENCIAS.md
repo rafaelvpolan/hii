@@ -21,27 +21,7 @@ trabalho é rebaseado em cima; ou (b) tudo entra num PR só, assumindo um diff
 grande. Não dá para decidir isso sem saber se aqueles commits já foram
 revisados por alguém.
 
----
-
-## DECISÃO SUA — nome de arquivo de teste não acompanhou o rename
-
-**O que é.** A Onda 1 renomeou 172 arquivos de código e manteve os 158 arquivos
-de teste com os nomes antigos: `test/finish-cost.test.ts` exercita
-`motor/qlb/ctr/fechar.ts`, `test/kimi-adapter.test.ts` exercita
-`motor/tmd/harness/kimi.ts`.
-
-**O que já não é mais problema.** A detecção de "sem teste correspondente"
-deixou de depender do nome (agora casa por import), então isso não gera mais
-falso-negativo no auditor.
-
-**O que sobra.** Só coerência de leitura: quem abre `test/` não vê a taxonomia
-BRAZIL. Renomear são ~40 arquivos e um diff cego pelo repositório, com zero
-ganho funcional.
-
-**O que decidir.** Vale a onda de rename de testes, ou o custo não paga?
-Recomendação: não pagar agora, e renomear cada teste quando ele for tocado por
-outro motivo.
-
+R: (b) Trabalho linear baseado em cima doque vai sendo feito, tudo vai ser revisado depois em UM PR unico, pode abrir o PR das branchs ja feitas para ser aprovado a atualizado na atual.
 ---
 
 ## FALTA EXECUTAR — teste de aceitação manual da Onda 3
@@ -56,3 +36,5 @@ nenhum deles mata um processo de verdade nem fala com o GitHub. Precisa de um
 repo-alvo real e de um `gh` autenticado.
 
 **Onde está registrado.** `WORKFLOW-EXECUCAO.md`, Onda 3.
+
+R: Pode usar o repo do /hicode-site que esta em paralelo, pode fazer qualquer teste nele que quiser ainda não esta no ar, lembre-se de sempre pegar as ultimas atualizações do projeto.

@@ -304,7 +304,7 @@ hii/
 │
 ├── Dockerfile                  EMB  item 28                                      NOVO
 ├── docker-compose.yml          EMB  item 28                                      NOVO
-├── test/                       nomes mantidos; só imports mudam na Onda 1
+├── test/                       espelha motor/ (Onda 1b): test/<dominio>/*.test.ts
 └── scripts/
     └── renomear-brazil.mjs     ferramenta da Onda 1                              NOVO
 ```
@@ -499,6 +499,14 @@ em vez de deixá-los quebrar em silêncio; os demais foram varridos à mão.
 | Raiz de varredura de ferramenta | `tsconfig.json` (`include`), `scripts/check-no-any.mjs` (`ROOTS`) | É diretório, não módulo. Durante a Onda 1 apontam para os **dois** lados; `lib` sai no commit 1.10 |
 | Caminho como **dado** entre aspas | `motor/cdl/ali/contrato.ts` (`resolvidoPor: ['…']`) | Não é import — mas `test/environment-contract.test.ts:45` valida que o caminho existe em disco, então tem de acompanhar. O script cobre isso |
 | Prosa em documentação | `README.md`, `.claude/skills/*/SKILL.md` | Cobertos pelo passo de caminho-como-dado quando entre aspas ou crases; o resto é manual |
+
+**Testes movidos na Onda 1b:** `test/` passou a espelhar os dez domínios de
+`motor/`. Isso expôs uma classe de caminho que a §5.6 não previa — **raiz do
+repositório calculada à mão** (`join(import.meta.dir, '..')`, `dirname(import.meta.dir)`)
+e caminho para `test/fixtures/`. Mover o arquivo muda a profundidade, e essas
+linhas quebram em silêncio: 30 testes reprovaram na primeira passada.
+`scripts/renomear-testes-brazil.mjs` detecta e reporta os quatro padrões, e
+`test/mapa-de-testes.test.ts` guarda o invariante.
 
 **Os três documentos de plano** (`ARQUITETURA-BRAZIL.md`, `WORKFLOW-EXECUCAO.md`,
 `MODERNIZATION.md`) ficam **fora** de qualquer reescrita automática: a §5 acima
