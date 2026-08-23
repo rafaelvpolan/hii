@@ -1,4 +1,4 @@
-import { allCards, createCard } from '../runner/card-store'
+import { allCards, createCard } from '../../motor/cdl/store'
 import { taskSync } from './registry'
 
 export interface SyncReport {

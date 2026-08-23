@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ImplementResult } from '../lib/card'
+import type { ImplementResult } from '../motor/cdl'
 import type { ExecuteDeps } from '../lib/runner/execute'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-wtfate-'))
@@ -39,9 +39,9 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0', usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 } }
 
-const { createCard, readCard, patchCard } = await import('../lib/runner/card-store')
+const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
-const { maxWaitingAttempts } = await import('../lib/runner/config')
+const { maxWaitingAttempts } = await import('../motor/cdl/ali/config')
 
 const agente: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => Promise.resolve(resultadoDoAgente),

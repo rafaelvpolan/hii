@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { projetosConhecidos } from '../lib/core/projetos-conhecidos'
-import type { Fields } from '../lib/card/types'
+import { projetosConhecidos } from '../motor/cdl/projetos-conhecidos'
+import type { Fields } from '../motor/cdl/tipos'
 
 function card(repo: string): Fields {
   return { id: '1', title: 't', status: 'READY', repo }

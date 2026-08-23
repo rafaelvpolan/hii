@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSyn
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ImplementResult, Run } from '../lib/card'
+import type { ImplementResult, Run } from '../motor/cdl'
 import type { ExecuteDeps } from '../lib/runner/execute'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telemfalha-'))
@@ -38,7 +38,7 @@ git(clone, ['config', 'user.name', 't'])
 process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
-const { createCard, readCard, patchCard } = await import('../lib/runner/card-store')
+const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
 const { classifyFailure } = await import('../lib/ai/failure')
 const { readFailureAttempts } = await import('../lib/runner/attempts')

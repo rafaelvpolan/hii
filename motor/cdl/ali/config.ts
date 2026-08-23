@@ -1,7 +1,7 @@
 import { join, dirname, resolve } from 'node:path'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT } from './environment-contract'
+import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT } from './contrato'
 
 const MARCADORES = ['runner.ts', 'cards', join('config', 'repos.json')]
 

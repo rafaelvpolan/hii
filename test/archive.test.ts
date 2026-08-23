@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-arq-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const A = await import('../lib/core/archive')
+const A = await import('../motor/cdl/arquivar')
 const { submit, transition } = await import('../lib/core/actions')
-const { allCards } = await import('../lib/runner/card-store')
+const { allCards } = await import('../motor/cdl/store')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -23,7 +23,7 @@ function card(repo: string, status: string, updated?: string): string {
   const id = submit({ title: `${repo} ${status}`, repo })
   transition(id, status)
   if (updated) {
-    const { updateCard } = require('../lib/runner/card-store') as typeof import('../lib/runner/card-store')
+    const { updateCard } = require('../motor/cdl/store') as typeof import('../motor/cdl/store')
     updateCard(id, { fields: { updated } })
   }
   return id

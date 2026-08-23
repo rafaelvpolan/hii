@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-repos-'))
 process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 
-const { addRepo, removeRepo, repoStatus, detectBranch, isGitRepo } = await import('../lib/core/repos')
+const { addRepo, removeRepo, repoStatus, detectBranch, isGitRepo } = await import('../motor/cdl/repos')
 
 const NOW = '2026-08-13T00:00:00Z'
 let seq = 0
@@ -125,7 +125,7 @@ test('doctor: contrato sem build nem test avisa que os gates serao pulados', asy
   const { checkContract } = await import('../lib/core/doctor')
   const dir = clone()
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'sem-scripts' }))
-  const { syncContract } = await import('../lib/contract/store')
+  const { syncContract } = await import('../motor/cdl/bss/armazenar')
   syncContract(dir, NOW)
   const c = checkContract(dir)
   expect(c.severidade).toBe('aviso')

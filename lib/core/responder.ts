@@ -1,7 +1,7 @@
 import { readClarify, writeClarify } from '../runner/clarify'
-import { readCard } from '../runner/card-store'
+import { readCard } from '../../motor/cdl/store'
 import { answerClarify } from './actions'
-import type { ClarifyQuestion, Fields } from '../card/types'
+import type { ClarifyQuestion, Fields } from '../../motor/cdl/tipos'
 
 export interface Pendencia {
   id: string

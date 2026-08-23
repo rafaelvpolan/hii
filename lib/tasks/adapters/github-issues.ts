@@ -1,5 +1,5 @@
 import { run } from '../../runner/git'
-import type { Fields } from '../../card'
+import type { Fields } from '../../../motor/cdl'
 import type { ExternalTask, TaskSync } from '../types'
 
 interface GhIssue {

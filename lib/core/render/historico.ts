@@ -3,7 +3,7 @@ import { pintar, type Tom } from '../tui/paleta'
 import { chaveDaSessao, idDaSessao } from '../historico'
 import type { HistoricoDeSessoes, Sessao } from '../historico'
 import { idCurto } from '../../runner/ias-da-sessao'
-import type { IaDaSessao } from '../../card/types'
+import type { IaDaSessao } from '../../../motor/cdl/tipos'
 
 export interface OpcoesDoHistorico {
   color?: boolean

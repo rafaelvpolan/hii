@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { splitFrontMatter, serializeCard, extractObjetivo } from '../lib/card'
+import { splitFrontMatter, serializeCard, extractObjetivo } from '../motor/cdl'
 
 test('splitFrontMatter le frontmatter e corpo', () => {
   const p = splitFrontMatter('---\nid: 001\nstatus: READY\n---\n\n## Objetivo\nfazer X\n')

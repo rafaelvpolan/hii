@@ -1,8 +1,8 @@
 import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../card'
-import type { FailureClass } from '../card'
-import { cardsDir } from './config'
+import { isoNow } from '../../motor/cdl'
+import type { FailureClass } from '../../motor/cdl'
+import { cardsDir } from '../../motor/cdl/ali/config'
 
 export type AttemptKind = 'reprovacao' | 'correcao'
 

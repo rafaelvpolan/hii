@@ -55,7 +55,7 @@ process.env.PATH = `${ghBinDir}:${pathOriginal}`
 
 const realGit = await import('../lib/runner/git')
 
-const { createCard, readCard, patchCard } = await import('../lib/runner/card-store')
+const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleFinish } = await import('../lib/runner/finish')
 
 afterAll(() => {

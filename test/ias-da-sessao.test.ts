@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ChamadaDeIa, PapelDeChamada } from '../lib/card/types'
+import type { ChamadaDeIa, PapelDeChamada } from '../motor/cdl/tipos'
 
 let estado = ''
 

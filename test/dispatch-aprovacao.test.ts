@@ -40,7 +40,7 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 
 test('FLUXO: aprovar pelo numero 1 aprova o url', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   const inicial = aprovando(seguir(newSession('org/app'), '022'), '022')
   const state = await digitar(['1'], inicial)
@@ -50,7 +50,7 @@ test('FLUXO: aprovar pelo numero 1 aprova o url', async () => {
 
 test('FLUXO: recusar pelo 2 manda refazer', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   await digitar(['2'], aprovando(seguir(newSession('org/app'), '022'), '022'))
   expect(readCard('022')?.fm.status).not.toBe('URL_OK')
@@ -58,7 +58,7 @@ test('FLUXO: recusar pelo 2 manda refazer', async () => {
 
 test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async () => {
   const { aprovando, seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL', worktree: dir })
   let state = aprovando(seguir(newSession('org/app'), '022'), '022')
   state = await digitar(['3'], state)
@@ -73,7 +73,7 @@ test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async (
 
 test('FLUXO: enter vazio desiste do comentario sem recusar', async () => {
   const { comentando, seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   const state = await digitar([''], comentando(seguir(newSession('org/app'), '022'), '022'))
   expect(state.comentando).toBe('')
@@ -82,7 +82,7 @@ test('FLUXO: enter vazio desiste do comentario sem recusar', async () => {
 
 test('FLUXO: enter dentro da tarefa faz a acao obvia de cada estado', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('030', { status: 'URL' })
   await digitar([''], seguir(newSession('org/app'), '030'))
   expect(readCard('030')?.fm.status).toBe('URL_OK')
@@ -98,7 +98,7 @@ test('FLUXO: enter dentro da tarefa faz a acao obvia de cada estado', async () =
 
 test('FLUXO: enter em tarefa rodando nao mexe em nada', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'EXECUTING' })
   await digitar([''], seguir(newSession('org/app'), '022'))
   expect(readCard('022')?.fm.status).toBe('EXECUTING')
@@ -106,7 +106,7 @@ test('FLUXO: enter em tarefa rodando nao mexe em nada', async () => {
 })
 
 test('COMPATIBILIDADE: card velho com url/url_pid continua legivel e nao perde os campos', async () => {
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   const { renderCabecalhoTarefa } = await import('../lib/core/render/tarefa')
   const { seguir } = await import('../lib/core/session')
   card('040', { status: 'EXECUTED', worktree: dir, url: 'http://localhost:5240', url_pid: '4242' })
@@ -120,7 +120,7 @@ test('COMPATIBILIDADE: card velho com url/url_pid continua legivel e nao perde o
 
 test('FLUXO REAL: a dica do rodape para card em URL leva mesmo a aprovacao', async () => {
   const { esperandoVoce } = await import('../lib/core/render/rodape')
-  const { allCards, readCard } = await import('../lib/runner/card-store')
+  const { allCards, readCard } = await import('../motor/cdl/store')
   card('033', { status: 'URL' })
   const dica = esperandoVoce(allCards(), 'org/app')[0]?.comando ?? ''
   expect(dica).toBe('33')

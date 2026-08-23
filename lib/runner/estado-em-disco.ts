@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir, numeroDeEnv } from './config'
+import { cardsDir, numeroDeEnv } from '../../motor/cdl/ali/config'
 
 export const MAX_REFS_POR_TAREFA = 8
 

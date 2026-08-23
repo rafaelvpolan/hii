@@ -1,4 +1,4 @@
-import type { Fields } from '../card'
+import type { Fields } from '../../motor/cdl'
 
 export interface ExternalTask {
   externalId: string

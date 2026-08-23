@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { readCard, repoPath } from '../lib/runner/card-store'
+import { readCard, repoPath } from '../motor/cdl/store'
 import { dispatch, rotuloDoBloqueio } from '../lib/core/dispatch'
 import type { DispatchIO, SituacaoDeEnvio } from '../lib/core/dispatch'
 import { provedoresDisponiveis } from '../lib/ai/disponibilidade'

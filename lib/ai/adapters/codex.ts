@@ -3,7 +3,7 @@ import { emptyUsage } from '../usage'
 import { COST_UNKNOWN } from '../cost'
 import { modoResolvido } from '../modos'
 import type { AgentMode, AgentRequest, AgentResult, AiProvider, AiProviderName } from '../types'
-import type { Usage } from '../../card'
+import type { Usage } from '../../../motor/cdl'
 
 interface CodexEvent {
   type?: string

@@ -4,8 +4,8 @@ import { basename, join } from 'node:path'
 import {
   detectBundler, detectDevPort, detectFramework, detectLanguage,
   detectPackageManager, detectWorkspaceGlobs, expandGlobs, readPackageJson,
-} from './detect'
-import type { Commands, Contract, ContractSource, PackageInfo, PackageManager, RepoShape } from './types'
+} from './detectar'
+import type { Commands, Contract, ContractSource, PackageInfo, PackageManager, RepoShape } from './tipos'
 
 const HASHED = ['package.json', 'pnpm-workspace.yaml', 'turbo.json', 'nx.json', 'bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json', 'tsconfig.json', '.codefox.yaml']
 const SKIP_DIRS = ['node_modules', 'docs', 'infra', 'dist', 'build', '.git', 'vendor']

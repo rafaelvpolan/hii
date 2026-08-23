@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
-import { ROOT, cardsDir } from '../runner/config'
-import { ENV_RUNNER_PIDFILE } from '../runner/environment-contract'
+import { ROOT, cardsDir } from '../../motor/cdl/ali/config'
+import { ENV_RUNNER_PIDFILE } from '../../motor/cdl/ali/contrato'
 
 const ENGINE_MARK = 'runner.ts'
 const ENGINE_RUNTIME = 'bun'

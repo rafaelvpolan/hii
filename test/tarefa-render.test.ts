@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { renderCabecalhoTarefa } from '../lib/core/render/tarefa'
 import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
-import type { Card } from '../lib/card'
+import type { Card } from '../motor/cdl'
 
 function card(fm: Record<string, string> = {}, body = '## Objetivo\nremova o selo\n'): Card {
   return {

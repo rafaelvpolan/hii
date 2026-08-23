@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { arquivar, planejar, listarArquivados, restaurar, MAX_CARDS, archiveDir } from '../../lib/core/archive.ts'
+import { arquivar, planejar, listarArquivados, restaurar, MAX_CARDS, archiveDir } from '../../motor/cdl/arquivar.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

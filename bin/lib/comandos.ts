@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
-import { ROOT } from '../../lib/runner/config'
+import { ROOT } from '../../motor/cdl/ali/config'
 import { renderFleet } from '../../lib/core/render/fleet'
 import { daemonPid, daemonStatus, readPrefs, writePrefs } from '../../lib/core/daemon'
 import type { SessionState } from '../../lib/core/session'

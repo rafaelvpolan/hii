@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { listRepos } from './card-store'
+import { listRepos } from '../store'
 
 const SEMPRE = ['claude', 'codex', 'ollama', 'gh', 'git', 'node', 'bun']
 const RUIDO = new Set([

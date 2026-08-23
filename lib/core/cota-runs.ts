@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
-import type { FailureClass, IaDaSessao, TrocaDeProvedor } from '../card'
-import { cardsDir } from '../runner/config'
+import type { FailureClass, IaDaSessao, TrocaDeProvedor } from '../../motor/cdl'
+import { cardsDir } from '../../motor/cdl/ali/config'
 import { memoArquivo, memoChave, memoTempo } from './cache'
 
 function ttlListagemMs(): number {

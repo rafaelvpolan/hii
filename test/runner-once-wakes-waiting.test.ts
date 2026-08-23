@@ -11,7 +11,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-once-'))
 const REPOS = mkdtempSync(join(tmpdir(), 'hicode-once-repos-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { createCard, readCard } = await import('../lib/runner/card-store')
+const { createCard, readCard } = await import('../motor/cdl/store')
 
 afterAll(() => {
   rmSync(CARDS, { recursive: true, force: true })

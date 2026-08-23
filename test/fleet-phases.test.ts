@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { renderFleet } from '../lib/core/render/fleet'
 import { isActive, waitsHuman, phaseLabel } from '../lib/core/render/phases'
-import type { Fields } from '../lib/card'
+import type { Fields } from '../motor/cdl'
 
 function card(over: Partial<Fields>): Fields {
   return { id: '1', title: 't', status: 'READY', ...over }

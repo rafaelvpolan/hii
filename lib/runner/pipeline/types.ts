@@ -1,4 +1,4 @@
-import type { Status } from '../../card'
+import type { Status } from '../../../motor/cdl'
 
 export type StepKind = 'quality' | 'security' | 'review' | 'cleanup' | 'custom'
 

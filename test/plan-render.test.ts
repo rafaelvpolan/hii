@@ -3,7 +3,7 @@ import { waves } from '../lib/runner/pipeline/waves'
 import { DEFAULT_STEPS } from '../lib/runner/pipeline/config'
 import { buildPlan } from '../lib/core/plan'
 import { renderPlan } from '../lib/core/render/plan'
-import type { Card } from '../lib/card'
+import type { Card } from '../motor/cdl'
 import type { PipelineStep } from '../lib/runner/pipeline/types'
 
 function card(fm: Record<string, string>, objetivo = 'fazer algo'): Card {

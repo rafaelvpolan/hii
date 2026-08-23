@@ -1,4 +1,4 @@
-import { GATE_MODEL, VERIFY_MODEL } from '../runner/config'
+import { GATE_MODEL, VERIFY_MODEL } from '../../motor/cdl/ali/config'
 import { ClaudeProvider } from './adapters/claude'
 import { CodexProvider } from './adapters/codex'
 import { OllamaProvider } from './adapters/ollama'

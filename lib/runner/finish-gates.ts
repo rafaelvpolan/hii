@@ -1,12 +1,12 @@
-import { isoNow } from '../card'
-import type { StepMap } from '../card'
-import { maxReajuste } from './config'
-import { patchCard } from './card-store'
+import { isoNow } from '../../motor/cdl'
+import type { StepMap } from '../../motor/cdl'
+import { maxReajuste } from '../../motor/cdl/ali/config'
+import { patchCard } from '../../motor/cdl/store'
 import { run } from './git'
 import { runStep } from './agent'
 import { resolveCommand } from './commands'
 import { addMetric } from './finish-metrics'
-import type { Contract, PackageInfo } from '../contract/types'
+import type { Contract, PackageInfo } from '../../motor/cdl/bss/tipos'
 
 export interface RunCtx {
   contract: Contract

@@ -1,4 +1,4 @@
-import type { Usage } from '../card'
+import type { Usage } from '../../motor/cdl'
 
 export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 

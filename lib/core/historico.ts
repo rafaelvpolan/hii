@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { splitFrontMatter } from '../card'
-import { allCards } from '../runner/card-store'
-import { cardsDir } from '../runner/config'
-import { archiveDir } from './archive'
+import { splitFrontMatter } from '../../motor/cdl'
+import { allCards } from '../../motor/cdl/store'
+import { cardsDir } from '../../motor/cdl/ali/config'
+import { archiveDir } from '../../motor/cdl/arquivar'
 import { memoChave, memoTempo } from './cache'
 import { loteDesde, type RegistroDeRun } from './cota-runs'
 

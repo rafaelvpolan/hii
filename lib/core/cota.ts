@@ -1,4 +1,4 @@
-import { isoAt } from '../card'
+import { isoAt } from '../../motor/cdl'
 import { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO, contribuicoesDoRegistro, loteDesde } from './cota-runs'
 import type { ContribuicaoDeProvedor, RegistroDeRun } from './cota-runs'
 

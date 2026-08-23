@@ -1,8 +1,8 @@
-import { extractObjetivo } from '../card'
-import { readCard, updateCard } from '../runner/card-store'
-import { isoNow } from '../card/util'
+import { extractObjetivo } from '../../motor/cdl'
+import { readCard, updateCard } from '../../motor/cdl/store'
+import { isoNow } from '../../motor/cdl/util'
 import { existsSync } from 'node:fs'
-import type { Fields } from '../card/types'
+import type { Fields } from '../../motor/cdl/tipos'
 
 const TERMINAIS = ['MERGED', 'DEPLOYED']
 const ANTES_DE_EXECUTAR = ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED']

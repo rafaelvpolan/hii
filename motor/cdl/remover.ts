@@ -1,11 +1,11 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { readCard, listRepos, findCardFile, normalizeId } from '../runner/card-store'
-import { cardsDir } from '../runner/config'
-import { stopUrl } from '../runner/url-vivo'
-import { removeWorktree } from '../runner/git'
-import { remove } from './actions'
-import { floorProviders, formatProviders } from '../runner/cost-gap'
+import { readCard, listRepos, findCardFile, normalizeId } from './store'
+import { cardsDir } from './ali/config'
+import { stopUrl } from '../../lib/runner/url-vivo'
+import { removeWorktree } from '../../lib/runner/git'
+import { remove } from '../../lib/core/actions'
+import { floorProviders, formatProviders } from '../../lib/runner/cost-gap'
 
 const EM_VOO = ['EXECUTING', 'CORRECTING']
 

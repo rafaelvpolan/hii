@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterAll } from 'bun:test'
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { IaDaSessao, PapelDeChamada } from '../lib/card/types'
+import type { IaDaSessao, PapelDeChamada } from '../motor/cdl/tipos'
 
 process.env.HICODE_COTA_TTL_MS = '0'
 

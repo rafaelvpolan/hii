@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { CONTRATO_MOTOR_PAINEL } from '../lib/runner/environment-contract'
+import { CONTRATO_MOTOR_PAINEL } from '../motor/cdl/ali/contrato'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 

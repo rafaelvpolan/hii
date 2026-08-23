@@ -64,11 +64,11 @@ o mesmo formato do `isoNow()`. `created` e `updated` recebem o mesmo valor na cr
 
 ## Observações
 
-- `status` inicial é **sempre `READY`** (um dos `STATUSES` válidos em `lib/card/types.ts`), igual
+- `status` inicial é **sempre `READY`** (um dos `STATUSES` válidos em `motor/cdl/tipos.ts`), igual
   aos cards reais criados pelo painel. `INBOX` é reservado para triagem que ainda não virou trabalho;
   um card criado por pedido explícito do usuário já nasce pronto (`READY`).
 - `risk: high` só quando a mudança for grande/cross-cutting/breaking (sinaliza spec via `/spec`);
   o padrão é `low`.
 - Não invente chaves nem reordene: o `serializeCard` preserva a ordem, e o motor espelha essa
   estrutura. Cabeçalhos do corpo são `## Objetivo` e `## Log de Estado` — não mude os nomes
-  (são lidos por regex em `lib/card/text.ts`).
+  (são lidos por regex em `motor/cdl/texto.ts`).

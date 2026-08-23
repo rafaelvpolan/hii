@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
-import { cardsDir, ROOT, PREVIEW_BASE_PORT } from './config'
+import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../motor/cdl/ali/config'
 import { run } from './git'
-import { readContract } from '../contract/store'
+import { readContract } from '../../motor/cdl/bss/armazenar'
 import { devCommand, devCwd, hasCommand } from './commands'
 import { noProxyArgs } from './loopback'
 

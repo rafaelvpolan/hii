@@ -46,7 +46,7 @@ test('FLUXO REAL: /rm + s apaga o card do disco', async () => {
 
 test('FLUXO REAL: card apagado sai da faixa de espera', async () => {
   const { esperandoVoce } = await import('../lib/core/render/rodape')
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   card('025')
   card('026')
   expect(esperandoVoce(allCards(), 'org/app').length).toBe(2)

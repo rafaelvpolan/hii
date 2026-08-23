@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { delimiter, join } from 'node:path'
-import { ROOT } from '../../lib/runner/config'
+import { ROOT } from '../../motor/cdl/ali/config'
 import { provedoresDisponiveis } from '../../lib/ai/disponibilidade'
 import { urlDoOllama } from '../../lib/ai/ollama-estado'
 import { rotuloDoBloqueio } from '../../lib/core/dispatch'

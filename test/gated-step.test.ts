@@ -26,7 +26,7 @@ function gate(over: Partial<GateResult>): GateResult {
   return { ok: true, verdict: 'APPROVED', reason: '', questions: [], cost: 0.02, costMeasured: true, tokens: 200, ...over }
 }
 
-const { createCard } = await import('../lib/runner/card-store')
+const { createCard } = await import('../motor/cdl/store')
 const { runGatedStep } = await import('../lib/runner/gated')
 
 const agente: GatedDeps = {

@@ -1,5 +1,5 @@
-import { extractObjetivo } from '../card'
-import type { Card } from '../card'
+import { extractObjetivo } from '../../motor/cdl'
+import type { Card } from '../../motor/cdl'
 import { planSteps } from '../runner/analyze'
 import { classifySurface } from '../runner/classify'
 import { activeSteps } from '../runner/pipeline/config'

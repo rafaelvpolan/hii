@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../runner/config'
+import { ROOT } from '../../motor/cdl/ali/config'
 import { memoArquivo } from '../core/cache'
 import { modelFor, providerNameFor, agentRoles } from './registry'
 import type { AiProviderName } from './types'

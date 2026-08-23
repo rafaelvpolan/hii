@@ -152,7 +152,7 @@ test('arquivo sem teste correspondente sobe na ordem', async () => {
 
 test('stem de teste casa com o fonte por nome, inclusive com sufixo', () => {
   const stems = stemsDeTeste(['test/card-store.test.ts', 'test/finish-cost.test.ts', 'lib/runner/finish.ts'])
-  expect(temTesteCorrespondente('lib/runner/card-store.ts', stems)).toBe(true)
+  expect(temTesteCorrespondente('motor/cdl/store.ts', stems)).toBe(true)
   expect(temTesteCorrespondente('lib/runner/finish.ts', stems)).toBe(true)
   expect(temTesteCorrespondente('lib/runner/url.ts', stems)).toBe(false)
   expect(temTesteCorrespondente('test/card-store.test.ts', stems)).toBe(true)

@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
-import { splitFrontMatter, serializeCard, appendLog, isoNow } from '../card'
-import type { Card, Fields } from '../card'
-import { cardsDir, reposFile, ROOT } from './config'
-import { withFileLock, writeFileAtomic } from './file-lock'
-import { memoArquivo } from '../core/cache'
+import { splitFrontMatter, serializeCard, appendLog, isoNow } from './'
+import type { Card, Fields } from './'
+import { cardsDir, reposFile, ROOT } from './ali/config'
+import { withFileLock, writeFileAtomic } from '../../lib/runner/file-lock'
+import { memoArquivo } from '../../lib/core/cache'
 
 interface RepoConfig {
   name: string

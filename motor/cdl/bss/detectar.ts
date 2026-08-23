@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import type { PackageManager } from './types'
+import type { PackageManager } from './tipos'
 
 export interface PackageJson {
   name?: string

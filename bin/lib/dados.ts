@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from '../../lib/runner/config'
-import { allCards, listRepos, normalizeId } from '../../lib/runner/card-store'
+import { cardsDir } from '../../motor/cdl/ali/config'
+import { allCards, listRepos, normalizeId } from '../../motor/cdl/store'
 import { memoArquivo, memoTempo } from '../../lib/core/cache'
 import { parseLog } from '../../lib/core/activity'
 

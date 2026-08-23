@@ -40,7 +40,7 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 
 test('FLUXO REAL: instrucao dentro da tarefa entra como sub-prompt, sem confirmar', async () => {
   const { subPrompts } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   const { seguir } = await import('../lib/core/session')
   card('022', { status: 'EXECUTED', worktree: dir })
   await digitar(['tira tambem o do hero'], seguir(newSession('org/app'), '022'))
@@ -51,7 +51,7 @@ test('FLUXO REAL: instrucao dentro da tarefa entra como sub-prompt, sem confirma
 })
 
 test('FLUXO REAL: nenhuma tarefa nova nasce de uma instrucao', async () => {
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   const { seguir } = await import('../lib/core/session')
   card('022', { status: 'EXECUTED' })
   const antes = allCards().length
@@ -61,7 +61,7 @@ test('FLUXO REAL: nenhuma tarefa nova nasce de uma instrucao', async () => {
 
 test('PEDIDO em tarefa que sumiu vira tarefa nova, sem perder o texto', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   const state = await digitar(['tira tambem o do hero'], seguir(newSession('org/app'), '099'))
   const novos = allCards()
   expect(novos.length).toBe(1)
@@ -74,7 +74,7 @@ test('PEDIDO em tarefa que sumiu vira tarefa nova, sem perder o texto', async ()
 
 test('REGRESSAO: texto em tarefa que sumiu tambem vira tarefa nova — nao ha mais leitura de intencao', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   const state = await digitar(['tem acesso ao notion pelo claude?'], seguir(newSession('org/app'), '099'))
   const novo = allCards()[0]?.id
   if (!novo) throw new Error('o card criado ficou sem id')
@@ -85,7 +85,7 @@ test('REGRESSAO: texto em tarefa que sumiu tambem vira tarefa nova — nao ha ma
 
 test('a tarefa nova entra direto na fila, sem esperar aprovacao', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   await digitar(['remove o header de beta'], seguir(newSession('org/app'), '099'))
   expect(allCards()[0]?.status).toBe('EXECUTING')
   expect(saida.join(' ')).toContain('na fila')
@@ -93,7 +93,7 @@ test('a tarefa nova entra direto na fila, sem esperar aprovacao', async () => {
 
 test('sem projeto, instrucao orfa nao cria nada', async () => {
   const { seguir } = await import('../lib/core/session')
-  const { allCards } = await import('../lib/runner/card-store')
+  const { allCards } = await import('../motor/cdl/store')
   await digitar(['remove o texto solto'], seguir(newSession(''), '099'))
   expect(allCards().length).toBe(0)
   expect(saida.join(' ')).toContain('sem projeto')

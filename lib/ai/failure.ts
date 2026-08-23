@@ -1,4 +1,4 @@
-import type { FailureClass } from '../card'
+import type { FailureClass } from '../../motor/cdl'
 import type { AiProviderName } from './types'
 
 export interface FailureContext {

@@ -1,4 +1,4 @@
-import { ROOT } from './config'
+import { ROOT } from '../../motor/cdl/ali/config'
 import { providerFor, modelFor } from '../ai/registry'
 import { runProvider } from './cost-trust'
 import { sumTokens } from '../ai/usage'

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from './config'
-import { readCard } from './card-store'
+import { cardsDir } from '../../motor/cdl/ali/config'
+import { readCard } from '../../motor/cdl/store'
 import { JANELA_HISTORICO_MS } from '../core/historico'
 
 const SUFIXO_DO_LEDGER = '.ias.jsonl'

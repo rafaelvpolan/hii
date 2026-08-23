@@ -6,7 +6,7 @@ import { emptyUsage } from '../usage'
 import { COST_UNKNOWN, readReportedCost } from '../cost'
 import type { CostReading } from '../cost'
 import type { AgentRequest, AgentResult } from '../types'
-import type { Usage } from '../../card'
+import type { Usage } from '../../../motor/cdl'
 
 const NONINTERACTIVE_ENV: Record<string, string> = {
   GIT_TERMINAL_PROMPT: '0',

@@ -47,7 +47,7 @@ test('provedor de CLI ausente nao e apresentado como disponivel', async () => {
 })
 
 test('provedor que depende de servidor nao mente que esta pronto', async () => {
-  const { habilitadoDe } = await import('../lib/core/config-snapshot')
+  const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
   const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
   const instalado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
   definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
@@ -94,7 +94,7 @@ test('autenticado e com uso normal segue disponivel', async () => {
 })
 
 test('/config nunca marca como habilitado uma ia sem login ou com cota estourada', async () => {
-  const { habilitadoDe } = await import('../lib/core/config-snapshot')
+  const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
   const semLogin = { nome: 'claude' as const, situacao: 'nao-autenticado' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
   const cotaEstourada = { nome: 'claude' as const, situacao: 'cota-esgotada' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
   expect(habilitadoDe('claude', semLogin)).toBe(false)
@@ -118,7 +118,7 @@ test('o rotulo da situacao no painel /config diferencia sem-login de cota estour
 })
 
 test('binario ausente nunca conta como habilitado, mesmo com servidor no ar', async () => {
-  const { habilitadoDe } = await import('../lib/core/config-snapshot')
+  const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
   const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
   definirEstadoDoOllama({ habilitado: true, modelos: ['x'], verificadoEm: Date.now() })
   const ausente = { nome: 'ollama' as const, situacao: 'ausente' as const, instalado: false, comoObter: '', modelo: '', papeis: [] }

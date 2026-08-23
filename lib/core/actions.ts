@@ -1,9 +1,9 @@
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../card'
-import type { Fields } from '../card'
-import { cardsDir } from '../runner/config'
-import { createCard, findCardFile, readCard, updateCard } from '../runner/card-store'
+import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../../motor/cdl'
+import type { Fields } from '../../motor/cdl'
+import { cardsDir } from '../../motor/cdl/ali/config'
+import { createCard, findCardFile, readCard, updateCard } from '../../motor/cdl/store'
 import { readClarify, writeClarify } from '../runner/clarify'
 
 export interface NewCardInput {

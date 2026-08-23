@@ -1,6 +1,6 @@
 import { truncVisible, padVisible } from '../tui/layout'
 import { floorProviders, formatProviders } from '../../runner/cost-gap'
-import type { Card } from '../../card'
+import type { Card } from '../../../motor/cdl'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

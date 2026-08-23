@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { GateResult } from '../lib/runner/codefox-gate'
-import type { ImplementResult } from '../lib/card'
+import type { ImplementResult } from '../motor/cdl'
 import type { ExecuteDeps } from '../lib/runner/execute'
 import type { FinishDeps } from '../lib/runner/finish'
 
@@ -45,7 +45,7 @@ const SUCESSO: ImplementResult = { ok: true, resultText: 'mudou algo', fullText:
 
 const GATE_BLOCKED: GateResult = { ok: true, verdict: 'BLOCKED', reason: 'defeito real encontrado pelo crivo', questions: [], cost: 0.05, costMeasured: true, tokens: 500 }
 
-const { createCard, readCard, patchCard } = await import('../lib/runner/card-store')
+const { createCard, readCard, patchCard } = await import('../motor/cdl/store')
 const { handleExecute } = await import('../lib/runner/execute')
 const { handleFinish } = await import('../lib/runner/finish')
 

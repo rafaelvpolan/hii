@@ -1,7 +1,7 @@
 import { truncVisible, padVisible } from '../tui/layout'
 import { corDoPasso } from './board'
 import type { Passo } from '../progresso'
-import type { StepMetric } from '../../card/types'
+import type { StepMetric } from '../../../motor/cdl/tipos'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

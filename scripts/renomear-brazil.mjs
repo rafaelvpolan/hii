@@ -16,6 +16,7 @@ export const TOTAL_ESPERADO = 172
 const PULAR_DIR = new Set(['node_modules', '.git', '.nuxt', '.output', 'dist'])
 const EXT_TEXTO = new Set(['.ts', '.tsx', '.mts', '.mjs', '.js', '.json', '.md', '.sh', '.yml'])
 const EXT_MODULO = ['.ts', '.tsx', '.mts', '.mjs', '.js']
+const DOCS_DE_PLANO = new Set(['ARQUITETURA-BRAZIL.md', 'WORKFLOW-EXECUCAO.md', 'MODERNIZATION.md'])
 
 // ---------- mapa ----------
 
@@ -88,13 +89,18 @@ export function dominioDe(destino) {
 
 export function validar(todos) {
   const erros = []
-  const naOrigem = ORIGENS.flatMap(d => caminharTs(d, []))
 
-  for (const [o] of todos) if (!existsSync(o)) erros.push(`origem inexistente: ${o}`)
-  for (const [, d] of todos) if (existsSync(d)) erros.push(`destino ja ocupado: ${d}`)
+  // Estado parcial e legitimo: a Onda 1 move um dominio por commit. A regra que
+  // vale em todo momento e "exatamente um lado de cada par existe".
+  const estado = conferirEstado(todos)
+  for (const [o, d] of estado.ambos) erros.push(`move pela metade — origem e destino existem: ${o} / ${d}`)
+  for (const [o, d] of estado.nenhum) erros.push(`sumiu dos dois lados: ${o} / ${d}`)
 
-  const mapeadas = new Set(todos.map(([o]) => o))
-  for (const f of naOrigem) if (!mapeadas.has(f)) erros.push(`arquivo fora do mapa: ${f}`)
+  const conhecidos = new Set()
+  for (const [o, d] of todos) { conhecidos.add(o); conhecidos.add(d) }
+  for (const f of [...ORIGENS, 'motor'].flatMap(d => caminharTs(d, []))) {
+    if (!conhecidos.has(f)) erros.push(`arquivo fora do mapa: ${f}`)
+  }
 
   const vistos = new Map()
   for (const [o, d] of todos) {
@@ -102,7 +108,6 @@ export function validar(todos) {
     vistos.set(d, o)
   }
 
-  if (todos.length !== naOrigem.length) erros.push(`mapa tem ${todos.length} entradas, disco tem ${naOrigem.length} .ts`)
   if (todos.length !== TOTAL_ESPERADO) erros.push(`total ${todos.length} != ${TOTAL_ESPERADO} declarado no doc`)
   return erros
 }
@@ -143,6 +148,29 @@ function novoSpec(deArquivoNovo, alvoNovo, specAntigo) {
   let rel = relative(dirname(deArquivoNovo), destino).split('\\').join('/')
   if (!rel.startsWith('.')) rel = './' + rel
   return rel
+}
+
+// Caminhos que NENHUM reescritor de import alcanca: template literal com
+// interpolacao, e caminho montado por segmentos em join(). Sao reportados para
+// revisao manual em vez de ficarem quebrados em silencio.
+const NAO_ALCANCAVEL = [
+  [/import\(\s*`[^`]*(?:lib|motor)\/[^`]*`/g, 'import() com template literal'],
+  [/join\(([^)]*?)['"`](?:lib|motor)['"`]/g, "caminho montado por join('lib', ...)"],
+]
+
+export function caminhosNaoAlcancaveis() {
+  const achados = []
+  for (const arquivo of arquivosDeTexto()) {
+    if (arquivo === 'scripts/renomear-brazil.mjs') continue
+    const texto = readFileSync(arquivo, 'utf8')
+    for (const [rx, motivo] of NAO_ALCANCAVEL) {
+      for (const m of texto.matchAll(rx)) {
+        const linha = texto.slice(0, m.index).split('\n').length
+        achados.push({ arquivo, linha, motivo, trecho: m[0].slice(0, 70) })
+      }
+    }
+  }
+  return achados
 }
 
 // ---------- aplicacao ----------
@@ -193,6 +221,10 @@ function aplicar(lote, aplicarDeVerdade) {
   // 4. caminhos usados como DADO (string exata entre aspas) — ex: environment-contract.ts
   let dados = 0
   for (const arquivo of arquivosDeTexto()) {
+    // Os docs de plano ficam FORA: ARQUITETURA-BRAZIL.md §5 e a fonte do mapa e
+    // cita origem E destino entre crases — reescrever ali destruiria o proprio
+    // mapa. Os demais .md (README, SKILL.md) SAO atualizados de proposito.
+    if (DOCS_DE_PLANO.has(arquivo)) continue
     const antes = readFileSync(arquivo, 'utf8')
     let depois = antes
     for (const [o, d] of lote) {
@@ -237,13 +269,19 @@ if (import.meta.main) {
     process.stderr.write(`dominio desconhecido: ${filtro}\n`)
     process.exit(1)
   }
-  const lote = filtro ? porDominio.get(filtro) : todos
+  const lote = (filtro ? porDominio.get(filtro) : todos).filter(([o]) => existsSync(o))
 
   if (!aplicarDeVerdade) {
-    process.stdout.write(`\ndry-run — nada foi escrito. Lote: ${lote.length} arquivo(s)${filtro ? ` (dominio ${filtro})` : ''}.\n`)
+    process.stdout.write(`\ndry-run — nada foi escrito. Lote: ${lote.length} arquivo(s) ainda na origem${filtro ? ` (dominio ${filtro})` : ''}.\n`)
     process.exit(0)
   }
 
   const r = aplicar(lote, true)
   process.stdout.write(`\naplicado: ${r.movidos} movido(s), ${r.tocados} arquivo(s) com import reescrito, ${r.dados} com caminho-dado atualizado.\n`)
+
+const manuais = caminhosNaoAlcancaveis()
+if (manuais.length) {
+  process.stdout.write(`\nREVISAR A MAO — ${manuais.length} caminho(s) que reescrita de import nao alcanca:\n`)
+  for (const m of manuais) process.stdout.write(`  ${m.arquivo}:${m.linha}  ${m.motivo}\n    ${m.trecho}\n`)
+}
 }

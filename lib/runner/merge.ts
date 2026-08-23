@@ -1,7 +1,7 @@
-import { isoNow } from '../card'
+import { isoNow } from '../../motor/cdl'
 import { run } from './git'
-import { cardsByStatus, patchCard } from './card-store'
-import { MERGE_POLL_MS } from './config'
+import { cardsByStatus, patchCard } from '../../motor/cdl/store'
+import { MERGE_POLL_MS } from '../../motor/cdl/ali/config'
 
 interface PrState {
   state?: string

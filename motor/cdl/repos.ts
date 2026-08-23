@@ -2,11 +2,11 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { basename, dirname, resolve } from 'node:path'
 import { join } from 'node:path'
-import { ROOT, reposFile } from '../runner/config'
-import { listRepos } from '../runner/card-store'
-import { initHicodeHome } from '../runner/hicode-home'
-import { syncContract } from '../contract/store'
-import type { Contract } from '../contract/types'
+import { ROOT, reposFile } from './ali/config'
+import { listRepos } from './store'
+import { initHicodeHome } from './ali/home'
+import { syncContract } from './bss/armazenar'
+import type { Contract } from './bss/tipos'
 
 export interface RepoEntry {
   name: string

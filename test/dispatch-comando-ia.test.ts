@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { handle, newSession, seguir } from '../lib/core/session'
 import { dispatch } from '../lib/core/dispatch'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
-import { allCards } from '../lib/runner/card-store'
+import { allCards } from '../motor/cdl/store'
 
 let dir = ''
 let claudeHome = ''
@@ -41,7 +41,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 
 test('/review (comando da ia ativa) dentro de uma tarefa aberta vira instrucao anexada, sem criar card nem autoaprovar', async () => {
   const { subPrompts } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { worktree: dir })
   const antes = allCards().length
   const state = seguir(newSession('org/app'), '022')

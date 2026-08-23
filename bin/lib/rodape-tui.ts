@@ -1,4 +1,4 @@
-import { readCard } from '../../lib/runner/card-store'
+import { readCard } from '../../motor/cdl/store'
 import { dailySpend } from '../../lib/runner/cost-gap'
 import type { DailySpend } from '../../lib/runner/cost-gap'
 import { effortFor, modelFor, modoFor, providerNameFor } from '../../lib/ai/registry'

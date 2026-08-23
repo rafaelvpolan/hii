@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { execFile, type ExecFileException, type ExecFileOptions } from 'node:child_process'
-import { WT_BASE } from './config'
+import { WT_BASE } from '../../motor/cdl/ali/config'
 
 export interface RunResult {
   err: ExecFileException | null

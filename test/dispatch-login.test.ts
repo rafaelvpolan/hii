@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { handle, newSession } from '../lib/core/session'
 import { dispatch } from '../lib/core/dispatch'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
-import { allCards } from '../lib/runner/card-store'
+import { allCards } from '../motor/cdl/store'
 
 let saida: string[] = []
 let dir = ''

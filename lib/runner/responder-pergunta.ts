@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import { providerFor, modelFor, effortFor } from '../ai/registry'
 import { runProvider } from './cost-trust'
-import { readProjectRules } from './hicode-home'
-import { readContract } from '../contract/store'
-import { ROOT } from './config'
-import { snapshotDoAmbiente } from './ambiente'
+import { readProjectRules } from '../../motor/cdl/ali/home'
+import { readContract } from '../../motor/cdl/bss/armazenar'
+import { ROOT } from '../../motor/cdl/ali/config'
+import { snapshotDoAmbiente } from '../../motor/cdl/ali/ambiente'
 
 export interface RespostaDePergunta {
   ok: boolean

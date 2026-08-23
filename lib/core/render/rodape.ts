@@ -1,4 +1,4 @@
-import type { Fields } from '../../card'
+import type { Fields } from '../../../motor/cdl'
 import { isActive, esperaHumano } from './phases'
 import { idadeDe } from './board'
 import { truncVisible } from '../tui/layout'

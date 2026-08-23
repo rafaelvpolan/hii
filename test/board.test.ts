@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { renderBoard, renderProjetos, resumirProjetos, idadeDe, legendaPassos } from '../lib/core/render/board'
 import { passosDoCard, pulados } from '../lib/core/progresso'
 import { DEFAULT_STEPS } from '../lib/runner/pipeline/config'
-import type { Fields, StepMap } from '../lib/card'
+import type { Fields, StepMap } from '../motor/cdl'
 import type { Passo } from '../lib/core/progresso'
 import type { BoardOptions } from '../lib/core/render/board'
 

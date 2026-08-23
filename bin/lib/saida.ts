@@ -1,6 +1,6 @@
-import { repoStatus } from '../../lib/core/repos'
+import { repoStatus } from '../../motor/cdl/repos'
 import { renderProjetos, resumirProjetos } from '../../lib/core/render/board'
-import { projetosConhecidos } from '../../lib/core/projetos-conhecidos'
+import { projetosConhecidos } from '../../motor/cdl/projetos-conhecidos'
 import { todosOsCards } from './dados'
 
 export const DIM = '\x1b[2m'

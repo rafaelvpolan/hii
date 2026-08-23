@@ -3,9 +3,9 @@ import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Card } from '../lib/card'
+import type { Card } from '../motor/cdl'
 import { warnProviderConfig } from '../lib/ai/provider-config'
-import { createCard, readCard } from '../lib/runner/card-store'
+import { createCard, readCard } from '../motor/cdl/store'
 
 const REPO = join(import.meta.dir, '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-provedor-removido-'))
@@ -30,7 +30,7 @@ writeFileSync(RESPOSTA, [
 ].join('\n'))
 writeFileSync(IMPLEMENTA, [
   `import { implement } from ${JSON.stringify(join(REPO, 'lib', 'runner', 'agent'))}`,
-  `import { readCard } from ${JSON.stringify(join(REPO, 'lib', 'runner', 'card-store'))}`,
+  `import { readCard } from ${JSON.stringify(join(REPO, 'motor', 'cdl', 'store'))}`,
   'const card = readCard(process.argv[2] ?? String())',
   'if (!card) { process.stderr.write("card nao encontrado\\n"); process.exit(2) }',
   'const r = await implement(card, process.argv[3] ?? String())',

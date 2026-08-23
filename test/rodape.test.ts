@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { linhaPropriedades, linhasExecucao, emExecucao, quadroDoGiro, GIRO } from '../lib/core/render/rodape'
-import type { Fields } from '../lib/card'
+import type { Fields } from '../motor/cdl'
 
 const props = {
   provedor: 'claude', modelo: 'opus', effort: 'medium', modo: 'acceptEdits',

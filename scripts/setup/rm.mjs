@@ -1,4 +1,4 @@
-import { planejarLote, removerLote } from '../../lib/core/remover.ts'
+import { planejarLote, removerLote } from '../../motor/cdl/remover.ts'
 import { renderRemocao, renderResultado } from '../../lib/core/render/remocao.ts'
 
 const DIM = '\x1b[2m'

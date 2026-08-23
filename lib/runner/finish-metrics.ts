@@ -1,5 +1,5 @@
-import type { Card, StepMap, StepMetric } from '../card'
-import { patchCard } from './card-store'
+import type { Card, StepMap, StepMetric } from '../../motor/cdl'
+import { patchCard } from '../../motor/cdl/store'
 import { updateRunSteps } from './runs'
 import { applyFailurePolicy } from './failure-policy'
 import type { FailurePolicyInput } from './failure-policy'

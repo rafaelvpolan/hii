@@ -20,9 +20,9 @@ export interface VariavelDoContrato {
 }
 
 export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
-  { nome: ENV_ROOT, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/runner/config.ts'], lado: 'ambos' },
-  { nome: ENV_CARDS_DIR, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/runner/config.ts'], lado: 'ambos' },
-  { nome: ENV_REPOS_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/runner/config.ts'], lado: 'ambos' },
+  { nome: ENV_ROOT, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
+  { nome: ENV_CARDS_DIR, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
+  { nome: ENV_REPOS_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
   { nome: ENV_AGENTS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/agentes-nexus.ts'], lado: 'motor' },
   { nome: ENV_RUNNER_PIDFILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/core/daemon.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOCK, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['lib/runner/instance-lock.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },

@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:f
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Card } from '../lib/card'
+import type { Card } from '../motor/cdl'
 import type { AgentRequest, AgentResult, AgentRole } from '../lib/ai/types'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-cego-'))
@@ -42,7 +42,7 @@ writeFileSync(join(clone, 'a.txt'), 'um\ndois\n')
 git(clone, ['add', '-A'])
 git(clone, ['commit', '-qm', 'mudanca do card'])
 
-const { createCard, readCard } = await import('../lib/runner/card-store')
+const { createCard, readCard } = await import('../motor/cdl/store')
 const { clarify } = await import('../lib/runner/clarify')
 const { evaluate } = await import('../lib/runner/eval')
 const { idear } = await import('../lib/runner/ideate-run')

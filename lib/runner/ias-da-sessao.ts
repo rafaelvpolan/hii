@@ -1,9 +1,9 @@
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from './config'
+import { cardsDir } from '../../motor/cdl/ali/config'
 import { garantirDir } from './estado-em-disco'
-import { ehClasseDeFalha } from '../card/types'
-import type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../card/types'
+import { ehClasseDeFalha } from '../../motor/cdl/tipos'
+import type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../../motor/cdl/tipos'
 
 export type { ChamadaDeIa, IaDaSessao, PapelDeChamada, TrocaDeProvedor }
 

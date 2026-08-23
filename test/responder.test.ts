@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { resolverResposta, cardsPerguntando } from '../lib/core/responder'
 import { renderPergunta, quebrar } from '../lib/core/render/clarify'
-import type { ClarifyQuestion, Fields } from '../lib/card/types'
+import type { ClarifyQuestion, Fields } from '../motor/cdl/tipos'
 
 const pergunta: ClarifyQuestion = {
   q: 'Qual selo remover?',

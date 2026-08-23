@@ -1,5 +1,5 @@
-import type { Fields, StepMap } from '../card'
-import { STATUSES } from '../card'
+import type { Fields, StepMap } from '../../motor/cdl'
+import { STATUSES } from '../../motor/cdl'
 import type { PipelineStep } from '../runner/pipeline/types'
 
 export type EstadoPasso = 'feito' | 'agora' | 'pendente' | 'pulado'

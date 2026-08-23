@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../lib/runner/commands'
-import { commandsFor } from '../lib/contract/probe'
-import type { Contract, PackageInfo, PackageManager, RepoShape } from '../lib/contract/types'
+import { commandsFor } from '../motor/cdl/bss/sondar'
+import type { Contract, PackageInfo, PackageManager, RepoShape } from '../motor/cdl/bss/tipos'
 
 function pkg(path: string, name: string, pm: PackageManager, scripts: string[], framework = '', workspaceName = ''): PackageInfo {
   return {

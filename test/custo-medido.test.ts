@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Run } from '../lib/card'
+import type { Run } from '../motor/cdl'
 import type { AgentRequest } from '../lib/ai/types'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-medido-'))
@@ -35,7 +35,7 @@ process.env.PATH = `${binDir}:${pathOriginal}`
 const { CodexProvider } = await import('../lib/ai/adapters/codex')
 const { OllamaProvider } = await import('../lib/ai/adapters/ollama')
 const { writeRun, updateRunSteps } = await import('../lib/runner/runs')
-const { createCard, readCard } = await import('../lib/runner/card-store')
+const { createCard, readCard } = await import('../motor/cdl/store')
 const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')
 
 afterAll(() => {

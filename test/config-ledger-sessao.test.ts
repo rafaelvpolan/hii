@@ -21,7 +21,7 @@ afterAll(() => {
 test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pelo escritor de verdade', async () => {
   const { registrarChamada } = await import('../lib/runner/ias-da-sessao')
   const { sessaoParaChamada } = await import('../lib/runner/cost-trust')
-  const { lerConfig } = await import('../lib/core/config-snapshot')
+  const { lerConfig } = await import('../motor/cdl/ali/snapshot')
 
   registrarChamada(sessaoParaChamada(''), {
     ts: new Date().toISOString(), papel: 'conversa', provedor: 'claude', modelo: 'opus',
@@ -38,6 +38,6 @@ test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pe
 })
 
 test('sessao sem nenhuma chamada devolve painel vazio, sem inventar papel', async () => {
-  const { lerConfig } = await import('../lib/core/config-snapshot')
+  const { lerConfig } = await import('../motor/cdl/ali/snapshot')
   expect(lerConfig('', '').sessao.papeis).toEqual([])
 })

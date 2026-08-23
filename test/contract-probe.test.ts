@@ -2,8 +2,8 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { probeContract, commandsFor, packageForPath } from '../lib/contract/probe'
-import { syncContract, readContract } from '../lib/contract/store'
+import { probeContract, commandsFor, packageForPath } from '../motor/cdl/bss/sondar'
+import { syncContract, readContract } from '../motor/cdl/bss/armazenar'
 
 interface FixturePkg {
   name?: string

@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { daemonPid, rootFile } from '../lib/core/daemon'
-import { ROOT } from '../lib/runner/config'
+import { ROOT } from '../motor/cdl/ali/config'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-daemon-cross-root-'))
 const RAIZ_DO_MOTOR = join(BASE, 'raiz-do-motor-em-outro-clone')

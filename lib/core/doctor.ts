@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { repoStatus } from './repos'
-import { readContract } from '../contract/store'
+import { repoStatus } from '../../motor/cdl/repos'
+import { readContract } from '../../motor/cdl/bss/armazenar'
 import { daemonStatus } from './daemon'
 import { providerNameFor } from '../ai/registry'
 

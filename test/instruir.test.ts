@@ -44,7 +44,7 @@ test('card sem instrucoes devolve lista vazia', () => {
 
 test('instrucao em tarefa com worktree vivo vira correcao', async () => {
   const { instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'EXECUTED', worktree: dir })
   const r = instruir('022', 'tira tambem o do hero')
   expect(r.ok).toBe(true)
@@ -57,7 +57,7 @@ test('instrucao em tarefa com worktree vivo vira correcao', async () => {
 
 test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', async () => {
   const { instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'HALTED', worktree: '/caminho/que/nao/existe' })
   const r = instruir('022', 'retome e me mostre o url')
   expect(r.refaz).toBe(true)
@@ -69,7 +69,7 @@ test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', a
 
 test('card sem campo de worktree tambem refaz', async () => {
   const { instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'HALTED' })
   expect(instruir('022', 'continue').refaz).toBe(true)
   expect(readCard('022')?.fm.status).toBe('EXECUTING')
@@ -77,7 +77,7 @@ test('card sem campo de worktree tambem refaz', async () => {
 
 test('REGRESSAO paste multilinha vira UMA instrucao, nao sete', async () => {
   const { instruir, subPrompts } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'HALTED' })
   instruir('022', 'deu erro:\nApp.vue:97:7\n95 |\n96 |  <EngineConsole />\n   |   ^')
   const subs = subPrompts(readCard('022')?.body ?? '')
@@ -88,7 +88,7 @@ test('REGRESSAO paste multilinha vira UMA instrucao, nao sete', async () => {
 
 test('instrucao antes de executar so anota, sem forcar correcao', async () => {
   const { instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   for (const status of ['READY', 'CLARIFY', 'PLAN_APPROVED']) {
     card('030', { status })
     const r = instruir('030', 'considera o mobile tambem')
@@ -121,7 +121,7 @@ test('card inexistente nao explode', async () => {
 
 test('cada instrucao entra no log de estado do card', async () => {
   const { instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('022', { worktree: dir })
   instruir('022', 'primeira coisa')
   expect(readCard('022')?.body).toContain('instrucao 1: primeira coisa')
@@ -138,7 +138,7 @@ test('texto colado chega INTEIRO na instrucao, nao o marcador', async () => {
   const { newInput, keypress } = await import('../lib/core/tui/input')
   const { marcarCola } = await import('../lib/core/tui/keys')
   const { instruir, subPrompts } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   const erro = 'deu erro:\nApp.vue:97:7\n95 |\n96 |  <EngineConsole />'
 
   let s = newInput()
@@ -182,7 +182,7 @@ test('paste curto nao vira marcador, entra direto', async () => {
 
 test('REGRESSAO instrucao dada antes de executar CHEGA ao objetivo que vira prompt', async () => {
   const { objetivoComInstrucoes, instruir } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('077', { status: 'READY' })
   instruir('077', 'use a paleta escura')
   instruir('077', 'nao mexa no header')
@@ -195,7 +195,7 @@ test('REGRESSAO instrucao dada antes de executar CHEGA ao objetivo que vira prom
 
 test('sem instrucao, o objetivo sai igual ao de antes — sem cabecalho vazio', async () => {
   const { objetivoComInstrucoes } = await import('../lib/core/instruir')
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   card('078', { status: 'READY' })
   const body = readCard('078')?.body ?? ''
   expect(objetivoComInstrucoes(body, 'tarefa 078')).not.toContain('INSTRUCOES ADICIONAIS')

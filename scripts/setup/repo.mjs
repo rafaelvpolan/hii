@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { addRepo, removeRepo, repoStatus } from '../../lib/core/repos.ts'
+import { addRepo, removeRepo, repoStatus } from '../../motor/cdl/repos.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

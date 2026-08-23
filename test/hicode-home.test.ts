@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { mkdtempSync, writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { initHicodeHome, readProjectConfig, readProjectRules } from '../lib/runner/hicode-home'
+import { initHicodeHome, readProjectConfig, readProjectRules } from '../motor/cdl/ali/home'
 
 test('initHicodeHome cria .hii/ sem apagar a memoria do alvo', () => {
   const d = mkdtempSync(join(tmpdir(), 'hicode-alvo-'))

@@ -1,4 +1,4 @@
-import { readCard, listRepos, repoRegistered } from '../runner/card-store'
+import { readCard, listRepos, repoRegistered } from '../../motor/cdl/store'
 import * as core from './actions'
 import { responder } from './responder'
 

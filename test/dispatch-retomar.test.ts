@@ -39,7 +39,7 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 }
 
 test('retomar so vale para tarefa parada', async () => {
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   const { retomando } = await import('../lib/core/session')
   card('022', { status: 'HALTED' })
   await digitar([''], retomando(newSession('org/app'), '022'))
@@ -47,7 +47,7 @@ test('retomar so vale para tarefa parada', async () => {
 })
 
 test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
-  const { readCard } = await import('../lib/runner/card-store')
+  const { readCard } = await import('../motor/cdl/store')
   const { retomando } = await import('../lib/core/session')
   card('022', { status: 'URL' })
   await digitar([''], retomando(newSession('org/app'), '022'))

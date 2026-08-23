@@ -7,7 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-actions-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
 const A = await import('../lib/core/actions')
-const { readCard } = await import('../lib/runner/card-store')
+const { readCard } = await import('../motor/cdl/store')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -74,7 +74,7 @@ test('requestCorrection grava ancora e instrucao quando o worktree existe', () =
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../lib/runner/card-store') as typeof import('../lib/runner/card-store')
+  const { patchCard } = require('../motor/cdl/store') as typeof import('../motor/cdl/store')
   patchCard(id, { worktree: wt })
   const r = A.requestCorrection(id, 'src/a.vue', 'tirar o negrito', '42', 'texto\nquebrado')
   expect(r?.status).toBe('CORRECTING')
@@ -180,7 +180,7 @@ test('rejectUrl com motivo e worktree valido pede correcao', () => {
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../lib/runner/card-store') as typeof import('../lib/runner/card-store')
+  const { patchCard } = require('../motor/cdl/store') as typeof import('../motor/cdl/store')
   patchCard(id, { worktree: wt })
   const r = A.rejectUrl(id, 'o selo ficou torto')
   expect(r.card?.status).toBe('CORRECTING')

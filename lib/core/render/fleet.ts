@@ -1,4 +1,4 @@
-import type { Fields } from '../../card'
+import type { Fields } from '../../../motor/cdl'
 import { fleetFloorProviders, formatProviders } from '../../runner/cost-gap'
 import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman } from './phases'
 import { marcaDoDisco } from './disco'

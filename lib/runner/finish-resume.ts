@@ -1,5 +1,5 @@
-import { isoNow } from '../card'
-import { patchCard } from './card-store'
+import { isoNow } from '../../motor/cdl'
+import { patchCard } from '../../motor/cdl/store'
 import type { PipelineStep } from './pipeline/types'
 
 export const RESUME_POST_STEPS = '__apos_passos__'

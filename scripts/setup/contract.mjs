@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { resolve } from 'node:path'
 import { existsSync } from 'node:fs'
-import { syncContract } from '../../lib/contract/store.ts'
+import { syncContract } from '../../motor/cdl/bss/armazenar.ts'
 
 const target = resolve(process.argv[2] ?? process.cwd())
 const json = process.argv.includes('--json')

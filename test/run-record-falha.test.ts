@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Run } from '../lib/card'
+import type { Run } from '../motor/cdl'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-run-falha-'))
 process.env.HICODE_CARDS_DIR = CARDS

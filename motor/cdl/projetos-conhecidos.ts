@@ -1,4 +1,4 @@
-import type { Fields } from '../card/types'
+import type { Fields } from './tipos'
 
 export interface ProjetoConhecido {
   name: string

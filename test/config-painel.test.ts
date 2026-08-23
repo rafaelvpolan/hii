@@ -235,7 +235,7 @@ test('plano nao descoberto e dito, nao chutado', () => {
 
 test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
   const { definirEstadoDoOllama } = await import('../lib/ai/ollama-estado')
-  const { habilitadoDe } = await import('../lib/core/config-snapshot')
+  const { habilitadoDe } = await import('../motor/cdl/ali/snapshot')
   const conectado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
 
   definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })

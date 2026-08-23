@@ -40,7 +40,7 @@ process.env.PATH = `${binDir}:${pathOriginal}`
 const { ClaudeProvider } = await import('../lib/ai/adapters/claude')
 const { CodexProvider } = await import('../lib/ai/adapters/codex')
 const { emptyUsage } = await import('../lib/ai/usage')
-const { createCard, readCard } = await import('../lib/runner/card-store')
+const { createCard, readCard } = await import('../motor/cdl/store')
 const { runProvider, warnBudgetWithoutGuarantee } = await import('../lib/runner/cost-trust')
 const { classifyCostGap } = await import('../lib/runner/cost-gap')
 

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { GATE_DIFF_LIMIT, ROOT } from './config'
+import { GATE_DIFF_LIMIT, ROOT } from '../../motor/cdl/ali/config'
 import { runGit } from './git'
 
 export const EXT_AUDITAVEL = new Set(['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'py'])
