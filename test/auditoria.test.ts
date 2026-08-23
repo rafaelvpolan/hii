@@ -16,7 +16,7 @@ import {
   type AchadoAuditoria,
   type LoteAuditoria,
   type PlanoAuditoria,
-} from '../lib/runner/auditoria'
+} from '../motor/agentes/ass/auditoria'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-auditoria-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')

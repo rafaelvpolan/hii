@@ -29,7 +29,7 @@ mais o patch truncado em `GATE_DIFF_LIMIT`. Nada no hicode olha o **repositório
 
 ## FASE 1 — Plano de auditoria (seleção determinística)
 
-Quem seleciona e lotea é `lib/runner/auditoria.ts` (puro, testado em `test/auditoria.test.ts`):
+Quem seleciona e lotea é `motor/agentes/ass/auditoria.ts` (puro, testado em `test/auditoria.test.ts`):
 lista com `git ls-files -z --cached --others --exclude-standard` (respeita `.gitignore`, nunca anda no
 diretório, nunca pega `node_modules`), filtra por extensão de código (`ts/tsx/mts/cts/js/jsx/mjs/cjs/
 vue/py` — config, IaC, docs, `.d.ts` e binário ficam fora **com motivo**), ordena por risco (monolito
@@ -120,7 +120,7 @@ relatório no repo), na ordem:
    a contagem de cada um; `maior-que-o-lote` e `acima-do-limite-de-lotes` são **dívida de cobertura**:
    diga que esses arquivos não foram vistos por ninguém e como vê-los (`--orcamento` maior, recorte).
 3. **Achados ordenados por gravidade** — junte os `findings` de todos os lotes e ordene com
-   `ordenarAchados` de `lib/runner/auditoria.ts` (alta → média → baixa, depois arquivo e linha). Cada
+   `ordenarAchados` de `motor/agentes/ass/auditoria.ts` (alta → média → baixa, depois arquivo e linha). Cada
    achado: `gravidade · arquivo:linha · defeito`, uma linha, sem prosa de enrolação.
 4. **Dívida estrutural medida** — do próprio plano, sem IA: quantos arquivos passam de 350 linhas,
    quantos são god-file, quantos não têm teste correspondente (a heurística de teste é por **nome**;

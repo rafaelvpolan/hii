@@ -23,7 +23,7 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_ROOT, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
   { nome: ENV_CARDS_DIR, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
   { nome: ENV_REPOS_FILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'ambos' },
-  { nome: ENV_AGENTS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['lib/ai/agentes-nexus.ts'], lado: 'motor' },
+  { nome: ENV_AGENTS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/agentes/registro.ts'], lado: 'motor' },
   { nome: ENV_RUNNER_PIDFILE, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/osw/mtr/daemon.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOCK, precisaSerCompartilhadaEntreClones: true, resolvidoPor: ['motor/osw/mtr/trava-instancia.ts', 'scripts/runner-daemon.sh'], lado: 'ambos' },
   { nome: ENV_RUNNER_LOG, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['scripts/runner-daemon.sh'], lado: 'motor' },

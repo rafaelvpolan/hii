@@ -1,13 +1,13 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { objetivoComInstrucoes } from '../core/instruir'
+import { objetivoComInstrucoes } from '../../../lib/core/instruir'
 import { join } from 'node:path'
-import type { Card, ClarifyQuestion } from '../../motor/cdl'
-import { cardsDir, ROOT } from '../../motor/cdl/ali/config'
-import { providerFor, modelFor } from '../../motor/tmd/registro'
-import { runProvider } from '../../motor/euc/tsr/confianca'
-import { preflight, comoOpcoes } from '../core/ideate'
-import { idear } from './ideate-run'
-import { sumTokens } from '../../motor/tmd/uso'
+import type { Card, ClarifyQuestion } from '../../cdl'
+import { cardsDir, ROOT } from '../../cdl/ali/config'
+import { providerFor, modelFor } from '../../tmd/registro'
+import { runProvider } from '../../euc/tsr/confianca'
+import { preflight, comoOpcoes } from '../tsl/ideacao'
+import { idear } from '../tsl/ideate-run'
+import { sumTokens } from '../../tmd/uso'
 
 export interface ClarifyResult {
   questions: ClarifyQuestion[]

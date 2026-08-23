@@ -92,7 +92,7 @@ test('answerClarify grava resposta, marca clarified e volta a EXECUTING', () => 
   const r = A.answerClarify(id, [{ q: 'um por vez?', answer: 'nao' }])
   expect(r?.status).toBe('EXECUTING')
   expect(r?.clarified).toBe('true')
-  const { readClarify } = require('../lib/runner/clarify') as typeof import('../lib/runner/clarify')
+  const { readClarify } = require('../motor/agentes/clr/clarificar') as typeof import('../motor/agentes/clr/clarificar')
   expect(readClarify(id)[0]?.answer).toBe('nao')
 })
 

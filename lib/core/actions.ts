@@ -4,7 +4,7 @@ import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../../motor/c
 import type { Fields } from '../../motor/cdl'
 import { cardsDir } from '../../motor/cdl/ali/config'
 import { createCard, findCardFile, readCard, updateCard } from '../../motor/cdl/store'
-import { readClarify, writeClarify } from '../runner/clarify'
+import { readClarify, writeClarify } from '../../motor/agentes/clr/clarificar'
 
 export interface NewCardInput {
   title: string

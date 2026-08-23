@@ -86,7 +86,7 @@ afterAll(() => {
 })
 
 const { implement, runStep, AGENTES_IMPLEMENT } = await import('../motor/cic/agente')
-const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../lib/ai/agentes-nexus')
+const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../motor/agentes/registro')
 const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../motor/tmd/pnt/mcp')
 const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../motor/tmd/harness/claude')
 const { verifyVisual } = await import('../motor/cic/agente')

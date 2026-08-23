@@ -1,4 +1,4 @@
-import { readClarify, writeClarify } from '../runner/clarify'
+import { readClarify, writeClarify } from '../../motor/agentes/clr/clarificar'
 import { readCard } from '../../motor/cdl/store'
 import { answerClarify } from './actions'
 import type { ClarifyQuestion, Fields } from '../../motor/cdl/tipos'

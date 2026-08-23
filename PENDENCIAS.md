@@ -9,7 +9,7 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 ## Rename da Onda 1 cega a deteccao de "sem teste correspondente"
 
 **Sintoma.** `temTesteCorrespondente` (hoje `motor/agentes/ass/auditoria.ts`,
-ate 1.8 em `lib/runner/auditoria.ts`) casa fonte com teste pelo **stem do nome
+ate 1.8 em `motor/agentes/ass/auditoria.ts`) casa fonte com teste pelo **stem do nome
 do arquivo**: `finish.ts` casa com `test/finish-cost.test.ts`. A Onda 1
 renomeia o fonte (`finish.ts` -> `motor/qlb/ctr/fechar.ts`) e deixa o nome do
 teste como esta, por decisao explicita (R4 — nome de arquivo de teste nao muda
