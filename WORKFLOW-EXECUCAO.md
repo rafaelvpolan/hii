@@ -74,7 +74,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 
 | Entrega | Arquivo |
 |---|---|
-| Baseline registrado | `.hii/baseline-pre-rename.json` — saída de `bun run test`, contagem de arquivos, hash do tree |
+| Baseline registrado | Saída de `bun run test` conferida antes de mover qualquer arquivo: **1715 pass, 0 fail, 151 arquivos**. Ficou no log da sessão e nos commits, **não** num arquivo versionado — a auditoria do Nexus pegou este documento prometendo um `.hii/baseline-pre-rename.json` que nunca existiu |
 | Mapa de rename executável | `scripts/renomear-brazil.mjs` — consome as tabelas §5 de `ARQUITETURA-BRAZIL.md` |
 | Teste de guarda do mapa | `test/mapa-de-rename.test.ts` |
 
@@ -93,7 +93,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 ### Gate de saída
 
 ```bash
-bun run test                                  # baseline verde, registrado
+bun run test                                  # baseline verde (1715 pass / 0 fail)
 bun scripts/renomear-brazil.mjs --dry-run     # exit 0, cobertura 100%, zero destino ocupado
 bun test ./test/mapa-de-rename.test.ts        # mapa é total e injetivo
 ```
@@ -618,8 +618,8 @@ Adicionais fora da lista de 32, absorvidos: **§3.7** probe real do `kimi` (Onda
 git checkout main && git pull
 git checkout -b feat/brazil-onda-0
 
-# 1. registrar o baseline
-bun run test 2>&1 | tee .hii/baseline-pre-rename.txt
+# 1. conferir o baseline (anote o número; ele é o gate de toda a Onda 1)
+bun run test
 
 # 2. escrever scripts/renomear-brazil.mjs a partir de ARQUITETURA-BRAZIL.md §5
 # 3. bun scripts/renomear-brazil.mjs --dry-run   -> tem que dar cobertura 100%

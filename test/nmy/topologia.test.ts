@@ -93,3 +93,58 @@ test('nenhum checkpoint humano fica sem saida declarada', () => {
     expect(destinosDe(topo, c).length, `${c} nao tem para onde ir`).toBeGreaterThan(0)
   }
 })
+
+// A validacao de lerTopologia e o que torna o arquivo "dado inspecionavel" em
+// vez de JSON solto — e nao tinha teste nenhum. Este e justamente o caminho de
+// erro que motivou declarar a topologia como dado: alguem editar o JSON errado.
+function comTopologia<T>(conteudo: string, corpo: () => T): T {
+  const { mkdtempSync, writeFileSync, rmSync } = require('node:fs') as typeof import('node:fs')
+  const { tmpdir } = require('node:os') as typeof import('node:os')
+  const dir = mkdtempSync(join(tmpdir(), 'hii-topo-'))
+  const arquivo = join(dir, 'topologia.json')
+  writeFileSync(arquivo, conteudo)
+  const anterior = process.env.HICODE_TOPOLOGIA_FILE
+  process.env.HICODE_TOPOLOGIA_FILE = arquivo
+  try {
+    return corpo()
+  } finally {
+    if (anterior === undefined) delete process.env.HICODE_TOPOLOGIA_FILE
+    else process.env.HICODE_TOPOLOGIA_FILE = anterior
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+test('estado inexistente em `nos` e recusado, dizendo qual', () => {
+  comTopologia(JSON.stringify({ nos: ['READY', 'ESTADO_INVENTADO'], transicoes: [] }), () => {
+    expect(() => lerTopologia()).toThrow('ESTADO_INVENTADO')
+  })
+})
+
+test('estado inexistente dentro de uma transicao e recusado, dizendo em qual indice', () => {
+  comTopologia(JSON.stringify({ nos: [], transicoes: [['READY', 'EXECUTING'], ['READY', 'NAO_EXISTE']] }), () => {
+    expect(() => lerTopologia()).toThrow('transicoes[1]')
+  })
+})
+
+test('transicao que nao e par de dois e recusada', () => {
+  comTopologia(JSON.stringify({ nos: [], transicoes: [['READY']] }), () => {
+    expect(() => lerTopologia()).toThrow('nao e um par')
+  })
+})
+
+test('checkpointsHumanos e sempreAlcancavel tambem sao validados contra STATUSES', () => {
+  comTopologia(JSON.stringify({ nos: [], transicoes: [], checkpointsHumanos: ['FANTASMA'] }), () => {
+    expect(() => lerTopologia()).toThrow('checkpointsHumanos')
+  })
+  comTopologia(JSON.stringify({ nos: [], transicoes: [], sempreAlcancavel: ['FANTASMA'] }), () => {
+    expect(() => lerTopologia()).toThrow('sempreAlcancavel')
+  })
+})
+
+test('topologia vazia e valida — ausencia de campo nao e erro, so nao declara nada', () => {
+  comTopologia('{}', () => {
+    const t = lerTopologia()
+    expect(t.nos).toEqual([])
+    expect(t.transicoes).toEqual([])
+  })
+})

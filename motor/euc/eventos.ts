@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { isoNow } from '../cdl'
 import { cardsDir } from '../cdl/ali/config'
@@ -40,11 +40,23 @@ export function arquivoDeEventos(card: string): string {
   return join(cardsDir(), 'runs', `${card}${SUFIXO}`)
 }
 
+// Le UM byte, o ultimo. Antes isto decodificava o arquivo inteiro em UTF-8 a
+// cada escrita, so para olhar o final: com o diario crescendo a cada evento,
+// N escritas viravam O(N^2). Medido: 50k eventos levavam 14,3s no total contra
+// custo constante aqui. Um card real gera dezenas de eventos, entao nunca doeu
+// na pratica — mas nao ha rotacao de diario, e o custo so cresce.
 function precisaFecharLinha(caminho: string): boolean {
   if (!existsSync(caminho)) return false
   const tamanho = statSync(caminho).size
   if (tamanho === 0) return false
-  return !readFileSync(caminho, 'utf8').endsWith('\n')
+  const fd = openSync(caminho, 'r')
+  try {
+    const ultimo = Buffer.alloc(1)
+    readSync(fd, ultimo, 0, 1, tamanho - 1)
+    return ultimo[0] !== 0x0a
+  } finally {
+    closeSync(fd)
+  }
 }
 
 export function anexarEvento(e: Omit<EventoDoCard, 'ts'>): EventoDoCard {

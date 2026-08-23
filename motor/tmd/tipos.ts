@@ -50,8 +50,6 @@ export interface SinaisDoHarness {
   readonly transient: readonly SinalDeFalha[]
 }
 
-export const SEM_SINAIS: SinaisDoHarness = { terminal: [], quota: [], transient: [] }
-
 // O que o harness PODE, declarado por ele mesmo. Obrigatorio de proposito: antes
 // era `limits?` opcional, e nao declarar valia como "pode tudo" — permissividade
 // silenciosa, exatamente o que este motor nao aceita em gate nenhum.

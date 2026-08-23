@@ -9,6 +9,7 @@ import { wakeDueWaiting } from './motor/cic/rpr/espera'
 import { holdInstanceLock, refusalMessage } from './motor/osw/mtr/trava-instancia'
 import { warnProviderConfig } from './motor/tmd/config'
 import { instalarShutdownGracioso } from './motor/osw/mtr/encerramento'
+import { retomarAoIniciar } from './motor/euc/recuperar'
 import { subirServidorDeSaude } from './motor/euc/rdr/servidor'
 
 process.on('uncaughtException', (e) => {
@@ -41,6 +42,7 @@ if (process.argv.includes('--init')) {
   }
   warnProviderConfig(line => { process.stderr.write(line) })
   reconcileStranded()
+  retomarAoIniciar(linha => process.stdout.write(linha))
   if (process.argv.includes('--once')) {
     void wakeDueWaiting()
       .catch((e) => { reportTickFailure('wakeDueWaiting (once)', e as Error) })

@@ -1,6 +1,6 @@
 import { linkSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { alive, argvDoProcesso, eOMotor } from './daemon'
+import { alive, argvDoProcesso, argvIlegivelEhOMotor, eOMotor } from './daemon'
 import { ROOT } from '../../cdl/ali/config'
 import { ENV_RUNNER_LOCK } from '../../cdl/ali/contrato'
 import { temEncerramentoGracioso } from './encerramento'
@@ -44,7 +44,9 @@ function createExclusive(file: string, pid: number): boolean {
 function heldByEngine(pid: number): boolean {
   if (!alive(pid)) return false
   const argv = argvDoProcesso(pid)
-  if (argv === null) return argvDoProcesso(process.pid) === null
+  // Mesma politica de daemon.ts, agora vinda de um lugar so: argv ilegivel de
+  // um processo VIVO conta como motor, e a trava dele nao e roubada.
+  if (argv === null) return argvIlegivelEhOMotor()
   return eOMotor(argv)
 }
 

@@ -88,6 +88,22 @@ test('teto zero desliga o reparo, mas o gate ainda roda uma vez', async () => {
   expect(r.veredicto.status).toBe('falhou')
 })
 
+test('a varredura de teto enxerga lacos de verdade — senao o invariante passaria vazio', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const arquivos: string[] = []
+  const anda = (d: string): void => {
+    for (const n of readdirSync(d)) {
+      const p = join(d, n)
+      if (statSync(p).isDirectory()) anda(p)
+      else if (p.endsWith('.ts')) arquivos.push(p)
+    }
+  }
+  anda('motor')
+  const comLaco = arquivos.filter(a => /\bwhile\s*\(/.test(readFileSync(a, 'utf8')))
+  expect(comLaco.length, 'a varredura nao achou while nenhum em motor/ — regex ou raiz quebrou').toBeGreaterThan(3)
+})
+
 test('INVARIANTE nenhum loop de reparo no motor roda sem teto', async () => {
   const { readdirSync, readFileSync, statSync } = await import('node:fs')
   const { join } = await import('node:path')

@@ -521,21 +521,29 @@ commit 1.1 registra a correção.
 
 ## 6. Símbolos que mudam de nome
 
+> **Estado: PLANO, não registro.** A auditoria do Nexus (Glossia) pegou esta
+> seção afirmando como feito o que não foi. Dos renames abaixo, **só dois
+> aconteceram** — `AiProvider → Harness` e `ProviderLimits → HarnessCapabilities`,
+> ambos na Onda 2, junto da feature que já mexia naquele arquivo (regra R8 do
+> `WORKFLOW-EXECUCAO.md`). Os demais continuam pendentes, e a coluna **Estado**
+> abaixo diz qual é qual. Nenhum vira onda própria: cada um entra quando a onda
+> que já toca aquele arquivo passar por ele.
+
 Rename de arquivo é mecânico. Rename de símbolo é semântico e vale só onde o nome novo **explica melhor**. Lista curta e deliberada:
 
-| Hoje | Vira | Onde | Por quê |
-|---|---|---|---|
-| `AiProvider` | `Harness` | `motor/tmd/tipos.ts` | É o contrato TMD. "Provider" confunde com o serviço; "Harness" é o encaixe |
-| `AiProviderName` | `HarnessId` | `motor/tmd/tipos.ts` | Passa a aceitar id arbitrário (qwen, deepseek) sem editar união |
-| `ProviderLimits` | `HarnessCapabilities` | `motor/tmd/tipos.ts` | Vira o que o harness **pode**, não só o que não pode. Ganha `mcp: boolean` |
-| `providerFor` / `providerNameFor` | `harnessPara` / `harnessDoPapel` | `motor/tmd/registro.ts` | Consistência de idioma com o resto do motor |
-| `runGatedStep` | `passoComCrivo` | `motor/cic/passo-com-gate.ts` | Diz quem julga |
-| `runGatedReview` | `julgarComCrivo` | `motor/cic/crv/gate.ts` | Idem |
-| `planSteps` | `rotearPassos` | `motor/osw/rta/perfil.ts` | É RTA decidindo rota |
-| `waves` | `ondas` | `motor/nmy/luc/ondas.ts` | Idioma |
-| `writeRun` / `readRunSteps` | `anexarNoDiario` / `lerPassosDoDiario` | `motor/euc/registros.ts` | Deixa explícito que EUC é append-only |
-| `AgentRole` | `Papel` | `motor/cdl/tipos.ts` | Idioma; e `PapelDeChamada` já existe em português no mesmo arquivo |
-| `maxReajuste()` | `tetoDeReprise()` | `motor/cdl/ali/config.ts` | Amarra ao código RPR |
+| Hoje | Vira | Onde | Por quê | Estado |
+|---|---|---|---|---|
+| `AiProvider` | `Harness` | `motor/tmd/tipos.ts` | É o contrato TMD. "Provider" confunde com o serviço; "Harness" é o encaixe | ✅ feito |
+| `AiProviderName` | `HarnessId` | `motor/tmd/tipos.ts` | Passa a aceitar id arbitrário (qwen, deepseek) sem editar união | ✅ feito |
+| `ProviderLimits` | `HarnessCapabilities` | `motor/tmd/tipos.ts` | Vira o que o harness **pode**, não só o que não pode. Ganha `mcp: boolean` | ✅ feito |
+| `providerFor` / `providerNameFor` | `harnessPara` / `harnessDoPapel` | `motor/tmd/registro.ts` | Consistência de idioma com o resto do motor | ⏳ pendente |
+| `runGatedStep` | `passoComCrivo` | `motor/cic/passo-com-gate.ts` | Diz quem julga | ⏳ pendente |
+| `runGatedReview` | `julgarComCrivo` | `motor/cic/crv/gate.ts` | Idem | ⏳ pendente |
+| `planSteps` | `rotearPassos` | `motor/osw/rta/perfil.ts` | É RTA decidindo rota | ⏳ pendente |
+| `waves` | `ondas` | `motor/nmy/luc/ondas.ts` | Idioma | ⏳ pendente |
+| `writeRun` / `readRunSteps` | `anexarNoDiario` / `lerPassosDoDiario` | `motor/euc/registros.ts` | Deixa explícito que EUC é append-only | ⏳ pendente |
+| `AgentRole` | `Papel` | `motor/cdl/tipos.ts` | Idioma; e `PapelDeChamada` já existe em português no mesmo arquivo | ⏳ pendente |
+| `maxReajuste()` | `tetoDeReprise()` | `motor/cdl/ali/config.ts` | Amarra ao código RPR | ⏳ pendente |
 
 O que **não** muda de nome, de propósito: `Status`, `Card`, `Run`, `StepMetric`, `Usage`, `FailureClass` — já estão certos, aparecem em dezenas de testes, e renomear compra risco sem comprar clareza.
 
