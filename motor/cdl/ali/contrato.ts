@@ -13,6 +13,7 @@ export const ENV_TOPOLOGIA_FILE = 'HICODE_TOPOLOGIA_FILE'
 export const ENV_REGRAS_FILE = 'HICODE_REGRAS_FILE'
 export const ENV_CRITERIOS_FILE = 'HICODE_CRITERIOS_FILE'
 export const ENV_SKILLS_DIR = 'HICODE_SKILLS_DIR'
+export const ENV_TIER_FILE = 'HICODE_TIER_FILE'
 
 export type LadoDoContrato = 'motor' | 'painel' | 'ambos'
 
@@ -39,4 +40,5 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_REGRAS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/csd/lei/guarda.ts'], lado: 'motor' },
   { nome: ENV_CRITERIOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cic/crv/criterios.ts'], lado: 'motor' },
   { nome: ENV_SKILLS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/csd/acervo.ts'], lado: 'motor' },
+  { nome: ENV_TIER_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/euc/tsr/orcamento.ts'], lado: 'motor' },
 ]
