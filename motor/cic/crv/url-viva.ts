@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process'
 import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../cdl/ali/config'
 import { run } from '../../qlb/git'
 import { readContract } from '../../cdl/bss/armazenar'
-import { devCommand, devCwd, hasCommand } from '../../../lib/runner/commands'
+import { devCommand, devCwd, hasCommand } from '../../mir/comandos'
 import { noProxyArgs } from '../../qlb/alf/loopback'
 
 export interface UrlHealth {

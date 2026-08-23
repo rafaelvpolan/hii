@@ -2,8 +2,8 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../lib/core/session'
-import type { SessionState } from '../lib/core/session'
+import { handle, newSession } from '../motor/mir/sessao'
+import type { SessionState } from '../motor/mir/sessao'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
 
 let dir = ''
@@ -29,7 +29,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../lib/core/dispatch')
+  const { dispatch } = await import('../motor/mir/despacho')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -39,9 +39,9 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 }
 
 test('FLUXO REAL: instrucao dentro da tarefa entra como sub-prompt, sem confirmar', async () => {
-  const { subPrompts } = await import('../lib/core/instruir')
+  const { subPrompts } = await import('../motor/mir/instruir')
   const { readCard } = await import('../motor/cdl/store')
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   card('022', { status: 'EXECUTED', worktree: dir })
   await digitar(['tira tambem o do hero'], seguir(newSession('org/app'), '022'))
   const c = readCard('022')
@@ -52,7 +52,7 @@ test('FLUXO REAL: instrucao dentro da tarefa entra como sub-prompt, sem confirma
 
 test('FLUXO REAL: nenhuma tarefa nova nasce de uma instrucao', async () => {
   const { allCards } = await import('../motor/cdl/store')
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   card('022', { status: 'EXECUTED' })
   const antes = allCards().length
   await digitar(['muda mais isso', 'e aquilo'], seguir(newSession('org/app'), '022'))
@@ -60,7 +60,7 @@ test('FLUXO REAL: nenhuma tarefa nova nasce de uma instrucao', async () => {
 })
 
 test('PEDIDO em tarefa que sumiu vira tarefa nova, sem perder o texto', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { allCards } = await import('../motor/cdl/store')
   const state = await digitar(['tira tambem o do hero'], seguir(newSession('org/app'), '099'))
   const novos = allCards()
@@ -73,7 +73,7 @@ test('PEDIDO em tarefa que sumiu vira tarefa nova, sem perder o texto', async ()
 })
 
 test('REGRESSAO: texto em tarefa que sumiu tambem vira tarefa nova — nao ha mais leitura de intencao', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { allCards } = await import('../motor/cdl/store')
   const state = await digitar(['tem acesso ao notion pelo claude?'], seguir(newSession('org/app'), '099'))
   const novo = allCards()[0]?.id
@@ -84,7 +84,7 @@ test('REGRESSAO: texto em tarefa que sumiu tambem vira tarefa nova — nao ha ma
 })
 
 test('a tarefa nova entra direto na fila, sem esperar aprovacao', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { allCards } = await import('../motor/cdl/store')
   await digitar(['remove o header de beta'], seguir(newSession('org/app'), '099'))
   expect(allCards()[0]?.status).toBe('EXECUTING')
@@ -92,7 +92,7 @@ test('a tarefa nova entra direto na fila, sem esperar aprovacao', async () => {
 })
 
 test('sem projeto, instrucao orfa nao cria nada', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { allCards } = await import('../motor/cdl/store')
   await digitar(['remove o texto solto'], seguir(newSession(''), '099'))
   expect(allCards().length).toBe(0)

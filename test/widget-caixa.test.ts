@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { caixa, lado, grade, larguraDoBloco } from '../lib/core/render/widget/caixa'
-import { visibleLen } from '../lib/core/tui/layout'
-import { CANTO } from '../lib/core/tui/paleta'
+import { caixa, lado, grade, larguraDoBloco } from '../motor/mir/render/widget/caixa'
+import { visibleLen } from '../motor/mir/tui/layout'
+import { CANTO } from '../motor/mir/tui/paleta'
 
 const semCor = { color: false }
 const comCor = { color: true }

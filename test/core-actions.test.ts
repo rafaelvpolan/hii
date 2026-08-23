@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-actions-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const A = await import('../lib/core/actions')
+const A = await import('../motor/mir/acoes')
 const { readCard } = await import('../motor/cdl/store')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))

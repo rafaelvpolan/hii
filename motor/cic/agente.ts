@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path'
-import { objetivoComInstrucoes } from '../../lib/core/instruir'
+import { objetivoComInstrucoes } from '../mir/instruir'
 import { existsSync } from 'node:fs'
 import { extractObjetivo } from '../cdl'
 import type { Card, FailureClass, ImplementResult, VerifyResult } from '../cdl'

@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { renderFleet } from '../lib/core/render/fleet'
-import { isActive, waitsHuman, phaseLabel } from '../lib/core/render/phases'
+import { renderFleet } from '../motor/mir/render/fleet'
+import { isActive, waitsHuman, phaseLabel } from '../motor/mir/render/phases'
 import type { Fields } from '../motor/cdl'
 
 function card(over: Partial<Fields>): Fields {

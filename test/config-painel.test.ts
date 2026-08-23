@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { renderConfig } from '../lib/core/render/config'
-import type { EstadoDaConfig, LinhaDeProvedor } from '../lib/core/render/config'
-import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
+import { renderConfig } from '../motor/mir/render/config'
+import type { EstadoDaConfig, LinhaDeProvedor } from '../motor/mir/render/config'
+import { visibleLen, stripAnsi } from '../motor/mir/tui/layout'
 import { provedoresDisponiveis } from '../motor/tmd/disponibilidade'
 
 const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor => ({

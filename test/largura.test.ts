@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { larguraDeTexto, larguraDeCaractere, larguraDeGrafema, grafemasDe } from '../lib/core/tui/largura'
-import { renderFrame, visibleLen, truncVisible, padVisible, quebrarEmLargura, link } from '../lib/core/tui/layout'
-import { caixa } from '../lib/core/render/widget/caixa'
-import { barraRotulada } from '../lib/core/render/widget/barra'
+import { larguraDeTexto, larguraDeCaractere, larguraDeGrafema, grafemasDe } from '../motor/mir/tui/largura'
+import { renderFrame, visibleLen, truncVisible, padVisible, quebrarEmLargura, link } from '../motor/mir/tui/layout'
+import { caixa } from '../motor/mir/render/widget/caixa'
+import { barraRotulada } from '../motor/mir/render/widget/barra'
 
 const SURROGATE_SOLTO = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
 const FAMILIA = '👨‍👩‍👧'

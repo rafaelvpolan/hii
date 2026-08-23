@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { resolverResposta, cardsPerguntando } from '../lib/core/responder'
-import { renderPergunta, quebrar } from '../lib/core/render/clarify'
+import { resolverResposta, cardsPerguntando } from '../motor/mir/responder'
+import { renderPergunta, quebrar } from '../motor/mir/render/clarify'
 import type { ClarifyQuestion, Fields } from '../motor/cdl/tipos'
 
 const pergunta: ClarifyQuestion = {
@@ -70,7 +70,7 @@ test('pergunta longa quebra em linhas dentro da largura', () => {
   expect(linhas.length).toBeGreaterThan(1)
 })
 
-import { renderRespondidas } from '../lib/core/render/clarify'
+import { renderRespondidas } from '../motor/mir/render/clarify'
 
 test('mostra as decisoes ja tomadas, pergunta e resposta', () => {
   const t = renderRespondidas('022', [
@@ -86,7 +86,7 @@ test('card sem pergunta nem resposta diz isso', () => {
   expect(renderRespondidas('030', []).join('')).toContain('nao tem pergunta nem resposta')
 })
 
-import { renderOpcoesRodape } from '../lib/core/render/clarify'
+import { renderOpcoesRodape } from '../motor/mir/render/clarify'
 
 const pend = { id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta }
 

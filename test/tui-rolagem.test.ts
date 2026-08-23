@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../lib/core/tui/app'
-import type { Terminal } from '../lib/core/tui/screen'
-import type { App } from '../lib/core/tui/app'
+import { createApp } from '../motor/mir/tui/app'
+import type { Terminal } from '../motor/mir/tui/screen'
+import type { App } from '../motor/mir/tui/app'
 import { telaVirtual } from './fixtures/tela-virtual'
 
 const PG_UP = '\x1b[5~'

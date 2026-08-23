@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { openScreen, pinturaDiferencial, frameToAnsi } from '../lib/core/tui/screen'
-import { renderFrame } from '../lib/core/tui/layout'
-import type { Terminal } from '../lib/core/tui/screen'
-import type { FrameInput } from '../lib/core/tui/layout'
+import { openScreen, pinturaDiferencial, frameToAnsi } from '../motor/mir/tui/screen'
+import { renderFrame } from '../motor/mir/tui/layout'
+import type { Terminal } from '../motor/mir/tui/screen'
+import type { FrameInput } from '../motor/mir/tui/layout'
 
 function quadro(over: Partial<FrameInput> = {}): ReturnType<typeof renderFrame> {
   return renderFrame({

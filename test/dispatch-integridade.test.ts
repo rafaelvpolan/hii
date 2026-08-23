@@ -1,12 +1,12 @@
 import { test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { handle, newSession, COMMANDS, ALIASES, canonico } from '../lib/core/session'
-import type { EffectKind } from '../lib/core/session'
+import { handle, newSession, COMMANDS, ALIASES, canonico } from '../motor/mir/sessao'
+import type { EffectKind } from '../motor/mir/sessao'
 
 const raiz = join(import.meta.dir, '..')
-const fonteDispatch = readFileSync(join(raiz, 'lib/core/dispatch.ts'), 'utf8')
-const fonteSession = readFileSync(join(raiz, 'lib/core/session.ts'), 'utf8')
+const fonteDispatch = readFileSync(join(raiz, 'motor/mir/despacho.ts'), 'utf8')
+const fonteSession = readFileSync(join(raiz, 'motor/mir/sessao.ts'), 'utf8')
 
 function casesDoSwitch(fonte: string): string[] {
   return [...fonte.matchAll(/^ {4}case '([^']+)':/gm)].map(m => m[1] ?? '')

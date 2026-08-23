@@ -13,7 +13,7 @@ beforeEach(() => {
 })
 
 test('a troca vale sem reiniciar: a leitura seguinte ja ve o novo valor', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { providerNameFor, modelFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex', model: 'gpt-5.5' })
   expect(providerNameFor('gate')).toBe('codex')
@@ -22,7 +22,7 @@ test('a troca vale sem reiniciar: a leitura seguinte ja ve o novo valor', async 
 
 test('preferencia em arquivo vence a env', async () => {
   process.env.HICODE_GATE_PROVIDER = 'ollama'
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   expect(providerNameFor('gate')).toBe('codex')
@@ -31,7 +31,7 @@ test('preferencia em arquivo vence a env', async () => {
 
 test('padrao limpa a preferencia e a env volta a valer', async () => {
   process.env.HICODE_GATE_PROVIDER = 'ollama'
-  const { aplicar, limpar } = await import('../lib/core/escolher-ia')
+  const { aplicar, limpar } = await import('../motor/mir/escolher-ia')
   const { providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   limpar(['gate'])
@@ -40,33 +40,33 @@ test('padrao limpa a preferencia e a env volta a valer', async () => {
 })
 
 test('interpretar entende papel, provedor, modelo e esforco em qualquer ordem', async () => {
-  const { interpretar } = await import('../lib/core/escolher-ia')
+  const { interpretar } = await import('../motor/mir/escolher-ia')
   expect(interpretar(['gate', 'claude', 'opus']).ajuste).toMatchObject({ papeis: ['gate'], provider: 'claude', model: 'opus' })
   expect(interpretar(['high', 'codex']).ajuste).toMatchObject({ provider: 'codex', effort: 'high' })
   expect(interpretar(['modelo=gpt-5.5']).ajuste).toMatchObject({ model: 'gpt-5.5' })
 })
 
 test('sem papel, o ajuste vale para todos', async () => {
-  const { interpretar } = await import('../lib/core/escolher-ia')
+  const { interpretar } = await import('../motor/mir/escolher-ia')
   const { agentRoles } = await import('../motor/tmd/registro')
   expect(interpretar(['claude']).ajuste?.papeis).toEqual(agentRoles())
 })
 
 test('argumento vazio ou sem sentido nao muda nada em silencio', async () => {
-  const { interpretar } = await import('../lib/core/escolher-ia')
+  const { interpretar } = await import('../motor/mir/escolher-ia')
   expect(interpretar([]).ajuste).toBeUndefined()
   expect(interpretar(['gate']).erro).toBeTruthy()
 })
 
 test('esforco escolhido chega ao pedido do provedor', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'xhigh' })
   expect(effortFor('implement')).toBe('xhigh')
 })
 
 test('esforco do card vence a preferencia global', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'low' })
   expect(effortFor('implement', 'max')).toBe('max')
@@ -109,7 +109,7 @@ test('o pedido do provedor carrega o campo de esforco', async () => {
 })
 
 test('/ia mostra quais papeis usam cada provedor', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { provedoresDisponiveis } = await import('../motor/tmd/disponibilidade')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   const codex = provedoresDisponiveis().find(p => p.nome === 'codex')
@@ -117,7 +117,7 @@ test('/ia mostra quais papeis usam cada provedor', async () => {
 })
 
 test('a listagem do /ia nao esconde provedor sem papel', async () => {
-  const { estadoDaIa } = await import('../lib/core/escolher-ia')
+  const { estadoDaIa } = await import('../motor/mir/escolher-ia')
   const { providerNames } = await import('../motor/tmd/registro')
   const texto = estadoDaIa().join('\n')
   for (const n of providerNames()) expect(texto, n).toContain(n)
@@ -129,7 +129,7 @@ test('REGRESSAO o rodape nao pode inventar "medium" quando nada esta configurado
 })
 
 test('o rodape reflete o esforco escolhido, e volta ao padrao quando limpo', async () => {
-  const { aplicar, limpar } = await import('../lib/core/escolher-ia')
+  const { aplicar, limpar } = await import('../motor/mir/escolher-ia')
   const { effortFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], effort: 'xhigh' })
   expect(effortFor('implement')).toBe('xhigh')
@@ -150,35 +150,35 @@ test('a env continua valendo como configuracao inicial no rodape', async () => {
 })
 
 test('REGRESSAO rodape e motor leem a MESMA fonte de esforco', async () => {
-  const { esforcoAtual } = await import('../bin/lib/rodape-tui')
+  const { esforcoAtual } = await import('../motor/mir/cli/rodape-tui')
   const { effortFor } = await import('../motor/tmd/registro')
-  const { newSession } = await import('../lib/core/session')
+  const { newSession } = await import('../motor/mir/sessao')
   const { ESFORCO_PADRAO } = await import('../motor/tmd/preferencias')
   expect(esforcoAtual(newSession('org/app'))).toBe(effortFor('implement') ?? ESFORCO_PADRAO)
 })
 
 test('REGRESSAO o rodape nao pode chutar um esforco fixo', async () => {
-  const fonte = await Bun.file('bin/lib/rodape-tui.ts').text()
+  const fonte = await Bun.file('motor/mir/cli/rodape-tui.ts').text()
   expect(fonte).toContain("effortFor('implement', doCard)")
   expect(fonte).not.toContain("|| 'medium'")
 })
 
 test('/model sem argumento lista os modelos da ia atual', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const r = definirModelo([])
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('opus')
 })
 
 test('/model define o modelo do papel atual', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['opus'])
   expect(modelFor('implement')).toBe('opus')
 })
 
 test('/model <papel> <modelo> mira o papel pedido', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['gate', 'sonnet'])
   expect(modelFor('gate')).toBe('sonnet')
@@ -186,7 +186,7 @@ test('/model <papel> <modelo> mira o papel pedido', async () => {
 })
 
 test('/model fora do catalogo funciona, mas avisa', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const { modelFor } = await import('../motor/tmd/registro')
   const r = definirModelo(['modelo-que-eu-inventei'])
   expect(r.ok).toBe(true)
@@ -195,7 +195,7 @@ test('/model fora do catalogo funciona, mas avisa', async () => {
 })
 
 test('/model padrao devolve o modelo do CLI', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const { modelFor } = await import('../motor/tmd/registro')
   definirModelo(['opus'])
   definirModelo(['padrao'])
@@ -203,14 +203,14 @@ test('/model padrao devolve o modelo do CLI', async () => {
 })
 
 test('/effort sem argumento lista os niveis', async () => {
-  const { definirEsforco } = await import('../lib/core/escolher-ia')
+  const { definirEsforco } = await import('../motor/mir/escolher-ia')
   const r = definirEsforco([])
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('xhigh')
 })
 
 test('/effort recusa nivel invalido em vez de mandar lixo para o CLI', async () => {
-  const { definirEsforco } = await import('../lib/core/escolher-ia')
+  const { definirEsforco } = await import('../motor/mir/escolher-ia')
   const { effortFor } = await import('../motor/tmd/registro')
   const r = definirEsforco(['altissimo'])
   expect(r.ok).toBe(false)
@@ -218,7 +218,7 @@ test('/effort recusa nivel invalido em vez de mandar lixo para o CLI', async () 
 })
 
 test('/effort padrao limpa so o esforco, preservando a ia escolhida', async () => {
-  const { definirEsforco, aplicar } = await import('../lib/core/escolher-ia')
+  const { definirEsforco, aplicar } = await import('../motor/mir/escolher-ia')
   const { effortFor, providerNameFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], provider: 'codex' })
   definirEsforco(['high'])
@@ -234,14 +234,14 @@ test('o catalogo de modelos vem de arquivo quando existe', async () => {
 })
 
 test('modelo em uso entra no catalogo mesmo sem estar na semente', async () => {
-  const { definirModelo } = await import('../lib/core/escolher-ia')
+  const { definirModelo } = await import('../motor/mir/escolher-ia')
   const { modelosDe } = await import('../motor/tmd/catalogo')
   definirModelo(['implement', 'meu-modelo-local'])
   expect(modelosDe('claude')).toContain('meu-modelo-local')
 })
 
 test('autocompletar de /ia, /model e /effort oferece as opcoes certas', async () => {
-  const { complete } = await import('../lib/core/complete')
+  const { complete } = await import('../motor/mir/completar')
   const { providerNames, agentRoles } = await import('../motor/tmd/registro')
   const { modelosDe } = await import('../motor/tmd/catalogo')
   const { ESFORCOS } = await import('../motor/tmd/preferencias')
@@ -264,7 +264,7 @@ test('gravar a preferencia e ATOMICO e nao deixa .tmp para tras — writeFileSyn
   const antes = process.env.HICODE_IA_FILE
   process.env.HICODE_IA_FILE = join(raiz, 'ia.json')
   try {
-    const { aplicar } = await import('../lib/core/escolher-ia')
+    const { aplicar } = await import('../motor/mir/escolher-ia')
     aplicar({ papeis: ['implement'], provider: 'claude' })
     expect(existsSync(join(raiz, 'ia.json'))).toBe(true)
     expect(readdirSync(raiz).filter(f => f.includes('.tmp.'))).toEqual([])

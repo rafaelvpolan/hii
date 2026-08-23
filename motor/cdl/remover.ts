@@ -4,7 +4,7 @@ import { readCard, listRepos, findCardFile, normalizeId } from './store'
 import { cardsDir } from './ali/config'
 import { stopUrl } from '../cic/crv/url-viva'
 import { removeWorktree } from '../qlb/git'
-import { remove } from '../../lib/core/actions'
+import { remove } from '../mir/acoes'
 import { floorProviders, formatProviders } from '../euc/tsr/lacuna'
 
 const EM_VOO = ['EXECUTING', 'CORRECTING']

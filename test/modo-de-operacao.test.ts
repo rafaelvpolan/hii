@@ -33,14 +33,14 @@ test('modoFor do implement resolve o padrao do provedor ativo sem nenhuma prefer
 })
 
 test('modoFor do ollama e undefined — o provedor nao tem modo nenhum', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['implement'], provider: 'ollama' })
   expect(modoFor('implement')).toBeUndefined()
 })
 
 test('REGRESSAO: um modo valido so no provedor antigo nao escapa para o novo provedor', async () => {
-  const { aplicar } = await import('../lib/core/escolher-ia')
+  const { aplicar } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   const { modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   aplicar({ papeis: ['implement'], provider: 'claude', modo: 'acceptEdits' })
@@ -50,21 +50,21 @@ test('REGRESSAO: um modo valido so no provedor antigo nao escapa para o novo pro
 })
 
 test('/mode sem argumento lista os modos da ia atual', async () => {
-  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao } = await import('../motor/mir/escolher-ia')
   const r = definirModoDeOperacao([])
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('acceptEdits')
 })
 
 test('/mode define o modo do papel atual', async () => {
-  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   definirModoDeOperacao(['plan'])
   expect(modoFor('implement')).toBe('plan')
 })
 
 test('/mode <papel> <modo> mira o papel pedido', async () => {
-  const { definirModoDeOperacao, aplicar } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao, aplicar } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   aplicar({ papeis: ['step'], provider: 'claude' })
   definirModoDeOperacao(['step', 'plan'])
@@ -73,7 +73,7 @@ test('/mode <papel> <modo> mira o papel pedido', async () => {
 })
 
 test('/mode recusa modo invalido do provedor em vez de mandar lixo para o CLI', async () => {
-  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   const r = definirModoDeOperacao(['modo-que-nao-existe'])
   expect(r.ok).toBe(false)
@@ -81,7 +81,7 @@ test('/mode recusa modo invalido do provedor em vez de mandar lixo para o CLI', 
 })
 
 test('/mode recusa quando o provedor atual nao tem modo de operacao', async () => {
-  const { definirModoDeOperacao, aplicar } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao, aplicar } = await import('../motor/mir/escolher-ia')
   aplicar({ papeis: ['implement'], provider: 'ollama' })
   const r = definirModoDeOperacao(['auto'])
   expect(r.ok).toBe(false)
@@ -89,7 +89,7 @@ test('/mode recusa quando o provedor atual nao tem modo de operacao', async () =
 })
 
 test('/mode padrao volta ao modo padrao do provedor', async () => {
-  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   const { modoPadraoDoProvedor } = await import('../motor/tmd/modos')
   definirModoDeOperacao(['plan'])
@@ -98,7 +98,7 @@ test('/mode padrao volta ao modo padrao do provedor', async () => {
 })
 
 test('ciclarModo passa pelos modos do provedor ativo e da a volta', async () => {
-  const { ciclarModo } = await import('../lib/core/escolher-ia')
+  const { ciclarModo } = await import('../motor/mir/escolher-ia')
   const { modoFor } = await import('../motor/tmd/registro')
   const { modosDoProvedor } = await import('../motor/tmd/modos')
   const total = modosDoProvedor('claude').length
@@ -114,7 +114,7 @@ test('ciclarModo passa pelos modos do provedor ativo e da a volta', async () => 
 })
 
 test('ciclarModo do ollama avisa que o provedor nao tem modo, sem quebrar', async () => {
-  const { ciclarModo, aplicar } = await import('../lib/core/escolher-ia')
+  const { ciclarModo, aplicar } = await import('../motor/mir/escolher-ia')
   aplicar({ papeis: ['implement'], provider: 'ollama' })
   const r = ciclarModo('implement', 1)
   expect(r.ok).toBe(false)
@@ -122,7 +122,7 @@ test('ciclarModo do ollama avisa que o provedor nao tem modo, sem quebrar', asyn
 })
 
 test('autocompletar de /mode oferece os modos da ia atual', async () => {
-  const { complete } = await import('../lib/core/complete')
+  const { complete } = await import('../motor/mir/completar')
   const { agentRoles } = await import('../motor/tmd/registro')
   const { modosDoProvedor } = await import('../motor/tmd/modos')
   const ctx = { repos: [], cards: [], modos: [...modosDoProvedor('claude')], papeis: agentRoles() }
@@ -187,7 +187,7 @@ test('o papel step tambem envia o modo — ele edita arquivos como o implement',
 })
 
 test('REGRESSAO /mode recusa papel que roda em leitura, em vez de gravar preferencia inerte', async () => {
-  const { definirModoDeOperacao } = await import('../lib/core/escolher-ia')
+  const { definirModoDeOperacao } = await import('../motor/mir/escolher-ia')
   for (const papel of ['verify', 'gate']) {
     const r = definirModoDeOperacao([papel, 'plan'])
     expect(r.ok).toBe(false)
@@ -196,6 +196,6 @@ test('REGRESSAO /mode recusa papel que roda em leitura, em vez de gravar prefere
 })
 
 test('REGRESSAO shift+tab num papel de leitura nao cicla modo nenhum', async () => {
-  const { ciclarModo } = await import('../lib/core/escolher-ia')
+  const { ciclarModo } = await import('../motor/mir/escolher-ia')
   expect(ciclarModo('gate', 1).ok).toBe(false)
 })

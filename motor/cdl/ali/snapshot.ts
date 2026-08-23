@@ -8,12 +8,12 @@ import { allCards } from '../store'
 import { resumoDaSessao } from '../../euc/ias-da-sessao'
 import { sessaoParaChamada } from '../../euc/tsr/confianca'
 import { dailySpend } from '../../euc/tsr/lacuna'
-import { emExecucao } from '../../../lib/core/render/rodape'
+import { emExecucao } from '../../mir/render/rodape'
 import type { AgentRole, AiProviderName } from '../../tmd/tipos'
-import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from '../../../lib/core/render/config'
+import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from '../../mir/render/config'
 import { janelasDoProvedor } from '../../euc/tsr/janelas'
 import { gastoDoMotorNoIntervalo } from '../../euc/tsr/consumo'
-import type { JanelaDoPainel } from '../../../lib/core/render/config/tipos'
+import type { JanelaDoPainel } from '../../mir/render/config/tipos'
 
 const BALDES_DA_SERIE = 48
 

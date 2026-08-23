@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { renderHistorico, linhasDasIas } from '../lib/core/render/historico'
-import { chaveDaSessao, idDaSessao } from '../lib/core/historico'
+import { renderHistorico, linhasDasIas } from '../motor/mir/render/historico'
+import { chaveDaSessao, idDaSessao } from '../motor/mir/historico'
 import { idCurto } from '../motor/euc/ias-da-sessao'
-import { stripAnsi } from '../lib/core/tui/layout'
-import type { HistoricoDeSessoes, Sessao } from '../lib/core/historico'
+import { stripAnsi } from '../motor/mir/tui/layout'
+import type { HistoricoDeSessoes, Sessao } from '../motor/mir/historico'
 import type { IaDaSessao, PapelDeChamada, TrocaDeProvedor } from '../motor/cdl/tipos'
 
 function ia(over: Partial<IaDaSessao> = {}): IaDaSessao {
@@ -133,7 +133,7 @@ test('sem sessao gravada, o id curto cai no nome do arquivo e segue estavel', ()
 })
 
 test('gasto de conversa nao vira US$0.00 por arredondamento', async () => {
-  const { custo } = await import('../lib/core/render/historico')
+  const { custo } = await import('../motor/mir/render/historico')
   expect(custo(0.0042)).toBe('US$0.0042')
   expect(custo(0.12)).toBe('US$0.12')
   expect(custo(0)).toBe('—')

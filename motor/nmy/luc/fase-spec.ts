@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { objetivoComInstrucoes } from '../../../lib/core/instruir'
+import { objetivoComInstrucoes } from '../../mir/instruir'
 import { isoNow } from '../../cdl'
 import { maxReajuste } from '../../cdl/ali/config'
 import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store'

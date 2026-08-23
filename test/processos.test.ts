@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { renderProcessos, linhaDoTotal, duracao } from '../lib/core/render/processos'
-import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
-import { corDoPasso } from '../lib/core/render/board'
-import type { Passo } from '../lib/core/progresso'
+import { renderProcessos, linhaDoTotal, duracao } from '../motor/mir/render/processos'
+import { visibleLen, stripAnsi } from '../motor/mir/tui/layout'
+import { corDoPasso } from '../motor/mir/render/board'
+import type { Passo } from '../motor/mir/progresso'
 
 const passos: Passo[] = [
   { label: 'Arquitetura', estado: 'feito' },

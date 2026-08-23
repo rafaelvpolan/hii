@@ -7,8 +7,8 @@ import type { Fields } from '../cdl'
 import { planSteps } from '../osw/rta/perfil'
 import { activeSteps } from './config'
 import { readRunSteps } from '../euc/registros'
-import { passosDoCard } from '../../lib/core/progresso'
-import type { Passo } from '../../lib/core/progresso'
+import { passosDoCard } from '../mir/progresso'
+import type { Passo } from '../mir/progresso'
 import type { PipelineStep } from './tipos'
 
 export const passosAtivos = memoTempo(() => activeSteps(), 5000)

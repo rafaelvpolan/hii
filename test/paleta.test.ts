@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { profundidadeDeCor, pintar, tom, rampa, interpolar, corDoCubo, rgbDoTom, CANTO } from '../lib/core/tui/paleta'
-import { barraGradiente, ondaDeEspera, pulso, quadroDoPulso } from '../lib/core/tui/carregando'
-import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
+import { profundidadeDeCor, pintar, tom, rampa, interpolar, corDoCubo, rgbDoTom, CANTO } from '../motor/mir/tui/paleta'
+import { barraGradiente, ondaDeEspera, pulso, quadroDoPulso } from '../motor/mir/tui/carregando'
+import { visibleLen, stripAnsi } from '../motor/mir/tui/layout'
 
 const cor = { color: true, profundidade: 'truecolor' as const }
 const semCor = { color: false }

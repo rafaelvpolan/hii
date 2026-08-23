@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { renderSugestoes, prefixoComum, AJUDA_DO_COMANDO } from '../lib/core/render/sugestoes'
-import { renderFrame, visibleLen, stripAnsi } from '../lib/core/tui/layout'
+import { renderSugestoes, prefixoComum, AJUDA_DO_COMANDO } from '../motor/mir/render/sugestoes'
+import { renderFrame, visibleLen, stripAnsi } from '../motor/mir/tui/layout'
 
 test('cada comando vem com a descricao ao lado', () => {
   const t = renderSugestoes(['/rm', '/repo'], { width: 78 }).join('\n')
@@ -11,12 +11,12 @@ test('cada comando vem com a descricao ao lado', () => {
 })
 
 test('todos os comandos do catalogo tem descricao', async () => {
-  const { COMMANDS } = await import('../lib/core/session')
+  const { COMMANDS } = await import('../motor/mir/sessao')
   for (const c of COMMANDS) expect(AJUDA_DO_COMANDO[c], c).toBeTruthy()
 })
 
 test('nenhuma descricao sobra para comando que nao existe mais', async () => {
-  const { COMMANDS } = await import('../lib/core/session')
+  const { COMMANDS } = await import('../motor/mir/sessao')
   expect(Object.keys(AJUDA_DO_COMANDO).sort()).toEqual([...COMMANDS].sort())
 })
 

@@ -2,8 +2,8 @@ import { test, expect, beforeEach, afterEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession, seguir } from '../lib/core/session'
-import { dispatch } from '../lib/core/dispatch'
+import { handle, newSession, seguir } from '../motor/mir/sessao'
+import { dispatch } from '../motor/mir/despacho'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
 import { allCards } from '../motor/cdl/store'
 
@@ -40,7 +40,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 test('/review (comando da ia ativa) dentro de uma tarefa aberta vira instrucao anexada, sem criar card nem autoaprovar', async () => {
-  const { subPrompts } = await import('../lib/core/instruir')
+  const { subPrompts } = await import('../motor/mir/instruir')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { worktree: dir })
   const antes = allCards().length

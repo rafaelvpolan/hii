@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { parseLinha, parseLog, classificar, formatar, agentesUsados, ultimoAgente, resumo } from '../lib/core/activity'
+import { parseLinha, parseLog, classificar, formatar, agentesUsados, ultimoAgente, resumo } from '../motor/mir/atividade'
 
 test('Task vira agente com o subagent_type', () => {
   const a = parseLinha('  → Task({"subagent_type":"vitro","description":"criar o selo"})')

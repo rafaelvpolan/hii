@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../lib/core/tui/app'
-import type { Terminal } from '../lib/core/tui/screen'
+import { createApp } from '../motor/mir/tui/app'
+import type { Terminal } from '../motor/mir/tui/screen'
 import { telaVirtual } from './fixtures/tela-virtual'
 
 interface Fake extends Terminal {

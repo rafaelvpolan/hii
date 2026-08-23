@@ -123,8 +123,8 @@ test('o gasto do motor e por provedor: o que foi do codex nao entra no claude', 
 })
 
 test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois', async () => {
-  const { renderConfig } = await import('../lib/core/render/config')
-  const { stripAnsi } = await import('../lib/core/tui/layout')
+  const { renderConfig } = await import('../motor/mir/render/config')
+  const { stripAnsi } = await import('../motor/mir/tui/layout')
   const base = {
     provedores: [{
       nome: 'claude', situacao: 'disponivel' as const, habilitado: true, motivo: '',

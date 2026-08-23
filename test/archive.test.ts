@@ -7,7 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-arq-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
 const A = await import('../motor/cdl/arquivar')
-const { submit, transition } = await import('../lib/core/actions')
+const { submit, transition } = await import('../motor/mir/acoes')
 const { allCards } = await import('../motor/cdl/store')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))

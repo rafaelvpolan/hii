@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { linhaPropriedades, linhasExecucao, emExecucao, quadroDoGiro, GIRO } from '../lib/core/render/rodape'
+import { linhaPropriedades, linhasExecucao, emExecucao, quadroDoGiro, GIRO } from '../motor/mir/render/rodape'
 import type { Fields } from '../motor/cdl'
 
 const props = {
@@ -96,7 +96,7 @@ test('sem cor nao emite escape ANSI', () => {
   expect(linhasExecucao(emExecucao([card({ status: 'EXECUTING' })], '', 0, () => ''), { color: false })[0]).not.toContain('\x1b[')
 })
 
-import { esperandoVoce, linhasEspera } from '../lib/core/render/rodape'
+import { esperandoVoce, linhasEspera } from '../motor/mir/render/rodape'
 
 function c(over: Partial<Fields>): Fields {
   return { id: '1', title: 't', status: 'READY', repo: 'org/app', ...over }
@@ -113,7 +113,7 @@ test('lista quem espera voce, com o que digitar para destravar', () => {
 })
 
 test('REGRESSAO a dica nunca manda digitar comando que nao existe mais', async () => {
-  const { handle, newSession } = await import('../lib/core/session')
+  const { handle, newSession } = await import('../motor/mir/sessao')
   const estados = ['CLARIFY', 'URL', 'READY', 'INBOX', 'SPECCED', 'HALTED', 'PR_OPEN']
   const dicas = esperandoVoce(estados.map((status, i) => c({ id: String(i + 1), status })), 'org/app')
   expect(dicas.length).toBe(estados.length)
@@ -189,7 +189,7 @@ test('execucao selecionada tambem ganha barra e o aviso de aberta', () => {
   expect(linha).toContain('← aberta')
 })
 
-import { janelaDaLista } from '../lib/core/render/rodape'
+import { janelaDaLista } from '../motor/mir/render/rodape'
 
 const lista = (n: number): { id: string }[] => Array.from({ length: n }, (_, i) => ({ id: String(i + 1) }))
 
@@ -225,10 +225,10 @@ test('navegar ate o fim mostra as ultimas em execucao', () => {
   expect(linhas.join(' ')).not.toContain('#001')
 })
 
-import { esperaHumano } from '../lib/core/render/phases'
+import { esperaHumano } from '../motor/mir/render/phases'
 
 test('uma definicao so de "esperando voce" — rodape e abas concordam', async () => {
-  const { abasDe } = await import('../lib/core/render/board')
+  const { abasDe } = await import('../motor/mir/render/board')
   const cards = [
     c({ id: '1', repo: 'org/site', status: 'CLARIFY' }),
     c({ id: '2', repo: 'org/site', status: 'READY' }),
@@ -244,7 +244,7 @@ test('CLARIFY manda digitar o id — a pergunta e respondida no proprio prompt',
   expect(esperaHumano('EXECUTING')).toBe(null)
 })
 
-import { esperandoEmOutrosProjetos, linhaDeOutrosProjetos } from '../lib/core/render/rodape'
+import { esperandoEmOutrosProjetos, linhaDeOutrosProjetos } from '../motor/mir/render/rodape'
 
 test('REGRESSAO tarefa esperando em OUTRO projeto nao fica invisivel', () => {
   const cards = [

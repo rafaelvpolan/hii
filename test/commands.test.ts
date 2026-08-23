@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../lib/runner/commands'
+import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../motor/mir/comandos'
 import { commandsFor } from '../motor/cdl/bss/sondar'
 import type { Contract, PackageInfo, PackageManager, RepoShape } from '../motor/cdl/bss/tipos'
 

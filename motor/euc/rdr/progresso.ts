@@ -9,7 +9,7 @@ const DIM = '\x1b[2m'
 const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
 
-import { PHASES, phaseIndex } from '../../../lib/core/render/phases'
+import { PHASES, phaseIndex } from '../../mir/render/phases'
 
 function track(status: string): string {
   if (status === 'HALTED') return `${RED}■ ■ ■ ■ ■ ■  parou${RESET}`

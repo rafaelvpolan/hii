@@ -102,7 +102,7 @@ test('/config nunca marca como habilitado uma ia sem login ou com cota estourada
 })
 
 test('o rotulo da situacao no painel /config diferencia sem-login de cota estourada', async () => {
-  const { painelDeIas } = await import('../lib/core/render/config/paineis')
+  const { painelDeIas } = await import('../motor/mir/render/config/paineis')
   const base = { habilitado: false, motivo: '', plano: '', planoLido: true, detalheDoPlano: '', idadeDoUsoHoras: -1, modelosDisponiveis: [], papeis: [], modelo: '', esforco: '', restringeFerramenta: true, isolaLeitura: true, reportaCusto: true, janelas: [] }
   const estado = {
     provedores: [
@@ -111,7 +111,7 @@ test('o rotulo da situacao no painel /config diferencia sem-login de cota estour
     ],
     selecionado: '', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
-  const { stripAnsi } = await import('../lib/core/tui/layout')
+  const { stripAnsi } = await import('../motor/mir/tui/layout')
   const linhas = painelDeIas(estado, 78, { color: false, largura: 78, altura: 10 }).map(stripAnsi)
   expect(linhas.join('\n')).toContain('sem login')
   expect(linhas.join('\n')).toContain('cota estourada')

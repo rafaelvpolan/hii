@@ -2,8 +2,8 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../lib/core/session'
-import type { SessionState } from '../lib/core/session'
+import { handle, newSession } from '../motor/mir/sessao'
+import type { SessionState } from '../motor/mir/sessao'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
 
 let dir = ''
@@ -29,7 +29,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../lib/core/dispatch')
+  const { dispatch } = await import('../motor/mir/despacho')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -39,7 +39,7 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 }
 
 test('FLUXO: aprovar pelo numero 1 aprova o url', async () => {
-  const { aprovando, seguir } = await import('../lib/core/session')
+  const { aprovando, seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   const inicial = aprovando(seguir(newSession('org/app'), '022'), '022')
@@ -49,7 +49,7 @@ test('FLUXO: aprovar pelo numero 1 aprova o url', async () => {
 })
 
 test('FLUXO: recusar pelo 2 manda refazer', async () => {
-  const { aprovando, seguir } = await import('../lib/core/session')
+  const { aprovando, seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   await digitar(['2'], aprovando(seguir(newSession('org/app'), '022'), '022'))
@@ -57,7 +57,7 @@ test('FLUXO: recusar pelo 2 manda refazer', async () => {
 })
 
 test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async () => {
-  const { aprovando, seguir } = await import('../lib/core/session')
+  const { aprovando, seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL', worktree: dir })
   let state = aprovando(seguir(newSession('org/app'), '022'), '022')
@@ -72,7 +72,7 @@ test('FLUXO: recusar pelo 3 pede o comentario, e o texto vira o motivo', async (
 })
 
 test('FLUXO: enter vazio desiste do comentario sem recusar', async () => {
-  const { comentando, seguir } = await import('../lib/core/session')
+  const { comentando, seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'URL' })
   const state = await digitar([''], comentando(seguir(newSession('org/app'), '022'), '022'))
@@ -81,7 +81,7 @@ test('FLUXO: enter vazio desiste do comentario sem recusar', async () => {
 })
 
 test('FLUXO: enter dentro da tarefa faz a acao obvia de cada estado', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('030', { status: 'URL' })
   await digitar([''], seguir(newSession('org/app'), '030'))
@@ -97,7 +97,7 @@ test('FLUXO: enter dentro da tarefa faz a acao obvia de cada estado', async () =
 })
 
 test('FLUXO: enter em tarefa rodando nao mexe em nada', async () => {
-  const { seguir } = await import('../lib/core/session')
+  const { seguir } = await import('../motor/mir/sessao')
   const { readCard } = await import('../motor/cdl/store')
   card('022', { status: 'EXECUTING' })
   await digitar([''], seguir(newSession('org/app'), '022'))
@@ -107,8 +107,8 @@ test('FLUXO: enter em tarefa rodando nao mexe em nada', async () => {
 
 test('COMPATIBILIDADE: card velho com url/url_pid continua legivel e nao perde os campos', async () => {
   const { readCard } = await import('../motor/cdl/store')
-  const { renderCabecalhoTarefa } = await import('../lib/core/render/tarefa')
-  const { seguir } = await import('../lib/core/session')
+  const { renderCabecalhoTarefa } = await import('../motor/mir/render/tarefa')
+  const { seguir } = await import('../motor/mir/sessao')
   card('040', { status: 'EXECUTED', worktree: dir, url: 'http://localhost:5240', url_pid: '4242' })
   await digitar(['tira tambem o selo'], seguir(newSession('org/app'), '040'))
   const c = readCard('040')
@@ -119,7 +119,7 @@ test('COMPATIBILIDADE: card velho com url/url_pid continua legivel e nao perde o
 })
 
 test('FLUXO REAL: a dica do rodape para card em URL leva mesmo a aprovacao', async () => {
-  const { esperandoVoce } = await import('../lib/core/render/rodape')
+  const { esperandoVoce } = await import('../motor/mir/render/rodape')
   const { allCards, readCard } = await import('../motor/cdl/store')
   card('033', { status: 'URL' })
   const dica = esperandoVoce(allCards(), 'org/app')[0]?.comando ?? ''
@@ -132,7 +132,7 @@ test('FLUXO REAL: a dica do rodape para card em URL leva mesmo a aprovacao', asy
 })
 
 test('FLUXO REAL: aprovar o plano com o daemon offline avisa em vez de fingir que ja roda', async () => {
-  const { dispatch } = await import('../lib/core/dispatch')
+  const { dispatch } = await import('../motor/mir/despacho')
   card('038', { status: 'READY' })
   const foraDoAr: string[] = []
   const ioOffline = dispatchIOFalso({
@@ -157,7 +157,7 @@ test('FLUXO REAL: numero de card que nao esta em URL continua abrindo o plano', 
 })
 
 test('FLUXO REAL: /new-session limpa a sessao de verdade, nao so o texto da tela', async () => {
-  const { seguir, comConversa } = await import('../lib/core/session')
+  const { seguir, comConversa } = await import('../motor/mir/sessao')
   card('035', { status: 'URL' })
   const sujo = comConversa(seguir(newSession('org/app'), '035'), 'p', 'r')
   const limpo = await digitar(['/new-session'], sujo)
@@ -169,7 +169,7 @@ test('FLUXO REAL: /new-session limpa a sessao de verdade, nao so o texto da tela
 })
 
 test('FLUXO REAL: trocar de projeto fecha a ask de aprovacao do projeto anterior', async () => {
-  const { aprovando, seguir } = await import('../lib/core/session')
+  const { aprovando, seguir } = await import('../motor/mir/sessao')
   card('036', { status: 'URL' })
   card('037', { repo: 'outra/app' })
   const armado = aprovando(seguir(newSession('org/app'), '036'), '036')

@@ -8,10 +8,10 @@ import { installPrePush, uninstallPrePush } from '../motor/cdl/ali/hooks'
 import { runSync } from '../motor/tmd/pnt/tarefas/sync'
 import { taskSyncName } from '../motor/tmd/pnt/tarefas/registro'
 import { limparTmpAntigo, usoDeDisco } from '../motor/euc/estado-em-disco'
-import { linhasDoDisco } from '../lib/core/render/disco'
-import { snapshotDoMotor, revisaoDoEstado } from '../lib/core/estado-json'
-import { executarAcao, criarTarefa } from '../lib/core/comandos-de-tarefa'
-import type { AcaoDeTarefa } from '../lib/core/comandos-de-tarefa'
+import { linhasDoDisco } from '../motor/mir/render/disco'
+import { snapshotDoMotor, revisaoDoEstado } from '../motor/mir/estado-json'
+import { executarAcao, criarTarefa } from '../motor/mir/comandos-de-tarefa'
+import type { AcaoDeTarefa } from '../motor/mir/comandos-de-tarefa'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')

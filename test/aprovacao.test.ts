@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { renderAprovacao, OPCOES_APROVACAO } from '../lib/core/render/aprovacao'
-import { renderPendencia, pendenciaDoStatus } from '../lib/core/render/pendencia'
-import { visibleLen, stripAnsi } from '../lib/core/tui/layout'
+import { renderAprovacao, OPCOES_APROVACAO } from '../motor/mir/render/aprovacao'
+import { renderPendencia, pendenciaDoStatus } from '../motor/mir/render/pendencia'
+import { visibleLen, stripAnsi } from '../motor/mir/tui/layout'
 
 test('a ask de aprovacao oferece aprovar, refazer e comentar', () => {
   const t = renderAprovacao('022', { width: 78 }).join('\n')
@@ -75,7 +75,7 @@ test('bloco de pendencia mostra a tecla e o que ela faz', () => {
 })
 
 test('REGRESSAO a pendencia nunca ensina comando que o parser recusa', async () => {
-  const { handle, newSession } = await import('../lib/core/session')
+  const { handle, newSession } = await import('../motor/mir/sessao')
   const estados = ['CLARIFY', 'URL', 'INBOX', 'READY', 'SPECCED', 'PLAN_APPROVED', 'HALTED', 'PAUSED', 'PR_OPEN']
   const teclas = estados.flatMap(s => pendenciaDoStatus(s, '022')?.acoes.map(a => a.tecla) ?? [])
   expect(teclas.length).toBeGreaterThan(estados.length)
@@ -88,7 +88,7 @@ test('REGRESSAO a pendencia nunca ensina comando que o parser recusa', async () 
 })
 
 test('REGRESSAO 1 2 3 dentro da tarefa em URL cai na aprovacao, nao no plano do card #001', async () => {
-  const { handle, newSession, seguir, sincronizarAprovacao } = await import('../lib/core/session')
+  const { handle, newSession, seguir, sincronizarAprovacao } = await import('../motor/mir/sessao')
   expect(pendenciaDoStatus('URL', '022')?.acoes.map(a => a.tecla)).toContain('1 2 3')
   const dentro = sincronizarAprovacao(seguir(newSession('org/app'), '022'), 'URL')
   for (const tecla of ['1', '2', '3']) {
@@ -130,7 +130,7 @@ test('card com url pergunta se ABRIU, nao se aprova — a validacao e ter aberto
 })
 
 test('quando a maquina ja abriu a url, a pergunta ao humano vira de intencao', async () => {
-  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const { renderAprovacao } = await import('../motor/mir/render/aprovacao')
   const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'ok' }).join('\n')
   expect(t).toContain('e isso que voce queria?')
   expect(t).toContain('o motor abriu a url e a pagina respondeu')
@@ -138,21 +138,21 @@ test('quando a maquina ja abriu a url, a pergunta ao humano vira de intencao', a
 })
 
 test('quando a checagem falhou, a tela diz isso em vez de perguntar se abriu', async () => {
-  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const { renderAprovacao } = await import('../motor/mir/render/aprovacao')
   const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'falhou' }).join('\n')
   expect(t).toContain('subiu com erro')
   expect(t).toContain('a pagina deu erro')
 })
 
 test('so quando a maquina nao soube checar e que o humano responde a pergunta tecnica', async () => {
-  const { renderAprovacao } = await import('../lib/core/render/aprovacao')
+  const { renderAprovacao } = await import('../motor/mir/render/aprovacao')
   const t = renderAprovacao('023', { url: 'http://localhost:5200', verificacao: 'inconclusivo' }).join('\n')
   expect(t).toContain('conseguiu abrir a url?')
   expect(t).toContain('nao conseguiu checar sozinho')
 })
 
 test('card antigo, sem veredito gravado, cai na pergunta tecnica e nao inventa veredito', async () => {
-  const { renderAprovacao, verificacaoDoCard } = await import('../lib/core/render/aprovacao')
+  const { renderAprovacao, verificacaoDoCard } = await import('../motor/mir/render/aprovacao')
   expect(verificacaoDoCard('')).toBe('')
   expect(verificacaoDoCard('lixo')).toBe('')
   expect(verificacaoDoCard('ok')).toBe('ok')

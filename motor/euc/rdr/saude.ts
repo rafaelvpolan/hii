@@ -4,7 +4,7 @@ import { allCards } from '../../cdl/store'
 import { maxWaitingAttempts } from '../../cdl/ali/config'
 import { backoffMsFor } from '../../cic/rpr/politica'
 import { readDaemonHealth } from './tick'
-import { isActive } from '../../../lib/core/render/phases'
+import { isActive } from '../../mir/render/phases'
 import { PROVEDOR_DESCONHECIDO, lerCota } from '../tsr/cota'
 import type { LeituraDeCota } from '../tsr/cota'
 

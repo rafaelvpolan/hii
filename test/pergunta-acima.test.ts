@@ -17,15 +17,15 @@ beforeEach(() => {
 })
 
 test('REGRESSAO a pergunta da IA NAO fica no rodape — ela sobe para cima do prompt', async () => {
-  const { rodapeDa } = await import('../bin/lib/rodape-tui')
-  const { newSession, perguntando } = await import('../lib/core/session')
+  const { rodapeDa } = await import('../motor/mir/cli/rodape-tui')
+  const { newSession, perguntando } = await import('../motor/mir/sessao')
   const linhas = rodapeDa(perguntando(newSession('org/app'), '024'), true)
   expect(linhas.join(' ')).not.toContain('vem de onde')
 })
 
 test('o renderizador da pergunta continua marcando a opcao escolhida pela seta', async () => {
-  const { renderOpcoesRodape } = await import('../lib/core/render/clarify')
-  const { pendencia } = await import('../lib/core/responder')
+  const { renderOpcoesRodape } = await import('../motor/mir/render/clarify')
+  const { pendencia } = await import('../motor/mir/responder')
   const p = pendencia('024')
   expect(p).toBeTruthy()
   if (!p) return
@@ -37,7 +37,7 @@ test('o renderizador da pergunta continua marcando a opcao escolhida pela seta',
 })
 
 test('o que vai ACIMA do prompt e desenhado acima da linha de entrada', async () => {
-  const { renderFrame } = await import('../lib/core/tui/layout')
+  const { renderFrame } = await import('../motor/mir/tui/layout')
   const f = renderFrame({
     rows: 20, cols: 80, header: 'hii', corpo: ['log'], input: 'minha resposta', cursor: 3,
     dica: '', prompt: '› ', rodape: ['gasto hoje'],

@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import * as core from '../../lib/core/actions.ts'
+import * as core from '../../motor/mir/acoes.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

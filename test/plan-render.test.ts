@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { waves } from '../motor/nmy/luc/ondas'
 import { DEFAULT_STEPS } from '../motor/nmy/config'
 import { buildPlan } from '../motor/nmy/luc/plano'
-import { renderPlan } from '../lib/core/render/plan'
+import { renderPlan } from '../motor/mir/render/plan'
 import type { Card } from '../motor/cdl'
 import type { PipelineStep } from '../motor/nmy/tipos'
 

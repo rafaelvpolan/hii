@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { renderFrame, stripAnsi, visibleLen, truncVisible, padVisible } from '../lib/core/tui/layout'
+import { renderFrame, stripAnsi, visibleLen, truncVisible, padVisible } from '../motor/mir/tui/layout'
 
 const quadro = (over: Partial<Parameters<typeof renderFrame>[0]> = {}): ReturnType<typeof renderFrame> =>
   renderFrame({ rows: 10, cols: 40, header: 'hii', corpo: [], input: '', cursor: 0, dica: '', prompt: '› ', rodape: [], ...over })
@@ -112,7 +112,7 @@ test('conteudo com cor nao quebra o alinhamento da moldura', () => {
   expect(new Set(f.lines.map(l => visibleLen(l))).size).toBe(1)
 })
 
-import { link, linkificar } from '../lib/core/tui/layout'
+import { link, linkificar } from '../motor/mir/tui/layout'
 
 test('link OSC 8 nao conta como largura visivel', () => {
   const l = link('https://github.com/org/repo/pull/18', 'PR #18')
@@ -142,7 +142,7 @@ test('truncar linha com link nao corta no meio do escape', () => {
   expect(visibleLen(t)).toBeLessThanOrEqual(10)
 })
 
-import { posicaoNoTexto } from '../lib/core/tui/layout'
+import { posicaoNoTexto } from '../motor/mir/tui/layout'
 
 test('posicaoNoTexto encontra linha e coluna do cursor', () => {
   expect(posicaoNoTexto('ab\ncd', 4)).toEqual({ linha: 1, coluna: 1 })
@@ -194,7 +194,7 @@ test('rodape longo e truncado dentro da largura', () => {
   expect(visibleLen(f.lines[f.lines.length - 1] ?? '')).toBe(40)
 })
 
-import { suportaLink } from '../lib/core/tui/layout'
+import { suportaLink } from '../motor/mir/tui/layout'
 
 test('REGRESSAO linkificar NAO embrulha url que ja esta dentro de um link', () => {
   process.env.HICODE_HYPERLINKS = 'on'
@@ -301,8 +301,8 @@ test('REGRESSAO nenhum teste pode depender do terminal de quem roda', () => {
   Object.assign(process.env, guardado)
 })
 
-import { quebrarEmLargura } from '../lib/core/tui/layout'
-import { CANTO } from '../lib/core/tui/paleta'
+import { quebrarEmLargura } from '../motor/mir/tui/layout'
+import { CANTO } from '../motor/mir/tui/paleta'
 
 test('REGRESSAO resposta longa e QUEBRADA, nao truncada — nao come palavras', () => {
   const t = 'Nao, NTN nao e uma integracao real do hicode — e uma string de exemplo usada so em README.md:90-112 e test/tipo-de-prompt.test.ts para ilustrar a distincao.'

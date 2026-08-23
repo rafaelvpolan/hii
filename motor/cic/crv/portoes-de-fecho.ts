@@ -4,7 +4,7 @@ import { maxReajuste } from '../../cdl/ali/config'
 import { patchCard } from '../../cdl/store'
 import { run } from '../../qlb/git'
 import { runStep } from '../agente'
-import { resolveCommand } from '../../../lib/runner/commands'
+import { resolveCommand } from '../../mir/comandos'
 import { addMetric } from '../../euc/metricas-de-fecho'
 import type { Contract, PackageInfo } from '../../cdl/bss/tipos'
 

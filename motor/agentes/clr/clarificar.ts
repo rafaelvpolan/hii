@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { objetivoComInstrucoes } from '../../../lib/core/instruir'
+import { objetivoComInstrucoes } from '../../mir/instruir'
 import { join } from 'node:path'
 import type { Card, ClarifyQuestion } from '../../cdl'
 import { cardsDir, ROOT } from '../../cdl/ali/config'

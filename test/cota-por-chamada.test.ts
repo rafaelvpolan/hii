@@ -170,9 +170,9 @@ test('A CONVERSA ENTRA NO CONSUMO: gasto de pergunta deixa de ser orfao', async 
 
 test('a conversa aparece no historico como chat, sem tarefa', async () => {
   run({ id: '', kind: 'conversa', provider: '', cost_usd: '0.004', session: 'conversa-x', ias: [ia({ papel: 'conversa', rotulo: 'conversa' })] })
-  const { historicoDeSessoes } = await import('../lib/core/historico')
-  const { renderHistorico } = await import('../lib/core/render/historico')
-  const { stripAnsi } = await import('../lib/core/tui/layout')
+  const { historicoDeSessoes } = await import('../motor/mir/historico')
+  const { renderHistorico } = await import('../motor/mir/render/historico')
+  const { stripAnsi } = await import('../motor/mir/tui/layout')
   const h = historicoDeSessoes()
   expect(h.sessoes.length).toBe(1)
   expect(h.sessoes[0]?.tipo).toBe('conversa')

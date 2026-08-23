@@ -2,8 +2,8 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../lib/core/session'
-import type { SessionState } from '../lib/core/session'
+import { handle, newSession } from '../motor/mir/sessao'
+import type { SessionState } from '../motor/mir/sessao'
 import { dispatchIOFalso } from './fixtures/dispatch-io-falso'
 
 let dir = ''
@@ -29,7 +29,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../lib/core/dispatch')
+  const { dispatch } = await import('../motor/mir/despacho')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -40,7 +40,7 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 
 test('retomar so vale para tarefa parada', async () => {
   const { readCard } = await import('../motor/cdl/store')
-  const { retomando } = await import('../lib/core/session')
+  const { retomando } = await import('../motor/mir/sessao')
   card('022', { status: 'HALTED' })
   await digitar([''], retomando(newSession('org/app'), '022'))
   expect(readCard('022')?.fm.status).toBe('EXECUTING')
@@ -48,7 +48,7 @@ test('retomar so vale para tarefa parada', async () => {
 
 test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
   const { readCard } = await import('../motor/cdl/store')
-  const { retomando } = await import('../lib/core/session')
+  const { retomando } = await import('../motor/mir/sessao')
   card('022', { status: 'URL' })
   await digitar([''], retomando(newSession('org/app'), '022'))
   expect(readCard('022')?.fm.status).toBe('URL')
@@ -56,7 +56,7 @@ test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
 })
 
 test('retomar card inexistente avisa', async () => {
-  const { retomando } = await import('../lib/core/session')
+  const { retomando } = await import('../motor/mir/sessao')
   await digitar([''], retomando(newSession('org/app'), '099'))
   expect(saida.join(' ')).toContain('nao encontrado')
 })
