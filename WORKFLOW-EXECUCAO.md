@@ -462,7 +462,14 @@ Verificado de ponta a ponta com o binário real: com rigor ligado, o card nasce
 em `READY`, o template aparece em `<cards>/matrizes/`, `approve --plan` recusa
 citando a matriz, e depois de respondida a aprovação passa.
 
-**Item 16 — adiado, com motivo.** Os `skillPacksPadrao` de
+**Item 16 — parcialmente destravado.** O pack `frontend-web` existe desde a
+criação do acervo de front (`frontend-patterns`, `accessibility-a11y`,
+`seo-technical`). Com isso `/orquestrador-jogos` e a metade de front de
+`/orquestrador-dev-web` têm onde pousar. Continuam faltando `backend-web`,
+`mobile` e `devops-deploy` — então `/orquestrador-android` e `/orquestrador-devops`
+seguem apontando para vazio.
+
+**Item 16 — o que falta, com motivo.** Os `skillPacksPadrao` de
 `/orquestrador-{android,dev-web,devops}` apontam para os packs `mobile`,
 `backend-web`, `frontend-web` e `devops-deploy`, que **não existem** hoje: o
 acervo da Onda 6 entregou só `common/` e `games-multiplatform/`. Ligar os
@@ -647,8 +654,11 @@ Fechar antes esconderia dele exatamente o rastro que ele existe para auditar.
 para dar um chamador ao módulo, sem entregar economia. O valor real exige
 fatiador determinístico por stack, que pertence à camada de skill.
 
-**Item 23 (gauntlet)** — falta de onde tirar a referência externa. Sem referência
-não há comparação cega, só opinião com nome novo.
+**Item 23 (gauntlet)** — ligado. O crivo escolhe o modo e o pack `frontend-web`
+finalmente satisfaz o gatilho de domínio: um card que toca `.vue` num alvo Vue
+entra em `gauntlet` se tiver referência anexada, provedor que lê imagem e teto
+legível. Faltando qualquer um, cai no critério escrito **com o motivo gravado no
+card** — nunca em silêncio.
 
 **Item 11 (`despacharAgentesNaFase`)** — precisa de `config/pipeline.json`
 aceitando mais de um agente por passo (`agents: []` em vez de `agent`). É
