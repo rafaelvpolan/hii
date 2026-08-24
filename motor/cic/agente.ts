@@ -24,6 +24,7 @@ import { markRefsRefused } from '../qlb/alf/confianca.ts'
 import { lerAcaoExterna } from '../osw/rta/externo.ts'
 import { execFileSync } from 'node:child_process'
 import { renderizarSkills, skillsPara } from '../csd/acervo.ts'
+import { packsDoCard } from '../mir/comandos-manuais.ts'
 import { decidirEspecs } from '../osw/despacho-de-agentes.ts'
 import { checklistParaStack, renderizarChecklist } from '../agentes/vtb/checklist.ts'
 import type { ContextoDeGatilho, PapelDeSkill } from '../csd/acervo.ts'
@@ -80,7 +81,7 @@ function agentesInjetaveis(provider: Harness, nomes: readonly string[], ferramen
 // Contexto do gatilho de skill: DETERMINISTICO, lido do disco. Arquivos que o
 // card ja tocou no worktree, mais as dependencias declaradas pelo alvo. Nunca
 // se pergunta a uma IA se a skill se aplica.
-export function contextoDeSkill(workdir: string, repo: string): ContextoDeGatilho {
+export function contextoDeSkill(workdir: string, repo: string, packs: readonly string[] = []): ContextoDeGatilho {
   const c = repo ? readContract(repo) : null
   // O contrato guarda framework e linguagem por pacote, nao a lista crua de
   // dependencias. Isso ja e o sinal que os gatilhos usam ("laravel", "vue"),
@@ -93,7 +94,7 @@ export function contextoDeSkill(workdir: string, repo: string): ContextoDeGatilh
   } catch {
     arquivos = []
   }
-  return { arquivos, deps }
+  return { arquivos, deps, packs }
 }
 
 function stackOf(repo: string): string {
@@ -180,7 +181,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const memory = PROJECT_MEMORY ? readProjectMemory(target) : ''
   const navegacao = acaoExterna.externo ? [] : await navegacaoSemantica()
   extraTools = extraTools.concat(navegacao)
-  const ctxSkill = contextoDeSkill(workdir, card.fm.repo ?? '')
+  const ctxSkill = contextoDeSkill(workdir, card.fm.repo ?? '', packsDoCard(card.fm.packs))
   const escolhidos = agentesEscolhidos(ctxSkill, `${card.fm.title ?? ''} ${desc}`)
   const agentesInjetados = acaoExterna.externo || !escolhidos.length ? {} : agentesInjetaveis(provider, escolhidos, navegacao)
   const nomesInjetados = Object.keys(agentesInjetados)

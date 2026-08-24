@@ -1,8 +1,9 @@
+import { interpretarIntake } from './comandos-manuais.ts'
 export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'config' | 'ref' | 'login'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'config' | 'ref' | 'login' | 'intake'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -55,7 +56,10 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/login', '/exit'] as const
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/login', '/exit',
+  // Item 16 — atalhos de intake. Entram na MESMA lista porque sao comandos como
+  // qualquer outro: o que muda e o conteudo pre-carregado, nunca o pipeline.
+  '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout'] as const
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
@@ -123,6 +127,16 @@ function command(line: string, state: SessionState): Reply {
   const [head, ...rest] = line.slice(1).trim().split(/\s+/)
   const arg = rest.join(' ')
   const cleared = { ...state, pendingPlan: '' }
+  // Item 16. O atalho de intake NAO abre caminho proprio: ele vira um efeito que
+  // o despachante manda pela mesma criacao de card de qualquer tarefa, so que
+  // com os packs declarados junto. `raw` leva o nome do comando, e a lista de
+  // packs continua morando num lugar so (comandos-manuais.ts).
+  const intake = interpretarIntake(line)
+  if (intake) {
+    return intake.texto
+      ? reply({ kind: 'intake', text: intake.texto, raw: intake.comando }, cleared)
+      : reply({ kind: 'error', text: `uso: ${intake.comando} <o que fazer> — cria a tarefa com o conhecimento do dominio ja carregado` }, state)
+  }
   switch (head) {
     case 'help':
     case 'h':

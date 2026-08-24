@@ -183,6 +183,12 @@ export function fundirOrigens(base: string = diretorioDeSkills(), ordem: readonl
 export interface ContextoDeGatilho {
   readonly arquivos: readonly string[]
   readonly deps: readonly string[]
+  // Packs declarados no card, pelo item 16. O gatilho por arquivo e dependencia
+  // nao alcanca projeto greenfield: nao ha arquivo tocado nem contrato detectado
+  // ainda, entao so `sempre: true` carregaria e o card nasceria sem o
+  // conhecimento do dominio. Declarar o pack e a unica informacao que o humano
+  // tem no intake e o disco ainda nao tem.
+  readonly packs?: readonly string[]
 }
 
 // Puro e deterministico: mesma entrada, mesma saida, zero I/O e zero IA.
@@ -192,8 +198,13 @@ export function gatilhoBate(g: GatilhoDeSkill, ctx: ContextoDeGatilho): boolean 
   return (g.deps ?? []).some(d => ctx.deps.includes(d))
 }
 
+// Pack declarado ENTRA ALEM do gatilho, nunca no lugar dele: um card de
+// dev-web que tambem toca arquivo de jogo carrega os dois. Substituir faria a
+// declaracao do intake apagar o que o disco diz, e o disco sabe mais depois que
+// o trabalho comeca.
 export function skillsPara(papel: PapelDeSkill, ctx: ContextoDeGatilho, acervo: readonly Skill[] = carregarAcervo()): Skill[] {
-  return acervo.filter(s => s.papeis.includes(papel) && gatilhoBate(s.gatilho, ctx))
+  const declarados = ctx.packs ?? []
+  return acervo.filter(s => s.papeis.includes(papel) && (gatilhoBate(s.gatilho, ctx) || declarados.includes(s.pack)))
 }
 
 export function renderizarSkills(skills: readonly Skill[]): string {

@@ -1,3 +1,4 @@
+import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
 import { readCard, allCards, normalizeId, listRepos, repoPath } from '../cdl/store.ts'
 import * as core from './acoes.ts'
 import { planejarLote, removerLote } from '../cdl/remover.ts'
@@ -56,6 +57,28 @@ function resolverProvedorParaLogin(arg: string): HarnessId | null {
   if (arg !== undefined && isProviderName(arg)) return arg
   if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)
   return null
+}
+
+// A UNICA porta de criacao de card a partir da sessao. Submit livre e atalho de
+// intake passam os dois por aqui — e o teste de item 16 le esta fonte para
+// provar que o atalho nao abriu caminho paralelo.
+async function criarCardEEnfileirar(texto: string, state: SessionState, io: DispatchIO, extras: Record<string, string>): Promise<SessionState> {
+  if (!texto.trim()) { io.log('nada para criar'); return state }
+  if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
+  const pronta = io.iaProntaParaEnviar()
+  if (!pronta.ok) { io.log(pronta.motivo); return state }
+  const base = state.perguntando ? respondido(state) : state
+  const novoId = core.submit({ title: texto, repo: base.repo, ...extras })
+  const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
+  if (refs.migrados > 0) {
+    io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
+  }
+  const r = core.approvePlan(novoId)
+  const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
+  io.log(r.ok
+    ? `card #${novoId} criado e na fila — ${destino} (/historico sai)`
+    : `card #${novoId} criado — ${r.reason}`)
+  return seguir(base, novoId)
 }
 
 async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Promise<SessionState> {
@@ -221,23 +244,18 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       io.log(r ? `#${id} retomado — segue de onde parou` : `nao consegui retomar #${id}`)
       return state
     }
-    case 'submit': {
-      if (!texto.trim()) { io.log('nada para criar'); return state }
-      if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
-      const pronta = io.iaProntaParaEnviar()
-      if (!pronta.ok) { io.log(pronta.motivo); return state }
-      const base = state.perguntando ? respondido(state) : state
-      const novoId = core.submit({ title: texto, repo: base.repo })
-      const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
-      if (refs.migrados > 0) {
-        io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
-      }
-      const r = core.approvePlan(novoId)
-      const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
-      io.log(r.ok
-        ? `card #${novoId} criado e na fila — ${destino} (/historico sai)`
-        : `card #${novoId} criado — ${r.reason}`)
-      return seguir(base, novoId)
+    case 'submit':
+      return criarCardEEnfileirar(texto, state, io, {})
+    case 'intake': {
+      // Item 16. MESMA funcao do submit, de proposito: o atalho carrega conteudo
+      // diferente e nao ganha caminho de execucao proprio. Se um dia isto virar
+      // um bloco separado, sao dois motores com gates diferentes.
+      const c = comandoManual(effect.raw ?? '')
+      if (!c) { io.log(`atalho desconhecido: ${String(effect.raw)}`); return state }
+      const extras = camposDoIntake({ comando: c.nome, packs: c.packs, texto, layout: c.ligaLayout === true })
+      const novo = await criarCardEEnfileirar(texto, state, io, extras)
+      if (novo !== state) io.log(`  conhecimento pre-carregado: ${c.packs.join(', ')}`)
+      return novo
     }
     case 'modelo': {
       io.log(definirModelo(texto.trim().split(/\s+/).filter(Boolean)).mensagem)

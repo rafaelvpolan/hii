@@ -25,6 +25,13 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/login': 'mostra como autenticar a ia que ainda nao logou',
   '/repo': 'troca de projeto',
   '/exit': 'sai do hii — as tarefas seguem rodando',
+  // Item 16 — atalhos de intake: carregam o conhecimento do dominio antes de o
+  // disco ter arquivo que dispare o gatilho.
+  '/orquestrador-jogos': 'tarefa de jogo — engine, netcode, replay, build',
+  '/orquestrador-dev-web': 'tarefa web — front e back ja com o dominio carregado',
+  '/orquestrador-android': 'tarefa mobile — Android, iOS e publicacao em loja',
+  '/orquestrador-devops': 'tarefa de infra — pipeline, imagem, deploy, SLO',
+  '/layout': 'tarefa visual — entrada padrao da fase de plano',
 }
 
 export interface GrupoDeSugestao {
