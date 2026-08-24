@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { lerGovernanca } from '../../euc/tsr/orcamento.ts'
+import { lerGovernanca, tetoDoCard } from '../../euc/tsr/orcamento.ts'
 import { cardsDir } from '../../cdl/ali/config.ts'
 
 // CND — Canudos. A solucao tem de sobreviver a varias investidas.
@@ -42,8 +42,16 @@ export interface PermissaoDeInicio {
 
 export function podeIniciar(): PermissaoDeInicio {
   try {
+    // `tetoDoCard(g)`, nao `g.orcamentoPorCard.tetoUsd`: o teto EFETIVO honra
+    // HICODE_CARD_BUDGET_USD, e e ele que executar.ts, corrigir.ts e fechar.ts
+    // usam para barrar. Enquanto este numero era so texto do motivo, ler o
+    // arquivo direto era inocuo; desde que ele passou a BARRAR (modoDoCrivo
+    // abaixo), ler outra fonte faria o teto valer num ponto e nao no outro — com
+    // env=2 e arquivo=16, um card com US$3 ja estourou para o motor e ainda
+    // entraria no modo caro de comparacao cega.
     const g = lerGovernanca()
-    return { pode: true, tetoUsd: g.orcamentoPorCard.tetoUsd, motivo: `teto de US$${g.orcamentoPorCard.tetoUsd} por card` }
+    const teto = tetoDoCard(g)
+    return { pode: true, tetoUsd: teto, motivo: `teto de US$${teto} por card` }
   } catch (e) {
     return { pode: false, tetoUsd: 0, motivo: `gauntlet recusa iniciar sem teto legivel: ${String((e as Error).message)}` }
   }
@@ -65,6 +73,10 @@ export interface ComparacaoCega {
 }
 
 const ROTULOS = 'ABCDEFGH'
+
+// Exportado para quem monta a lista de candidatos poder CORTAR antes de chamar
+// `cegar()`, em vez de descobrir o limite por excecao.
+export const MAX_CANDIDATOS_CEGOS = ROTULOS.length
 
 function embaralhoDaSemente(semente: string, n: number): number[] {
   let h = 2166136261
@@ -128,11 +140,32 @@ export interface ContextoDoModo {
   readonly packs: readonly string[]
   readonly referencias: readonly string[]
   readonly permissao?: PermissaoDeInicio
+  // Interruptor explicito do humano (`/gauntlet on` na TUI). Ausente = desligado.
+  readonly ativado?: boolean
+  // Gasto acumulado do card, para o teto de `podeIniciar()` deixar de ser numero
+  // decorativo. Ausente = nao sei quanto foi gasto, e o teto nao pode ser aplicado.
+  readonly gastoUsd?: number
 }
 
+// TRAVA 0 — INTERRUPTOR EXPLICITO. Este modo SUBSTITUI o criterio escrito: quando
+// ele roda, nenhuma revisao automatica le o diff. Enquanto a escolha era por
+// heuristica (pack visual + referencia anexada), um card de frontend com uma
+// imagem anexada saia do pipeline sem nenhuma leitura de codigo, nem nos gates de
+// passo nem no gate final antes do PR — e ninguem havia pedido isso. Agora o
+// humano liga na TUI, ve o estado na linha de propriedades, e o motivo gravado no
+// card diz que o criterio escrito ficou de fora.
 export function modoDoCrivo(ctx: ContextoDoModo): EscolhaDeModo {
+  if (ctx.ativado !== true) {
+    return { modo: 'criterio-escrito', motivo: 'gauntlet desligado — o crivo le o diff contra o criterio escrito (ligue com /gauntlet on se quiser comparacao cega de telas neste projeto)' }
+  }
   const permissao = ctx.permissao ?? podeIniciar()
   if (!permissao.pode) return { modo: 'criterio-escrito', motivo: `sem teto de orcamento legivel: ${permissao.motivo}` }
+  // TRAVA 2 aplicada, nao so lida: o teto existe para o modo nao assumir infinito.
+  // Ler o numero e nao compara-lo com o gasto era teto decorativo — o mesmo defeito
+  // que este arquivo diz existir para evitar.
+  if (permissao.tetoUsd > 0 && ctx.gastoUsd !== undefined && ctx.gastoUsd >= permissao.tetoUsd) {
+    return { modo: 'criterio-escrito', motivo: `gauntlet recusa iniciar: o card ja gastou US$${ctx.gastoUsd.toFixed(4)} contra o ${permissao.motivo} — comparacao cega custa mais que o criterio escrito e o teto existe para nao ser ultrapassado` }
+  }
   const dominio = gauntletVale(ctx.packs)
   if (!dominio.vale) return { modo: 'criterio-escrito', motivo: dominio.motivo }
   if (!ctx.referencias.length) {

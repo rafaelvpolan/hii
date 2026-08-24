@@ -2,15 +2,23 @@ import { isoNow } from '../../cdl/index.ts'
 import type { FailureClass } from '../../cdl/index.ts'
 import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cdl/ali/config.ts'
 import { runGit, stageAll } from '../../qlb/git.ts'
-import { patchCard } from '../../cdl/store.ts'
+import { patchCard, readCard } from '../../cdl/store.ts'
 import { modelFor, providerFor, effortFor } from '../../tmd/registro.ts'
 import { runProvider } from '../../euc/tsr/confianca.ts'
 import { sumTokens } from '../../tmd/uso.ts'
 import { classifyFailure } from '../rpr/classe-de-falha.ts'
 import { renderizarCriterios } from './criterios.ts'
-import { cegar, modoDoCrivo, referenciasDoCard, renderizarComparacao, telaDoCard } from '../cnd/gauntlet.ts'
+import { cegar, MAX_CANDIDATOS_CEGOS, modoDoCrivo, referenciasDoCard, renderizarComparacao, telaDoCard } from '../cnd/gauntlet.ts'
 import { skillsPara } from '../../csd/acervo.ts'
+import { gauntletLigado } from '../../tmd/preferencias.ts'
+import { gastoDoCard } from '../../euc/tsr/orcamento.ts'
 import { existsSync } from 'node:fs'
+
+// Derivado de ROTULOS, nao copiado: `cegar()` aceita `MAX_CANDIDATOS_CEGOS`
+// candidatos e um deles e sempre a tela do motor. Como copia manual, mudar ROTULOS
+// fazia `cegar()` voltar a LANCAR aqui — depois de patchCard ja ter gravado
+// crivo_modo:'gauntlet'.
+const MAX_REFERENCIAS_NA_COMPARACAO = MAX_CANDIDATOS_CEGOS - 1
 
 export type GateVerdict = 'APPROVED' | 'CONDITIONAL' | 'BLOCKED'
 
@@ -18,6 +26,7 @@ export interface GateResult {
   ok: boolean
   verdict: GateVerdict
   reason: string
+  criterio: string
   questions: string[]
   cost: number
   costMeasured: boolean
@@ -30,6 +39,11 @@ export interface GateResult {
 interface RawVerdict {
   verdict?: string
   reason?: string
+  // O prompt EXIGE este campo ("id do criterio violado") desde sempre, mas ele nao
+  // existia aqui, nao era extraido e nao era gravado. Um BLOCKED sem id nenhum era
+  // aceito igual a um com id: na pratica o gate fechava pelo `reason` em texto livre
+  // do modelo, que e exatamente o julgamento por impressao que o item 8 aboliu.
+  criterio?: string
   questions?: string[]
 }
 
@@ -43,6 +57,7 @@ interface ParsedGate {
   found: boolean
   verdict: GateVerdict
   reason: string
+  criterio: string
   questions: string[]
   cost: number
   tokens: number
@@ -160,37 +175,73 @@ function buildPrompt(desc: string, diff: DiffParts): string {
   ].join('\n')
 }
 
-function buildParsed(text: string, cost: number, tokens: number): ParsedGate {
+export function buildParsed(text: string, cost: number, tokens: number): ParsedGate {
   const v = extractVerdictJson(text)
   if (v) {
     const questions = Array.isArray(v.questions)
       ? v.questions.map(q => oneLine(String(q)).slice(0, 240)).filter(Boolean).slice(0, 3)
       : []
-    return { found: true, verdict: normalizeVerdict(String(v.verdict || 'CONDITIONAL')), reason: oneLine(String(v.reason || '')).slice(0, 240), questions, cost, tokens }
+    return { found: true, verdict: normalizeVerdict(String(v.verdict || 'CONDITIONAL')), reason: oneLine(String(v.reason || '')).slice(0, 240), criterio: oneLine(String(v.criterio || '')).slice(0, 60), questions, cost, tokens }
   }
-  return { found: false, verdict: 'CONDITIONAL', reason: '', questions: [], cost, tokens }
+  return { found: false, verdict: 'CONDITIONAL', reason: '', criterio: '', questions: [], cost, tokens }
+}
+
+// `null` de gastoDoCard significa CORROMPIDO, e nao "nao sei": mapear os dois para
+// `undefined` fazia a TRAVA 2 nem comparar, e o modo caro iniciava exatamente
+// quando o registro de custo esta quebrado — o mesmo fail-open do
+// `parseFloat(...) || 0` que este conserto substituiu, e divergente dos tres
+// sitios irmaos (executar/corrigir/fechar), que fazem HALT no mesmo input.
+//
+// `Infinity` e a resposta honesta: "o gasto conhecido nao cabe em nenhum teto",
+// entao a trava barra. Card sem id ou inexistente segue sendo `undefined` — ali
+// nao ha o que ler.
+function gastoConhecido(id: string): number | undefined {
+  if (!id) return undefined
+  const card = readCard(id)
+  if (!card) return undefined
+  const gasto = gastoDoCard(card.fm.cost_usd)
+  return gasto === null ? Number.POSITIVE_INFINITY : gasto
 }
 
 async function gateReview(wt: string, base: string, desc: string, working: boolean, id: string): Promise<GateResult> {
   const diff = await accumulatedDiff(wt, base, working)
   if (diff.falhou) {
-    return { ok: false, verdict: 'BLOCKED', reason: `nao consegui LER o diff para revisar — ${diff.falhou}`, questions: [], cost: 0, costMeasured: true, tokens: 0 }
+    return { ok: false, verdict: 'BLOCKED', reason: `nao consegui LER o diff para revisar — ${diff.falhou}`, criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
   if (!diff.names.trim()) {
-    return { ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base', questions: [], cost: 0, costMeasured: true, tokens: 0 }
+    return { ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
   const provider = providerFor('gate')
-  const referencias = referenciasDoCard(id)
+  const todasAsReferencias = referenciasDoCard(id)
+  const referencias = todasAsReferencias.slice(0, MAX_REFERENCIAS_NA_COMPARACAO)
+  const refsCortadas = todasAsReferencias.length - referencias.length
   const tela = telaDoCard(id)
-  const escolha = modoDoCrivo({ packs: packsAtivos(diff), referencias })
+  const escolha = modoDoCrivo({
+    packs: packsAtivos(diff),
+    // `cegar()` LANCA acima de 8 candidatos, e `referenciasDoCard` nao tem teto.
+    // A excecao escapava DEPOIS de patchCard ja ter gravado crivo_modo:'gauntlet',
+    // em vez de cair no criterio escrito como todos os outros elos fazem. O corte
+    // acontece antes da decisao para o modo nao ser escolhido com um numero de
+    // candidatos que a comparacao cega nao suporta.
+    referencias,
+    ativado: gauntletLigado(),
+    // `undefined` = nao sei quanto foi gasto, e o teto nao pode ser aplicado —
+    // que e o que `ContextoDoModo` declara. Coagir card ausente, card ilegivel ou
+    // cost_usd corrompido para 0 fazia a TRAVA 2 passar e o modo caro iniciar
+    // justamente quando o registro de custo esta quebrado.
+    gastoUsd: gastoConhecido(id),
+  })
   const podeVer = provider.supportsVision && existsSync(tela)
   const gauntlet = escolha.modo === 'gauntlet' && podeVer
+  const avisoDeCorte = refsCortadas > 0
+    ? ` (${refsCortadas} referencia(s) a mais ficaram de fora: a comparacao cega suporta ${MAX_REFERENCIAS_NA_COMPARACAO} candidatos com a tela do motor)`
+    : ''
   const motivoDoModo = gauntlet
     ? escolha.motivo
     : escolha.modo === 'gauntlet'
       ? `${escolha.motivo}, mas ${provider.supportsVision ? 'o card nao tem tela renderizada' : `${provider.name} nao le imagem`} — cai no criterio escrito`
       : escolha.motivo
-  if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} CND: ${motivoDoModo}`)
+  if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} CND: ${motivoDoModo}${avisoDeCorte}`)
   const res = await runProvider(id, provider, {
     prompt: gauntlet ? buildPromptGauntlet(desc, tela, referencias, id) : buildPrompt(desc, diff),
     cwd: ROOT,
@@ -204,13 +255,13 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
   const tokens = sumTokens(res.usage)
   if (res.failed) {
     const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
-    return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
+    return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
   }
   const parsed = buildParsed(res.text, res.cost, tokens)
   if (!parsed.found) {
-    return { ok: false, verdict: 'CONDITIONAL', reason: 'gate sem veredito parseavel na saida (revisar manualmente)', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens }
+    return { ok: false, verdict: 'CONDITIONAL', reason: 'gate sem veredito parseavel na saida (revisar manualmente)', criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens }
   }
-  return { ok: true, verdict: parsed.verdict, reason: parsed.reason, questions: parsed.questions, cost: res.cost, costMeasured: res.costMeasured, tokens }
+  return { ok: true, verdict: parsed.verdict, reason: parsed.reason, criterio: parsed.criterio, questions: parsed.questions, cost: res.cost, costMeasured: res.costMeasured, tokens }
 }
 
 export type GateOutcome = 'halt' | 'proceed'
@@ -247,10 +298,15 @@ export async function withGateRetry(run: () => Promise<GateResult>, onRetry?: (r
 export function persistGate(id: string, gate: GateResult): void {
   const flag = gate.ok ? '' : ' [gate nao concluido]'
   patchCard(id, {
-    review_verdict: gate.verdict,
+    // Quando o gate NAO concluiu, o campo grava isso em vez de um veredito que
+    // ninguem emitiu. Antes ia 'CONDITIONAL' nos dois casos e o qualificador ficava
+    // so na linha de log em texto livre — nenhum campo distinguia "julgou e ficou em
+    // duvida" de "nao chegou a julgar".
+    review_verdict: gate.ok ? gate.verdict : 'NAO_CONCLUIDO',
     review_reason: oneLine(gate.reason).slice(0, 240),
+    review_criterio: gate.criterio,
     review_questions: JSON.stringify(gate.questions),
-  }, `${isoNow()} codefox gate: ${gate.verdict}${flag} — ${oneLine(gate.reason)} (custo $${gate.cost.toFixed(4)} · ${gate.tokens} tokens)`)
+  }, `${isoNow()} codefox gate: ${gate.verdict}${flag}${gate.criterio ? ` [${gate.criterio}]` : ''} — ${oneLine(gate.reason)} (custo $${gate.cost.toFixed(4)} · ${gate.tokens} tokens)`)
   process.stdout.write(`[runner] #${id}: codefox gate ${gate.verdict}${flag}\n`)
 }
 

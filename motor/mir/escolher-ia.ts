@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { arquivoDePreferencias, ehEsforco, ESFORCOS } from '../tmd/preferencias.ts'
+import { arquivoDePreferencias, ehEsforco, ESFORCOS, gauntletLigado } from '../tmd/preferencias.ts'
+import { motivoDoErro } from '../cdl/ali/aviso.ts'
 import type { PreferenciasDeIa } from '../tmd/preferencias.ts'
 import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modoFor } from '../tmd/registro.ts'
 import { provedoresDisponiveis } from '../tmd/disponibilidade.ts'
@@ -17,14 +18,44 @@ function ehPapel(valor: string): valor is AgentRole {
   return (agentRoles() as string[]).includes(valor)
 }
 
+// SEGUNDO leitor do mesmo config/ia.json. Aqui o silencio era pior que no leitor
+// de motor/tmd/preferencias.ts, porque este e um read-modify-WRITE: com o arquivo
+// ilegivel, `ler()` devolvia `{}`, `gravar()` escrevia um objeto com SO o papel
+// ajustado, e a escolha de provedor/modelo/esforco/modo/gauntlet de TODOS os
+// outros papeis era destruida — com a mensagem dizendo "vale na proxima tarefa",
+// como se nada tivesse sido perdido.
+//
+// LANCA, e nao devolve padrao: quem chama esta funcao esta prestes a SOBRESCREVER
+// o arquivo. Recusar a escrita preserva o que ainda esta lah para o humano
+// consertar; seguir em frente apaga.
 function ler(): PreferenciasDeIa {
   const f = arquivoDePreferencias()
   if (!existsSync(f)) return {}
+  let cru: PreferenciasDeIa | null = null
   try {
-    const cru = JSON.parse(readFileSync(f, 'utf8')) as PreferenciasDeIa
-    return cru && typeof cru === 'object' ? cru : {}
-  } catch {
-    return {}
+    cru = JSON.parse(readFileSync(f, 'utf8')) as PreferenciasDeIa | null
+  } catch (e) {
+    throw new Error(`${f} esta ILEGIVEL (${motivoDoErro(e as Error)}) — recusei mexer nele: gravar por cima apagaria a escolha de ia de todos os outros papeis. Conserte o JSON, ou apague o arquivo para recomecar do padrao.`)
+  }
+  if (!cru || typeof cru !== 'object' || Array.isArray(cru)) {
+    throw new Error(`${f} nao contem um objeto de papeis — recusei mexer nele para nao apagar o que estiver la. Conserte o arquivo, ou apague-o para recomecar do padrao.`)
+  }
+  return cru
+}
+
+// NENHUMA funcao exportada deste modulo lanca. O motivo e concreto: `aplicar` e
+// `ciclarModo` sao chamados de dentro do handler de TECLA da TUI
+// (bin/repl.ts -> app.ts onKey -> screen.ts `inp.on('data')`), que nao tem catch —
+// uma excecao ali mata o processo com o terminal em raw mode, sem restaurar. Antes
+// do `ler()` passar a lancar isso era um `{}` silencioso; trocar silencio por morte
+// da TUI seria piorar.
+//
+// Quem precisa saber se a escrita aconteceu le `ok` do ResultadoEscolha.
+function comoMensagem(corpo: () => ResultadoEscolha): ResultadoEscolha {
+  try {
+    return corpo()
+  } catch (e) {
+    return { ok: false, mensagem: String((e as Error).message ?? e) }
   }
 }
 
@@ -48,6 +79,7 @@ export interface Ajuste {
   model?: string
   effort?: string
   modo?: string
+  gauntlet?: boolean
 }
 
 export function interpretar(argumentos: string[]): { ajuste?: Ajuste; erro?: string } {
@@ -64,8 +96,12 @@ export function interpretar(argumentos: string[]): { ajuste?: Ajuste; erro?: str
     if (isProviderName(p)) { provider = p; continue }
     if (ehEsforco(p)) { effort = p; continue }
     if (p.startsWith('modelo=') || p.startsWith('model=')) { model = p.split('=')[1] ?? ''; continue }
-    if (!model) { model = p; continue }
-    return { erro: `nao entendi "${p}"` }
+    // Token solto vale como MODELO so depois de um provedor nomeado — que e a forma
+    // documentada `/ia claude opus`. Antes qualquer palavra virava modelo, entao
+    // `/ia provedor-que-nao-existe` era ACEITO e gravado como modelo em todos os
+    // papeis: o operador pedia uma ia e o motor trocava o modelo de todas elas.
+    if (provider && !model) { model = p; continue }
+    return { erro: `nao entendi "${p}" — provedores: ${providerNames().join(' · ')}. Para trocar o modelo use "modelo=${p}" ou /model ${p}` }
   }
 
   if (!provider && !model && !effort) {
@@ -75,6 +111,10 @@ export function interpretar(argumentos: string[]): { ajuste?: Ajuste; erro?: str
 }
 
 export function aplicar(ajuste: Ajuste): ResultadoEscolha {
+  return comoMensagem(() => aplicarInterno(ajuste))
+}
+
+function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
   const prefs = ler()
   for (const papel of ajuste.papeis) {
     const atual = prefs[papel] ?? {}
@@ -84,6 +124,7 @@ export function aplicar(ajuste: Ajuste): ResultadoEscolha {
     if (ajuste.model !== undefined) atual.model = ajuste.model || undefined
     if (ajuste.effort) atual.effort = ajuste.effort
     if (ajuste.modo !== undefined) atual.modo = ajuste.modo || undefined
+    if (ajuste.gauntlet !== undefined) atual.gauntlet = ajuste.gauntlet || undefined
     prefs[papel] = atual
   }
   gravar(prefs)
@@ -97,6 +138,10 @@ export function aplicar(ajuste: Ajuste): ResultadoEscolha {
 }
 
 export function limpar(papeis: AgentRole[]): ResultadoEscolha {
+  return comoMensagem(() => limparInterno(papeis))
+}
+
+function limparInterno(papeis: AgentRole[]): ResultadoEscolha {
   const prefs = ler()
   for (const p of papeis) delete prefs[p]
   gravar(prefs)
@@ -104,6 +149,10 @@ export function limpar(papeis: AgentRole[]): ResultadoEscolha {
 }
 
 export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
+  return comoMensagem(() => limparEsforcoInterno(papeis))
+}
+
+function limparEsforcoInterno(papeis: AgentRole[]): ResultadoEscolha {
   const prefs = ler()
   for (const papel of papeis) {
     const atual = prefs[papel]
@@ -116,6 +165,10 @@ export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
 }
 
 export function ciclarModo(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
+  return comoMensagem(() => ciclarModoInterno(role, dir))
+}
+
+function ciclarModoInterno(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
   const provedor = providerNameFor(role)
   if (!papelHonraModo(role)) return { ok: false, mensagem: `${role} roda em leitura — modo nao se aplica` }
   if (!temModos(provedor)) return { ok: false, mensagem: `${provedor} nao tem modo de operacao` }
@@ -124,11 +177,58 @@ export function ciclarModo(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
   const i = atual ? modos.indexOf(atual) : -1
   const proximo = modos[((i < 0 ? 0 : i) + dir + modos.length) % modos.length]
   if (!proximo) return { ok: false, mensagem: 'nao consegui trocar de modo' }
-  aplicar({ papeis: [role], modo: proximo })
+  aplicarInterno({ papeis: [role], modo: proximo })
   return { ok: true, mensagem: `${provedor}: modo ${proximo}` }
 }
 
+export const GAUNTLET_LIGADOS = ['on', 'ligado', 'sim', '1'] as const
+export const GAUNTLET_DESLIGADOS = ['off', 'desligado', 'nao', '0'] as const
+
+// O gauntlet substitui o criterio escrito no lugar de somar: quando ele roda,
+// nenhuma revisao automatica LE o diff — ela compara telas. Por isso o
+// interruptor e explicito e a mensagem diz o que muda, em vez de so "on/off".
+export function definirGauntlet(partes: string[]): ResultadoEscolha {
+  return comoMensagem(() => definirGauntletInterno(partes))
+}
+
+function definirGauntletInterno(partes: string[]): ResultadoEscolha {
+  const escolhido = (partes[0] ?? '').trim().toLowerCase()
+  const ligado = gauntletLigado()
+  if (!escolhido) {
+    return {
+      ok: true,
+      mensagem: `gauntlet ${ligado ? 'LIGADO' : 'desligado'} — /gauntlet ${ligado ? 'off' : 'on'} troca. Ligado, o crivo julga por comparacao cega de telas (precisa de pack visual, referencia anexada e ia que le imagem) e NAO le o diff; desligado, le o diff contra o criterio escrito.`,
+    }
+  }
+  const alvo = (GAUNTLET_LIGADOS as readonly string[]).includes(escolhido)
+    ? true
+    : (GAUNTLET_DESLIGADOS as readonly string[]).includes(escolhido)
+      ? false
+      : (escolhido === 'toggle' || escolhido === 'alterna') ? !ligado : undefined
+  if (alvo === undefined) {
+    return { ok: false, mensagem: `"${escolhido}" nao e valor de gauntlet — use: on · off · toggle` }
+  }
+  const escrita = aplicar({ papeis: ['gate'], gauntlet: alvo })
+  if (!escrita.ok) return escrita
+  return {
+    ok: true,
+    mensagem: alvo
+      ? 'gauntlet LIGADO no crivo — comparacao cega de telas quando o card tiver pack visual e referencia anexada; nesses cards o criterio escrito NAO roda'
+      : 'gauntlet desligado — o crivo le o diff contra o criterio escrito, sempre',
+  }
+}
+
+// `/ia` e o comando que MOSTRA o estado: ele nao pode morrer justamente quando o
+// arquivo esta quebrado. Degrada para a explicacao, e segue mostrando o que da.
 export function estadoDaIa(): string[] {
+  try {
+    return estadoDaIaInterno()
+  } catch (e) {
+    return ['', `  ${String((e as Error).message ?? e)}`]
+  }
+}
+
+function estadoDaIaInterno(): string[] {
   const provedores = provedoresDisponiveis()
   const largura = provedores.reduce((a, p) => Math.max(a, p.nome.length), 0)
   const linhas = ['', '  provedores']
@@ -173,6 +273,10 @@ export function papelAlvo(partes: string[]): { papel: AgentRole; resto: string[]
 }
 
 export function definirModelo(partes: string[]): ResultadoEscolha {
+  return comoMensagem(() => definirModeloInterno(partes))
+}
+
+function definirModeloInterno(partes: string[]): ResultadoEscolha {
   const { papel, resto } = papelAlvo(partes)
   const provedor = providerNameFor(papel)
   const escolhido = (resto[0] ?? '').trim()
@@ -186,11 +290,13 @@ export function definirModelo(partes: string[]): ResultadoEscolha {
     }
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
-    aplicar({ papeis: [papel], model: '' })
+    const escrita = aplicar({ papeis: [papel], model: '' })
+    if (!escrita.ok) return escrita
     return { ok: true, mensagem: `${papel}: modelo padrao de ${provedor}` }
   }
   const conhecido = modelosDe(provedor).includes(escolhido)
-  aplicar({ papeis: [papel], model: escolhido })
+  const escrita = aplicar({ papeis: [papel], model: escolhido })
+  if (!escrita.ok) return escrita
   return {
     ok: true,
     mensagem: `${papel}: ${provedor}/${escolhido}${conhecido ? '' : ' (fora do catalogo — se funcionar, adicione ao arquivo)'}`,
@@ -198,23 +304,33 @@ export function definirModelo(partes: string[]): ResultadoEscolha {
 }
 
 export function definirEsforco(partes: string[]): ResultadoEscolha {
+  return comoMensagem(() => definirEsforcoInterno(partes))
+}
+
+function definirEsforcoInterno(partes: string[]): ResultadoEscolha {
   const { papel, resto } = papelAlvo(partes)
   const escolhido = (resto[0] ?? '').trim()
   if (!escolhido) {
     return { ok: false, mensagem: `esforco: ${ESFORCOS.join(' · ')} · padrao — use /effort <nivel>` }
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
-    limparEsforco([papel])
+    const escrita = limparEsforco([papel])
+    if (!escrita.ok) return escrita
     return { ok: true, mensagem: `${papel}: esforco volta ao padrao da IA` }
   }
   if (!ehEsforco(escolhido)) {
     return { ok: false, mensagem: `"${escolhido}" nao e esforco valido — use: ${ESFORCOS.join(' · ')}` }
   }
-  aplicar({ papeis: [papel], effort: escolhido })
+  const escrita = aplicar({ papeis: [papel], effort: escolhido })
+  if (!escrita.ok) return escrita
   return { ok: true, mensagem: `${papel}: esforco ${escolhido} em ${providerNameFor(papel)}` }
 }
 
 export function definirModoDeOperacao(partes: string[]): ResultadoEscolha {
+  return comoMensagem(() => definirModoDeOperacaoInterno(partes))
+}
+
+function definirModoDeOperacaoInterno(partes: string[]): ResultadoEscolha {
   const { papel, resto } = papelAlvo(partes)
   const provedor = providerNameFor(papel)
   const escolhido = (resto[0] ?? '').trim()
@@ -228,13 +344,15 @@ export function definirModoDeOperacao(partes: string[]): ResultadoEscolha {
     return { ok: false, mensagem: `modos de ${provedor}: ${modosDoProvedor(provedor).join(' · ')} — use /mode <nome>` }
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
-    aplicar({ papeis: [papel], modo: '' })
+    const escrita = aplicar({ papeis: [papel], modo: '' })
+    if (!escrita.ok) return escrita
     return { ok: true, mensagem: `${papel}: modo padrao de ${provedor} (${modoPadraoDoProvedor(provedor)})` }
   }
   if (!ehModoValido(provedor, escolhido)) {
     return { ok: false, mensagem: `"${escolhido}" nao e modo valido de ${provedor} — use: ${modosDoProvedor(provedor).join(' · ')}` }
   }
-  aplicar({ papeis: [papel], modo: escolhido })
+  const escrita = aplicar({ papeis: [papel], modo: escolhido })
+  if (!escrita.ok) return escrita
   return { ok: true, mensagem: `${papel}: modo ${escolhido} em ${provedor}` }
 }
 
@@ -253,6 +371,7 @@ export function ajuda(): string[] {
     '  /effort high                    esforco da ia atual',
     '  /effort gate max                esforco do gate',
     '  /mode plan                      modo de operacao da ia atual',
+    '  /gauntlet on                    crivo julga telas por comparacao cega (nao le o diff)',
     '  /ia padrao gate                 volta o gate ao padrao',
   ]
 }

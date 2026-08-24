@@ -17,6 +17,14 @@ export const ENV_TIER_FILE = 'HICODE_TIER_FILE'
 export const ENV_RUNTIME = 'HICODE_RUNTIME'
 export const ENV_SECRETS_DIR = 'HICODE_SECRETS_DIR'
 export const ENV_ENQUADRAMENTOS_FILE = 'HICODE_ENQUADRAMENTOS_FILE'
+export const ENV_HEALTH_PORT = 'HICODE_HEALTH_PORT'
+// O Dockerfile definia HICODE_HEALTH_HOST e o codigo lia HICODE_HEALTH_BIND: nome
+// nenhum era escrito e lido pelo mesmo lado, e nenhum dos dois estava neste
+// contrato. O container fazia EXPOSE 8080 e o servidor ligava em 127.0.0.1, ou
+// seja /health inalcancavel de fora — e o HEALTHCHECK sondava loopback, ficando
+// verde por cima da falha. Estar aqui e o que faz o teste de contrato reprovar
+// nome que so um lado conhece.
+export const ENV_HEALTH_BIND = 'HICODE_HEALTH_BIND'
 
 export type LadoDoContrato = 'motor' | 'painel' | 'ambos'
 
@@ -47,4 +55,6 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_RUNTIME, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cdl/ali/runtime.ts'], lado: 'motor' },
   { nome: ENV_SECRETS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/qlb/cfr/segredos.ts'], lado: 'motor' },
   { nome: ENV_ENQUADRAMENTOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cic/mcn/enquadramentos.ts'], lado: 'motor' },
+  { nome: ENV_HEALTH_PORT, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/euc/rdr/servidor.ts', 'Dockerfile'], lado: 'motor' },
+  { nome: ENV_HEALTH_BIND, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/euc/rdr/servidor.ts', 'Dockerfile'], lado: 'motor' },
 ]

@@ -1,9 +1,11 @@
 import { readCard } from '../../cdl/store.ts'
 import { dailySpend } from '../../euc/tsr/lacuna.ts'
 import type { DailySpend } from '../../euc/tsr/lacuna.ts'
-import { effortFor, modelFor, modoFor, providerNameFor } from '../../tmd/registro.ts'
+import { effortFor, modelFor, providerNameFor } from '../../tmd/registro.ts'
+import { modoFor } from '../../tmd/registro.ts'
+import { modoResolvido } from '../../tmd/modos.ts'
 import { emExecucao, esperandoEmOutrosProjetos, esperandoVoce, linhaDeOutrosProjetos, linhaPropriedades, linhasEspera, linhasExecucao } from '../render/rodape.ts'
-import { ESFORCO_PADRAO } from '../../tmd/preferencias.ts'
+import { ESFORCO_PADRAO, gauntletLigado } from '../../tmd/preferencias.ts'
 import { usoDeDiscoCacheado } from '../../euc/estado-em-disco.ts'
 import { cardsPerguntando } from '../responder.ts'
 import { ultimoAgente } from '../atividade.ts'
@@ -38,12 +40,16 @@ export function rodapeDa(state: SessionState, noRodape = false): string[] {
     provedor: providerNameFor('implement'),
     modelo: modelFor('implement') ?? '',
     effort: esforcoAtual(state),
-    modo: modoFor('implement') ?? '',
+    // Modo EFETIVO, nao o escolhido: `modoFor` devolve undefined quando o operador
+    // nao escolheu, e o rodape omitia o campo — o humano nao via em que modo a ia
+    // ia rodar, que e justamente o que muda se ela pede aprovacao ou nao.
+    modo: modoResolvido(providerNameFor('implement'), modoFor('implement')),
     projeto: state.repo,
     custoHoje: gasto.total,
     pisoDoGasto: gasto.floor,
     divergentes: papeisDivergentes(),
     disco: usoDeDiscoCacheado(),
+    gauntlet: gauntletLigado(),
   }, { color, width: largura })
   const cards = todosOsCards()
   const rodando = emExecucao(cards, state.repo, Date.now(), id => ultimoAgente(atividadeDe(id)))

@@ -3,6 +3,12 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { repoStatus } from '../../cdl/repos.ts'
 import { readContract } from '../../cdl/bss/armazenar.ts'
+import { lerProjectConfig } from '../../cdl/ali/home.ts'
+import { motivoDoErro } from '../../cdl/ali/aviso.ts'
+import { orcamentoDeRecurso, quantosWorktreesCabem, relatoDeLimites, tetoDeParalelismo } from '../../qlb/limites.ts'
+import { MAX_CONCURRENCY } from '../../cdl/ali/config.ts'
+import { repoBase } from '../../cdl/store.ts'
+import { taskSyncName } from '../../tmd/pnt/tarefas/registro.ts'
 import { daemonStatus } from '../../osw/mtr/daemon.ts'
 import { harnessPorNome, providerNameFor } from '../../tmd/registro.ts'
 
@@ -82,6 +88,63 @@ export function checkContract(repoPath: string): Check {
   return check('contrato', 'ok', c.stack)
 }
 
+// `.hii/config.json` era escrito por `hii init` e lido por `readProjectConfig`,
+// que nao tinha nenhum consumidor de producao: o operador escrevia provider, base
+// e taskSource ali e NADA acontecia. Aqui o arquivo passa a ser conferido contra
+// o que o motor de fato usa, e a divergencia sai nomeada — sem trocar a rota, que
+// continua sendo config/repos.json e as preferencias de ia.
+export function checkProjectConfig(repoPath: string, repoName: string): Check {
+  const leitura = lerProjectConfig(repoPath)
+  if (leitura.ilegivel) {
+    return check('.hii/config.json', 'aviso', `o arquivo existe e NAO deu para ler (${leitura.ilegivel}) — nao da para saber o que o projeto declarou`, 'conserte o JSON ou apague o arquivo')
+  }
+  const c = leitura.config
+  const declarados = Object.entries(c).filter(([, v]) => String(v ?? '').trim())
+  if (!declarados.length) return check('.hii/config.json', 'ok', 'sem preferencia declarada — vale o global')
+  const divergencias: string[] = []
+  const baseReal = repoBase(repoName)
+  if (c.base && c.base !== baseReal) {
+    divergencias.push(`base "${c.base}" != "${baseReal}" (quem manda e config/repos.json)`)
+  }
+  const provedorReal = providerNameFor('implement')
+  if (c.provider && c.provider !== provedorReal) {
+    divergencias.push(`provider "${c.provider}" != "${provedorReal}" (quem manda e config/ia.json ou a env)`)
+  }
+  if (c.taskSource && c.taskSource !== 'cards' && c.taskSource !== taskSyncName()) {
+    divergencias.push(`taskSource "${c.taskSource}" != HICODE_TASK_SYNC="${taskSyncName()}"`)
+  }
+  if (!divergencias.length) return check('.hii/config.json', 'ok', `${declarados.length} preferencia(s), todas coerentes`)
+  return check(
+    '.hii/config.json',
+    'aviso',
+    `o arquivo do projeto diz uma coisa e o motor usa outra: ${divergencias.join(' · ')}`,
+    'alinhe o .hii/config.json com config/repos.json e config/ia.json — o motor NAO le este arquivo para rotear',
+  )
+}
+
+// `relatoDeLimites` era relatorio calculado sem consumidor. O `doctor` e o lugar
+// natural: e ele que diz ao operador por que o motor nao anda mais rapido.
+export function checkRecurso(): Check {
+  // `quantosWorktreesCabem` LANCA em orcamento invalido (memoria/cpu por worktree
+  // <= 0), e o doctor existe justamente para ser rodado quando algo esta errado —
+  // ele nao pode morrer por causa do que veio checar.
+  try {
+    return recursoOuAviso()
+  } catch (e) {
+    return check('recurso', 'erro', `orcamento de recurso invalido: ${motivoDoErro(e as Error)}`, 'confira HICODE_MEM_POR_WORKTREE_MB e HICODE_CPU_POR_WORKTREE')
+  }
+}
+
+function recursoOuAviso(): Check {
+  const teto = tetoDeParalelismo(MAX_CONCURRENCY)
+  const cabem = quantosWorktreesCabem(orcamentoDeRecurso()).cabem
+  const detalhe = `${teto} worktree(s) em paralelo (HICODE_CONCURRENCY=${MAX_CONCURRENCY}, cabem ${cabem} no recurso declarado)`
+  if (teto < MAX_CONCURRENCY) {
+    return check('recurso', 'aviso', `${detalhe} — o RECURSO limita, nao a sua configuracao`, relatoDeLimites().split('\n')[1] ?? '')
+  }
+  return check('recurso', 'ok', detalhe)
+}
+
 export function checkDaemon(): Check {
   const s = daemonStatus()
   return s === 'offline'
@@ -107,10 +170,10 @@ function pior(checks: Check[]): Severity {
 }
 
 export function runDoctor(): Report {
-  const gerais = [checkGh(), checkProvider(), checkDaemon()]
+  const gerais = [checkGh(), checkProvider(), checkRecurso(), checkDaemon()]
   const repos = repoStatus().map(r => ({
     repo: r.name,
-    checks: [checkGitPush(r.path, r.name), checkContract(r.path)],
+    checks: [checkGitPush(r.path, r.name), checkContract(r.path), checkProjectConfig(r.path, r.name)],
   }))
   return { gerais, repos, pior: pior([...gerais, ...repos.flatMap(r => r.checks)]) }
 }

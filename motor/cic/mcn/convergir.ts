@@ -54,7 +54,10 @@ export function promptDoCritico(enunciado: string, lista: readonly PropostaNumer
 }
 
 interface VotoBruto {
-  escolha?: number
+  // `number | string` de proposito: o JSON vem de um modelo, e o parser trata
+  // string numerica. Qualquer OUTRA coisa (booleano, lista, objeto) cai nas
+  // guardas de typeof abaixo e vira abstencao — que e o ponto desta funcao.
+  escolha?: number | string
   porque?: string
 }
 
@@ -66,8 +69,15 @@ export function parseVoto(texto: string, lente: string, lista: readonly Proposta
   if (!m?.[0]) return null
   try {
     const j = JSON.parse(m[0]) as VotoBruto
-    const n = Number(j.escolha)
-    if (!Number.isFinite(n) || n < 1) return null
+    // `Number()` coage: `true` e `[1]` viram 1, e o voto ia para a PRIMEIRA
+    // proposta — apoio que o critico nao deu, no lugar onde a abstencao era o
+    // comportamento inteiro desta funcao. Numero (ou string de numero) e o unico
+    // formato aceito; qualquer outra coisa e abstencao.
+    const bruto = j.escolha
+    const n = typeof bruto === 'number'
+      ? bruto
+      : typeof bruto === 'string' && /^\s*\d+\s*$/.test(bruto) ? Number(bruto) : NaN
+    if (!Number.isInteger(n) || n < 1) return null
     const alvo = lista.find(c => c.n === n)
     if (!alvo) return null
     return { lente, escolha: alvo.texto, porque: String(j.porque ?? '').replace(/\s+/g, ' ').slice(0, 200) }

@@ -83,7 +83,13 @@ test('com porta configurada, o servidor sobe e responde de verdade', async () =>
   expect(s).not.toBeNull()
   if (!s) return
   try {
-    const r = await fetch(`http://localhost:${s.porta}/health`)
+    // `await s.pronto`, e nao `s.porta` na linha seguinte ao listen: `listen` e
+    // assincrono no node, e ler a porta antes devolvia 0 (a porta 0 e efemera, o
+    // SO so decide durante o listen). Sob bun funcionava por acidente de
+    // implementacao, e era so isso que mantinha este teste verde.
+    const porta = await s.pronto
+    expect(porta, 'porta efemera tem de ser conhecida antes de sondar').toBeGreaterThan(0)
+    const r = await fetch(`http://localhost:${porta}/health`)
     expect(r.status).toBe(200)
     expect(((await r.json()) as { ok: boolean }).ok).toBe(true)
   } finally {

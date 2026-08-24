@@ -38,12 +38,24 @@ test('quadro tem cabecalho, moldura e input', () => {
   expect(f.lines[f.lines.length - 1]).toContain('tarefa')
 })
 
+// `not.toContain('linha 0\n')` nao podia falhar: cada linha do quadro e padded
+// com espacos ate a largura, entao "linha 0" nunca e seguido de '\n' — a
+// assercao era verdadeira mesmo com a linha 0 impressa na tela.
 test('corpo mostra as ULTIMAS linhas quando estoura a altura', () => {
   const corpo = Array.from({ length: 30 }, (_, i) => `linha ${i}`)
   const f = quadro({ rows: 10, corpo })
   const texto = f.lines.join('\n')
   expect(texto).toContain('linha 29')
-  expect(texto).not.toContain('linha 0\n')
+  // Casamento com FRONTEIRA de palavra: "linha 0" nao pode aparecer, e "linha 1"
+  // tambem nao — sem \b, "linha 1" casaria dentro de "linha 19".
+  expect(/\blinha 0\b/.test(texto), 'a linha mais antiga nao pode estar na tela').toBe(false)
+  expect(/\blinha 29\b/.test(texto)).toBe(true)
+  // E prova que o corte e por ALTURA, nao por acaso: o numero de linhas de corpo
+  // visiveis tem de ser menor que o total.
+  const visiveis = corpo.filter(l => new RegExp(`\\b${l}\\b`).test(texto))
+  expect(visiveis.length).toBeGreaterThan(0)
+  expect(visiveis.length).toBeLessThan(corpo.length)
+  expect(visiveis[visiveis.length - 1]).toBe('linha 29')
 })
 
 test('o quadro nunca passa da altura do terminal — se passar, a tela rola e o cursor mente', () => {

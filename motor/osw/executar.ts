@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cdl/index.ts'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cdl/index.ts'
 import { cardsDir, CLARIFY, EVAL, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cdl/ali/config.ts'
-import { tetoDoCard } from '../euc/tsr/orcamento.ts'
+import { gastoDoCard, tetoDoCard } from '../euc/tsr/orcamento.ts'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clr/clarificar.ts'
 import { planSteps } from './rta/perfil.ts'
 import { activeSteps } from '../nmy/config.ts'
@@ -123,7 +123,12 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const card = readCard(id)
   if (!card) return
   abrirSessao(id)
-  const baseCost = parseFloat(card.fm.cost_usd || '0') || 0
+  const gastoLido = gastoDoCard(card.fm.cost_usd)
+  if (gastoLido === null) {
+    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a (re)execucao paga sem saber o que o card ja custou`)
+    return
+  }
+  const baseCost = gastoLido
   const baseTokens = Number(card.fm.tokens_total || '0') || 0
   const teto = tetoDoCard()
   if (teto > 0 && baseCost > teto) {
@@ -253,7 +258,11 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     await settleWorktree(target, wt, fate)
     return
   }
-  patchCard(id, { wait_attempts: '' }, `${isoNow()} EXECUTING->EXECUTED ${res.resultText || 'mudanca aplicada'}`)
+  // Sem etiqueta de transicao: esta escrita nao muda o status, so limpa
+  // wait_attempts. Anunciar "EXECUTING->EXECUTED" narrava um estado que o card
+  // nunca entrou — EXECUTED esta declarado em topologia.json como estado que
+  // nenhum arquivo de motor/ escreve, e as duas coisas nao podiam ser verdade.
+  patchCard(id, { wait_attempts: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {
@@ -262,12 +271,13 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       verify: 'sem-url',
       cost_usd: (baseCost + costSum + auxCost).toFixed(4),
       tokens_total: String(baseTokens + tokensTotal + auxTokens),
-    }, `${isoNow()} EXECUTED->URL sem url — tarefa nao-visual (${surface.reason}); aprovacao de funcionalidade e sua`)
+    }, `${isoNow()} EXECUTING->URL sem url — tarefa nao-visual (${surface.reason}); aprovacao de funcionalidade e sua`)
     process.stdout.write(`[runner] #${id}: aguardando aprovacao de funcionalidade (nao-visual)\n`)
     return
   }
   const tpv = Date.now()
-  const tentativa = hasDevServer(target)
+  const temDevServer = hasDevServer(target)
+  const tentativa = temDevServer
     ? await subirUrlComAjuste({
       subir: subirNoWorktree(wt, port, target),
       responde: esperarPorPid(port),
@@ -286,9 +296,17 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   steps.Url.time = toSeconds(Date.now() - tpv)
   const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
   const auxAtUrl = auxCost
-  const initState = !pid ? 'inconclusivo' : (up ? 'inconclusivo' : 'falhou')
-  const initReason = !pid
-    ? 'repo sem dev server — verificacao humana pelo link'
+  // O conserto anterior ficou so no TEXTO do diario: `initState` — que e o campo
+  // LIDO (bin/repl.ts) — continuava dando 'inconclusivo' tanto para "o repo nao
+  // tem dev server" quanto para "tem, tentei N vezes e nao subiu", enquanto o
+  // caso mais brando (subiu e nao respondeu) recebia 'falhou'.
+  const initState = !temDevServer ? 'sem-dev-server' : (pid ? (up ? 'inconclusivo' : 'falhou') : 'falhou')
+  // A condicao era `!pid`, que confunde duas coisas opostas: "o contrato do alvo
+  // nao declara dev server" e "declara, tentei N vezes e nao subiu". A segunda
+  // virava a frase da primeira, e o relato das N tentativas ia para o lixo — o
+  // humano lia "repo sem dev server" num repo que TEM dev server quebrado.
+  const initReason = !temDevServer
+    ? 'repo sem dev server no contrato do alvo — verificacao humana pelo link'
     : relatoDoAjuste(tentativa)
   patchCard(id, {
     status: 'URL',
@@ -297,7 +315,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     verify: initState,
     cost_usd: (baseCost + costSum + auxCost).toFixed(4),
     tokens_total: String(baseTokens + tokensTotal + auxTokens),
-  }, `${isoNow()} EXECUTED->URL ${url || '(sem dev server)'} (${initReason})`)
+  }, `${isoNow()} EXECUTING->URL ${url || (temDevServer ? '(dev server NAO subiu)' : '(sem dev server)')} (${initReason})`)
   process.stdout.write(`[runner] #${id}: URL ${url} (${initReason})\n`)
   if (up) {
     const health = await (deps.inspecionar ?? inspectUrl)(id, url, true)

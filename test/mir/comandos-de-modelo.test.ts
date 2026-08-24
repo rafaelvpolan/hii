@@ -80,12 +80,24 @@ test('/ia sem argumento explica o uso em vez de falhar calado', async () => {
   expect(saida.join('\n')).toContain('/ia')
 })
 
-test('/ia com provedor inexistente avisa e NAO aplica', async () => {
+// Este teste declarava o oposto do que o codigo fazia. `not.toContain('aplicado
+// com sucesso')` era assercao sobre uma string que o repo NUNCA emite — passava
+// verde enquanto `/ia provedor-que-nao-existe` era aceito e gravado como MODELO
+// em todos os papeis. Agora afirma o comportamento: recusa nomeando o token.
+test('/ia com provedor inexistente RECUSA, nomeia o token e diz o que aceita', async () => {
   const r = handle('/ia provedor-que-nao-existe', newSession())
   await dispatch(r.effect, r.state, io)
   const texto = saida.join('\n')
-  expect(texto.length).toBeGreaterThan(0)
-  expect(texto.toLowerCase()).not.toContain('aplicado com sucesso')
+  expect(texto).toContain('provedor-que-nao-existe')
+  expect(texto.toLowerCase()).toContain('nao entendi')
+  expect(texto, 'a recusa tem de dizer o que ele podia ter digitado').toContain('/model')
+})
+
+test('/ia claude opus continua valendo — o token solto e modelo DEPOIS do provedor', async () => {
+  const { interpretar } = await import('../../motor/mir/escolher-ia.ts')
+  expect(interpretar(['claude', 'opus']).ajuste).toMatchObject({ provider: 'claude', model: 'opus' })
+  expect(interpretar(['opus']).erro, 'sem provedor nomeado, token solto e recusado').toBeTruthy()
+  expect(interpretar(['modelo=opus']).ajuste, 'a forma explicita continua aceita sem provedor').toMatchObject({ model: 'opus' })
 })
 
 test('/ia padrao limpa a escolha sem derrubar a sessao', async () => {

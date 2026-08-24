@@ -28,6 +28,18 @@ interface Cru {
   sources?: FonteDeSkills[]
 }
 
+// `ativa` era lido do disco e nunca aplicado: desligar uma origem no
+// skill-sources.json nao desligava nada, e as skills dela continuavam entrando no
+// `_resolved`. Pura e exportada para a regra ser exercitavel sem tocar em ROOT.
+//
+// `_native` nunca sai, mesmo declarado inativo: e ele que desempata colisao de id
+// entre origens externas, e sem ele `gerarResolved` passa a LANCAR em qualquer
+// colisao — desligar a arvore propria do repo nao pode ser um pe na porta.
+export function ordemAtiva(ordem: readonly string[], fontes: readonly FonteDeSkills[]): string[] {
+  const desativadas = new Set(fontes.filter(f => f.ativa === false).map(f => f.id))
+  return ordem.filter(id => id === '_native' || !desativadas.has(id))
+}
+
 export function arquivoDeFontes(): string {
   return join(ROOT, 'config', 'skill-sources.json')
 }
@@ -41,8 +53,8 @@ export function lerFontes(): RegistroDeFontes {
   } catch (e) {
     throw new Error(`skill-sources.json ilegivel (${String((e as Error).message)})`)
   }
-  const ordem = cru.resolutionOrder ?? ['_native']
-  return { versao: cru.versao ?? 0, ordem, fontes: cru.sources ?? [] }
+  const fontes = cru.sources ?? []
+  return { versao: cru.versao ?? 0, ordem: ordemAtiva(cru.resolutionOrder ?? ['_native'], fontes), fontes }
 }
 
 export function resolver(base: string = diretorioDeSkills(), registro: RegistroDeFontes = lerFontes()): Fusao {

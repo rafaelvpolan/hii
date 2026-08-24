@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { isoNow } from '../cdl/index.ts'
 import type { FailureClass, Usage, VerifyResult } from '../cdl/index.ts'
-import { tetoDoCard } from '../euc/tsr/orcamento.ts'
+import { gastoDoCard, tetoDoCard } from '../euc/tsr/orcamento.ts'
 import { readCard, patchCard, repoPath } from '../cdl/store.ts'
 import { warnBudgetWithoutGuarantee } from '../euc/tsr/confianca.ts'
 import { runGit, stageAll } from '../qlb/git.ts'
@@ -76,8 +76,8 @@ async function redoUrl(card: NonNullable<ReturnType<typeof readCard>>, wt: strin
   return { ok: r.ok, text: r.resultText ?? r.reason ?? '', fullText: r.fullText ?? r.resultText ?? r.reason ?? '', cost: parseFloat(r.cost) || 0, tokens: tokensOf(r.usage), failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
 }
 
-async function scopedFix(wt: string, instruction: string, file: string, line: string, lineText: string, id: string, executar: typeof runStep): Promise<StepOutcome> {
-  const r = await executar(wt, 'limpio', scopedInstruction(instruction, file, line, lineText), id)
+async function scopedFix(wt: string, instruction: string, file: string, line: string, lineText: string, id: string, alvo: string, executar: typeof runStep): Promise<StepOutcome> {
+  const r = await executar(wt, 'limpio', scopedInstruction(instruction, file, line, lineText), id, alvo)
   return { ok: r.ok, text: r.text, fullText: r.text, cost: r.cost, tokens: r.tokens, failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
 }
 
@@ -85,7 +85,12 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const card = readCard(id)
   if (!card) return
   const teto = tetoDoCard()
-  if (teto > 0 && (parseFloat(card.fm.cost_usd || '0') || 0) > teto) {
+  const gasto = gastoDoCard(card.fm.cost_usd)
+  if (gasto === null) {
+    patchCard(id, { status: 'HALTED', correction: '' }, `${isoNow()} CORRECTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a refacao paga sem saber o que o card ja custou`)
+    return
+  }
+  if (teto > 0 && gasto > teto) {
     patchCard(id, { status: 'HALTED', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de refazer — decida se continua`)
     return
   }
@@ -102,7 +107,7 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const target = repoPath(card.fm.repo ?? '')
   const redo = !file
   process.stdout.write(`[runner] #${id}: ${redo ? 'refazendo url (rejeitado)' : 'aplicando correção'} em ${wt}\n`)
-  const r = redo ? await redoUrl(card, wt, instruction, deps.implement) : await scopedFix(wt, instruction, file, line, lineText, id, deps.runStep)
+  const r = redo ? await redoUrl(card, wt, instruction, deps.implement) : await scopedFix(wt, instruction, file, line, lineText, id, repoPath(card.fm.repo ?? ''), deps.runStep)
   appendAttempt(id, redo ? 'reprovacao' : 'correcao', instruction, r.fullText)
   if (!r.ok) {
     const outcome = applyFailurePolicy({

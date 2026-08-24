@@ -50,6 +50,14 @@ function waveLine(w: PlanWave, o: RenderOptions): string[] {
   return out
 }
 
+// Comando a esquerda, explicacao a direita, e o conjunto nunca passa da largura.
+function linhaDeAjuda(comando: string, explicacao: string, o: RenderOptions): string {
+  const cmd = oneLine(comando, Math.max(8, o.width - 12))
+  const sobra = o.width - 4 - cmd.length - 2
+  const nota = sobra > 6 ? `  ${paint(oneLine(explicacao, sobra), DIM, o)}` : ''
+  return `    ${cmd}${nota}`
+}
+
 export function renderPlan(plan: Plan, opts: Partial<RenderOptions> = {}): string {
   const o = { ...DEFAULT_RENDER, ...opts }
   const out: string[] = []
@@ -59,20 +67,28 @@ export function renderPlan(plan: Plan, opts: Partial<RenderOptions> = {}): strin
   out.push(`    ${'Alvo'.padEnd(10)} ${oneLine(plan.repo, o.width - 16)}`)
   out.push(flag('Layout', plan.layout.on, plan.layout.reason, o))
   out.push(flag('Pilha', plan.pilha.on, plan.pilha.reason, o))
+  // Item 33. Divergir multiplica o custo por N, entao a decisao nao pode acontecer
+  // sem aparecer no plano que o humano aprova. O campo existia em buildPlan desde a
+  // Onda 12 e nenhum renderizador o lia — a promessa estava no comentario, nao na tela.
+  out.push(flag('Divergir', plan.divergencia.on, plan.divergencia.reason, o))
   out.push('')
   out.push(rule('Realizacao', o))
   if (!plan.waves.length) out.push(paint('    (nenhum passo de polimento neste perfil)', DIM, o))
   for (const w of plan.waves) out.push(...waveLine(w, o))
   if (plan.skipped.length) {
     out.push('')
-    out.push(`    ${paint('pula', DIM, o)} ${plan.skipped.join(', ')}`)
+    out.push(`    ${paint('pula', DIM, o)} ${oneLine(plan.skipped.join(', '), o.width - 11)}`)
   }
-  out.push(`    ${paint('motivo', DIM, o)} ${plan.profileReason}`)
+  out.push(`    ${paint('motivo', DIM, o)} ${oneLine(plan.profileReason, o.width - 13)}`)
   out.push('')
   out.push(rule('Execucao', o))
-  out.push(`    hii approve ${plan.id} --plan     ${paint('aprova o plano e enfileira', DIM, o)}`)
-  out.push(`    hii halt ${plan.id} "motivo"      ${paint('descarta o card', DIM, o)}`)
-  out.push(`    ${paint('no REPL: enter aprova o plano · dentro da tarefa, 1 aprova o resultado', DIM, o)}`)
+  // As tres linhas de ajuda eram strings fixas e estouravam a largura em terminal
+  // estreito (74 colunas num terminal de 60) — a mesma classe que a rolagem
+  // horizontal da entrada acabou de consertar, e que os campos acima ja evitavam
+  // com `oneLine`. `motivo` e `pula` tambem passam a ser cortados.
+  out.push(linhaDeAjuda(`hii approve ${plan.id} --plan`, 'aprova o plano e enfileira', o))
+  out.push(linhaDeAjuda(`hii halt ${plan.id} "motivo"`, 'descarta o card', o))
+  out.push(`    ${paint(oneLine('no REPL: enter aprova o plano · dentro da tarefa, 1 aprova o resultado', o.width - 8), DIM, o)}`)
   out.push('')
   out.push(paint('    Nada foi executado.', WARN, o))
   return out.join('\n')

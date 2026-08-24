@@ -53,9 +53,6 @@ export const AGENTES_IMPLEMENT: readonly string[] = ['vitro', 'frontiteto', 'lim
 // e que ninguem auditou depois. Agora `decidirEspecs` decide a partir do diff,
 // da dependencia declarada no contrato do alvo e do titulo da tarefa.
 //
-// Sem sinal nenhum, o resultado e vazio — e vazio significa NAO delegar, em vez
-// de "a IA escolhe": nada e injetado e a implementacao segue direta. Menos
-// delegacao sem motivo tambem e menos custo.
 // Sem sinal nenhum (card novo, contrato sem framework, titulo generico) o
 // padrao e DECLARADO aqui, nao escolhido pelo modelo. Nao injetar nada seria
 // deterministico tambem, mas perderia capacidade em silencio; deixar a IA
@@ -91,7 +88,13 @@ export function contextoDeSkill(workdir: string, repo: string, packs: readonly s
   try {
     arquivos = execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: workdir, encoding: 'utf8' })
       .split('\n').filter(Boolean)
-  } catch {
+  } catch (e) {
+    // "git diff falhou" e "nenhum arquivo alterado" tinham a MESMA
+    // representacao ([]), sem uma linha em lugar nenhum. Consequencia
+    // silenciosa: todo gatilho de skill por `files:` deixa de disparar e o
+    // roteamento cai no AGENTE_PADRAO como se nao houvesse sinal — perda de
+    // capacidade que ninguem veria.
+    process.stderr.write(`[hicode] git diff --name-only HEAD falhou em ${workdir} (${String((e as Error).message).slice(0, 120)}) — os gatilhos de skill por arquivo NAO vao disparar neste passo\n`)
     arquivos = []
   }
   return { arquivos, deps, packs }
@@ -168,8 +171,12 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
         costMeasured: true,
         provider: provider.name,
         model,
-        failureClass: 'terminal',
-        failureReason: `conector ${acaoExterna.ferramenta} indisponivel`,
+        // Nao consegui LISTAR e diferente de nao existe: o primeiro passa, e um
+        // HALT sem retry por causa dele parava o card por um hiccup do binario.
+        failureClass: conector.transitorio ? 'transient' : 'terminal',
+        failureReason: conector.transitorio
+          ? `nao consegui verificar o conector ${acaoExterna.ferramenta} (listagem MCP falhou)`
+          : `conector ${acaoExterna.ferramenta} indisponivel`,
       }
     }
   }
@@ -181,9 +188,16 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const memory = PROJECT_MEMORY ? readProjectMemory(target) : ''
   const navegacao = acaoExterna.externo ? [] : await navegacaoSemantica()
   extraTools = extraTools.concat(navegacao)
-  const ctxSkill = contextoDeSkill(workdir, card.fm.repo ?? '', packsDoCard(card.fm.packs))
+  // `target` (caminho no disco), nao `card.fm.repo` (nome "owner/repo"): readContract
+  // faz join(repo, '.hii', 'contract.json'), entao o nome virava caminho relativo
+  // inexistente e `deps` saia sempre vazio — os 12 SKILL.md com gatilho `deps:` nunca
+  // disparavam, e o roteamento por dependencia do item 11 era letra morta.
+  const ctxSkill = contextoDeSkill(workdir, target, packsDoCard(card.fm.packs))
   const escolhidos = agentesEscolhidos(ctxSkill, `${card.fm.title ?? ''} ${desc}`)
-  const agentesInjetados = acaoExterna.externo || !escolhidos.length ? {} : agentesInjetaveis(provider, escolhidos, navegacao)
+  // `!escolhidos.length` era condicao morta: agentesEscolhidos nunca devolve lista
+  // vazia desde que AGENTE_PADRAO entrou. Guarda que nao pode ser verdadeira
+  // esconde a regra de verdade, que e "acao externa nao injeta agente".
+  const agentesInjetados = acaoExterna.externo ? {} : agentesInjetaveis(provider, escolhidos, navegacao)
   const nomesInjetados = Object.keys(agentesInjetados)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
@@ -256,14 +270,17 @@ const PAPEL_DO_AGENTE: Record<string, PapelDeSkill> = {
   glossia: 'documentador',
 }
 
-function skillsDoAgente(agent: string, wt: string, repo: string): string {
+// `alvo` e o CAMINHO do clone principal, onde ensureContract grava
+// .hii/contract.json (motor/qlb/ctr/fechar.ts:85). Nao adianta cair para o worktree:
+// .hii/ nao e rastreado em git, entao um worktree recem-criado nao tem contrato.
+export function skillsDoAgente(agent: string, wt: string, alvo: string, packs: readonly string[] = []): string {
   const papel = PAPEL_DO_AGENTE[agent]
   if (!papel) return ''
-  const skills = renderizarSkills(skillsPara(papel, contextoDeSkill(wt, repo)))
+  const skills = renderizarSkills(skillsPara(papel, contextoDeSkill(wt, alvo, packs)))
   // VTB: o checklist da stack roda DEPOIS do security-baseline generico, e so
   // para o papel de seguranca. Um checklist de Laravel num passo de limpeza
   // seria ruido caro.
-  const checklist = papel === 'seguranca' ? renderizarChecklist(checklistParaStack(stackOf(repo))) : ''
+  const checklist = papel === 'seguranca' ? renderizarChecklist(checklistParaStack(stackOf(alvo))) : ''
   return [skills, checklist].filter(Boolean).join('\n\n')
 }
 
@@ -281,7 +298,17 @@ function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruct
   ].join('\n')
 }
 
-export async function runStep(wt: string, agent: string, instruction: string, id = '', repo = ''): Promise<StepResult> {
+// `id` e `repo` sao OBRIGATORIOS de proposito. Enquanto tinham default, os tres
+// chamadores de producao passavam 4 argumentos e `repo` era sempre '' — o checklist
+// de seguranca por stack (item 7) nunca era injetado e ninguem percebia, porque o
+// teste que o guardava era um grep no texto-fonte. Sem default, o compilador reprova
+// o proximo call site que esquecer.
+// `packs` fecha o ultimo elo do item 16: o pack que o humano escolheu no atalho de
+// intake valia SO para o implementador. Todos os passos de polimento e de gate
+// (rufus, escudo, testudo, pura, glossia) recebiam lista vazia, entao o
+// conhecimento pre-carregado pelo `/orquestrador-*` nao alcancava justamente quem
+// revisa. Sem default: o compilador reprova o proximo call site que esquecer.
+export async function runStep(wt: string, agent: string, instruction: string, id: string, repo: string, packs: readonly string[] = []): Promise<StepResult> {
   const t = Date.now()
   const provider = providerFor('step')
   if (!provider.agentic) return { time: 0, cost: 0, costMeasured: true, tokens: 0, ok: false, text: `provider ${provider.name} nao-agentico — step "${agent}" NAO executou (use claude/codex para steps que editam)`, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos', provider: provider.name }
@@ -289,7 +316,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const agenteInjetado = agentesInjetaveis(provider, [agent], navegacao)
   const injetou = Object.keys(agenteInjetado).length > 0
   const res = await runProvider(id, provider, {
-    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo || wt), skillsDoAgente(agent, wt, repo)),
+    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo), skillsDoAgente(agent, wt, repo, packs)),
     cwd: wt,
     dirs: [wt],
     mode: 'edit',

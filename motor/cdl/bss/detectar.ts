@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PackageManager } from './tipos.ts'
+import { avisarArquivoIlegivel, motivoDoErro } from '../ali/aviso.ts'
 
 export interface PackageJson {
   name?: string
@@ -45,7 +46,12 @@ export function readPackageJson(dir: string): PackageJson | null {
   if (!existsSync(f)) return null
   try {
     return JSON.parse(readFileSync(f, 'utf8')) as PackageJson
-  } catch {
+  } catch (e) {
+    // package.json invalido virava `null`, ou seja "este diretorio nao tem
+    // package.json". A sondagem seguia, o contrato saia SEM os comandos de
+    // build/test/lint, e o motor pulava os gates que dependem deles — silencio,
+    // com o card seguindo em frente como se nao houvesse nada a rodar.
+    avisarArquivoIlegivel(f, motivoDoErro(e as Error), 'o contrato do alvo vai sair SEM os comandos deste pacote, e os gates que dependem deles serao PULADOS')
     return null
   }
 }

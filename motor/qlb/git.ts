@@ -92,6 +92,58 @@ export interface RefreshResult {
   detail: string
 }
 
+// Nomeia a causa em vez de assumi-la. A lista veio do que o git de fato imprime
+// nos casos que apareceram em producao; o resto cai em "merge falhou", que e
+// honesto e nao manda o humano procurar conflito que nao existe.
+// A ORDEM importa, e as regras mais especificas vem primeiro. `CONFLICT` do git
+// aparece sempre em INICIO de linha ("CONFLICT (content): ..."); casar a palavra
+// em qualquer posicao fazia uma falha nao-conflito num arquivo chamado
+// `conflict-handler.ts` ser diagnosticada como conflito.
+const CLASSES_DE_MERGE: ReadonlyArray<readonly [RegExp, string]> = [
+  [/local changes.*would be overwritten|Please commit your changes or stash/i, 'mudanca local nao commitada impediu o merge'],
+  // Ancorada na frase que o git emite ("Unable to create '<path>/index.lock'"),
+  // e nao no nome solto: sem isso, conflito legitimo num caminho que CONTENHA
+  // `index.lock` (fixture de ferramenta git) era rotulado como lock preso — o
+  // mesmo casamento por nome de arquivo que este classificador veio eliminar.
+  [/unable to create[^\n]*index\.lock|index\.lock['"]?:? File exists/i, 'index.lock preso (outro processo git no mesmo worktree)'],
+  [/refusing to merge unrelated histories/i, 'historias sem ancestral comum (nao e conflito nem ref invalida — precisa de decisao humana sobre --allow-unrelated-histories)'],
+  [/not something we can merge/i, 'ref invalida para merge'],
+  [/would be overwritten by merge/i, 'arquivo nao rastreado no caminho do merge'],
+  [/you have unmerged files|MERGE_HEAD exists/i, 'merge anterior deixado pela metade'],
+  [/^CONFLICT\b/im, 'conflito'],
+  [/\bmerge conflict\b/i, 'conflito'],
+]
+
+// Le stdout E stderr: `git merge` imprime "CONFLICT (content): Merge conflict
+// in <arquivo>" no STDOUT, e as recusas por estado local no stderr. Olhar so um
+// dos dois classificava conflito de verdade como "causa nao reconhecida".
+export function classeDeFalhaDeMerge(saida: string): string {
+  const texto = String(saida || '')
+  for (const [rx, rotulo] of CLASSES_DE_MERGE) if (rx.test(texto)) return rotulo
+  return 'merge falhou (causa nao reconhecida)'
+}
+
+const LINHAS_QUE_EXPLICAM = /^(CONFLICT|error:|fatal:|hint:|warning:)/i
+
+// "Auto-merging a.txt" e a PRIMEIRA linha de um merge conflitado e nao explica
+// nada. A linha que interessa e a que comeca com CONFLICT/error/fatal; sem
+// nenhuma delas, cai na primeira linha nao vazia.
+function linhaQueExplica(texto: string): string {
+  const linhas = String(texto || '').split('\n').map(l => l.trim()).filter(Boolean)
+  return (linhas.find(l => LINHAS_QUE_EXPLICAM.test(l)) ?? linhas[0] ?? '').slice(0, 200)
+}
+
+// Devolve '' quando nao havia merge em curso, ou quando o abort funcionou.
+// Devolve o aviso so quando havia merge E o abort falhou — o unico caso em que o
+// worktree fica de fato sujo.
+export async function abortarMergeSeComecou(wt: string): Promise<string> {
+  const emCurso = await runGit(wt, ['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'])
+  if (emCurso.err || !emCurso.stdout.trim()) return ''
+  const abort = await runGit(wt, ['merge', '--abort'])
+  if (!abort.err) return ''
+  return ` — ATENCAO: o merge havia comecado e "git merge --abort" falhou (${linhaQueExplica(abort.stderr) || abort.err.message}); o worktree ficou no meio do merge e precisa de inspecao manual`
+}
+
 export async function refreshFromBase(wt: string, base: string): Promise<RefreshResult> {
   const f = await withGitLock(() => runGit(wt, ['fetch', 'origin', base]))
   if (f.err) return { ok: false, changed: false, detail: `fetch origin/${base} falhou: ${String(f.stderr || '').slice(0, 120)}` }
@@ -99,15 +151,34 @@ export async function refreshFromBase(wt: string, base: string): Promise<Refresh
   if (contagem.err) {
     return { ok: false, changed: false, detail: `nao consegui comparar com origin/${base}: ${String(contagem.stderr || '').split('\n')[0] ?? ''}` }
   }
-  const atras = Number(contagem.stdout.trim())
+  // `Number('')` e 0, e `Number.isFinite(0)` e true: stdout VAZIO (saida truncada,
+  // pipe fechado) passava pela guarda de ilegibilidade e caia em `!atras`, que
+  // devolve ok:true "ja atualizado com origin/base" — sincronia afirmada sem
+  // nenhuma comparacao. O caso ilegivel mais provavel era justamente o que a
+  // guarda deixava passar.
+  const cru = contagem.stdout.trim()
+  const atras = /^\d+$/.test(cru) ? Number(cru) : Number.NaN
   if (!Number.isFinite(atras)) {
     return { ok: false, changed: false, detail: `contagem de commits atras de origin/${base} veio ilegivel: ${JSON.stringify(contagem.stdout.slice(0, 60))}` }
   }
   if (!atras) return { ok: true, changed: false, detail: `ja atualizado com origin/${base}` }
   const m = await runGit(wt, ['merge', '--no-edit', `origin/${base}`])
   if (m.err) {
-    await runGit(wt, ['merge', '--abort'])
-    return { ok: false, changed: false, detail: `conflito ao integrar ${atras} commit(s) de origin/${base}` }
+    // O abort so faz sentido se um merge REALMENTE comecou. Nas classes que o
+    // classificador reconhece (mudanca local, unrelated histories, ref invalida,
+    // arquivo nao rastreado, index.lock) o git recusa ANTES de iniciar, entao nao
+    // existe MERGE_HEAD — e `merge --abort` responde "There is no merge to abort".
+    // Avisar por causa disso punha "o worktree ficou no meio do merge" exatamente
+    // no conjunto OPOSTO ao pretendido: falso nas recusas, e ausente no conflito de
+    // verdade (onde o abort funciona).
+    const sujo = await abortarMergeSeComecou(wt)
+    // `git merge` falha por muito mais que conflito: `local changes would be
+    // overwritten`, `index.lock` de outro processo, `not something we can merge`,
+    // repo sem commit. Chamar tudo de conflito colocava um diagnostico FALSO no
+    // HALT que o humano le — e o conserto que ele tentaria (resolver conflito)
+    // nao existia. A causa vem do git, nao da nossa suposicao.
+    const saida = `${m.stdout}\n${m.stderr}`
+    return { ok: false, changed: false, detail: `${classeDeFalhaDeMerge(saida)} ao integrar ${atras} commit(s) de origin/${base}: ${linhaQueExplica(saida) || 'git nao explicou'}${sujo}` }
   }
   return { ok: true, changed: true, detail: `integrou ${atras} commit(s) de origin/${base}` }
 }

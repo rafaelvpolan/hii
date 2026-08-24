@@ -5,6 +5,7 @@ import type { Card, Fields } from './/index.ts'
 import { cardsDir, reposFile, ROOT } from './ali/config.ts'
 import { withFileLock, writeFileAtomic } from '../osw/mtr/trava-arquivo.ts'
 import { memoArquivo } from '../tmd/eco/memo.ts'
+import { conferirTransicao } from '../nmy/deriva-de-transicao.ts'
 
 interface RepoConfig {
   name: string
@@ -47,6 +48,9 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     const { fm, order, body } = splitFrontMatter(readFileSync(file, 'utf8'))
     const before: Fields = { ...fm }
     const resolvedFields = typeof patch.fields === 'function' ? patch.fields(before) : (patch.fields ?? {})
+    // Unico ponto do motor que conhece o PAR (estado anterior, estado novo). A
+    // topologia declarada e conferida aqui, nao por grep no texto-fonte.
+    if (resolvedFields.status !== undefined) conferirTransicao(before.status, resolvedFields.status, id)
     for (const [k, v] of Object.entries(resolvedFields)) {
       fm[k] = v
       if (!order.includes(k)) order.push(k)

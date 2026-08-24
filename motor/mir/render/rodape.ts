@@ -23,6 +23,10 @@ export interface Propriedades {
   pisoDoGasto: string
   divergentes: string[]
   disco?: UsoDeDisco
+  // Aparece junto com as ias selecionadas porque e o que o gauntlet TROCA: ligado,
+  // o crivo compara telas e nao le o diff. Estado invisivel seria a mesma falha de
+  // antes com outro nome.
+  gauntlet?: boolean
 }
 
 export interface RodapeOptions {
@@ -79,6 +83,7 @@ export function linhaPropriedades(p: Propriedades, opts: Partial<RodapeOptions> 
     `ia ${paint(ia, CYAN, o)}`,
     `esforco ${paint(p.effort, CYAN, o)}`,
     p.modo ? `modo ${paint(p.modo, CYAN, o)}` : '',
+    p.gauntlet ? `crivo ${paint('gauntlet', YELLOW, o)}` : '',
     p.projeto ? `projeto ${paint(p.projeto, CYAN, o)}` : '',
     gastoDoDia(p, o),
     p.disco ? marcaCurtaDoDisco(p.disco, { color: o.color }) : '',

@@ -47,15 +47,51 @@ test('INVARIANTE o portao de teste registra o RED quando a primeira rodada repro
   expect(fonte, 'so o portao de TESTE produz RED; o de build nao').toContain("portao.id === 'testes'")
 })
 
-test('INVARIANTE o fechamento consulta o CHG antes de rodar o gate de teste', async () => {
+// Este teste afirmava o CONTRARIO, e com a justificativa invertida ("consultar
+// depois do gate nao serviria de nada"). Era ele que mantinha o defeito no lugar: o
+// unico produtor da evidencia e registrarRed, que roda DENTRO de testGate
+// (motor/cic/crv/portoes-de-fecho.ts:97), entao consultar antes garantia diario
+// vazio. red.satisfeito era constante false — com rigor estrito todo card completo
+// fazia HALT, e desligado gravava 'nao' mesmo com TDD de verdade.
+//
+// A ordem no texto-fonte e sentinela, nao prova: quem prova o comportamento sao os
+// testes acima, que exercitam registrarRed -> exigirRedAntesDoGreen nessa ordem —
+// agora a mesma ordem da producao.
+test('INVARIANTE o fechamento consulta o CHG DEPOIS do gate que produz a evidencia', async () => {
   const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
-  expect(fonte).toContain('exigirRedAntesDoGreen(id, plan.profile)')
-  const antes = fonte.indexOf('exigirRedAntesDoGreen') < fonte.indexOf('await testGate(')
-  expect(antes, 'consultar depois do gate nao serviria de nada').toBe(true)
+  const iChg = fonte.indexOf('exigirRedAntesDoGreen(id, plan.profile)')
+  const iGate = fonte.indexOf('await testGate(')
+  // Guarda contra o -1: sem isto, apagar qualquer um dos dois faria a comparacao
+  // passar por acidente — o defeito que a versao anterior tinha.
+  expect(iChg, 'a consulta ao CHG sumiu de fechar.ts').toBeGreaterThan(-1)
+  expect(iGate, 'a chamada a testGate sumiu de fechar.ts').toBeGreaterThan(-1)
+  expect(iChg > iGate, 'registrarRed vive dentro de testGate: consultar antes le sempre o diario vazio').toBe(true)
 })
 
 test('a exigencia e registrada no card mesmo quando nao barra — quem passou sem provar fica visivel', async () => {
   const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
   expect(fonte).toContain('red_antes_do_green')
   expect(fonte, 'barrar so quando o operador ligar').toContain('rigorEstrito()')
+})
+
+// LIMITE CONHECIDO, documentado aqui para nao virar surpresa quando
+// HICODE_RIGOR_ESTRITO=1 for ligado. O unico produtor de evidencia de RED e
+// `registrarRed`, chamado quando a PRIMEIRA rodada do comando de teste REPROVA no
+// fecho. Consequencia: card `completo` que chega com a suite VERDE nunca tem RED,
+// e card que chega quebrado e e reparado passa — o incentivo fica invertido.
+//
+// Nao foi "consertado" mexendo no gate porque isso mudaria a semantica do item 5
+// (ver PENDENCIAS.md, "DECISAO PENDENTE — a evidencia de RED"). O teste existe para
+// o comportamento ficar preso e visivel enquanto a decisao nao vem.
+test('LIMITE card completo com suite JA VERDE nao tem evidencia de RED', () => {
+  const r = exigirRedAntesDoGreen('chg-verde-de-nascenca', 'completo')
+  expect(r.exigido).toBe(true)
+  expect(r.satisfeito, 'sem RED registrado a exigencia NAO e satisfeita — e com rigor estrito isso e HALT').toBe(false)
+  expect(r.motivo).toContain('nao tem evento de RED')
+})
+
+test('LIMITE card que chegou QUEBRADO e foi reparado satisfaz a exigencia', () => {
+  registrarRed('chg-reparado', 'npm test reprovou antes do reparo')
+  const r = exigirRedAntesDoGreen('chg-reparado', 'completo')
+  expect(r.satisfeito, 'o caminho que passa hoje e o do card que chegou vermelho').toBe(true)
 })

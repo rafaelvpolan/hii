@@ -33,7 +33,7 @@ function review(id: string, wt: string, base: string, desc: string, label: strin
   )
 }
 
-export async function runGatedStep(id: string, wt: string, base: string, agent: string, instruction: string, desc: string, label: string, deps: GatedDeps = { runStep, runGatedReview }): Promise<GatedResult> {
+export async function runGatedStep(id: string, wt: string, base: string, alvo: string, agent: string, instruction: string, desc: string, label: string, deps: GatedDeps = { runStep, runGatedReview }, packs: readonly string[] = []): Promise<GatedResult> {
   const t0 = Date.now()
   let cost = 0
   let costMeasured = true
@@ -43,7 +43,14 @@ export async function runGatedStep(id: string, wt: string, base: string, agent: 
   let medidoNoGate = true
   let tempoNoGate = 0
   let text = ''
-  let reason = ''
+  // DOIS motivos, nao um. Enquanto era uma variavel so, a falha do agente escrevia
+  // nela e a volta seguinte anunciava "O revisor CRIVO reprovou: agente X
+  // falhou/timeout" — uma reprovacao que nunca existiu, porque o gate nem chegou a
+  // rodar naquela volta. Como o prompt e append-only (ECO), a frase falsa ficava
+  // para sempre, inclusive depois de um BLOCKED legitimo.
+  let motivoDoGate = ''
+  let motivoDaFalha = ''
+  let ultimaFalhaDoAgente: { failureClass?: FailureClass; failureReason?: string; provider?: string } | null = null
   let attempt = 0
   const metric = (): StepMetric => ({ time: Math.max(0, Math.round((Date.now() - t0) / 1000) - tempoNoGate), cost, tokens, costMeasured })
   const metricaDoGate = (): StepMetric => ({ time: tempoNoGate, cost: custoDoGate, tokens: tokensDoGate, costMeasured: medidoNoGate })
@@ -57,10 +64,18 @@ export async function runGatedStep(id: string, wt: string, base: string, agent: 
   while (attempt <= maxReajuste()) {
     // repair_attempt so a partir da 2a volta: a 1a e execucao, nao reparo.
     if (attempt > 0) {
-      anexarEvento({ card: id, evento: 'repair_attempt', fase: label, detalhe: `tentativa ${attempt + 1}: ${reason}` })
-      prompt = anexarInstrucao(prompt, `\nO revisor CRIVO reprovou a tentativa ${attempt}: ${reason}. Corrija exatamente isso, sem quebrar o resto nem desfazer o que ja estava certo.`)
+      // O prompt fala da tentativa ANTERIOR: se ela terminou em falha do agente, e
+      // disso que se fala, mesmo que um BLOCKED mais antigo ainda esteja guardado.
+      const motivo = motivoDaFalha || motivoDoGate
+      anexarEvento({ card: id, evento: 'repair_attempt', fase: label, detalhe: `tentativa ${attempt + 1}: ${motivo}` })
+      // So atribui ao CRIVO o que o CRIVO disse. Falha de infraestrutura do agente
+      // pede refazer, nao "corrigir exatamente isso" — instruir a corrigir um
+      // achado inexistente convida a edicao espuria, em chamada paga.
+      prompt = anexarInstrucao(prompt, motivoDaFalha
+        ? `\nA tentativa ${attempt} nao chegou ao fim (${motivoDaFalha}). Refaca o passo do zero; nao ha achado de revisao para corrigir.`
+        : `\nO revisor CRIVO reprovou a tentativa ${attempt}: ${motivoDoGate}. Corrija exatamente isso, sem quebrar o resto nem desfazer o que ja estava certo.`)
     }
-    const r = await deps.runStep(wt, agent, montar(prompt), id)
+    const r = await deps.runStep(wt, agent, montar(prompt), id, alvo, packs)
     cost += r.cost
     costMeasured = costMeasured && r.costMeasured
     tokens += r.tokens
@@ -72,8 +87,24 @@ export async function runGatedStep(id: string, wt: string, base: string, agent: 
         anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `agente falhou: ${r.failureClass}` })
         return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `agente ${agent} falhou (${r.failureReason ?? 'erro'})`, failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
       }
-      reason = `agente ${agent} falhou/timeout`
-      patchCard(id, {}, `${isoNow()} step [${label}] ${agent}: FALHOU/timeout (tentativa ${attempt + 1})`)
+      // A causa ja classificada (agente.ts:309) ia para o lixo aqui: nem o prompt
+      // nem o diario do card recebiam r.failureReason, e o humano lia so
+      // "FALHOU/timeout" sem saber se foi cota, rede ou provedor.
+      motivoDaFalha = `agente ${agent} nao concluiu: ${r.failureReason ?? r.failureClass ?? 'sem detalhe'}`
+      // NAO apaga `motivoDoGate`: se o crivo JA reprovou numa volta anterior, essa
+      // reprovacao continua valendo e e ela que decide o HALT. Zerar aqui fazia
+      // "BLOCKED na tentativa 1 + falha do agente na 2" sair como "o agente nao
+      // concluiu, o crivo nao reprovou nada" — perdendo a reprovacao real e
+      // mandando o card para politica de espera em vez de HALT.
+      // O PROMPT da volta seguinte continua usando `motivoDaFalha`, porque foi a
+      // falha do agente que interrompeu esta tentativa.
+      // A classificacao da ULTIMA falha transitoria e guardada. Sem ela, esgotar as
+      // tentativas devolvia reason sem failureClass, o chamador nao entrava em
+      // applyStepFailurePolicy e o diario do card dizia "gate crivo reprovou apos
+      // N reajuste(s): agente X nao concluiu" — reprovacao atribuida ao CRIVO que
+      // nunca existiu. O conserto anterior arrumou o PROMPT e nao o retorno.
+      ultimaFalhaDoAgente = { failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
+      patchCard(id, {}, `${isoNow()} step [${label}] ${agent}: NAO CONCLUIU (tentativa ${attempt + 1}) — ${r.failureReason ?? r.failureClass ?? 'sem detalhe'}`)
       attempt++
       continue
     }
@@ -94,9 +125,24 @@ export async function runGatedStep(id: string, wt: string, base: string, agent: 
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'aprovada' })
       return { metric: metric(), metricaDoGate: metricaDoGate(), ok: true, text, reason: '' }
     }
-    reason = gate.reason
+    motivoDoGate = gate.reason
+    motivoDaFalha = ''
+    ultimaFalhaDoAgente = null
     attempt++
   }
-  anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `esgotou tentativas: ${reason}` })
-  return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason }
+  const motivoFinal = motivoDoGate || motivoDaFalha
+  anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `esgotou tentativas: ${motivoFinal}` })
+  // Esgotou por falha do AGENTE (nao por BLOCKED do crivo): devolve a classificacao
+  // para o chamador aplicar politica de espera/retry, em vez de o card HALTar com
+  // uma reprovacao do crivo que nunca aconteceu.
+  if (!motivoDoGate && ultimaFalhaDoAgente) {
+    return {
+      metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text,
+      reason: `o agente nao concluiu em ${attempt} tentativa(s) — o crivo nao reprovou nada: ${motivoFinal}`,
+      failureClass: ultimaFalhaDoAgente.failureClass ?? 'transient',
+      failureReason: ultimaFalhaDoAgente.failureReason ?? motivoFinal,
+      provider: ultimaFalhaDoAgente.provider ?? '',
+    }
+  }
+  return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: motivoFinal }
 }

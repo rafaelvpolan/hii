@@ -2,6 +2,7 @@ import { caixa, grade } from '../widget/caixa.ts'
 import { serie } from '../widget/serie.ts'
 import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis.ts'
 import type { EstadoDaConfig, OpcoesConfig } from './tipos.ts'
+import { truncVisible } from '../../tui/layout.ts'
 
 export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos.ts'
 
@@ -28,6 +29,12 @@ function ehCompacto(altura: number): boolean {
   return altura > 0 && altura < ALTURA_COMPACTA
 }
 
+// Zero significa "nao sei o teto" (governanca ilegivel) e nao "sem teto": nesse
+// caso a linha diz isso, em vez de omitir e parecer que nao ha limite.
+function tetoNaLinha(tetoUsd: number): string {
+  return tetoUsd > 0 ? ` · teto por card US$ ${tetoUsd.toFixed(2)}` : ' · teto por card NAO LEGIVEL (confira config/model-tier.json)'
+}
+
 export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   const cols = colunas(o.largura)
   const w = larguraDaColuna(o.largura, cols)
@@ -47,8 +54,15 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
     caixa(`SESSAO ${e.sessao.curto} · POR PAPEL`, painelDaSessao(e.sessao, w - 2, opcoes), cx),
   ]
 
+  // O teto vinha calculado no snapshot e NINGUEM o mostrava: o humano via o gasto
+  // e nao o limite que o motor aplica em cada card. Valor computado e nao aplicado,
+  // com a agravante de estar a uma linha da tela.
+  //
+  // O corte pela largura e obrigatorio: a linha do cabecalho e medida junto com as
+  // caixas, e o painel exige largura visivel igual em todas as linhas.
+  const resumo = `projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}${tetoNaLinha(e.tetoUsd)}`
   const cabecalho = [
-    `  ${paint('/config', CYAN, o)}  ${paint(`projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}`, DIM, o)}`,
+    `  ${paint('/config', CYAN, o)}  ${paint(truncVisible(resumo, Math.max(8, o.largura - 13)), DIM, o)}`,
     '',
   ]
   const custo = caixa('CUSTO NA JANELA DE 5H', serie(e.serie, {

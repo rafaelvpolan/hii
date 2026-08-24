@@ -1,7 +1,8 @@
 import { test, expect } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { lerTopologia, transicaoPermitida, destinosDe } from '../../motor/nmy/topologia.ts'
+import { lerTopologia, transicaoPermitida, destinosDe, todasAsTransicoes } from '../../motor/nmy/topologia.ts'
+import { conferirTransicao, esquecerTopologia, observarDeriva } from '../../motor/nmy/deriva-de-transicao.ts'
 import { STATUSES } from '../../motor/cdl/index.ts'
 import type { Status } from '../../motor/cdl/index.ts'
 import { activeSteps } from '../../motor/nmy/config.ts'
@@ -41,10 +42,62 @@ test('todo estado do card e um no declarado, e todo no e um estado real', () => 
   expect([...topo.nos].sort()).toEqual([...STATUSES].sort())
 })
 
+// Este teste comparava so o DESTINO, e por construcao nao podia reprovar nada:
+// HALTED e PAUSED estao em `sempreAlcancavel`, e todo estado do pipeline e
+// destino de alguma transicao. O motor executava 17 transicoes que a topologia
+// nao declarava — cinco em todo reinicio de daemon — e ele passava verde.
+//
+// Ficou como e: barato, e cobre o caso de estado orfao. O que passou a valer como
+// guarda de deriva sao os dois testes de PAR mais abaixo.
 test('FOTO todo estado que o motor escreve e destino de alguma transicao declarada', () => {
-  const alcancaveis = new Set<Status>([...topo.transicoes.map(([, para]) => para), ...topo.sempreAlcancavel])
+  const alcancaveis = new Set<Status>([...todasAsTransicoes(topo).map(([, para]) => para), ...topo.sempreAlcancavel])
   const semDeclaracao = [...estadosEscritosPeloMotor()].filter(s => !alcancaveis.has(s))
   expect(semDeclaracao, 'o motor escreve estes estados e a topologia nao declara como se chega neles').toEqual([])
+})
+
+test('PAR o par (origem, destino) escrito no log do motor esta declarado — nao so o destino', () => {
+  const naoDeclarados: string[] = []
+  for (const arquivo of arquivosDoMotor()) {
+    for (const m of readFileSync(arquivo, 'utf8').matchAll(/\b([A-Z_]{3,})->([A-Z_]{3,})\b/g)) {
+      const de = m[1]
+      const para = m[2]
+      if (!de || !para) continue
+      if (!(STATUSES as readonly string[]).includes(de) || !(STATUSES as readonly string[]).includes(para)) continue
+      if (!transicaoPermitida(topo, de as Status, para as Status)) naoDeclarados.push(`${arquivo}: ${de}->${para}`)
+    }
+  }
+  expect(naoDeclarados, 'o log do card anuncia esta transicao ao humano e a topologia nao a declara').toEqual([])
+})
+
+test('a varredura de PAR enxerga pares de verdade — senao ela passaria vazia', () => {
+  let pares = 0
+  for (const arquivo of arquivosDoMotor()) {
+    for (const m of readFileSync(arquivo, 'utf8').matchAll(/\b([A-Z_]{3,})->([A-Z_]{3,})\b/g)) {
+      if ((STATUSES as readonly string[]).includes(m[1] ?? '') && (STATUSES as readonly string[]).includes(m[2] ?? '')) pares++
+    }
+  }
+  expect(pares, 'nenhum par encontrado: a regex quebrou e o invariante acima vale nada').toBeGreaterThan(10)
+})
+
+// O par existe de verdade num lugar so: no ponto de escrita do card, que conhece
+// o estado anterior. Aqui o observador e exercitado, para a guarda poder REPROVAR
+// em vez de so descrever.
+test('OBSERVADOR transicao nao declarada e detectada no ponto de escrita', () => {
+  esquecerTopologia()
+  const vistas: string[] = []
+  observarDeriva(d => vistas.push(`${d.de}->${d.para}`))
+  try {
+    expect(conferirTransicao('READY', 'EXECUTING'), 'declarada: nao e deriva').toBeNull()
+    expect(conferirTransicao('URL_OK', 'WAITING'), 'declarada como recuperacao: nao e deriva').toBeNull()
+    expect(conferirTransicao('READY', 'DEPLOYED'), 'READY->DEPLOYED nao existe em lugar nenhum').toEqual({ de: 'READY', para: 'DEPLOYED' })
+    expect(conferirTransicao('EXECUTING', 'HALTED'), 'HALTED e sempre alcancavel').toBeNull()
+    expect(conferirTransicao('READY', 'READY'), 'o mesmo estado nao e transicao').toBeNull()
+    expect(conferirTransicao('READY', 'NAO_E_STATUS'), 'texto que nao e status nao vira alarme').toBeNull()
+    expect(vistas).toEqual(['READY->DEPLOYED'])
+  } finally {
+    observarDeriva(null)
+    esquecerTopologia()
+  }
 })
 
 test('FOTO estado listado como sem escrita no motor realmente nao e escrito por ninguem', () => {

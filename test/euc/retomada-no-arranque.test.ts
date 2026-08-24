@@ -20,8 +20,14 @@ test('INVARIANTE runner.ts chama retomarAoIniciar no arranque — senao o modulo
   const fonte = await Bun.file('runner.ts').text()
   expect(fonte).toContain("from './motor/euc/recuperar.ts'")
   expect(fonte).toContain('retomarAoIniciar(')
-  const ordem = fonte.indexOf('reconcileStranded()') < fonte.indexOf('retomarAoIniciar(')
-  expect(ordem, 'a retomada tem de vir DEPOIS do reconcile, que decide o status do card').toBe(true)
+  // Sem a guarda do -1, apagar `reconcileStranded()` do runner fazia a comparacao
+  // virar `-1 < indice`, ou seja verdadeira, e o invariante de ORDEM passava com a
+  // chamada AUSENTE.
+  const iReconcile = fonte.indexOf('reconcileStranded()')
+  const iRetomada = fonte.indexOf('retomarAoIniciar(')
+  expect(iReconcile, 'reconcileStranded() sumiu do runner').toBeGreaterThan(-1)
+  expect(iRetomada, 'retomarAoIniciar() sumiu do runner').toBeGreaterThan(-1)
+  expect(iReconcile < iRetomada, 'a retomada tem de vir DEPOIS do reconcile, que decide o status do card').toBe(true)
 })
 
 test('fase aberta no crash e fechada no diario, com o motivo e o instante de abertura', () => {
@@ -83,4 +89,36 @@ test('sem card, o ajuste de URL continua funcionando e nao tenta escrever diario
     ajustar: (): Promise<string> => Promise.resolve('ajustou'),
   })
   expect(r.noAr).toBe(false)
+})
+
+// O relato anterior varria de tras para frente e parava no PRIMEIRO evento de
+// abertura. Com a fase externa aberta e uma interna JA FECHADA depois dela, ele
+// respondia "nada interrompido" — crash durante o reparo era reportado como
+// execucao intacta.
+test('fase EXTERNA aberta nao e mascarada por uma fase interna que fechou depois', async () => {
+  const { fasesInterrompidas } = await import('../../motor/euc/recuperar.ts')
+  anexarEvento({ card: 'r-externa', evento: 'fase_inicio', fase: 'implementacao' })
+  anexarEvento({ card: 'r-externa', evento: 'gate_start', fase: 'reparo' })
+  anexarEvento({ card: 'r-externa', evento: 'gate_verdict', fase: 'reparo' })
+  const abertas = fasesInterrompidas('r-externa')
+  expect(abertas.map(a => a.fase), 'o gate fechou; a implementacao NAO').toEqual(['implementacao'])
+  expect(faseInterrompida('r-externa')?.fase).toBe('implementacao')
+})
+
+test('retomada fecha TODAS as fases abertas, nao so a primeira — senao o card volta no proximo arranque', async () => {
+  const { fasesInterrompidas } = await import('../../motor/euc/recuperar.ts')
+  anexarEvento({ card: 'r-duas', evento: 'fase_inicio', fase: 'implementacao' })
+  anexarEvento({ card: 'r-duas', evento: 'gate_start', fase: 'gate' })
+  expect(fasesInterrompidas('r-duas').length).toBe(2)
+  retomarAoIniciar(() => undefined)
+  expect(fasesInterrompidas('r-duas'), 'sobrou fase aberta: o proximo arranque relataria o mesmo card').toEqual([])
+})
+
+test('com retry, dois `fase_inicio` da mesma fase NAO sao fechados pelo mesmo `fase_fim`', async () => {
+  const { fasesInterrompidas } = await import('../../motor/euc/recuperar.ts')
+  anexarEvento({ card: 'r-retry', evento: 'fase_inicio', fase: 'testes' })
+  anexarEvento({ card: 'r-retry', evento: 'fase_fim', fase: 'testes' })
+  expect(fasesInterrompidas('r-retry')).toEqual([])
+  anexarEvento({ card: 'r-retry', evento: 'fase_inicio', fase: 'testes' })
+  expect(fasesInterrompidas('r-retry').length, 'a segunda abertura precisa do proprio fechamento').toBe(1)
 })

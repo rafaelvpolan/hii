@@ -281,3 +281,16 @@ test('sessao sem chamada de IA diz isso, em vez de mostrar caixa vazia', () => {
   const t = renderConfig(base, { color: false, largura: 104, altura: 44 }).join('\n')
   expect(t).toContain('ainda nao chamou IA')
 })
+
+// O teto era calculado no snapshot e nenhum renderizador o lia: o humano via o
+// gasto e nao o limite que o motor aplica em cada card.
+test('o painel mostra o TETO por card, nao so o gasto', () => {
+  const texto = renderConfig({ ...base, gastoHoje: 3.5, tetoUsd: 16 }, { color: false, largura: 100, altura: 30 }).join('\n')
+  expect(texto).toContain('gasto hoje US$ 3.50')
+  expect(texto, 'gasto sem teto nao diz se o card esta perto de parar').toContain('teto por card US$ 16.00')
+})
+
+test('teto ZERO nao vira omissao — diz que nao conseguiu ler, em vez de parecer "sem limite"', () => {
+  const texto = renderConfig({ ...base, gastoHoje: 1, tetoUsd: 0 }, { color: false, largura: 100, altura: 30 }).join('\n')
+  expect(texto).toContain('NAO LEGIVEL')
+})

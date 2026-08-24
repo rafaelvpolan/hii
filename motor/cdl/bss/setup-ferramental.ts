@@ -24,11 +24,18 @@ export interface VeredictoDeSetup {
 
 const MARCAS_DE_DEBUG = ['.vscode/launch.json', 'DEBUG.md', 'docs/DEBUG.md', '.hii/debug.md']
 
-export function ehAreaNova(arquivos: readonly string[]): boolean {
-  // Area nova = tudo no diff e arquivo criado sob um diretorio que so tem
-  // arquivo criado. Aqui recebemos so a lista; quem sabe o que e novo e o
-  // chamador, entao a heuristica e conservadora: diff vazio nao e area nova.
-  return arquivos.length > 0
+// Area nova = TODO arquivo do diff foi criado. Card que toca codigo existente nao
+// paga o pedagio de setup, senao todo trabalho num repo legado travaria aqui para
+// sempre.
+//
+// A versao anterior recebia uma lista so e devolvia `arquivos.length > 0` — ou
+// seja "qualquer diff e area nova", o que nao e a definicao escrita no proprio
+// comentario dela. E nao tinha consumidor: fechar.ts repetia a regra inline. Uma
+// funcao nomeada com a regra ERRADA ao lado da regra certa inline e pior que nao
+// ter a funcao: o proximo chamador acredita no nome.
+export function ehAreaNova(alterados: readonly string[], criados: readonly string[]): boolean {
+  if (!alterados.length) return false
+  return criados.length === alterados.length
 }
 
 export function conferirSetup(raiz: string, contrato: Pick<Contract, 'commands'>): VeredictoDeSetup {

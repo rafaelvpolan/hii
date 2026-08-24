@@ -29,6 +29,7 @@ const REGRA: RegraInegociavel = {
   descricao: 'Diff tocando Payment* exige teste de idempotencia',
   gatilho: { arquivos: ['app/Http/Controllers/Payment*'] },
   exigencia: 'teste_integracao_idempotencia',
+  origem: { cards: ['041', '058', '073'], promovidoEm: '2026-09-01', promovidoPor: 'rafael' },
 }
 
 test('diff em migrations/ forca completo mesmo com o card dizendo risk: low', () => {
@@ -114,10 +115,78 @@ test('INVARIANTE sem motivo, a LEI devolve o plano intacto — nao mexe no que n
   expect(depois).toBe(antes)
 })
 
-test('INVARIANTE o motor consulta a LEI no fechamento — senao a guarda e enfeite', async () => {
+// A versao anterior era wiring por texto e ORDEM: passar `{ forca: null, motivos:
+// [], regras: [] }` — ou seja, DESCARTAR a LEI calculada — mantinha as tres
+// assercoes verdes, porque elas so provavam que os identificadores existem no
+// arquivo. Agora o COMPORTAMENTO e exercitado, e o texto so confere que o
+// resultado de avaliarDiff e o que chega em aplicarLei.
+test('COMPORTAMENTO a LEI eleva o rigor quando o diff pede, e nao quando nao pede', () => {
+  const todos = activeSteps()
+  const cosmetico = { title: 'ajustar texto do botao', objetivo: 'trocar copy', risk: 'low', surface: 'visual' }
+  const semLei = planSteps(cosmetico, todos)
+  const lei = avaliarDiff(['database/migrations/2026_01_01_cria.php'], [])
+  expect(lei.forca, 'migrations forca completo').toBe('completo')
+  const comLei = aplicarLei(planSteps(cosmetico, todos), lei, todos)
+  expect(comLei.steps.length, 'a LEI tem de ACRESCENTAR passo ao plano cosmetico').toBeGreaterThan(semLei.steps.length)
+  const semForca = aplicarLei(planSteps(cosmetico, todos), { forca: null, motivos: [], regras: [] }, todos)
+  expect(semForca.steps.length, 'sem forca a LEI nao muda nada').toBe(semLei.steps.length)
+})
+
+test('INVARIANTE o motor consulta a LEI no fechamento e USA o resultado — nao descarta', async () => {
   const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
-  expect(fonte).toContain('avaliarDiff(changed)')
-  expect(fonte).toContain('aplicarLei(')
-  const ordem = fonte.indexOf('avaliarDiff(changed)') < fonte.indexOf('const steps = plan.steps')
-  expect(ordem, 'a LEI tem de decidir ANTES dos passos serem usados').toBe(true)
+  const iAvaliar = fonte.indexOf('avaliarDiff(changed)')
+  const iAplicar = fonte.indexOf('aplicarLei(')
+  const iPassos = fonte.indexOf('const steps = plan.steps')
+  for (const [nome, i] of [['avaliarDiff(changed)', iAvaliar], ['aplicarLei(', iAplicar], ['const steps = plan.steps', iPassos]] as const) {
+    expect(i, `${nome} sumiu de fechar.ts`).toBeGreaterThan(-1)
+  }
+  expect(iAvaliar < iAplicar, 'a LEI tem de ser avaliada antes de aplicada').toBe(true)
+  expect(iAplicar < iPassos, 'a LEI tem de decidir ANTES dos passos serem usados').toBe(true)
+  // E o resultado tem de CHEGAR em aplicarLei: `aplicarLei(plan, lei, all)`, nao um
+  // literal descartando o que avaliarDiff devolveu.
+  const chamada = fonte.slice(iAplicar, iAplicar + 400)
+  expect(/(^|[^A-Za-z])lei([^A-Za-z]|$)/.test(chamada), 'aplicarLei recebendo literal em vez da LEI calculada e descarte disfarcado de wiring').toBe(true)
+})
+
+// `origem` estava no arquivo em disco, no plano mestre, e em NENHUM tipo nem
+// validacao: regra nova entrava sem dizer quem decidiu nem quando, e o criterio
+// que justifica a existencia da LEI ("nunca de um caso isolado") era um paragrafo
+// de documento sem guarda.
+test('regra SEM origem e recusada, nomeando a regra', () => {
+  const semOrigem = { id: 'r-9001', categoria: 'x', descricao: 'y', gatilho: {}, exigencia: 'z' }
+  comRegras(JSON.stringify({ versao: 1, regras: [semOrigem] }), () => {
+    expect(() => lerRegras()).toThrow('r-9001')
+  })
+})
+
+test('origem sem quem promoveu, ou com data invalida, e recusada', () => {
+  const base = { id: 'r-9002', categoria: 'x', descricao: 'y', gatilho: {}, exigencia: 'z' }
+  comRegras(JSON.stringify({ versao: 1, regras: [{ ...base, origem: { cards: [], promovidoEm: '2026-01-01', promovidoPor: '' } }] }), () => {
+    expect(() => lerRegras()).toThrow('promovidoPor')
+  })
+  comRegras(JSON.stringify({ versao: 1, regras: [{ ...base, origem: { cards: [], promovidoEm: 'setembro', promovidoPor: 'rafael' } }] }), () => {
+    expect(() => lerRegras()).toThrow('promovidoEm')
+  })
+  comRegras(JSON.stringify({ versao: 1, regras: [{ ...base, origem: { cards: 'nao-e-lista', promovidoEm: '2026-01-01', promovidoPor: 'rafael' } }] }), () => {
+    expect(() => lerRegras()).toThrow('origem.cards')
+  })
+})
+
+test('cards VAZIO continua valendo — ha regra que nasce de decisao de projeto, nao de recorrencia', () => {
+  const daProjeto = { id: 'r-9003', categoria: 'infra', descricao: 'y', gatilho: {}, exigencia: 'z', origem: { cards: [], promovidoEm: '2026-08-23', promovidoPor: 'rafael' } }
+  comRegras(JSON.stringify({ versao: 1, regras: [daProjeto] }), () => {
+    expect(lerRegras().map(r => r.id)).toEqual(['r-9003'])
+  })
+})
+
+test('o arquivo de regras DESTE repo passa pela propria validacao de procedencia', () => {
+  const regras = lerRegras()
+  // `[].every(...)` e true: sem esta guarda, o arquivo ficar sem regra nenhuma
+  // fazia a assercao passar sem verificar nada.
+  expect(regras.length, 'nenhuma regra carregada: a assercao abaixo seria vacua').toBeGreaterThan(0)
+  for (const r of regras) {
+    expect(r.origem.promovidoPor.trim().length, `${r.id} sem quem promoveu`).toBeGreaterThan(0)
+    expect(r.origem.promovidoEm, `${r.id} sem data`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(Array.isArray(r.origem.cards), `${r.id}: origem.cards nao e lista`).toBe(true)
+  }
 })

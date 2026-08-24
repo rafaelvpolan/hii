@@ -8,10 +8,16 @@ import { numeroDeEnv } from '../cdl/ali/config.ts'
 // nao consegue se autolimitar de verdade, e prometer isso em codigo seria
 // garantia falsa.
 //
-// O que o motor PODE fazer, e faz aqui: limitar CONCORRENCIA. Dado um orcamento
-// por worktree, quantos cabem no que o container recebeu. Sem isso, um card com
-// laco de reparo preso consome o host e derruba os outros — mesmo motivo do
+// O que o motor PODE fazer, e faz: limitar CONCORRENCIA. Dado um orcamento por
+// worktree, quantos cabem no que o container recebeu. Sem isso, um card com laco
+// de reparo preso consome o host e derruba os outros — mesmo motivo do
 // orcamentoPorCard, um em recurso de maquina e outro em custo de token.
+//
+// "Faz" e afirmacao com endereco: `tetoDeParalelismo` (fim deste arquivo) e
+// aplicado pelo escalonador em motor/osw/mtr/fila.ts. Enquanto esse elo nao
+// existia, este comentario dizia "faz aqui" e o modulo nao tinha UM importador de
+// producao: o escalonador usava so HICODE_CONCURRENCY e abria 3 worktrees de
+// 2048MB contra um limite de 4096MB.
 //
 // Nunca devolve zero: um card por vez sempre cabe. Devolver zero pararia a fila
 // para sempre sem dizer por que, que e a falha silenciosa que este motor recusa.
@@ -58,16 +64,11 @@ export function quantosWorktreesCabem(o: OrcamentoDeRecurso): CabemQuantos {
   return { cabem: bruto, limitante, motivo: `${bruto} worktree(s) cabem; ${limitante} e o recurso que limita` }
 }
 
-export interface PermissaoDeWorktree {
-  readonly pode: boolean
-  readonly motivo: string
-}
-
-export function podeAbrirMaisUm(emVoo: number, o: OrcamentoDeRecurso = orcamentoDeRecurso()): PermissaoDeWorktree {
-  const { cabem, limitante } = quantosWorktreesCabem(o)
-  if (emVoo < cabem) return { pode: true, motivo: `${emVoo} em voo de ${cabem} que cabem` }
-  return { pode: false, motivo: `teto de ${cabem} worktree(s) em paralelo atingido (${limitante} e o limitante) — o proximo card espera` }
-}
+// `podeAbrirMaisUm` vivia aqui e nao tinha consumidor de producao. Pior: ela
+// ignorava HICODE_CONCURRENCY, ou seja era uma SEGUNDA regra de paralelismo, mais
+// fraca que a do escalonador — duas fontes de verdade para a mesma decisao, e a
+// morta permitia mais do que a viva. Quem decide e `tetoDeParalelismo` (abaixo),
+// aplicado em motor/osw/mtr/fila.ts.
 
 export function relatoDeLimites(o: OrcamentoDeRecurso = orcamentoDeRecurso()): string {
   const c = quantosWorktreesCabem(o)
@@ -76,4 +77,19 @@ export function relatoDeLimites(o: OrcamentoDeRecurso = orcamentoDeRecurso()): s
     `orcamento por worktree: ${o.memoriaPorWorktreeMb}MB e ${o.cpuPorWorktree} cpu (HICODE_MEM_POR_WORKTREE_MB, HICODE_CPU_POR_WORKTREE)`,
     'o teto de fato e do container: declare em docker-stack.yml (deploy.resources.limits, honrado pelo docker swarm) — o processo so limita concorrencia',
   ].join('\n')
+}
+
+// O ponto onde o teto de recurso deixa de ser numero calculado e vira decisao de
+// escalonamento. Enquanto este modulo nao tinha consumidor, `quantosWorktreesCabem`
+// era um relatorio bonito que ninguem lia: o escalonador usava so HICODE_CONCURRENCY.
+//
+// O menor dos dois manda. O operador ainda pode BAIXAR por HICODE_CONCURRENCY, mas
+// nao pode subir acima do que o container comporta — que era como 3 worktrees de
+// 2048MB acabavam pedindo 6GB contra um limite de 4GB.
+//
+// Nunca devolve zero, pelo mesmo motivo de quantosWorktreesCabem: um card por vez
+// sempre cabe, e parar a fila em silencio e pior que rodar devagar.
+export function tetoDeParalelismo(maxConfigurado: number, o: OrcamentoDeRecurso = orcamentoDeRecurso()): number {
+  const cabem = quantosWorktreesCabem(o).cabem
+  return Math.max(1, Math.min(maxConfigurado, cabem))
 }

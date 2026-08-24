@@ -32,18 +32,41 @@
     ["URL_OK", "REFINED"],
     ["REFINED", "TESTS_GREEN"],
     ["TESTS_GREEN", "SEC_CLEARED"],
-    ["SEC_CLEARED", "REVIEWED"],
-    ["REVIEWED", "CLEANED"],
+    ["SEC_CLEARED", "CLEANED"],
     ["CLEANED", "PR_OPEN"],
     ["URL_OK", "PR_OPEN"],
     ["PR_OPEN", "MERGED"],
     ["MERGED", "DEPLOYED"]
   ],
+  "transicoesDeRecuperacao": [
+    ["REFINED", "URL_OK"],
+    ["TESTS_GREEN", "URL_OK"],
+    ["SEC_CLEARED", "URL_OK"],
+    ["REVIEWED", "URL_OK"],
+    ["CLEANED", "URL_OK"],
+    ["HALTED", "URL_OK"],
+    ["PR_OPEN", "URL_OK"],
+    ["REFINED", "PR_OPEN"],
+    ["TESTS_GREEN", "PR_OPEN"],
+    ["SEC_CLEARED", "PR_OPEN"],
+    ["REVIEWED", "PR_OPEN"],
+    ["HALTED", "EXECUTING"],
+    ["EXECUTED", "CORRECTING"],
+    ["EXECUTING", "CORRECTING"],
+    ["URL_OK", "WAITING"],
+    ["REFINED", "WAITING"],
+    ["TESTS_GREEN", "WAITING"],
+    ["SEC_CLEARED", "WAITING"],
+    ["CLEANED", "WAITING"],
+    ["CORRECTING", "WAITING"],
+    ["SPECCED", "WAITING"]
+  ],
+  "sobreRecuperacao": "Rotas que NAO fazem parte do caminho de um card feliz — elas existem porque o processo morre, o provedor falha e o humano manda refazer. Ficam num array proprio para o caminho normal acima continuar legivel, e VALEM como transicao permitida. Quem as produz: reconcileStranded (motor/osw/mtr/estado-da-fila.ts:35,39) devolve card de polimento para URL_OK apos reinicio, ou adota PR orfao; resumeFrom (motor/mir/acoes.ts:57) rebobina para URL_OK de qualquer estado; aplicarPolitica (motor/cic/rpr/politica.ts:89) manda para WAITING quando a falha e transitoria; instruir/acoes mandam para CORRECTING. Esta lista saiu de EXECUCAO observada, nao de leitura de codigo: o observador de deriva (motor/nmy/deriva-de-transicao.ts) grita no par que ninguem declarou.",
   "sempreAlcancavel": ["HALTED", "PAUSED"],
   "checkpointsHumanos": ["URL", "PR_OPEN"],
   "semEscritaNoMotor": {
     "sobre": "Estados declarados em STATUSES que nenhum arquivo de motor/ escreve hoje. Ficam listados de proposito: deriva declarada e deriva visivel.",
-    "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED"],
-    "nota": "EXECUTED e LIDO por motor/osw/mtr/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel."
+    "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED", "REVIEWED"],
+    "nota": "EXECUTED e LIDO por motor/osw/mtr/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel. REVIEWED era o estado do step `review` do pipeline, removido: o crivo do fecho (runCodefoxGate) ja faz a revisao adversarial LENDO o diff, e o veredito do step nunca era lido. O no fica declarado porque card antigo em disco pode estar nele e a fila precisa reconcilia-lo."
   }
 }

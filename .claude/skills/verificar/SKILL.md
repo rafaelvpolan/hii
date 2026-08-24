@@ -37,8 +37,14 @@ vue/py` — config, IaC, docs, `.d.ts` e binário ficam fora **com motivo**), or
 reduzido para produção vir antes) e divide em lotes que **nunca** passam do orçamento de caracteres.
 
 Argumentos (`$ARGUMENTS`, todos opcionais): um **prefixo de caminho** (recorte, ex.: `motor/agentes/`),
-`--lotes N` (teto de lotes desta execução) e `--orcamento CHARS` (default: `GATE_DIFF_LIMIT`, o mesmo
-orçamento do gate). Sem argumentos = repositório inteiro, sem teto. Traduza `$ARGUMENTS` para `AUD_ESCOPO`/`AUD_LOTES`/
+`--lotes N` (teto de lotes desta execução), `--orcamento CHARS` (default: `GATE_DIFF_LIMIT`, o mesmo
+orçamento do gate) e `--branch` (audita só a **superfície desta branch**: os arquivos que o diff
+tocou). Sem argumentos = repositório inteiro, sem teto.
+
+`--branch` existe porque um diff espalha por dezenas de diretórios e não tem prefixo comum, então
+`escopo` (prefixo cru) não serve. Ele usa a opção `apenas` de `selecionarAuditoria`, que recorta por
+**lista exata de caminhos** — e a cobertura de teste continua sendo calculada sobre o repo inteiro,
+porque um recorte não pode fazer o auditor esquecer que o teste existe. Traduza `$ARGUMENTS` para `AUD_ESCOPO`/`AUD_LOTES`/
 `AUD_ORCAMENTO` no comando abaixo — argumento que você não repassar simplesmente não vale.
 
 O prefixo é comparado com `startsWith` cru (não é glob): `motor/agentes/` recorta o diretório,
@@ -48,17 +54,21 @@ Rode **da raiz do repo** (o `bun -e` importa por caminho relativo ao `cwd`):
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-AUD_ESCOPO="" AUD_LOTES=0 AUD_ORCAMENTO=0 bun -e '
-const a = await import(process.cwd() + "/motor/agentes/ass/auditoria.ts")
-const p = await a.selecionarAuditoria({
-  escopo: process.env.AUD_ESCOPO || "",
-  maxLotes: Number(process.env.AUD_LOTES || 0),
-  orcamentoChars: Number(process.env.AUD_ORCAMENTO || 0) || undefined,
-})
-console.log(a.resumoAuditoria(p))
-for (const l of p.lotes) console.log("\n" + a.renderLote(l, p.lotes.length))
-'
+# Repositorio inteiro:
+bun scripts/auditar.ts
+# Recorte por prefixo de caminho:      bun scripts/auditar.ts motor/agentes/
+# So a superficie DESTA branch:        bun scripts/auditar.ts --branch [--base main]
+# Teto de lotes / orcamento por lote:  bun scripts/auditar.ts --lotes 3 --orcamento 40000
+#
+# Roda igual sob node (`node scripts/auditar.ts ...`) — o script e o consumidor de
+# `apenas` em selecionarAuditoria, e tem teste proprio em
+# test/agentes/auditar-script.test.ts. Nao reescreva a selecao inline: ela e
+# deterministica de proposito, e o snippet inline que existia aqui nao tinha como
+# ser testado.
 ```
+
+Com `--branch`, diga no relatório que a cobertura vale para a **superfície da branch**, não para o
+repositório — a mesma disciplina do aviso de `escopo`.
 
 Guarde a saída (ex.: `/tmp/hicode-auditoria-plano.txt`) — ela é a **fonte dos números** do relatório
 final. `resumoAuditoria` já emite a linha de cobertura e as linhas `fora (N): motivo — arquivos`;
