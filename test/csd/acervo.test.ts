@@ -77,11 +77,22 @@ php`)
   expect(skillsPara('seguranca', { arquivos: ['a.php'], deps: [] }, acervo), 'papel errado nao carrega').toEqual([])
 })
 
-test('o acervo real do repo carrega, tem os dois packs e nenhum id repetido', () => {
+// Lista explicita de proposito: pack novo reprova aqui ate ser declarado, do
+// mesmo jeito que efeito externo novo reprova no registro de idempotencia.
+// Varredura dinamica passaria calada e o teste deixaria de dizer algo.
+const PACKS_DECLARADOS = ['common', 'frontend-web', 'games-multiplatform']
+
+test('o acervo real do repo carrega, tem os packs declarados e nenhum id repetido', () => {
   const a = carregarAcervo()
   expect(a.length).toBeGreaterThan(8)
-  expect(new Set(a.map(s => s.pack))).toEqual(new Set(['common', 'games-multiplatform']))
+  expect([...new Set(a.map(s => s.pack))].sort()).toEqual(PACKS_DECLARADOS)
   expect(new Set(a.map(s => s.id)).size).toBe(a.length)
+})
+
+test('skill de front NAO carrega por o alvo ser TypeScript — este repo e TS e nao e front', () => {
+  const a = carregarAcervo()
+  const packs = skillsPara('implementador', { arquivos: ['motor/x.ts'], deps: ['typescript'] }, a).map(s => s.pack)
+  expect(new Set(packs), 'typescript como gatilho de front carregaria em todo card deste motor').toEqual(new Set(['common']))
 })
 
 test('o pack common carrega SEMPRE, e o de jogos so com sinal de engine', () => {
