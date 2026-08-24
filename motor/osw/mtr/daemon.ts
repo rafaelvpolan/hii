@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { basename, join } from 'node:path'
 import { ROOT, cardsDir } from '../../cdl/ali/config'
 import { ENV_RUNNER_PIDFILE } from '../../cdl/ali/contrato'
+import { runtimeDeScript } from '../../cdl/ali/runtime'
 
 const ENGINE_MARK = 'runner.ts'
-const ENGINE_RUNTIME = 'bun'
 
 export type Autostart = 'yes' | 'no' | 'ask'
 
@@ -80,7 +80,7 @@ function rodaNaRaiz(pid: number, raiz: string): boolean {
 }
 
 export function eOMotor(argv: readonly string[]): boolean {
-  if (basename(argv[0] ?? '') !== ENGINE_RUNTIME) return false
+  if (basename(argv[0] ?? '') !== runtimeDeScript()) return false
   return argv.slice(1).some(arg => arg === ENGINE_MARK || arg.endsWith(`/${ENGINE_MARK}`))
 }
 

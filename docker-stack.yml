@@ -1,0 +1,66 @@
+# Docker Swarm. Deploy:
+#   docker build -t <registry>/hii:<tag> .
+#   docker push <registry>/hii:<tag>
+#   HII_IMAGEM=<registry>/hii:<tag> docker stack deploy -c docker-stack.yml hii
+#
+# COMPOSE E PROIBIDO NESTE PROJETO — ver config/regras-inegociaveis.json (r-0001)
+# e test/cdl/sem-compose.test.ts, que reprova a suite. O motivo e tecnico: em
+# compose o bloco `deploy.resources.limits` abaixo e IGNORADO, e o teto de cpu e
+# memoria do item 32 viraria decorativo. Teto decorativo e pior que teto nenhum,
+# porque parece que existe.
+#
+# Swarm nao aceita `build:` — a imagem vem pronta de um registry, o que tambem
+# obriga a versionar o que esta em producao em vez de construir no host.
+version: "3.9"
+
+services:
+  hii:
+    image: ${HII_IMAGEM:?defina HII_IMAGEM com a imagem publicada}
+    environment:
+      HICODE_RUNTIME: ${HICODE_RUNTIME:-node}
+      # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
+      # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
+      # decidir quantos worktrees abre em paralelo (motor/qlb/limites.ts:31-34).
+      HICODE_MEM_TOTAL_MB: "4096"
+      HICODE_CPUS_TOTAL: "2"
+      HICODE_MEM_POR_WORKTREE_MB: "2048"
+      HICODE_CPU_POR_WORKTREE: "1"
+      # Item 29: o caminho sempre-funcional e variavel de ambiente. Em swarm o
+      # segredo entra como ARQUIVO em /run/secrets/<nome>, e o provedor de
+      # arquivo le de la — cofre opcional e plugavel, nunca hard-requirement.
+      HICODE_SECRETS_DIR: /run/secrets
+    secrets:
+      - anthropic_api_key
+      - gh_token
+    volumes:
+      # Item 31: estado fora do container. Cards, diario e worktrees sobrevivem
+      # a `docker stack rm`. skills/ e config/ vivem em git, nunca so aqui.
+      - estado:/estado
+      # O harness de IA e a credencial dele entram montados — ver Dockerfile.
+      - harness:/root/.claude:ro
+    # /health NAO e publicado de proposito: nao tem autenticacao, e swarm nao
+    # sabe ligar so no loopback. Alcance por `docker exec` ou por um coletor
+    # dentro da rede overlay.
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      update_config:
+        order: stop-first
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+        reservations:
+          memory: 1G
+
+secrets:
+  anthropic_api_key:
+    external: true
+  gh_token:
+    external: true
+
+volumes:
+  estado:
+  harness:

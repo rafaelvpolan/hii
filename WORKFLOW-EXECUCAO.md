@@ -54,7 +54,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | ✅ feita |
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | ✅ feita |
 | **10c** | Ligação — mecanismo ocioso vira motor | 9, 12, 14 + defeito | FRE, VTB, CLR, CTR | Sim | ✅ feita |
-| **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) | — |
+| **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Sim (runtime) | ✅ feita |
 | **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | — |
 | **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | — |
 
@@ -695,22 +695,47 @@ Nenhum dos dois foi lembrança: foram gates fechando por sinal real.
 | Item | Entrega | Arquivo |
 |---|---|---|
 | 28 | `Dockerfile` único, **sem SDK de nuvem nenhum no motor** | `Dockerfile` |
-| 28 | `docker-compose.yml` cobrindo o caso VPS | `docker-compose.yml` |
+| 28 | `docker-stack.yml` para docker swarm — **compose e PROIBIDO** (r-0001) | `docker-stack.yml` |
 | 28 | Config via variável de ambiente (12-factor); estado em volume externo ao container | `motor/cdl/ali/` |
 | 29 | `EnvSecretProvider` como caminho **sempre funcional**; cofre de nuvem opcional e plugável | `motor/qlb/cfr/segredos.ts` |
-| 31 | Snapshot do volume (diário, worktrees) + `skills/` e regras **sempre em git**, nunca só no disco de produção | `docker-compose.yml`, `scripts/` |
-| 32 | Teto de CPU/memória por worktree paralelo | `docker-compose.yml`, `motor/qlb/limites.ts` |
+| 31 | Snapshot do volume (diário, worktrees) + `skills/` e regras **sempre em git**, nunca só no disco de produção | `scripts/snapshot-estado.sh` |
+| 32 | Teto de CPU/memória por worktree paralelo | `docker-stack.yml`, `motor/qlb/limites.ts` |
 
 ### Gate de saída
 
 ```bash
 bun run test
-docker build -t hii:brazil .                            # exit 0
-docker run --rm hii:brazil node -e 'process.exit(0)'    # sobe sem SDK de nuvem
-bun test ./test/cfr-segredos.test.ts                    # sem env obrigatória = erro claro, não fallback silencioso
-grep -rn 'aws-sdk\|@azure/\|@google-cloud' motor/ package.json   # zero ocorrência no motor
-bun test ./test/qlb-limites.test.ts
+docker build -t hii:brazil .                          # exit 0 — verificado
+bun test ./test/qlb/cfr-segredos.test.ts              # segredo ausente = erro claro, nunca fallback silencioso
+bun test ./test/qlb/limites.test.ts                   # concorrência derivada do orçamento, nunca zero
+bun test ./test/cdl/ali-runtime.test.ts               # nenhum spawn de bun fixo, nenhuma API Bun.*
+bun test ./test/cdl/sem-compose.test.ts               # compose reprova a suíte
+bun test ./test/cdl/estado-em-git.test.ts             # regra, critério e acervo versionados
 ```
+
+> O invariante de "zero SDK de nuvem" virou teste
+> (`test/qlb/cfr-segredos.test.ts`) em vez de `grep` no gate: grep num documento
+> ninguém roda, teste na suíte roda sempre.
+
+### Divergências conscientes do esboço da Parte VI
+
+O esboço propunha `node:22-slim` com `npm ci` e um `docker-compose.yml`. Três
+correções, todas com motivo:
+
+**Node 24, e o motor deixou de exigir Bun.** O esboço ignorava que o motor
+*spawnava* `bun` em seis lugares e usava `Bun.serve` no `/health`. Agora
+`motor/cdl/ali/runtime.ts` decide o runtime por `HICODE_RUNTIME` (bun ou node) e
+o servidor de saúde usa `node:http`, que roda nos dois. Sem isso, "a mesma imagem
+em qualquer lugar" era promessa que a primeira imagem sem Bun desmentia.
+
+**Compose está proibido, não substituído.** `config/regras-inegociaveis.json`
+(r-0001) declara e `test/cdl/sem-compose.test.ts` reprova. O motivo é técnico:
+compose **ignora** `deploy.resources.limits`, então o teto do item 32 seria
+decorativo — e teto decorativo é pior que teto nenhum.
+
+**O harness de IA não vai embutido na imagem.** Embutir a versão de um CLI
+específico amarraria a imagem exatamente ao que o item 1 diz que ela não deve
+amarrar. `hii doctor` diz o que falta antes de qualquer card rodar.
 
 ---
 

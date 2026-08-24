@@ -1,6 +1,8 @@
 import { readDaemonHealth } from './tick'
 import { pending, quantosEmVoo } from '../../osw/mtr/estado-da-fila'
 import { encerrando } from '../../osw/mtr/encerramento'
+import { createServer } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 // RDR — observabilidade de INFRAESTRUTURA, distinta da observabilidade de
 // decisao de IA (que e o diario EUC). Serve para systemd, politica de restart
@@ -49,20 +51,22 @@ export function portaDeSaude(): number {
   return Number(process.env.HICODE_HEALTH_PORT || 0)
 }
 
-// Loopback por padrao. Bun.serve sem `hostname` liga em 0.0.0.0, o que exporia
+// Loopback por padrao. Servidor HTTP sem `hostname` liga em 0.0.0.0, o que exporia
 // o /health a qualquer cliente que alcance a porta na rede — sem autenticacao.
 // Expor alem do loopback passa a exigir intencao explicita do operador.
 export function enderecoDeSaude(): string {
   return process.env.HICODE_HEALTH_BIND || '127.0.0.1'
 }
 
-export function respostaDeSaude(caminho: string): Response {
-  if (caminho !== '/health') return new Response('nao encontrado\n', { status: 404 })
+export interface RespostaDeSaude {
+  readonly status: number
+  readonly corpo: string
+}
+
+export function respostaDeSaude(caminho: string): RespostaDeSaude {
+  if (caminho !== '/health') return { status: 404, corpo: 'nao encontrado\n' }
   const s = lerSaude()
-  return new Response(`${JSON.stringify(s)}\n`, {
-    status: s.ok ? 200 : 503,
-    headers: { 'content-type': 'application/json' },
-  })
+  return { status: s.ok ? 200 : 503, corpo: `${JSON.stringify(s)}\n` }
 }
 
 export interface ServidorDeSaude {
@@ -76,10 +80,14 @@ export interface ServidorDeSaude {
 export function subirServidorDeSaude(porta: number | null = null): ServidorDeSaude | null {
   const alvo = porta === null ? portaDeSaude() : porta
   if (porta === null && !alvo) return null
-  const s = Bun.serve({
-    port: alvo,
-    hostname: enderecoDeSaude(),
-    fetch: (req): Response => respostaDeSaude(new URL(req.url).pathname),
+  const servidor = createServer((req: IncomingMessage, res: ServerResponse) => {
+    const caminho = (req.url ?? '/').split('?')[0] ?? '/'
+    const r = respostaDeSaude(caminho)
+    res.writeHead(r.status, { 'content-type': r.status === 404 ? 'text/plain' : 'application/json' })
+    res.end(r.corpo)
   })
-  return { porta: s.port ?? alvo, parar: (): void => { void s.stop(true) } }
+  servidor.listen(alvo, enderecoDeSaude())
+  const endereco = servidor.address()
+  const efetiva = typeof endereco === 'object' && endereco ? endereco.port : alvo
+  return { porta: efetiva, parar: (): void => { servidor.close() } }
 }

@@ -1,5 +1,27 @@
 {
   "versao": 1,
   "sobre": "Regras que o gate cobra SEMPRE, sem interpretacao de modelo. Cada uma nasce de recorrencia provada (>= N cards) e de decisao humana explicita — nunca de um caso isolado. Ver MODERNIZATION.md Parte III secao 6 (item 13) e ARQUITETURA-BRAZIL.md, codigo LEI.",
-  "regras": []
+  "regras": [
+    {
+      "id": "r-0001",
+      "categoria": "infra",
+      "descricao": "docker compose e EXTREMAMENTE PROIBIDO neste projeto: a orquestracao e docker swarm (docker stack deploy -c docker-stack.yml). Em compose o bloco deploy.resources.limits e ignorado, entao o teto de cpu e memoria por worktree do item 32 viraria decorativo — e teto decorativo e pior que teto nenhum, porque parece que existe.",
+      "gatilho": {
+        "arquivos": [
+          "docker-compose*.yml",
+          "docker-compose*.yaml",
+          "compose.yml",
+          "compose.yaml",
+          "**/docker-compose*.yml",
+          "**/compose.y*ml"
+        ]
+      },
+      "exigencia": "remover o arquivo de compose e usar docker-stack.yml; ver test/cdl/sem-compose.test.ts, que reprova a suite",
+      "origem": {
+        "cards": [],
+        "promovidoEm": "2026-08-23",
+        "promovidoPor": "rafael"
+      }
+    }
+  ]
 }
