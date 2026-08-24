@@ -21,6 +21,10 @@ export const TIPOS_DE_EVENTO = [
   'efeito_registrado',
   'orfao',
   'card_fechado',
+  // Transicao de estado que config/topologia.json nao declara. Vai para o DIARIO
+  // do card, e nao so para o stderr: o dedup do observador e por processo, entao
+  // deriva ocorrida num processo CLI curto sumia sem rastro auditavel.
+  'transicao_nao_declarada',
 ] as const
 
 export type TipoDeEvento = (typeof TIPOS_DE_EVENTO)[number]

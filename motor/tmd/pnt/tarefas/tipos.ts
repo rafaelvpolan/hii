@@ -9,5 +9,6 @@ export interface ExternalTask {
 export interface TaskSync {
   readonly name: string
   pull(): Promise<ExternalTask[]>
-  push(card: Fields): Promise<void>
+  // true = efeito produzido agora; false = ja constava no diario e nada foi feito.
+  push(card: Fields): Promise<boolean>
 }

@@ -70,7 +70,22 @@ test('INVARIANTE o gate usa o criterio versionado — nao os padroes hardcoded d
   const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
   expect(fonte).toContain('renderizarCriterios()')
   expect(fonte, 'a string de padroes voltou para dentro do prompt').not.toContain('PADROES: tudo tipado strict')
-  expect(fonte, 'o veredicto precisa carregar qual criterio foi violado').toContain('"criterio"')
+})
+
+// O teste que existia aqui afirmava toContain('"criterio"') sobre o texto-fonte —
+// e casava com a string do PROMPT, que sempre esteve la. O campo nunca foi extraido
+// nem gravado: um BLOCKED sem id nenhum era aceito igual a um com id, e o gate
+// fechava pelo `reason` em texto livre. Estes afirmam sobre o veredicto PARSEADO.
+test('COMPORTAMENTO o criterio violado e extraido do veredicto, nao so pedido no prompt', async () => {
+  const { buildParsed } = await import('../../motor/cic/crv/gate.ts')
+  const p = buildParsed('{"verdict":"BLOCKED","reason":"catch vazio","criterio":"c-erro","questions":[]}', 0, 0)
+  expect(p.found).toBe(true)
+  expect(p.criterio, 'sem o id extraido, reprovar nao diz ao implementador o que consertar').toBe('c-erro')
+})
+
+test('COMPORTAMENTO veredicto sem criterio nao inventa um', async () => {
+  const { buildParsed } = await import('../../motor/cic/crv/gate.ts')
+  expect(buildParsed('{"verdict":"APPROVED","reason":"ok"}', 0, 0).criterio).toBe('')
 })
 
 test('arquivoDeCriterios respeita a variavel de ambiente do contrato', () => {

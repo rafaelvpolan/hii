@@ -303,7 +303,7 @@ hii/
 │   └── security-checklist/     VTB  item 7                                       NOVO
 │
 ├── Dockerfile                  EMB  item 28                                      NOVO
-├── docker-compose.yml          EMB  item 28                                      NOVO
+├── docker-stack.yml            EMB  item 28 (compose e PROIBIDO por r-0001)      NOVO
 ├── test/                       espelha motor/ (Onda 1b): test/<dominio>/*.test.ts
 └── scripts/
     └── renomear-brazil.mjs     ferramenta da Onda 1                              NOVO
@@ -586,7 +586,7 @@ Tudo aqui é `NOVO`. Coluna **Item** = número no roadmap consolidado do `MODERN
 | CHG | `motor/agentes/chg/red-primeiro.ts` | RED antes do GREEN obrigatório no perfil `completo` | 5 |
 | CLR | `motor/agentes/clr/doc-updater.ts` | Docs atualizadas quando a mudança afeta contrato público | 9 |
 | RND | `skills/_resolved/common/search-first/SKILL.md` | Procurar antes de codar | 3 |
-| EMB | `Dockerfile`, `docker-compose.yml` | Uma imagem, roda igual em VPS/AWS/Azure/GCP. **Zero SDK de nuvem no motor** | 28, 31, 32 |
+| EMB | `Dockerfile`, `docker-stack.yml` | Uma imagem, roda igual em VPS/AWS/Azure/GCP. **Zero SDK de nuvem no motor**. Compose e PROIBIDO (r-0001): ele ignora `deploy.resources.limits` e o teto do item 32 viraria decorativo | 28, 31, 32 |
 | MIR | `motor/mir/comandos-manuais.ts` | `/orquestrador-{jogos,dev-web,android,devops}` + `/layout`. São **atalhos de intake**, não orquestradores novos | 16 |
 | CTR | `motor/qlb/ctr/aprovar-plano.ts` | Parede humana na Fase 4, antes de implementar | 4 |
 | BSS | `motor/cdl/bss/setup-ferramental.ts` | Projeto/feature nova não avança sem teste rodando e debug documentado — Pilar 3 | 22 |
@@ -624,7 +624,7 @@ Tudo aqui é `NOVO`. Coluna **Item** = número no roadmap consolidado do `MODERN
 | 25 | Idempotência em efeito colateral externo | **SLV** | EUC |
 | 26 | Retomada de card no restart | **EUC** | MTR |
 | 27 | Evento `orfao` + compensação | **SLV** | EUC |
-| 28 | `Dockerfile` + `docker-compose.yml` | **EMB** | — |
+| 28 | `Dockerfile` + `docker-stack.yml` | **EMB** | — |
 | 29 | `secrets.ts` com `EnvSecretProvider` | **CFR** | — |
 | 30 | `GET /health` + shutdown gracioso | **RDR** | MTR |
 | 31 | Snapshot do volume + git | **EMB** | ALI |

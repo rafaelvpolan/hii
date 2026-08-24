@@ -12,6 +12,8 @@ import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from
 import { janelasDoProvedor } from '../../euc/tsr/janelas.ts'
 import { gastoDoMotorNoIntervalo } from '../../euc/tsr/consumo.ts'
 import type { JanelaDoPainel } from '../../mir/render/config/tipos.ts'
+import { arquivoDeGovernanca, tetoDoCard } from '../../euc/tsr/orcamento.ts'
+import { avisarArquivoIlegivel, motivoDoErro } from './aviso.ts'
 
 const BALDES_DA_SERIE = 48
 
@@ -102,8 +104,27 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
     fila,
     sessao: ledgerDaSessao(),
     gastoHoje: Number(gasto.total) || 0,
-    tetoUsd: Number(process.env.HICODE_BUDGET_USD ?? '0'),
+    // O teto do painel vem do MESMO lugar que o motor usa para barrar o card
+    // (tetoDoCard: HICODE_CARD_BUDGET_USD, senao model-tier.json). Antes lia
+    // `HICODE_BUDGET_USD`, variavel que nenhuma outra linha do repo escreve ou
+    // le: o painel mostrava teto 0 — "sem teto" — enquanto o motor barrava em
+    // US$16. Numero na tela que nao e o numero aplicado e pior que numero
+    // nenhum, porque parece informacao.
+    tetoUsd: tetoDoCardComFallback(),
     projeto: repo,
+  }
+}
+
+// lerGovernanca() LANCA quando model-tier.json esta ilegivel, e um snapshot de
+// painel nao pode derrubar a TUI por causa disso. Zero significa "nao sei o teto",
+// e o painel escreve isso na tela em vez de omitir (renderConfig) — mas o operador
+// tambem precisa saber POR QUE, senao corrompido fica indistinguivel de ausente.
+function tetoDoCardComFallback(): number {
+  try {
+    return tetoDoCard()
+  } catch (e) {
+    avisarArquivoIlegivel(arquivoDeGovernanca(), motivoDoErro(e as Error), 'o painel nao vai mostrar o teto por card, e o motor recusa iniciar o gauntlet sem teto legivel')
+    return 0
   }
 }
 

@@ -4,7 +4,7 @@ import * as core from './acoes.ts'
 import { planejarLote, removerLote } from '../cdl/remover.ts'
 import { renderRemocao, renderResultado } from './render/remocao.ts'
 import { projetosConhecidos } from '../cdl/projetos-conhecidos.ts'
-import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao } from './escolher-ia.ts'
+import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao, definirGauntlet } from './escolher-ia.ts'
 import { agentRoles, isProviderName, providerNameFor } from '../tmd/registro.ts'
 import { comandoDeLoginDoProvedor, provedoresDisponiveis } from '../tmd/disponibilidade.ts'
 import { comandosDaIaAtiva } from '../tmd/map/comandos.ts'
@@ -54,7 +54,7 @@ export function rotuloDoBloqueio(situacao: string): string {
 
 function resolverProvedorParaLogin(arg: string): HarnessId | null {
   if (!arg) return providerNameFor('implement')
-  if (arg !== undefined && isProviderName(arg)) return arg
+  if (isProviderName(arg)) return arg
   if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)
   return null
 }
@@ -267,6 +267,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     }
     case 'modo': {
       io.log(definirModoDeOperacao(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
+      return state
+    }
+    case 'gauntlet': {
+      io.log(definirGauntlet(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
       return state
     }
     case 'login': {

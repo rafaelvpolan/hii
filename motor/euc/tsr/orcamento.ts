@@ -103,6 +103,20 @@ export function tierPara(acao: string, g: Governanca = lerGovernanca()): Escolha
   return { tier: g.padrao, motivo: `acao "${acao}" nao esta no catalogo — tier padrao do arquivo` }
 }
 
+// Le o gasto acumulado do card. `null` significa "o campo existe e NAO e numero",
+// que e diferente de "gastou zero".
+//
+// Todo portao de orcamento fazia `parseFloat(fm.cost_usd || '0') || 0`, entao
+// cost_usd corrompido ('abc', '1,50', truncado) virava 0 — "nao gastou nada" — e
+// a guarda LIBERAVA a proxima chamada paga em vez de parar. Corrompido com a
+// mesma representacao de ausente, num portao de gasto.
+export function gastoDoCard(cru: string | undefined): number | null {
+  const t = String(cru ?? '').trim()
+  if (!t) return 0
+  const n = Number(t)
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
 export function tetoDoCard(g: Governanca = lerGovernanca()): number {
   const doOperador = numeroDeEnv('HICODE_CARD_BUDGET_USD', 0)
   return doOperador > 0 ? doOperador : g.orcamentoPorCard.tetoUsd

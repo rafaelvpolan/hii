@@ -3,7 +3,7 @@ export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'config' | 'ref' | 'login' | 'intake'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'config' | 'ref' | 'login' | 'intake'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -40,6 +40,7 @@ export const ALIASES: Record<string, string[]> = {
   '/model': ['/modelo'],
   '/effort': ['/esforco'],
   '/mode': ['/modo'],
+  '/gauntlet': ['/crivo'],
   '/new-task': ['/nova-tarefa'],
   '/new-ask': ['/nova-pergunta'],
   '/new-session': ['/nova-sessao', '/new'],
@@ -56,7 +57,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/login', '/exit',
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
   // Item 16 — atalhos de intake. Entram na MESMA lista porque sao comandos como
   // qualquer outro: o que muda e o conteudo pre-carregado, nunca o pipeline.
   '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout'] as const
@@ -190,6 +191,9 @@ function command(line: string, state: SessionState): Reply {
     case 'mode':
     case 'modo':
       return reply({ kind: 'modo', text: arg }, state)
+    case 'gauntlet':
+    case 'crivo':
+      return reply({ kind: 'gauntlet', text: arg }, state)
     case 'login':
       return reply({ kind: 'login', text: arg }, state)
     case 'repo':

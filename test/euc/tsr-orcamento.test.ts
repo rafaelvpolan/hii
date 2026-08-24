@@ -99,20 +99,75 @@ function arquivosDoMotor(raiz = 'motor'): string[] {
   return fora
 }
 
+// A varredura olha CODIGO, nao comentario. Sem isto, um comentario explicando por
+// que nao se le a env reprovava o invariante — e, pior, um comentario poderia
+// SATISFAZER uma checagem invertida, que e o padrao de teste-que-nao-falha que
+// esta auditoria inteira persegue.
+export function semComentarios(fonte: string): string {
+  return fonte
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter(l => !/^\s*\/\//.test(l))
+    .map(l => l.replace(/\s\/\/.*$/, ''))
+    .join('\n')
+}
+
+test('a varredura ignora comentario mas ve codigo — senao ela reprova documentacao', () => {
+  expect(semComentarios('// process.env.CARD_BUDGET_USD\nconst a = 1')).not.toContain('CARD_BUDGET_USD')
+  expect(semComentarios('/* CARD_BUDGET_USD */\nconst a = 1')).not.toContain('CARD_BUDGET_USD')
+  expect(semComentarios("const t = process.env.CARD_BUDGET_USD // nota"), 'codigo de verdade tem de continuar visivel').toContain('CARD_BUDGET_USD')
+})
+
 test('INVARIANTE nenhum ponto do motor le o teto de outro lugar que nao o governado', () => {
   const todos = arquivosDoMotor()
   expect(todos.length, 'a varredura precisa enxergar os arquivos').toBeGreaterThan(100)
   const fora = todos
     .filter(f => f !== join('motor', 'euc', 'tsr', 'orcamento.ts'))
-    .filter(f => readFileSync(f, 'utf8').includes('CARD_BUDGET_USD'))
+    .filter(f => semComentarios(readFileSync(f, 'utf8')).includes('CARD_BUDGET_USD'))
   expect(fora, 'teto lido de duas fontes vira orcamento que barra num ponto e nao no outro').toEqual([])
 })
 
+// Duas correcoes neste invariante: (1) usa `semComentarios`, senao um comentario
+// citando `tetoDoCard()` satisfaz a assercao — e ha comentarios desses no repo;
+// (2) o registro de ADOTANTES estava incompleto: gauntlet.ts e divergir.ts leem o
+// teto e nao entravam na lista, entao o "teto lido de duas fontes" podia voltar
+// justamente pelos pontos novos.
+const QUEM_LE_O_TETO: readonly string[] = [
+  'motor/osw/executar.ts',
+  'motor/cic/corrigir.ts',
+  'motor/qlb/ctr/fechar.ts',
+  'motor/cic/cnd/gauntlet.ts',
+  'motor/cic/mcn/divergir.ts',
+  'motor/cdl/ali/snapshot.ts',
+  'motor/nmy/luc/fase-spec.ts',
+]
+
 test('INVARIANTE quem barra por orcamento chama tetoDoCard', async () => {
-  for (const arquivo of ['motor/osw/executar.ts', 'motor/cic/corrigir.ts', 'motor/qlb/ctr/fechar.ts']) {
-    const fonte = await Bun.file(arquivo).text()
-    expect(fonte.includes('tetoDoCard()'), `${arquivo} tem de ler o teto governado`).toBe(true)
+  for (const arquivo of QUEM_LE_O_TETO) {
+    const fonte = semComentarios(await Bun.file(arquivo).text())
+    expect(fonte.includes('tetoDoCard('), `${arquivo} tem de ler o teto governado`).toBe(true)
   }
+})
+
+test('REGISTRO a lista de adotantes cobre TODOS os que leem o teto — lista incompleta nao vigia nada', () => {
+  const fora = arquivosDoMotor()
+    .filter(f => f !== join('motor', 'euc', 'tsr', 'orcamento.ts'))
+    .filter(f => semComentarios(readFileSync(f, 'utf8')).includes('tetoDoCard('))
+    .map(f => f.split('\\').join('/'))
+    .filter(f => !QUEM_LE_O_TETO.includes(f))
+  expect(fora, 'arquivo novo lendo o teto tem de entrar em QUEM_LE_O_TETO, senao o invariante acima nao o cobre').toEqual([])
+})
+
+test('gastoDoCard separa AUSENTE de CORROMPIDO — "gastou 0" liberava chamada paga', async () => {
+  const { gastoDoCard } = await import('../../motor/euc/tsr/orcamento.ts')
+  expect(gastoDoCard(undefined), 'campo ausente e o estado inicial: gastou zero').toBe(0)
+  expect(gastoDoCard('')).toBe(0)
+  expect(gastoDoCard('1.5')).toBe(1.5)
+  expect(gastoDoCard('0')).toBe(0)
+  expect(gastoDoCard('abc'), 'texto que nao e numero NAO pode virar zero').toBeNull()
+  expect(gastoDoCard('1,50'), 'virgula decimal e o caso real de card editado a mao').toBeNull()
+  expect(gastoDoCard('-3'), 'gasto negativo nao existe').toBeNull()
+  expect(gastoDoCard('NaN')).toBeNull()
 })
 
 test('model_tier_selected e um tipo de evento do diario, nao texto solto', async () => {

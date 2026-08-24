@@ -1,6 +1,6 @@
 import { run } from '../../qlb/git.ts'
 import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado.ts'
-import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado.ts'
+import type { DisponibilidadeExterna, EscopoDaConsulta, ListaDeServidores } from './estado.ts'
 import { harnessPorNome, providerNames } from '../registro.ts'
 
 const MCP_PREFIX = 'mcp__'
@@ -26,31 +26,43 @@ function binarioComMcp(): string {
   return nome ? harnessPorNome(nome).binario : ''
 }
 
-async function servidoresComEstado(): Promise<ServidorMcp[]> {
+function primeiraLinha(texto: string): string {
+  return String(texto || '').split('\n').map(l => l.trim()).filter(Boolean)[0]?.slice(0, 160) ?? ''
+}
+
+async function servidoresComEstado(): Promise<ListaDeServidores> {
   const bin = binarioComMcp()
-  if (!bin) return []
+  // Nenhum provedor declara `mcp` em capabilities: nao ha o que listar, e isso e
+  // fato conhecido, nao falha.
+  if (!bin) return { servidores: [], falhou: '' }
   try {
-    const { err, stdout } = await run(bin, ['mcp', 'list'], { timeout: MCP_LIST_TIMEOUT_MS })
-    if (err) return []
-    return lerListaDeServidores(stdout)
-  } catch {
-    return []
+    const { err, stdout, stderr } = await run(bin, ['mcp', 'list'], { timeout: MCP_LIST_TIMEOUT_MS })
+    if (err) {
+      return { servidores: [], falhou: `"${bin} mcp list" falhou: ${primeiraLinha(stderr) || err.message}` }
+    }
+    return { servidores: lerListaDeServidores(stdout), falhou: '' }
+  } catch (e) {
+    return { servidores: [], falhou: `nao consegui executar "${bin} mcp list": ${String((e as Error).message)}` }
   }
 }
 
-async function escopoDe(nome: string): Promise<EscopoServidor> {
+// Mesma distincao da listagem, aplicada ao escopo: "o binario nao respondeu" e
+// "respondeu e nao tem linha de scope" nao podem ter o mesmo valor. O primeiro e
+// transitorio; colapsar os dois em 'nao-verificavel' fazia um timeout de
+// `claude mcp get` virar HALT sem retry.
+async function escopoDe(nome: string): Promise<EscopoDaConsulta> {
   const bin = binarioComMcp()
-  if (!bin) return 'nao-verificavel'
+  if (!bin) return { escopo: 'nao-verificavel', falhou: '' }
   try {
-    const { err, stdout } = await run(bin, ['mcp', 'get', nome], { timeout: MCP_LIST_TIMEOUT_MS })
-    if (err) return 'nao-verificavel'
-    return lerEscopo(stdout)
-  } catch {
-    return 'nao-verificavel'
+    const { err, stdout, stderr } = await run(bin, ['mcp', 'get', nome], { timeout: MCP_LIST_TIMEOUT_MS })
+    if (err) return { escopo: 'nao-verificavel', falhou: `"${bin} mcp get ${nome}" falhou: ${primeiraLinha(stderr) || err.message}` }
+    return { escopo: lerEscopo(stdout), falhou: '' }
+  } catch (e) {
+    return { escopo: 'nao-verificavel', falhou: `nao consegui executar "${bin} mcp get ${nome}": ${String((e as Error).message)}` }
   }
 }
 
-let estadoCache: Promise<ServidorMcp[]> | undefined
+let estadoCache: Promise<ListaDeServidores> | undefined
 let estadoEm = 0
 const TTL_ESTADO_MS = 60_000
 
@@ -60,8 +72,19 @@ export async function conectorExterno(ferramenta: string): Promise<Disponibilida
     estadoCache = servidoresComEstado()
     estadoEm = agora
   }
+  const lista = await estadoCache
+  // Falha de listagem NAO fica no cache por 60s: guardar "nao consegui listar"
+  // faria um hiccup de 20s virar um minuto de card parado.
+  //
+  // A limpeza vem DEPOIS de resolver, e o closure abaixo devolve o valor JA
+  // RESOLVIDO. Ler `estadoCache` dentro do closure era ler a variavel de modulo
+  // no momento da chamada — ja `undefined` —, e `disponibilidadeExterna` fazia
+  // `await consulta.servidores()` virar `undefined` e estourar TypeError em
+  // `lista.falhou`. Ou seja: exatamente no caso que este tratamento existe para
+  // cobrir, a funcao explodia, e a excecao subia sem retry ate o card HALTar.
+  if (lista.falhou) estadoCache = undefined
   return disponibilidadeExterna(ferramenta, {
-    servidores: () => estadoCache as Promise<ServidorMcp[]>,
+    servidores: () => Promise.resolve(lista),
     escopo: escopoDe,
     prefixo: prefixoDe,
   })
@@ -86,6 +109,21 @@ export function ferramentasDeNavegacao(disponibilidade: DisponibilidadeExterna):
   return disponibilidade.tools.flatMap(prefixo => TOOLS_NAVEGACAO.map(tool => `${prefixo}__${tool}`))
 }
 
+// Antes o conserto da listagem, a falha ESTOURAVA (visivel demais: derrubava o
+// card). Agora devolve indisponivel — e sem esta linha isso viraria perda de
+// capacidade INVISIVEL: o passo perde todas as tools de navegacao semantica sem
+// nada em lugar nenhum. Uma vez por motivo, como os outros avisos do repo.
+const navegacaoAvisada = new Set<string>()
+
 export async function navegacaoSemantica(): Promise<string[]> {
-  return ferramentasDeNavegacao(await conectorExterno(SERVIDOR_NAVEGACAO))
+  const conector = await conectorExterno(SERVIDOR_NAVEGACAO)
+  if (!conector.usavel && conector.transitorio && !navegacaoAvisada.has(conector.motivo)) {
+    navegacaoAvisada.add(conector.motivo)
+    process.stderr.write(`[hicode] sem navegacao semantica neste passo (${conector.motivo}) — o agente vai trabalhar sem lsp/ast-grep; isso NAO e o mesmo que o conector nao existir\n`)
+  }
+  return ferramentasDeNavegacao(conector)
+}
+
+export function esquecerAvisosDeNavegacao(): void {
+  navegacaoAvisada.clear()
 }

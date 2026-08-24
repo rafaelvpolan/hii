@@ -30,8 +30,28 @@ function estaNoPath(bin: string): boolean {
   return spawnSync(bin, ['--version'], { stdio: 'ignore', timeout: 5000 }).status === 0
 }
 
+// A escolha custa um spawnSync de `bun --version`. `eOMotor` chama isto, e
+// `daemonPid()` chama `eOMotor` — que a TUI consulta a cada quadro (~400ms).
+// Sem memo, o painel abria um processo por quadro so para descobrir um valor que
+// nao muda durante a vida do processo.
+//
+// A chave e o valor cru da env: se o operador (ou um teste) trocar ENV_RUNTIME, a
+// resposta muda junto. Cache que ignora a propria entrada seria pior que nao ter.
+let memo: { readonly chave: string; readonly escolha: EscolhaDeRuntime } | null = null
+
+export function esquecerRuntime(): void {
+  memo = null
+}
+
 export function escolhaDeRuntime(): EscolhaDeRuntime {
   const pedido = (process.env[ENV_RUNTIME] ?? '').trim()
+  if (memo && memo.chave === pedido) return memo.escolha
+  const escolha = decidirRuntime(pedido)
+  memo = { chave: pedido, escolha }
+  return escolha
+}
+
+function decidirRuntime(pedido: string): EscolhaDeRuntime {
   if (pedido) {
     if (!ehRuntime(pedido)) {
       throw new Error(`${ENV_RUNTIME}="${pedido}" nao e um runtime suportado (${RUNTIMES.join(' | ')}) — escolher outro binario em silencio seria rodar algo que o operador nao pediu`)

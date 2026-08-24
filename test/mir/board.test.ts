@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test'
 import { renderBoard, renderProjetos, resumirProjetos, idadeDe, legendaPassos } from '../../motor/mir/render/board.ts'
 import { passosDoCard, pulados } from '../../motor/mir/progresso.ts'
+import { phaseLabel } from '../../motor/mir/render/phases.ts'
 import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
 import type { Fields, StepMap } from '../../motor/cdl/index.ts'
 import type { Passo } from '../../motor/mir/progresso.ts'
@@ -195,8 +196,27 @@ test('board mostra a legenda quando ha passos', () => {
   expect(t).toContain('review')
 })
 
-test('board sem passos nao inventa legenda', () => {
-  expect(renderBoard([card({ id: '1' })], { repo: 'org/app', ...semPassos })).not.toContain('legenda')
+// `not.toContain('legenda')` era assercao sobre uma palavra que o board NUNCA
+// imprime — nao podia reprovar nada. O que interessa e: sem passos, a coluna de
+// legenda cai para a FASE do card, e nao para um contador falso tipo "0/0".
+test('board sem passos cai na fase do card, sem inventar contador de passos', () => {
+  const t = renderBoard([card({ id: '1', status: 'URL_OK' })], { repo: 'org/app', ...semPassos })
+  // `not.toContain('0/0')` era mais uma assercao vacua: legendaPassos([]) devolve
+  // '' e '0/0' e inalcancavel. O que prova o comportamento e a assercao POSITIVA:
+  // sem passos, a coluna mostra a FASE do card. Apagar o fallback
+  // `|| phaseLabel(...)` de board.ts deixa esta linha vermelha.
+  expect(t, 'sem passos, a coluna de legenda mostra a fase do card').toContain(phaseLabel('URL_OK').toLowerCase())
+  expect(legendaPassos([]), 'a fonte da legenda tem de devolver vazio, para o chamador cair na fase').toBe('')
+  const comPassos = renderBoard([card({ id: '1', status: 'URL_OK' })], {
+    repo: 'org/app',
+    passosDe: () => [{ label: 'Testes', estado: 'feito' }, { label: 'Seguranca', estado: 'pendente' }],
+  })
+  expect(comPassos, 'com passos e sem nenhum "agora", a legenda e o contador').toContain('1/2')
+})
+
+test('legendaPassos prefere o passo em curso ao contador — e o que o humano quer saber', () => {
+  expect(legendaPassos([{ label: 'Testes', estado: 'feito' }, { label: 'Seguranca', estado: 'agora' }])).toBe('seguranca')
+  expect(legendaPassos([{ label: 'Testes', estado: 'feito' }, { label: 'Seguranca', estado: 'feito' }])).toBe('2/2')
 })
 
 import { ordemDoBoard } from '../../motor/mir/render/board.ts'

@@ -235,7 +235,14 @@ test('cabecalho fixo nao rola para fora quando o log e longo', async () => {
   expect(tela).toContain('#022 executing')
   expect(tela).toContain('prompt')
   expect(tela).toContain('linha de log 59')
-  expect(tela).not.toContain('linha de log 0\n')
+  // Fronteira de palavra, nao sufixo '\n': o casamento por '\n' dependia de a
+  // linha nao ser a ultima do buffer, e e a mesma forma fragil que
+  // test/mir/tui-layout.test.ts acabou de substituir.
+  expect(/\blinha de log 0\b/.test(tela), 'a linha mais antiga nao pode estar na tela').toBe(false)
+  const visiveis = [...Array(60).keys()].filter(i => new RegExp(`\\blinha de log ${i}\\b`).test(tela))
+  expect(visiveis.length, 'o corpo tem de rolar: nao caberiam 60 linhas').toBeLessThan(60)
+  expect(visiveis.length).toBeGreaterThan(0)
+  expect(visiveis[visiveis.length - 1]).toBe(59)
 })
 
 test('dentro da tarefa, as instrucoes ficam ACIMA da execucao', async () => {
@@ -252,7 +259,13 @@ test('dentro da tarefa, as instrucoes ficam ACIMA da execucao', async () => {
   const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
-  expect(tela.indexOf('instrucao 12')).toBeLessThan(tela.indexOf('vitro: editando'))
+  // Sem a guarda do -1, faltar 'instrucao 12' fazia `-1 < indice` passar: o
+  // invariante de ORDEM ficava verde com a linha AUSENTE.
+  const iInstrucao = tela.indexOf('instrucao 12')
+  const iAtividade = tela.indexOf('vitro: editando')
+  expect(iInstrucao, 'a instrucao nao apareceu na tela').toBeGreaterThan(-1)
+  expect(iAtividade, 'a atividade do agente nao apareceu na tela').toBeGreaterThan(-1)
+  expect(iInstrucao).toBeLessThan(iAtividade)
 })
 
 test('fora da tarefa, o log continua abaixo do board', async () => {
@@ -268,7 +281,13 @@ test('fora da tarefa, o log continua abaixo do board', async () => {
   const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
-  expect(tela.indexOf('board do projeto')).toBeLessThan(tela.indexOf('card #023'))
+  // Mesma guarda do -1 do teste irmao: sem ela, o board AUSENTE da tela fazia
+  // `-1 < indice` passar.
+  const iBoard = tela.indexOf('board do projeto')
+  const iLog = tela.indexOf('card #023')
+  expect(iBoard, 'o board nao apareceu na tela').toBeGreaterThan(-1)
+  expect(iLog, 'a linha de log nao apareceu na tela').toBeGreaterThan(-1)
+  expect(iBoard).toBeLessThan(iLog)
 })
 
 test('instrucoes antigas saem de cena conforme a execucao cresce', async () => {
@@ -281,12 +300,19 @@ test('instrucoes antigas saem de cena conforme a execucao cresce', async () => {
   })
   const rodando = app.run()
   app.log('  instrucao 1 anotada')
+  await new Promise(r => setTimeout(r, 10))
+  const telaComExecucaoPequena = telaVirtual(term.saida)
   execucao = Array.from({ length: 40 }, (_, i) => `  passo ${i}`)
   app.log('  instrucao 2 anotada')
   await new Promise(r => setTimeout(r, 10))
   const tela = telaVirtual(term.saida)
   term.tecla('\x03')
   await rodando
-  expect(tela).not.toContain('instrucao 1 anotada')
-  expect(tela).toContain('passo 39')
+  // `not.toContain` sozinho passava com o log NUNCA renderizado. O que prova o
+  // mecanismo e o contraste: com execucao PEQUENA a instrucao aparece; com execucao
+  // grande ela cede espaco. Sem o contraste, apagar a renderizacao do log deixava o
+  // teste verde.
+  expect(tela, 'a instrucao antiga tem de sair de cena').not.toContain('instrucao 1 anotada')
+  expect(tela, 'a execucao tem de ocupar o corpo').toContain('passo 39')
+  expect(telaComExecucaoPequena, 'com execucao pequena a instrucao APARECE — senao o log nunca renderiza').toContain('instrucao 1 anotada')
 })

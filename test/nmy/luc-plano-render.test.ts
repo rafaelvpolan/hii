@@ -3,6 +3,7 @@ import { waves } from '../../motor/nmy/luc/ondas.ts'
 import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
 import { buildPlan } from '../../motor/nmy/luc/plano.ts'
 import { renderPlan } from '../../motor/mir/render/plan.ts'
+import { visibleLen } from '../../motor/mir/tui/layout.ts'
 import type { Card } from '../../motor/cdl/index.ts'
 import type { PipelineStep } from '../../motor/nmy/tipos.ts'
 
@@ -38,8 +39,8 @@ test('waves do pipeline default: testes e seguranca em paralelo apos arquitetura
   const w = waves(DEFAULT_STEPS).map(x => x.map(s => s.id))
   expect(w[0]).toEqual(['arquitetura'])
   expect(w[1]).toEqual(['testes', 'seguranca'])
-  expect(w[2]).toEqual(['review'])
-  expect(w[3]).toEqual(['limpeza'])
+  expect(w[2]).toEqual(['limpeza'])
+  expect(w[3]).toBeUndefined()
 })
 
 test('plano: card de backend mantem seguranca e testes', () => {
@@ -152,4 +153,30 @@ test('MCN o card manda no plano — divergir: off desliga pergunta aberta', () =
 test('MCN o padrao no plano e nao divergir — custo multiplicado precisa de motivo', () => {
   const p = buildPlan({ card: card({ title: 'mexer numa coisa' }, 'fazer o que foi pedido'), hasDevServer: false })
   expect(p.divergencia.on).toBe(false)
+})
+
+// Os testes de MCN acima afirmam "flag VISIVEL no plano que o humano aprova" e so
+// olham o OBJETO de buildPlan. Apagar a linha do render deixava a suite verde: o
+// comportamento anunciado nao tinha cobertura nenhuma.
+test('RENDER a flag Divergir aparece no texto do plano, com o motivo', () => {
+  const p = buildPlan({ card: card({ title: 'redesenhar o fluxo de checkout', repo: 'org/app', risk: 'high' }), hasDevServer: false })
+  const texto = renderPlan(p, { width: 100 })
+  expect(texto, 'a decisao que multiplica o custo por N nao pode ficar fora da tela').toContain('Divergir')
+  expect(texto).toContain(p.divergencia.reason.slice(0, 20))
+})
+
+test('RENDER a linha Divergir respeita a largura, como Layout e Pilha', () => {
+  const p = buildPlan({ card: card({ title: 'redesenhar o fluxo de checkout', repo: 'org/app', risk: 'high' }), hasDevServer: false })
+  for (const largura of [60, 80, 100, 120]) {
+    for (const linha of renderPlan(p, { width: largura }).split('\n')) {
+      expect(visibleLen(linha), `largura ${largura}: ${JSON.stringify(linha.slice(0, 40))}`).toBeLessThanOrEqual(largura)
+    }
+  }
+})
+
+test('RENDER desligada, a flag Divergir continua na tela dizendo POR QUE nao vai divergir', () => {
+  const p = buildPlan({ card: card({ title: 'corrige typo no rodape', repo: 'org/app', risk: 'low' }), hasDevServer: false })
+  expect(p.divergencia.on).toBe(false)
+  const texto = renderPlan(p, { width: 100 })
+  expect(texto, 'flag que some quando esta desligada esconde a decisao').toContain('Divergir')
 })

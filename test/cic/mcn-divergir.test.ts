@@ -75,11 +75,45 @@ test('TETO card que ja consumiu o orcamento nao abre ramo nenhum', () => {
   expect(() => orcamentoDaDivergencia(4, teto)).toThrow('estouraria o orcamento')
 })
 
+// `expect(o.porRamoUsd).toBeCloseTo(o.restanteUsd / 4)` repetia a formula do
+// codigo: trocar a divisao por multiplicacao nos dois lados mantinha o teste
+// verde. As assercoes abaixo usam NUMEROS, que so fecham se a conta estiver certa.
 test('TETO o restante e dividido pelos ramos — N ramos multiplicam o custo por N', () => {
-  const o = orcamentoDaDivergencia(4, 0)
-  expect(o.porRamoUsd).toBeCloseTo(o.restanteUsd / 4, 10)
-  const oitoRamos = orcamentoDaDivergencia(8, 0)
-  expect(oitoRamos.porRamoUsd).toBeLessThan(o.porRamoUsd)
+  const governanca = { versao: 1, padrao: 'tier2_padrao' as const, criterios: {}, orcamentoPorCard: { tetoUsd: 16, acaoAoEstourar: 'pausar' } }
+  const o = orcamentoDaDivergencia(4, 4, governanca)
+  expect(o.tetoUsd).toBe(16)
+  expect(o.restanteUsd).toBe(12)
+  expect(o.porRamoUsd).toBe(3)
+  expect(orcamentoDaDivergencia(8, 4, governanca).porRamoUsd).toBe(1.5)
+  expect(orcamentoDaDivergencia(2, 0, governanca).porRamoUsd).toBe(8)
+})
+
+test('TETO POR RAMO chega ao ramo — numero calculado e nao aplicado nao e teto', async () => {
+  const { montarRamos, despacharDivergencia, relatoDeEstouro } = await import('../../motor/cic/mcn/divergir.ts')
+  const ramos = montarRamos('resolver x', QUATRO, 2, 3)
+  expect(ramos.map(r => r.tetoUsd), 'o despachante nao pode ficar sem saber quanto pode gastar').toEqual([3, 3, 3, 3])
+
+  const vistos: number[] = []
+  const d = await despacharDivergencia('resolver x', QUATRO, async (r) => {
+    vistos.push(r.tetoUsd)
+    // O primeiro ramo estoura; os outros ficam abaixo.
+    const custo = vistos.length === 1 ? r.tetoUsd * 2 : r.tetoUsd / 2
+    return { enquadramento: r.enquadramento, ok: true, texto: '{"propostas":["p"]}', custoUsd: custo }
+  })
+  expect(vistos.every(t => t > 0), 'teto zero no ramo e o mesmo que nao ter teto').toBe(true)
+  expect(d.estouraram.length, 'exatamente um ramo passou do proprio teto').toBe(1)
+  // `toContain(x ?? '')` com lista vazia vira `toContain('')`, que nunca falha.
+  const primeiro = d.estouraram[0]
+  expect(primeiro, 'sem estouro nao ha relato a conferir').toBeDefined()
+  expect(relatoDeEstouro(d.estouraram)).toContain(primeiro?.enquadramento ?? 'IMPOSSIVEL')
+  expect(relatoDeEstouro([]), 'sem estouro o relato e vazio, nao uma frase sem itens').toBe('')
+})
+
+test('sem teto por ramo, ninguem e acusado de estourar — zero significa "nao ha teto", nao "teto zero"', async () => {
+  const { ramosQueEstouraram } = await import('../../motor/cic/mcn/divergir.ts')
+  const saidas = [{ enquadramento: 'a', ok: true, texto: '', custoUsd: 99 }]
+  expect(ramosQueEstouraram(saidas, 0)).toEqual([])
+  expect(ramosQueEstouraram(saidas, 98).length).toBe(1)
 })
 
 test('divergencia sem enunciado LANCA — N lentes sobre nada dao N respostas sobre nada', () => {

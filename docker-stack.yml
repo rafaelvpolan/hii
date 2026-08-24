@@ -24,7 +24,12 @@ services:
       HICODE_RUNTIME: ${HICODE_RUNTIME:-node}
       # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
       # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
-      # decidir quantos worktrees abre em paralelo (motor/qlb/limites.ts:31-34).
+      # decidir quantos worktrees abre em paralelo. Quem le: orcamentoDeRecurso e
+      # quantosWorktreesCabem em motor/qlb/limites.ts, aplicados pelo escalonador
+      # em motor/osw/mtr/fila.ts (tetoDeParalelismo). Enquanto nao havia esse
+      # ultimo elo, este comentario afirmava com file:line uma leitura que nao
+      # acontecia — o escalonador usava so HICODE_CONCURRENCY e abria 3 worktrees
+      # de 2048MB contra o limite de 4096MB.
       HICODE_MEM_TOTAL_MB: "4096"
       HICODE_CPUS_TOTAL: "2"
       HICODE_MEM_POR_WORKTREE_MB: "2048"

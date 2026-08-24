@@ -3,7 +3,7 @@ import { extractVerdictJson, gateOutcome, timeoutForDiff, withGateRetry } from '
 import type { GateResult } from '../../motor/cic/crv/gate.ts'
 
 function gate(over: Partial<GateResult>): GateResult {
-  return { ok: true, verdict: 'APPROVED', reason: '', questions: [], cost: 0, costMeasured: true, tokens: 0, ...over }
+  return { ok: true, verdict: 'APPROVED', reason: '', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0, ...over }
 }
 
 test('extrai o ultimo JSON de veredito valido em meio a prosa', () => {
@@ -46,11 +46,21 @@ test('gate sem mudanca vs a base: segue', () => {
   expect(gateOutcome(gate({ ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base' }))).toBe('proceed')
 })
 
-test('a politica do gate final e a mesma do gate por-step (ambos fail-closed)', () => {
-  const naoRodou = gate({ ok: false, verdict: 'CONDITIONAL' })
-  const porStepAprova = naoRodou.ok && naoRodou.verdict !== 'BLOCKED'
-  expect(porStepAprova).toBe(false)
-  expect(gateOutcome(naoRodou)).toBe('halt')
+// O teste reimplementava a politica do passo dentro dele mesmo
+// (`naoRodou.ok && verdict !== 'BLOCKED'`), sobre um objeto construido com
+// ok:false — ou seja, false por construcao, nunca por comportamento de producao.
+// Apagar ou inverter a politica real de passo-com-gate.ts mantinha isto verde: a
+// duplicacao que o teste dizia vigiar era exatamente a que ele escondia.
+test('a politica do gate final e a mesma do gate por-step (ambos fail-closed)', async () => {
+  // A metade "por-step" tem cobertura de COMPORTAMENTO em
+  // test/cic/passo-com-gate.test.ts (gate que nao concluiu -> passo falha; BLOCKED
+  // -> passo falha). Aqui prova-se so o lado do fecho, que e o escopo deste
+  // arquivo — a assercao de texto-fonte que existia aqui era redundante e
+  // enganosa: sobrevivia a `if (!gate.ok) { /* segue mesmo assim */ }`.
+  expect(gateOutcome(gate({ ok: false, verdict: 'CONDITIONAL' })), 'nao concluiu = halt').toBe('halt')
+  expect(gateOutcome(gate({ ok: false, verdict: 'APPROVED' })), 'nao concluiu vence o veredito').toBe('halt')
+  expect(gateOutcome(gate({ ok: true, verdict: 'BLOCKED' }))).toBe('halt')
+  expect(gateOutcome(gate({ ok: true, verdict: 'CONDITIONAL' }))).toBe('proceed')
 })
 
 test('REGRESSAO: timeout do gate cresce com o tamanho do diff, dentro dos limites', () => {

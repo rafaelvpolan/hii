@@ -83,12 +83,22 @@ export class OllamaProvider implements Harness {
     const usage = emptyUsage()
     let text = ''
     let isError = false
+    // `j.error` carrega a MENSAGEM ("model not found", "connection refused"), e e
+    // por ela que classifyFailure decide terminal/transitorio. Enquanto so o
+    // booleano isError era guardado, o texto nunca chegava a `text` nem a
+    // `detail`: OLLAMA_SINAIS.terminal era inalcancavel por construcao, e "modelo
+    // que nao existe" era reclassificado como falha generica e reexecutado.
+    let erroDoCorpo = ''
     try {
       const j = JSON.parse(stdout) as OllamaResponse
       text = String(j.response ?? '')
       usage.tokens_in = j.prompt_eval_count || 0
       usage.tokens_out = j.eval_count || 0
-      if (j.error) isError = true
+      if (j.error) {
+        isError = true
+        erroDoCorpo = String(j.error)
+        if (!text) text = erroDoCorpo
+      }
     } catch {
       text = String(stdout || stderr || '')
     }
@@ -98,7 +108,7 @@ export class OllamaProvider implements Harness {
       failed,
       timedOut: !!err?.killed,
       isError,
-      detail: err ? String(err.message || '') : '',
+      detail: [err ? String(err.message || '') : '', erroDoCorpo].filter(Boolean).join(' — '),
       text,
       ...costOfEndpoint(),
       usage,

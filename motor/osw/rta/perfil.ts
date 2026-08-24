@@ -97,6 +97,9 @@ function keepStep(step: PipelineStep, s: Signals): boolean {
   if (s.riskHigh) return true
   if (s.externo) return false
   if (step.kind === 'security') return s.sec || s.backend || s.data || s.deps || s.ambiguous
+  // `kind: 'review'` continua valido em pipeline CUSTOMIZADO (.hii/pipeline.json do
+  // alvo), por isso a regra fica. O pipeline deste repo nao tem mais step assim: o
+  // veredito dele nunca era lido, e runCodefoxGate no fecho ja revisa lendo o diff.
   if (step.kind === 'review') return !s.lean
   if (step.kind === 'cleanup') return !s.cosmeticOnly
   if (step.kind === 'quality') {

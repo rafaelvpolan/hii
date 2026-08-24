@@ -119,16 +119,61 @@ test('renderizarSkills devolve vazio sem skill, e bloco identificado com skill',
 test('INVARIANTE o motor injeta o acervo no prompt — senao o conteudo nunca chega ao agente', async () => {
   const fonte = await Bun.file('motor/cic/agente.ts').text()
   expect(fonte).toContain("skillsPara('implementador'")
-  expect(fonte, 'os passos de polimento tambem carregam skill').toContain('skillsDoAgente(agent, wt, repo)')
+  expect(fonte, 'os passos de polimento tambem carregam skill').toContain('skillsDoAgente(agent, wt, repo')
   expect(fonte, 'o contexto do gatilho tem de vir do disco').toContain('contextoDeSkill(')
+})
+
+// O pack escolhido no atalho de intake (/orquestrador-*) valia SO para o
+// implementador: todos os passos de polimento e de gate recebiam lista vazia,
+// entao o conhecimento pre-carregado nao alcancava justamente quem revisa.
+test('COMPORTAMENTO o pack do card alcanca tambem os passos de polimento', async () => {
+  const { skillsDoAgente } = await import('../../motor/cic/agente.ts')
+  // `escudo` e o papel `seguranca`, servido pelos packs `common` e
+  // `devops-deploy`. Sem contrato no alvo e sem pack declarado, so as skills
+  // `sempre: true` entram — que e exatamente o caso do projeto greenfield que os
+  // atalhos de intake existem para resolver.
+  const semPack = skillsDoAgente('escudo', '/tmp', '')
+  const comPack = skillsDoAgente('escudo', '/tmp', '', ['devops-deploy'])
+  expect(comPack.length, 'declarar o pack tem de mudar o que o revisor recebe').toBeGreaterThan(semPack.length)
+  // E o avaliador (testudo/crivo), que e o outro papel que roda nos passos gateados
+  const avaliador = skillsDoAgente('testudo', '/tmp', '', ['frontend-web'])
+  expect(avaliador.length).toBeGreaterThan(skillsDoAgente('testudo', '/tmp', '').length)
+})
+
+test('INVARIANTE os passos de polimento repassam os packs do card', async () => {
+  const fechar = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  expect(fechar, 'sem isto o pack do atalho de intake nao chega ao revisor').toContain('packsDoCard(card.fm.packs)')
+  const gated = await Bun.file('motor/cic/passo-com-gate.ts').text()
+  expect(gated).toContain('montar(prompt), id, alvo, packs')
 })
 
 test('REGRESSAO clone sem _resolved ainda carrega o acervo — _resolved e cache, nao requisito', () => {
   // A CI pegou isto: `_resolved/` esta no .gitignore, entao num clone novo ele
   // nao existe. Se o loader dependesse dele, o motor rodaria com zero skill em
   // producao e ninguem notaria — o prompt so ficaria mais pobre em silencio.
+  //
+  // A versao anterior criava um mkdtemp vazio, conferia que ele nao tinha
+  // `_resolved` e chamava `carregarAcervo()` SEM argumento — ou seja, a raiz real
+  // do repo, nao o clone simulado. A cobertura do caminho sem cache era acidental
+  // do ambiente (hoje `_resolved` nao existe localmente); no dia em que alguem
+  // gerasse o cache, o teste passaria a exercitar o caminho oposto do que nomeia.
+  //
+  // Agora o cache e APONTADO para um diretorio que nao existe, o que forca o
+  // caminho de fusao ao vivo independentemente do ambiente.
   const semCache = mkdtempSync(join(tmpdir(), 'hii-semcache-')); criados.push(semCache)
-  expect(existsSync(join(semCache, '_resolved'))).toBe(false)
+  const anterior = process.env.HICODE_SKILLS_DIR
+  process.env.HICODE_SKILLS_DIR = semCache
+  try {
+    expect(existsSync(join(semCache, '_resolved')), 'o fixture tem de estar sem cache').toBe(false)
+    // Com HICODE_SKILLS_DIR apontando para um diretorio vazio, a fusao ao vivo nao
+    // encontra `_native` e devolve vazio — o que prova que o caminho SEM cache foi
+    // o exercitado (com cache, teria lido o `_resolved` que nao existe ali).
+    expect(carregarAcervo(), 'sem cache E sem _native a resposta e vazia, nao um erro').toEqual([])
+  } finally {
+    if (anterior === undefined) delete process.env.HICODE_SKILLS_DIR
+    else process.env.HICODE_SKILLS_DIR = anterior
+  }
+  // E na raiz de VERDADE (com _native versionado) o acervo carrega sem cache.
   expect(carregarAcervo().length, 'o acervo real tem de carregar sem cache nenhum').toBeGreaterThan(8)
 })
 

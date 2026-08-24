@@ -55,8 +55,38 @@ test('REGRESSAO todos os steps invalidos NAO produzem pipeline vazio — o card 
   expect(steps.map(s => s.id)).toEqual(DEFAULT_STEPS.map(s => s.id))
 })
 
-test('REGRESSAO o pipeline default cobre testes, seguranca e review — nao e so um passo qualquer', async () => {
+test('REGRESSAO o pipeline default cobre testes e seguranca — nao e so um passo qualquer', async () => {
   const { DEFAULT_STEPS } = await import('../../motor/nmy/config.ts')
   const ids = DEFAULT_STEPS.map(s => s.id)
-  for (const obrigatorio of ['testes', 'seguranca', 'review']) expect(ids).toContain(obrigatorio)
+  for (const obrigatorio of ['testes', 'seguranca']) expect(ids).toContain(obrigatorio)
+})
+
+// DEFAULT_STEPS e apenas o FALLBACK: loadPipeline() le config/pipeline.json
+// primeiro. Checar so o default deixava o arquivo que a producao usa livre para
+// reganhar `review` ou ficar com `needs` apontando para id inexistente.
+function integridade(steps: readonly { id: string; state: string; needs?: readonly string[] }[]): string[] {
+  const ids = new Set(steps.map(s => s.id))
+  const problemas: string[] = []
+  if (ids.has('review')) problemas.push('o step `review` voltou: o veredito dele nunca e lido, e runCodefoxGate no fecho ja revisa LENDO o diff')
+  if (steps.some(s => s.state === 'REVIEWED')) problemas.push('algum step voltou a escrever REVIEWED')
+  for (const s of steps) {
+    for (const dep of s.needs ?? []) if (!ids.has(dep)) problemas.push(`${s.id} depende de "${dep}", que nao existe`)
+  }
+  return problemas
+}
+
+test('o step `review` NAO volta, nem no default nem no config/pipeline.json que a producao le', async () => {
+  const { DEFAULT_STEPS, loadPipeline } = await import('../../motor/nmy/config.ts')
+  expect(integridade(DEFAULT_STEPS), 'DEFAULT_STEPS (fallback)').toEqual([])
+  const doArquivo = loadPipeline().steps
+  expect(doArquivo.length, 'loadPipeline devolveu vazio: nao ha o que verificar').toBeGreaterThan(2)
+  expect(integridade(doArquivo), 'config/pipeline.json — este e o que a producao usa').toEqual([])
+})
+
+test('a checagem de integridade REPROVA de verdade — senao ela nao vigia nada', () => {
+  expect(integridade([{ id: 'review', state: 'REVIEWED' }]).length).toBe(2)
+  expect(integridade([{ id: 'a', state: 'REFINED', needs: ['nao-existe'] }])).toEqual([
+    'a depende de "nao-existe", que nao existe',
+  ])
+  expect(integridade([{ id: 'a', state: 'REFINED', needs: [] }])).toEqual([])
 })

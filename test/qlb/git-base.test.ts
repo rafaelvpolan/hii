@@ -315,3 +315,39 @@ test('sem posse comprovada, o comportamento seguro continua valendo: nao forca',
   expect(existsSync(join(checkout, 'meu.txt'))).toBe(false)
   await removeWorktree(c.clone, wt)
 })
+
+// Toda falha de `git merge` virava a mesma frase "conflito ao integrar", com o
+// stderr descartado. `local changes would be overwritten` e `index.lock` viravam
+// diagnostico FALSO no HALT que o humano le — e o conserto que ele tentaria
+// (resolver conflito) nao existia.
+test('classeDeFalhaDeMerge nomeia a causa em vez de chamar tudo de conflito', async () => {
+  const { classeDeFalhaDeMerge } = await import('../../motor/qlb/git.ts')
+  expect(classeDeFalhaDeMerge('CONFLICT (content): Merge conflict in a.txt')).toBe('conflito')
+  expect(classeDeFalhaDeMerge('error: Your local changes to the following files would be overwritten by merge'))
+    .toContain('mudanca local')
+  expect(classeDeFalhaDeMerge("fatal: Unable to create '/w/.git/index.lock': File exists")).toContain('index.lock')
+  expect(classeDeFalhaDeMerge('merge: origin/main - not something we can merge')).toContain('ref invalida')
+  expect(classeDeFalhaDeMerge('fatal: You have unmerged files')).toContain('pela metade')
+  expect(classeDeFalhaDeMerge('algo que o git nunca imprimiu'), 'inventar causa e pior que admitir que nao sei')
+    .toBe('merge falhou (causa nao reconhecida)')
+})
+
+test('conflito e reconhecido mesmo vindo pelo STDOUT — e por la que o git o imprime', async () => {
+  const { classeDeFalhaDeMerge } = await import('../../motor/qlb/git.ts')
+  expect(classeDeFalhaDeMerge('Auto-merging a.txt\nCONFLICT (content): Merge conflict in a.txt\n')).toBe('conflito')
+})
+
+test('refreshFromBase recusado por mudanca local NAO e relatado como conflito', async () => {
+  const c = cenario()
+  const wt = join(BASE, 'wt-local')
+  await ensureWorktree(c.clone, wt, 'hicode/local-suja', 'main')
+  commitNaOrigem(c, 'a.txt', 'remoto\n')
+  // Mudanca NAO commitada no mesmo arquivo que a base mexeu: o git recusa antes
+  // de tentar merge, e nao ha conflito nenhum para o humano resolver.
+  writeFileSync(join(wt, 'a.txt'), 'rascunho local\n')
+  const r = await refreshFromBase(wt, 'main')
+  expect(r.ok).toBe(false)
+  expect(r.detail, `detalhe veio: ${r.detail}`).not.toContain('conflito ao integrar')
+  expect(r.detail).toContain('mudanca local')
+  await removeWorktree(c.clone, wt)
+})

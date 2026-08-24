@@ -54,7 +54,7 @@ test('risco alto -> completo, roda todos os passos', () => {
 test('ambiguo (sem sinais) -> mantem seguranca por seguranca', () => {
   const i = ids({ title: 'melhora o apoiar', risk: 'low' })
   expect(i).toContain('seguranca')
-  expect(i).toContain('review')
+  expect(i).toContain('limpeza')
 })
 
 test('override "all" no card forca todos os passos', () => {
@@ -63,8 +63,8 @@ test('override "all" no card forca todos os passos', () => {
 })
 
 test('override lista roda exatamente os ids informados', () => {
-  const p = planSteps({ title: 'trocar um texto', risk: 'low', override: 'testes,review' }, DEFAULT_STEPS)
-  expect(p.steps.map(s => s.id).sort()).toEqual(['review', 'testes'])
+  const p = planSteps({ title: 'trocar um texto', risk: 'low', override: 'testes,seguranca' }, DEFAULT_STEPS)
+  expect(p.steps.map(s => s.id).sort()).toEqual(['seguranca', 'testes'])
 })
 
 test('migration/schema -> mantem seguranca e testes', () => {

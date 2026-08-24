@@ -1,5 +1,6 @@
 import { PHASES } from './phases.ts'
 import { truncVisible } from '../tui/layout.ts'
+import { COMANDOS_MANUAIS } from '../comandos-manuais.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
@@ -28,6 +29,14 @@ interface Secao {
   itens: Item[]
 }
 
+// Os atalhos de intake do item 16 vem do MESMO catalogo que o parser usa
+// (COMANDOS_MANUAIS), e nao de uma lista copiada aqui: o /help e a superficie de
+// descoberta, e o recurso ficava invisivel nela enquanto `ajudaDeComandosManuais()`
+// nao tinha um unico chamador — texto de ajuda computado e nunca aplicado.
+function atalhosDeIntake(): Item[] {
+  return COMANDOS_MANUAIS.map(c => ({ chave: c.nome, arg: '<mudanca>', texto: c.descricao }))
+}
+
 const SECOES: Secao[] = [
   {
     titulo: 'comecar',
@@ -41,6 +50,10 @@ const SECOES: Secao[] = [
       { chave: '20', arg: '', texto: 'so o numero abre o plano da tarefa (so leitura, ja esta na fila)' },
       { chave: 'enter', arg: '', texto: 'aprova o plano de uma tarefa que ainda esta esperando' },
     ],
+  },
+  {
+    titulo: 'atalhos de intake (pre-carregam conhecimento do dominio)',
+    itens: atalhosDeIntake(),
   },
   {
     titulo: 'acompanhar',
@@ -65,6 +78,7 @@ const SECOES: Secao[] = [
       { chave: '/model', arg: '[papel] <modelo>', texto: 'escolhe o modelo da ia atual' },
       { chave: '/effort', arg: '[papel] <nivel>', texto: 'escolhe o esforco da ia atual' },
       { chave: '/mode', arg: '[papel] <modo>', texto: 'escolhe o modo de operacao da ia atual' },
+      { chave: '/gauntlet', arg: 'on|off', texto: 'crivo julga telas por comparacao cega em vez de ler o diff' },
       { chave: '/login', arg: '[ia]', texto: 'mostra como autenticar a ia que ainda nao logou' },
       { chave: '/repo', arg: '[owner/nome]', texto: 'troca de projeto, ou lista os registrados' },
       { chave: '/exit', arg: '', texto: 'sai do hii — as tarefas seguem rodando' },

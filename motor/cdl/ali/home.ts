@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_PROVIDER } from '../../tmd/registro.ts'
+import { avisarArquivoIlegivel, motivoDoErro } from './aviso.ts'
 
 export interface ProjectConfig {
   provider?: string
@@ -8,18 +9,46 @@ export interface ProjectConfig {
   taskSource?: string
 }
 
+// O sinal de ilegibilidade vive FORA do tipo de dados. Como campo `ilegivel` dentro
+// de ProjectConfig ele morava no mesmo namespace das chaves de verdade: um
+// `.hii/config.json` legitimo contendo `"ilegivel": true` faria o doctor reportar
+// "nao deu para ler" sobre um JSON perfeitamente valido.
+export interface LeituraDeProjectConfig {
+  readonly config: ProjectConfig
+  // '' = leu (ou o arquivo nao existe). Preenchido = existe e nao deu para ler.
+  readonly ilegivel: string
+}
+
 export function hicodeHome(repo: string): string {
   return join(repo, '.hii')
 }
 
-export function readProjectConfig(repo: string): ProjectConfig {
+const IGNORADAS = 'as preferencias declaradas pelo projeto serao ignoradas'
+
+export function lerProjectConfig(repo: string): LeituraDeProjectConfig {
   const f = join(hicodeHome(repo), 'config.json')
-  if (!existsSync(f)) return {}
+  if (!existsSync(f)) return { config: {}, ilegivel: '' }
+  let cru: ProjectConfig | null = null
   try {
-    return JSON.parse(readFileSync(f, 'utf8')) as ProjectConfig
-  } catch {
-    return {}
+    cru = JSON.parse(readFileSync(f, 'utf8')) as ProjectConfig | null
+  } catch (e) {
+    // Corrompido devolvia `{}`, igual a ausente, e o `hii doctor` respondia "sem
+    // preferencia declarada — vale o global" sobre um arquivo que o operador
+    // escreveu.
+    const motivo = motivoDoErro(e as Error)
+    avisarArquivoIlegivel(f, motivo, IGNORADAS)
+    return { config: {}, ilegivel: motivo }
   }
+  if (!cru || typeof cru !== 'object' || Array.isArray(cru)) {
+    const motivo = 'o conteudo nao e um objeto de configuracao'
+    avisarArquivoIlegivel(f, motivo, IGNORADAS)
+    return { config: {}, ilegivel: motivo }
+  }
+  return { config: cru, ilegivel: '' }
+}
+
+export function readProjectConfig(repo: string): ProjectConfig {
+  return lerProjectConfig(repo).config
 }
 
 export function readProjectRules(repo: string): string {

@@ -1,11 +1,17 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
+// Shebang em `node`, nao em `bun`, e o mesmo motivo da Onda 11: a imagem de
+// producao e node:24-slim (Dockerfile: ENTRYPOINT ["node", "bin/hii.ts"]), e o
+// node 24 roda este arquivo por type stripping nativo. Um shebang `bun` fazia o
+// bin instalado exigir um binario que a imagem nao tem — a mesma promessa de
+// "roda em qualquer lugar" que motor/cdl/ali/runtime.ts existe para cumprir.
+// Quem prefere bun continua rodando `bun bin/hii.ts` (o shebang nao atrapalha).
 import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderProgress } from '../motor/euc/rdr/progresso.ts'
 import { initHicodeHome } from '../motor/cdl/ali/home.ts'
 import { installPrePush, uninstallPrePush } from '../motor/cdl/ali/hooks.ts'
-import { runSync } from '../motor/tmd/pnt/tarefas/sync.ts'
+import { runSync, relatoDeSync } from '../motor/tmd/pnt/tarefas/sync.ts'
 import { taskSyncName } from '../motor/tmd/pnt/tarefas/registro.ts'
 import { limparTmpAntigo, usoDeDisco } from '../motor/euc/estado-em-disco.ts'
 import { linhasDoDisco } from '../motor/mir/render/disco.ts'
@@ -14,6 +20,7 @@ import { executarAcao, criarTarefa } from '../motor/mir/comandos-de-tarefa.ts'
 import type { AcaoDeTarefa } from '../motor/mir/comandos-de-tarefa.ts'
 import { prepararMatriz } from '../motor/qlb/ctr/aprovar-plano.ts'
 import { runtimeDeScript } from '../motor/cdl/ali/runtime.ts'
+import { ajudaDeComandosManuais } from '../motor/mir/comandos-manuais.ts'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -59,14 +66,30 @@ function estado(extra: string[]): number {
     process.stdout.write(`${revisaoDoEstado()}\n`)
     return 0
   }
+  // `--json` estava no usage() e nunca era lido: a saida SEMPRE foi JSON, entao a
+  // flag era decorativa. Aceita-la explicitamente (como no-op documentado) e mais
+  // honesto que anunciar uma flag que o codigo ignora — quem a passa recebe o que
+  // pediu, e `--compacto` continua sendo o unico que muda a forma.
   const snapshot = snapshotDoMotor({ repo: valorDaFlag(extra, '--repo') })
   const espacos = extra.includes('--compacto') ? 0 : 2
   process.stdout.write(`${JSON.stringify(snapshot, null, espacos)}\n`)
   return 0
 }
 
-function semIdDeTarefa(acao: string): number {
-  process.stderr.write(`uso: hii ${acao} <id> [texto] [--json]\n`)
+// A mensagem de uso tem de citar o COMANDO que o humano digita, nao o nome da acao
+// interna: `hii approve` sem id respondia "uso: hii aprovar-url <id>", e
+// `aprovar-url` nao existe no switch — a ajuda mandava rodar comando inexistente.
+const COMANDO_DA_ACAO: Record<AcaoDeTarefa, string> = {
+  'aprovar-url': 'approve',
+  'aprovar-plano': 'approve --plan',
+  recusar: 'reject',
+  parar: 'halt',
+  responder: 'answer',
+  criar: 'tarefa nova',
+}
+
+function semIdDeTarefa(acao: AcaoDeTarefa): number {
+  process.stderr.write(`uso: hii ${COMANDO_DA_ACAO[acao]} <id> [texto] [--json]\n`)
   return 2
 }
 
@@ -123,9 +146,12 @@ function usage(): void {
     'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
     '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
-    '     hii estado [--json]  snapshot do motor em JSON (para o painel); --revisao so o token',
+    '     hii estado [--compacto]  snapshot do motor em JSON (para o painel); --revisao so o token',
     '     hii responder <id> <texto>   responde a pergunta aberta da tarefa',
     '     hii tarefa nova "<texto>" --repo <owner/nome>  cria a tarefa e enfileira',
+    '',
+    '  atalhos de intake (na TUI; pre-carregam conhecimento do dominio):',
+    ...ajudaDeComandosManuais(),
     '',
 
     'O motor nunca faz merge: ele abre o PR e para.',
@@ -232,9 +258,18 @@ async function main(): Promise<number> {
     case 'once':
       return runnerBun(['--once'])
     case 'sync': {
-      const r = await runSync()
-      process.stdout.write(`sync (${taskSyncName()}): ${r.created} cards criados, ${r.pushed} espelhados de ${r.pulled} externos\n`)
-      return 0
+      const r = await runSync().catch((e: Error) => {
+        process.stderr.write(`sync (${taskSyncName()}): NAO executou — ${String(e?.message ?? e)}\n`)
+        return null
+      })
+      if (!r) return 1
+      const relato = relatoDeSync(taskSyncName(), r)
+      if (r.ok) { process.stdout.write(`${relato}\n`); return 0 }
+      // Exit != 0: quem chama `hii sync` de um cron ou de um workflow le o codigo
+      // de saida, nao o texto. Sair 0 apos falhar em falar com o GitHub fazia o
+      // pipeline seguir como se tivesse espelhado.
+      process.stderr.write(`${relato}\n`)
+      return 1
     }
     case 'init': {
       const target = args[1] || process.cwd()

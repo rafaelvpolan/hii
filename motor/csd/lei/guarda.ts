@@ -17,12 +17,25 @@ export interface GatilhoDeRegra {
   readonly arquivos?: readonly string[]
 }
 
+// A PROCEDENCIA da regra, e nao um enfeite: o plano mestre (MODERNIZATION.md
+// Parte III secao 6) diz que uma regra inegociavel nasce de recorrencia provada e
+// de decisao humana explicita, "nunca de um caso isolado". O campo estava no
+// arquivo em disco e em NENHUM tipo nem validacao: regra nova entrava sem dizer
+// quem decidiu nem quando, e o criterio que justifica a existencia da LEI ficava
+// sendo um paragrafo de documento.
+export interface OrigemDaRegra {
+  readonly cards: readonly string[]
+  readonly promovidoEm: string
+  readonly promovidoPor: string
+}
+
 export interface RegraInegociavel {
   readonly id: string
   readonly categoria: string
   readonly descricao: string
   readonly gatilho: GatilhoDeRegra
   readonly exigencia: string
+  readonly origem: OrigemDaRegra
 }
 
 interface RegrasCruas {
@@ -48,8 +61,31 @@ export function lerRegras(): RegraInegociavel[] {
   const regras = cru.regras ?? []
   for (const r of regras) {
     if (!r.id || !r.exigencia) throw new Error(`regra sem id ou exigencia em ${caminho}: ${JSON.stringify(r).slice(0, 120)}`)
+    conferirOrigem(r, caminho)
   }
   return regras
+}
+
+const DATA_ISO = /^\d{4}-\d{2}-\d{2}$/
+
+// LANCA, como o resto deste modulo: regra sem procedencia e exatamente a "regra
+// de um caso isolado" que o criterio proibe, e aceitar em silencio faria a LEI
+// crescer por acidente. Cards VAZIO e permitido — ha regra que nasce de decisao
+// de projeto, nao de recorrencia — mas quem decidiu e quando nao sao opcionais.
+function conferirOrigem(r: RegraInegociavel, caminho: string): void {
+  const o = r.origem
+  if (!o || typeof o !== 'object') {
+    throw new Error(`regra ${r.id} em ${caminho} sem "origem" — regra inegociavel nasce de decisao humana explicita, e sem procedencia ninguem sabe de quem foi nem por que`)
+  }
+  if (!Array.isArray(o.cards)) {
+    throw new Error(`regra ${r.id}: origem.cards precisa ser lista (pode ser vazia, para regra que nasce de decisao de projeto e nao de recorrencia)`)
+  }
+  if (!String(o.promovidoPor ?? '').trim()) {
+    throw new Error(`regra ${r.id}: origem.promovidoPor vazio — o gate vai cobrar isto de todo mundo, entao o nome de quem decidiu nao e opcional`)
+  }
+  if (!DATA_ISO.test(String(o.promovidoEm ?? ''))) {
+    throw new Error(`regra ${r.id}: origem.promovidoEm="${String(o.promovidoEm ?? '')}" nao e data AAAA-MM-DD — sem data nao da para saber se a regra ainda faz sentido`)
+  }
 }
 
 // Glob simples, deliberadamente: `*` casa dentro de um segmento, `**` atravessa

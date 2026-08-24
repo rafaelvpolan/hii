@@ -39,7 +39,7 @@ ENV HICODE_RUNTIME=node \
     HICODE_RUNNER_PIDFILE=/estado/runner.pid \
     HICODE_RUNNER_LOCK=/estado/runner.lock \
     HICODE_HEALTH_PORT=8080 \
-    HICODE_HEALTH_HOST=0.0.0.0
+    HICODE_HEALTH_BIND=0.0.0.0
 VOLUME ["/estado"]
 EXPOSE 8080
 

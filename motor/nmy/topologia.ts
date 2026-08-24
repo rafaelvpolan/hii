@@ -9,6 +9,11 @@ export interface Topologia {
   readonly versao: number
   readonly nos: readonly Status[]
   readonly transicoes: readonly (readonly [Status, Status])[]
+  // Rotas de recuperacao (reinicio de daemon, retomada humana, espera por falha
+  // transitoria). Separadas para o caminho normal continuar legivel, mas valem
+  // como transicao declarada — sem elas o observador de deriva grita em toda
+  // recuperacao e o alarme perde o sentido.
+  readonly transicoesDeRecuperacao: readonly (readonly [Status, Status])[]
   readonly sempreAlcancavel: readonly Status[]
   readonly checkpointsHumanos: readonly Status[]
   readonly semEscritaNoMotor: { readonly estados: readonly Status[] }
@@ -18,6 +23,7 @@ interface TopologiaCrua {
   versao?: number
   nos?: string[]
   transicoes?: string[][]
+  transicoesDeRecuperacao?: string[][]
   sempreAlcancavel?: string[]
   checkpointsHumanos?: string[]
   semEscritaNoMotor?: { estados?: string[] }
@@ -37,20 +43,25 @@ function statusesDe(lista: string[] | undefined, onde: string): Status[] {
   return (lista ?? []) as Status[]
 }
 
-export function lerTopologia(): Topologia {
-  const cru = JSON.parse(readFileSync(arquivoDaTopologia(), 'utf8')) as TopologiaCrua
-  const transicoes = (cru.transicoes ?? []).map((par, i) => {
-    if (par.length !== 2) throw new Error(`topologia.json: transicao ${i} nao e um par`)
-    const validos = statusesDe(par, `transicoes[${i}]`)
+function paresDe(lista: string[][] | undefined, onde: string): (readonly [Status, Status])[] {
+  return (lista ?? []).map((par, i) => {
+    if (par.length !== 2) throw new Error(`topologia.json: ${onde} ${i} nao e um par`)
+    const validos = statusesDe(par, `${onde}[${i}]`)
     const de = validos[0]
     const para = validos[1]
-    if (!de || !para) throw new Error(`topologia.json: transicao ${i} incompleta`)
+    if (!de || !para) throw new Error(`topologia.json: ${onde} ${i} incompleta`)
     return [de, para] as const
   })
+}
+
+export function lerTopologia(): Topologia {
+  const cru = JSON.parse(readFileSync(arquivoDaTopologia(), 'utf8')) as TopologiaCrua
+  const transicoes = paresDe(cru.transicoes, 'transicoes')
   return {
     versao: cru.versao ?? 0,
     nos: statusesDe(cru.nos, 'nos'),
     transicoes,
+    transicoesDeRecuperacao: paresDe(cru.transicoesDeRecuperacao, 'transicoesDeRecuperacao'),
     sempreAlcancavel: statusesDe(cru.sempreAlcancavel, 'sempreAlcancavel'),
     checkpointsHumanos: statusesDe(cru.checkpointsHumanos, 'checkpointsHumanos'),
     semEscritaNoMotor: { estados: statusesDe(cru.semEscritaNoMotor?.estados, 'semEscritaNoMotor.estados') },
@@ -62,10 +73,14 @@ export function lerTopologia(): Topologia {
 export function transicaoPermitida(topo: Topologia, de: Status, para: Status): boolean {
   if (de === para) return true
   if (topo.sempreAlcancavel.includes(para)) return true
-  return topo.transicoes.some(([a, b]) => a === de && b === para)
+  return todasAsTransicoes(topo).some(([a, b]) => a === de && b === para)
+}
+
+export function todasAsTransicoes(topo: Topologia): readonly (readonly [Status, Status])[] {
+  return [...topo.transicoes, ...topo.transicoesDeRecuperacao]
 }
 
 export function destinosDe(topo: Topologia, de: Status): Status[] {
-  const declarados = topo.transicoes.filter(([a]) => a === de).map(([, b]) => b)
+  const declarados = todasAsTransicoes(topo).filter(([a]) => a === de).map(([, b]) => b)
   return Array.from(new Set([...declarados, ...topo.sempreAlcancavel])).filter(s => s !== de)
 }

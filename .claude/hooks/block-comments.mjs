@@ -149,7 +149,10 @@ ultimo caso absoluto — um comentario com a palavra "code-smell" reconhecendo a
 Comentario no MEIO do arquivo continua bloqueado: ali a correcao e nome revelador.
 `);
     process.exit(2);
-  } catch {
+  } catch (e) {
+    // Sair 0 e escolha: bug neste hook nao pode travar toda escrita do repo. Sair
+    // 0 CALADO e que era o defeito — o portao de politica virava decoracao muda.
+    process.stderr.write(`[hicode] block-comments: falhou ao avaliar (${e?.message || e}) — a escrita seguiu SEM verificacao de comentarios\n`);
     process.exit(0);
   }
 });

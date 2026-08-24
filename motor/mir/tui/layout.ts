@@ -131,6 +131,90 @@ function colunaVisualDoCursor(linha: string, codeUnitsAntes: number): number {
   return visibleLen(linha.slice(0, codeUnitsAntes))
 }
 
+// Rolagem HORIZONTAL da linha de entrada.
+//
+// Antes a linha era simplesmente truncada no fim. Uma linha maior que o terminal
+// escondia justamente o texto que estava sendo digitado, e `cursorCol` continuava
+// crescendo — o cursor ia para fora da tela e o terminal o prendia na ultima
+// coluna, longe do caractere real. Digitar um caminho longo, ou colar uma linha,
+// bastava para acontecer.
+//
+// O corte e por GRAFEMA, e a janela anda em passos: reposicionar a cada tecla
+// faria o texto tremer.
+const PASSO_DE_ROLAGEM = 8
+
+export interface JanelaHorizontal {
+  readonly texto: string
+  readonly colunaDoCursor: number
+  // Deslocamento em COLUNAS que esta janela usou. As outras linhas de entrada
+  // recebem este valor para andarem juntas.
+  readonly deslocamento: number
+}
+
+function indiceDaColuna(colunaEm: readonly number[], coluna: number): number {
+  let i = 0
+  while (i + 1 < colunaEm.length && (colunaEm[i] ?? 0) < coluna) i++
+  return i
+}
+
+// `coluna` e a coluna do CURSOR. `desloque` (quando dado) e o deslocamento em
+// COLUNAS que a janela deve usar — as linhas SEM cursor precisam do mesmo
+// deslocamento da linha do cursor, senao cada uma rola por conta propria e o
+// bloco multilinha fica desalinhado. Passar o deslocamento no lugar de `coluna`
+// (o que a primeira versao fazia) dava a janela MINIMA que contem aquela coluna,
+// ou seja um deslocamento diferente por linha.
+export function janelaHorizontal(linha: string, coluna: number, largura: number, desloque?: number): JanelaHorizontal {
+  const alvo = Math.max(1, largura)
+  // `< alvo`, nao `<= alvo`: com o cursor na coluna `alvo` a posicao visual cai
+  // uma coluna DEPOIS do fim da janela, e no caminho sem moldura isso punha
+  // cursorCol em cols+1 — fora da tela.
+  if (desloque === undefined && visibleLen(linha) <= alvo && coluna < alvo) return { texto: linha, colunaDoCursor: coluna, deslocamento: 0 }
+  const grafemas = grafemasDe(linha)
+  const larguras = grafemas.map(larguraDeGrafema)
+  // Coluna acumulada ANTES de cada grafema, mais a coluna final.
+  const colunaEm: number[] = [0]
+  for (const w of larguras) colunaEm.push((colunaEm[colunaEm.length - 1] ?? 0) + w)
+  const cursorColuna = Math.max(0, Math.min(coluna, colunaEm[colunaEm.length - 1] ?? 0))
+  // Menor deslocamento que ainda deixa o cursor dentro da janela. Calculado por
+  // busca no acumulado, nao por passos as cegas: o passo cego podia pular o fim da
+  // linha inteira e devolver janela VAZIA, com o cursor "visivel" sobre nada.
+  let minimo = 0
+  while (minimo < grafemas.length && cursorColuna - (colunaEm[minimo] ?? 0) > alvo - 1) minimo++
+  // Com o cursor no FIM da linha nao ha grafema sob ele, e o calculo acima pode
+  // apontar para depois do ultimo — janela vazia com o cursor "visivel" sobre
+  // nada. Nesse caso mostra os ultimos grafemas e o cursor encosta na borda.
+  const ultimo = Math.max(0, grafemas.length - 1)
+  if (minimo > ultimo) minimo = ultimo
+  // Indice do grafema sobre o qual o cursor esta. O deslocamento nunca pode passar
+  // dele: passar significa rolar para depois do cursor e mostrar janela vazia.
+  let indiceDoCursor = 0
+  while (indiceDoCursor < ultimo && (colunaEm[indiceDoCursor + 1] ?? 0) <= cursorColuna) indiceDoCursor++
+  // Em passos, para o texto nao tremer a cada tecla — mas so quando o passo cabe
+  // sem ultrapassar o cursor. Senao vale o minimo exato.
+  // O passo serve para o texto nao tremer a cada tecla, mas nao pode ESCONDER
+  // texto que caberia: com a linha exatamente do tamanho da janela e o cursor no
+  // fim, `minimo` e 1 e o passo saltava 8 colunas, deixando branco a direita.
+  const emPassos = Math.ceil(minimo / PASSO_DE_ROLAGEM) * PASSO_DE_ROLAGEM
+  const cabeNoPasso = (colunaEm[colunaEm.length - 1] ?? 0) - (colunaEm[emPassos] ?? 0) >= alvo
+  const escolhido = emPassos <= indiceDoCursor && cabeNoPasso ? emPassos : minimo
+  // Deslocamento imposto de fora: converte COLUNA em indice de grafema, para
+  // todas as linhas de entrada partirem do mesmo ponto visual.
+  const inicio = desloque === undefined ? escolhido : indiceDaColuna(colunaEm, desloque)
+  let texto = ''
+  let colunas = 0
+  for (let i = inicio; i < grafemas.length; i++) {
+    const w = larguras[i] ?? 0
+    if (colunas + w > alvo) break
+    texto += grafemas[i] ?? ''
+    colunas += w
+  }
+  return {
+    texto,
+    colunaDoCursor: Math.max(0, Math.min(alvo, cursorColuna - (colunaEm[inicio] ?? 0))),
+    deslocamento: colunaEm[inicio] ?? 0,
+  }
+}
+
 export function renderFrame(f: FrameInput): Frame {
   const largura = Math.max(24, f.cols)
   const interno = largura - 4
@@ -181,9 +265,21 @@ export function renderFrame(f: FrameInput): Frame {
   }
   const recuo = ' '.repeat(visibleLen(f.prompt))
   const primeira = lines.length + 1
+  // Largura util para o TEXTO da entrada, ja descontado o prompt e a moldura.
+  const larguraDoTextoDeEntrada = Math.max(1, (comMoldura ? interno - 2 : largura - 2) - visibleLen(f.prompt))
+  const linhaDoCursor = todasEntradas[pos.linha] ?? ''
+  const janelaDoCursor = janelaHorizontal(linhaDoCursor, colunaVisualDoCursor(linhaDoCursor, pos.coluna), larguraDoTextoDeEntrada)
+  // Todas as linhas de entrada andam com o MESMO deslocamento — o da linha do
+  // cursor. A primeira versao passava o deslocamento no parametro `coluna`, o que
+  // dava a cada linha a janela minima que contem aquela coluna: deslocamentos
+  // diferentes por linha, e o comentario afirmando o contrario.
+  const deslocamento = janelaDoCursor.deslocamento
   entrada.forEach((linha, i) => {
     const prefixo = i === 0 ? f.prompt : recuo
-    const pintada = f.corInput ? f.corInput(linha) : linha
+    const visivel = deslocamento > 0
+      ? janelaHorizontal(linha, 0, larguraDoTextoDeEntrada, deslocamento).texto
+      : truncVisible(linha, larguraDoTextoDeEntrada)
+    const pintada = f.corInput ? f.corInput(visivel) : visivel
     const conteudo = prefixo + pintada
     lines.push(comMoldura
       ? '  │ ' + padVisible(truncVisible(conteudo, interno - 2), interno - 2) + ' │'
@@ -195,8 +291,9 @@ export function renderFrame(f: FrameInput): Frame {
   return {
     lines,
     cursorRow: primeira + (pos.linha - inicioEntrada),
-    cursorCol: (comMoldura ? 5 : 3) + visibleLen(f.prompt)
-      + colunaVisualDoCursor(todasEntradas[pos.linha] ?? '', pos.coluna),
+    // A coluna vem da JANELA, nao do texto inteiro: senao ela cresce alem da
+    // largura do terminal e o cursor visual para de acompanhar o caractere.
+    cursorCol: (comMoldura ? 5 : 3) + visibleLen(f.prompt) + janelaDoCursor.colunaDoCursor,
   }
 }
 

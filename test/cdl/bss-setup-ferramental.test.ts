@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { conferirSetup, relatoDoSetup } from '../../motor/cdl/bss/setup-ferramental.ts'
+import { conferirSetup, ehAreaNova, relatoDoSetup } from '../../motor/cdl/bss/setup-ferramental.ts'
 
 const criados: string[] = []
 afterAll(() => { for (const d of criados) rmSync(d, { recursive: true, force: true }) })
@@ -51,10 +51,22 @@ test('faltando os dois, o relato traz os dois — nao para no primeiro', () => {
   expect(relatoDoSetup(v)).toContain('·')
 })
 
+// A regra vive em `ehAreaNova`, e nao mais inline em fechar.ts: a versao anterior
+// desta funcao devolvia `arquivos.length > 0` — "qualquer diff e area nova" —, o
+// que contradiz o comentario dela mesma, e nao tinha consumidor nenhum. Uma funcao
+// nomeada com a regra errada ao lado da regra certa inline e pior que nao ter a
+// funcao: o proximo chamador acredita no nome.
+test('COMPORTAMENTO area nova e todo arquivo do diff ter sido CRIADO', () => {
+  expect(ehAreaNova(['a.ts', 'b.ts'], ['a.ts', 'b.ts']), 'todos criados').toBe(true)
+  expect(ehAreaNova(['a.ts', 'b.ts'], ['a.ts']), 'um arquivo existente ja tira o card da regra').toBe(false)
+  expect(ehAreaNova(['a.ts'], []), 'nenhum criado nao e area nova').toBe(false)
+  expect(ehAreaNova([], []), 'diff vazio nao e area nova — senao todo card sem mudanca pagaria pedagio').toBe(false)
+})
+
 test('INVARIANTE o fechamento so cobra setup em area NOVA — repo legado nao trava', async () => {
   const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
-  expect(fonte).toContain('--diff-filter=A')
-  expect(fonte, 'a cobranca tem de ser condicionada a todo arquivo ser criado').toContain('criados.length === changed.length')
+  expect(fonte, 'sem --diff-filter=A nao ha como saber o que foi criado').toContain('--diff-filter=A')
+  expect(fonte, 'a cobranca tem de passar pela regra nomeada').toContain('ehAreaNova(changed, criados)')
   expect(fonte).toContain('conferirSetup(wt, contract)')
 })
 

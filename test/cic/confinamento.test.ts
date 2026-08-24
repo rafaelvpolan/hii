@@ -124,7 +124,7 @@ const MAX_ARGV_BYTES = 131072
 test('runStep roda o CLI COM cwd no worktree do card — nao no hicode (plano de controle)', async () => {
   limpar()
   process.env.CONF_OMC_ESCOPO = 'user'
-  await runStep(WT, 'testudo', 'garanta cobertura')
+  await runStep(WT, 'testudo', 'garanta cobertura', '', WT)
   expect(cwdDoDisco()).toBe(WT)
   expect(cwdDoDisco()).not.toBe(realpathSync(ROOT))
 })
@@ -187,7 +187,7 @@ test('tools do omc entram no modo edit quando o conector esta conectado E persis
 test('tools do omc NAO entram quando o escopo do conector e dinamico (nao chega no subprocesso)', async () => {
   limpar()
   process.env.CONF_OMC_ESCOPO = 'dinamico'
-  await runStep(WT, 'rufus', 'refatore sem mudar comportamento')
+  await runStep(WT, 'rufus', 'refatore sem mudar comportamento', '', WT)
   const a = argvDoDisco()
   expect(a.join(' ')).not.toContain('mcp__omc')
   expect(cwdDoDisco()).toBe(WT)
@@ -196,7 +196,7 @@ test('tools do omc NAO entram quando o escopo do conector e dinamico (nao chega 
 
 test('--agents nao aparece quando nao ha agente a injetar, e o prompt cai no modo direto (papel, sem "agente Nexus")', async () => {
   limpar()
-  await runStep(WT, 'agente-que-nao-existe', 'faca algo')
+  await runStep(WT, 'agente-que-nao-existe', 'faca algo', '', WT)
   expect(argvDoDisco()).not.toContain('--agents')
   expect(agentesNexusJsonPor(['agente-que-nao-existe'])).toBe('')
   const a = argvDoDisco()
@@ -258,8 +258,13 @@ test('o prompt de implement so roteia para agente que ele mesmo injeta', async (
   const prompt = String(a[a.indexOf('-p') + 1] ?? '')
   const citados = [...prompt.matchAll(/(\w+) \(escolhido pelo/g)].map(m => m[1] ?? '')
   const injetados = Object.keys(agentesDoDisco())
+  // O laco sozinho era vacuo: se a frase do prompt mudasse, `citados` viria vazio e
+  // o teste passaria sem executar assercao nenhuma. E `not.toContain('Roteie via
+  // Task')` e string que nao existe em nenhum arquivo de motor/.
+  expect(citados.length, 'nenhum agente citado: a frase do roteamento mudou e este teste parou de olhar').toBeGreaterThan(0)
+  expect(injetados.length, 'nenhum agente injetado: nao ha o que comparar').toBeGreaterThan(0)
   for (const agente of citados) expect(injetados).toContain(agente)
-  expect(prompt, 'quem escolhe o especialista e codigo, nao o modelo').not.toContain('Roteie via Task')
+  expect(citados.every(a => injetados.includes(a))).toBe(true)
 })
 
 test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENTES_IMPLEMENT, o roteamento cita SO os presentes', async () => {
@@ -327,7 +332,7 @@ test('ferramentasDeNavegacao nao libera nada quando o conector nao e usavel', ()
 
 test('runStep na forma de PRODUCAO (com id, logo com live-log) confina o cwd no worktree', async () => {
   limpar()
-  await runStep(WT, 'testudo', 'garanta cobertura', 'card-producao')
+  await runStep(WT, 'testudo', 'garanta cobertura', 'card-producao', WT)
   expect(argvDoDisco()).toContain('stream-json')
   expect(cwdDoDisco()).toBe(WT)
   expect(cwdDoDisco()).not.toBe(realpathSync(ROOT))

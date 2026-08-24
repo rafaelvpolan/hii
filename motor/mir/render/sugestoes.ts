@@ -22,6 +22,7 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/model': 'escolhe o modelo da ia atual',
   '/effort': 'escolhe o esforco da ia atual',
   '/mode': 'escolhe o modo de operacao da ia atual',
+  '/gauntlet': 'crivo julga telas por comparacao cega em vez de ler o diff',
   '/login': 'mostra como autenticar a ia que ainda nao logou',
   '/repo': 'troca de projeto',
   '/exit': 'sai do hii — as tarefas seguem rodando',

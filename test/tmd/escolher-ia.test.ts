@@ -89,8 +89,16 @@ test('REGRESSAO esforco vira argumento real do CLI nos DOIS caminhos, nao so enf
     expect(argv[argv.indexOf('--effort') + 1]).toBe('high')
     expect(argv).toContain('--agents')
   }
-  const codex = await Bun.file('motor/tmd/harness/codex.ts').text()
-  expect(codex).toContain('model_reasoning_effort')
+  // Isto era um grep em codex.ts, e um COMENTARIO citando
+  // `model_reasoning_effort` bastava para o invariante passar com o esforco nao
+  // chegando ao argv. Agora monta o argv de verdade e olha o que sai.
+  const { argv: codexArgv } = await import('../../motor/tmd/harness/codex.ts')
+  const doCodex = codexArgv({ ...req, effort: 'high' }, '/wt')
+  const comEsforco = doCodex.filter(a => a.includes('model_reasoning_effort'))
+  expect(comEsforco.length, 'o esforco tem de sair no argv do codex, nao so num comentario').toBeGreaterThan(0)
+  expect(comEsforco.join(' ')).toContain('high')
+  const semEsforco = codexArgv({ ...req, effort: '' }, '/wt')
+  expect(semEsforco.some(a => a.includes('model_reasoning_effort')), 'sem esforco pedido, nao inventa flag').toBe(false)
 })
 
 test('REGRESSAO um construtor de argv so — o caminho de live-log e o de json nao podem divergir', async () => {
@@ -273,4 +281,41 @@ test('gravar a preferencia e ATOMICO e nao deixa .tmp para tras — writeFileSyn
     else process.env.HICODE_IA_FILE = antes
     rmSync(raiz, { recursive: true, force: true })
   }
+})
+
+// `ler()` passou a LANCAR quando o ia.json esta ilegivel — porque `aplicar` faz
+// read-modify-WRITE e gravar por cima apagaria a preferencia dos outros papeis. Mas
+// `aplicar` e `ciclarModo` sao chamados de dentro do handler de TECLA da TUI, que
+// nao tem catch: excecao ali mata o processo com o terminal em raw mode. Nenhuma
+// funcao exportada deste modulo pode lancar.
+test('com ia.json ILEGIVEL, nenhuma funcao exportada LANCA — a TUI nao pode morrer', async () => {
+  const { writeFileSync } = await import('node:fs')
+  const M = await import('../../motor/mir/escolher-ia.ts')
+  writeFileSync(process.env.HICODE_IA_FILE as string, '{ isto nao e json')
+
+  for (const [nome, chamada] of [
+    ['aplicar', () => M.aplicar({ papeis: ['gate'], provider: 'codex' })],
+    ['limpar', () => M.limpar(['gate'])],
+    ['limparEsforco', () => M.limparEsforco(['gate'])],
+    ['ciclarModo', () => M.ciclarModo('implement', 1)],
+    ['definirModelo', () => M.definirModelo(['opus'])],
+    ['definirEsforco', () => M.definirEsforco(['high'])],
+    ['definirModoDeOperacao', () => M.definirModoDeOperacao(['plan'])],
+    ['definirGauntlet', () => M.definirGauntlet(['on'])],
+  ] as const) {
+    expect(() => chamada(), `${nome} lancou`).not.toThrow()
+    expect(chamada().ok, `${nome} nao pode dizer que deu certo`).toBe(false)
+    expect(chamada().mensagem, `${nome} tem de explicar`).toContain('ILEGIVEL')
+  }
+  expect(() => M.estadoDaIa(), 'estadoDaIa lancou').not.toThrow()
+  expect(M.estadoDaIa().join('\n'), 'o comando que MOSTRA o estado tem de explicar o problema').toContain('ILEGIVEL')
+})
+
+test('e o arquivo ILEGIVEL nao e SOBRESCRITO — a preferencia dos outros papeis sobrevive', async () => {
+  const { writeFileSync, readFileSync } = await import('node:fs')
+  const M = await import('../../motor/mir/escolher-ia.ts')
+  const antes = '{ "gate": { "provider": "codex" }, truncad'
+  writeFileSync(process.env.HICODE_IA_FILE as string, antes)
+  M.aplicar({ papeis: ['implement'], provider: 'claude' })
+  expect(readFileSync(process.env.HICODE_IA_FILE as string, 'utf8'), 'gravar por cima apaga o que ainda esta la para o humano consertar').toBe(antes)
 })

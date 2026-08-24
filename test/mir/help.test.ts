@@ -9,10 +9,28 @@ test('agrupa por proposito, nao numa lista solta', () => {
   }
 })
 
-test('cobre todos os comandos que a sessao aceita', () => {
+// A lista fixa de 9 nomes nao podia reprovar a AUSENCIA de comando novo: os 5
+// atalhos de intake do item 16 eram aceitos pelo parser, descritos em sugestoes.ts
+// e invisiveis no /help — que e a superficie de descoberta. Agora a fonte e
+// COMMANDS, entao comando novo sem linha no /help reprova.
+test('cobre todos os comandos que a sessao aceita', async () => {
+  const { COMMANDS } = await import('../../motor/mir/sessao.ts')
   const t = renderHelp().join('\n')
-  for (const c of ['/historico', '/config', '/stop', '/rm', '/repo', '/exit', '/new-task', '/new-ask', '/new-session']) {
-    expect(t).toContain(c)
+  // `t.includes(c)` casa por SUBSTRING: com '/model' e '/mode' na lista, apagar a
+  // linha do '/mode' do /help continuava verde pela linha do '/model'. Fronteira
+  // dos dois lados, igual a varredura de test/mir/mapa-de-comandos.test.ts.
+  const anunciado = (cmd: string): boolean =>
+    new RegExp(`(^|[^a-z0-9./-])${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9./-])`, 'im').test(t)
+  const semAnuncio = COMMANDS.filter(c => !anunciado(c))
+  expect(semAnuncio, 'comando aceito pelo parser e ausente do /help: o recurso existe e ninguem descobre').toEqual([])
+})
+
+test('os atalhos de intake vem do MESMO catalogo do parser, nao de uma lista copiada', async () => {
+  const { COMANDOS_MANUAIS } = await import('../../motor/mir/comandos-manuais.ts')
+  const t = renderHelp().join('\n')
+  for (const c of COMANDOS_MANUAIS) {
+    expect(t, `${c.nome} nao aparece no /help`).toContain(c.nome)
+    expect(t, `${c.nome} aparece sem dizer o que pre-carrega`).toContain(c.descricao.slice(0, 24))
   }
 })
 
@@ -83,4 +101,17 @@ test('mostra o caminho da tarefa, do inicio ao PR', () => {
   expect(t).toContain('Fila')
   expect(t).toContain('Url')
   expect(t).toContain('PR')
+})
+
+test('a varredura do /help NAO casa por substring — senao apagar /mode passaria pelo /model', () => {
+  const t = renderHelp().join('\n')
+  const anunciado = (cmd: string): boolean =>
+    new RegExp(`(^|[^a-z0-9./-])${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9./-])`, 'im').test(t)
+  expect(anunciado('/mode'), '/mode tem de estar anunciado por si').toBe(true)
+  expect(anunciado('/new-session')).toBe(true)
+  // E o casador nao pode dar positivo por prefixo de outro texto:
+  const so = (texto: string) => (cmd: string): boolean =>
+    new RegExp(`(^|[^a-z0-9./-])${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9./-])`, 'im').test(texto)
+  expect(so('/model opus')('/mode'), '/model nao anuncia /mode').toBe(false)
+  expect(so('atalho de /new-session')('/new'), 'a descricao de /new-session nao anuncia /new').toBe(false)
 })

@@ -43,11 +43,25 @@ function inserirTexto(state: InputState, texto: string): InputState {
   return limpo(state, buffer, state.cursor + texto.length)
 }
 
+// Sanitizacao SIMETRICA nos dois caminhos. Antes so o inline removia os bytes de
+// controle; o caminho do marcador guardava o texto cru. Desde que o historico
+// passou a guardar a versao EXPANDIDA, apertar UP carregava sequencia ANSI e byte
+// de controle de uma colagem de saida colorida direto para o buffer RENDERIZADO —
+// antes so o marcador era renderizado, e o cru ia direto para o prompt da IA.
+// A faixa deixa \x09 (tab) e \x0a (LF) de fora de proposito: sao os dois unicos
+// controles que fazem sentido num texto colado. A segunda faixa e a dos controles
+// C1 (U+0080–U+009F): U+009B e o CSI de um byte, e terminais que interpretam C1 o
+// tratam como introdutor de sequencia — colagem vinda de log decodificado como
+// Latin-1 e o gatilho realista.
+function semControle(texto: string): string {
+  return texto.replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, '')
+}
+
 export function colar(state: InputState, bruto: string): InputState {
-  const texto = bruto.replace(/\r\n?/g, '\n')
+  const texto = semControle(bruto.replace(/\r\n?/g, '\n'))
   const linhas = texto.split('\n').length
   const inline = texto.length <= LIMITE_COLA && linhas === 1
-  if (inline) return inserirTexto(state, texto.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, ''))
+  if (inline) return inserirTexto(state, texto)
   const pastes = [...state.pastes, texto]
   const medida = linhas > 1 ? `${linhas} linhas` : `${texto.length} chars`
   const marcador = `[colado #${pastes.length} · ${medida}]`
@@ -177,13 +191,18 @@ export function keypress(state: InputState, key: string): KeyResult {
     return { state: limpo(state, buffer, buffer.length), action: { kind: 'redraw' } }
   }
   if (ENTER.includes(key)) {
+    // O historico guarda a linha EXPANDIDA, nao o marcador. Guardar o marcador e
+    // limpar `pastes` no mesmo passo fazia a colagem recuperada do historico virar
+    // o texto literal "[colado #1 · 5 linhas]": `expandir` nao achava mais o
+    // conteudo (`?? m`) e o marcador ia como prompt para a IA.
     const line = state.buffer
-    const history = line.trim() && state.history[state.history.length - 1] !== line
-      ? [...state.history, line]
+    const expandida = expandir(state, line)
+    const history = expandida.trim() && state.history[state.history.length - 1] !== expandida
+      ? [...state.history, expandida]
       : state.history
     return {
       state: { buffer: '', cursor: 0, history, histIdx: history.length, draft: '', pastes: [], navegando: '' },
-      action: { kind: 'submit', line: expandir(state, line) },
+      action: { kind: 'submit', line: expandida },
     }
   }
   if (INTERRUPT.includes(key)) return { state, action: { kind: 'interrupt' } }

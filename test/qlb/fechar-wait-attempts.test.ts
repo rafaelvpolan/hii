@@ -41,7 +41,7 @@ git(clone, ['config', 'user.name', 't'])
 process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
-const GATE_APROVADO: GateResult = { ok: true, verdict: 'APPROVED', reason: 'sem defeito real encontrado', questions: [], cost: 0.01, costMeasured: true, tokens: 100 }
+const GATE_APROVADO: GateResult = { ok: true, verdict: 'APPROVED', reason: 'sem defeito real encontrado', criterio: '', questions: [], cost: 0.01, costMeasured: true, tokens: 100 }
 
 const agenteFinish: FinishDeps = {
   runStep: (): never => { throw new Error('nao deveria chamar runStep — steps: nada nao roda nenhum passo') },

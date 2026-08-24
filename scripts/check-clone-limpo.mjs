@@ -62,7 +62,12 @@ function dependenciasDe(alvo) {
 function lockForaDeSincronia() {
   if (!existsSync('bun.lock')) return []
   let lock
-  try { lock = JSON.parse(semVirgulaSobrando(readFileSync('bun.lock', 'utf8'))) } catch { return [] }
+  // Lock ilegivel NAO e lock em dia. Devolver [] aqui fazia este lint imprimir
+  // "ok (o repo sobrevive a um clone novo)" exatamente na falha que ele existe
+  // para pegar — o clone novo quebraria e o gate teria dito que estava tudo bem.
+  try { lock = JSON.parse(semVirgulaSobrando(readFileSync('bun.lock', 'utf8'))) } catch (e) {
+    return [`bun.lock ilegivel (${e?.message || e}) — nao da para provar que o lock esta em dia; rode bun install e commite o lock`]
+  }
   const declaradas = dependenciasDe(pacote())
   const travadas = dependenciasDe(lock.workspaces?.[''] ?? {})
   const achados = []

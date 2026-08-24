@@ -1,6 +1,7 @@
 import { isoNow } from '../../cdl/index.ts'
 import type { Job } from '../../cdl/index.ts'
 import { MAX_CONCURRENCY } from '../../cdl/ali/config.ts'
+import { tetoDeParalelismo } from '../../qlb/limites.ts'
 import { patchCard } from '../../cdl/store.ts'
 import { pending, marcarEmVoo, liberar, quantosEmVoo } from './estado-da-fila.ts'
 import { handleExecute } from '../executar.ts'
@@ -85,8 +86,16 @@ export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
     ok = false
   }
   try {
+    // Item 32. O teto REAL e o do container; o que o motor pode fazer e nao abrir
+    // mais worktrees do que cabem no orcamento que ele recebeu. Antes, limites.ts
+    // era calculado e NUNCA lido: o escalonador usava so HICODE_CONCURRENCY, e com
+    // os valores do docker-stack.yml (2 cpu, 4096MB, 2048MB por worktree) abria 3
+    // worktrees pedindo 6GB contra um limite de 4GB — OOM no cenario que o modulo
+    // dizia prevenir. O menor dos dois manda: o operador ainda pode baixar por
+    // HICODE_CONCURRENCY, mas nao pode subir acima do que a maquina comporta.
+    const teto = tetoDeParalelismo(MAX_CONCURRENCY)
     for (const job of pending()) {
-      if (quantosEmVoo() >= MAX_CONCURRENCY) break
+      if (quantosEmVoo() >= teto) break
       void runJob(job)
     }
   } catch (e) {

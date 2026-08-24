@@ -19,12 +19,32 @@ import type { Enquadramento } from './enquadramentos.ts'
 //    qualquer um. Nenhuma saida pode entrar no prompt de outro ramo, porque no
 //    instante em que os prompts existem ainda nao ha saida nenhuma.
 
-export const RAMOS_PADRAO = Number(process.env.HICODE_MCN_RAMOS || 4)
-export const IDEIAS_POR_RAMO = Number(process.env.HICODE_MCN_IDEIAS || 4)
+// `Number(env)` sem validacao fazia HICODE_MCN_IDEIAS invalido virar NaN e o prompt
+// sair "Gere NaN propostas DISTINTAS" — token pago por pedido corrompido. E
+// HICODE_MCN_RAMOS invalido fazia escolherEnquadramentos devolver [], com a falha
+// reaparecendo longe da causa como "0 ramo(s) nao e divergencia".
+function inteiroDeEnv(nome: string, padrao: number): number {
+  const cru = String(process.env[nome] ?? '').trim()
+  if (!cru) return padrao
+  const n = Number(cru)
+  if (!Number.isInteger(n) || n < 1) {
+    process.stderr.write(`[hicode] ${nome}="${cru}" nao e inteiro >= 1 — usando ${padrao}\n`)
+    return padrao
+  }
+  return n
+}
+
+export const RAMOS_PADRAO = inteiroDeEnv('HICODE_MCN_RAMOS', 4)
+export const IDEIAS_POR_RAMO = inteiroDeEnv('HICODE_MCN_IDEIAS', 4)
 
 export interface Ramo {
   readonly enquadramento: string
   readonly prompt: string
+  // O teto DESTE ramo. Existia como `porRamoUsd` no orcamento e nunca chegava ao
+  // ramo: era numero calculado, documentado e nao aplicado — num lugar em que N
+  // ramos multiplicam o gasto por N, que e exatamente onde teto decorativo custa
+  // mais caro. Agora o despachante recebe o valor e quem estoura fica NOMEADO.
+  readonly tetoUsd: number
 }
 
 export interface SaidaDeRamo {
@@ -87,10 +107,10 @@ export function orcamentoDaDivergencia(ramos: number, gastoUsd: number, g: Gover
   return { tetoUsd, gastoUsd, restanteUsd, porRamoUsd, ramos }
 }
 
-export function montarRamos(enunciado: string, enquadramentos: readonly Enquadramento[], quantas: number = IDEIAS_POR_RAMO): Ramo[] {
+export function montarRamos(enunciado: string, enquadramentos: readonly Enquadramento[], quantas: number = IDEIAS_POR_RAMO, tetoPorRamoUsd = 0): Ramo[] {
   if (!enunciado.trim()) throw new Error('divergencia sem enunciado — N lentes sobre nada devolvem N respostas sobre nada')
   // map sobre cada enquadramento isoladamente: promptDoRamo nao recebe o array.
-  return enquadramentos.map(e => ({ enquadramento: e.id, prompt: promptDoRamo(e, enunciado, quantas) }))
+  return enquadramentos.map(e => ({ enquadramento: e.id, prompt: promptDoRamo(e, enunciado, quantas), tetoUsd: tetoPorRamoUsd }))
 }
 
 export interface Divergencia {
@@ -98,6 +118,27 @@ export interface Divergencia {
   readonly propostas: readonly Proposta[]
   readonly custoUsd: number
   readonly orcamento: OrcamentoDaDivergencia
+  // Ramos que passaram do proprio teto. Lista vazia = ninguem estourou. Nomeado
+  // em vez de somado calado: quem paga precisa saber QUAL lente custou demais.
+  readonly estouraram: readonly EstouroDeRamo[]
+}
+
+export interface EstouroDeRamo {
+  readonly enquadramento: string
+  readonly custoUsd: number
+  readonly tetoUsd: number
+}
+
+export function ramosQueEstouraram(saidas: readonly SaidaDeRamo[], tetoPorRamoUsd: number): EstouroDeRamo[] {
+  if (tetoPorRamoUsd <= 0) return []
+  return saidas
+    .filter(s => s.custoUsd > tetoPorRamoUsd)
+    .map(s => ({ enquadramento: s.enquadramento, custoUsd: s.custoUsd, tetoUsd: tetoPorRamoUsd }))
+}
+
+export function relatoDeEstouro(estouraram: readonly EstouroDeRamo[]): string {
+  if (!estouraram.length) return ''
+  return `ramo(s) acima do teto por ramo: ${estouraram.map(e => `${e.enquadramento} gastou US$${e.custoUsd.toFixed(4)} de US$${e.tetoUsd.toFixed(4)}`).join(' · ')}`
 }
 
 export async function despacharDivergencia(
@@ -110,7 +151,7 @@ export async function despacharDivergencia(
   // Os prompts existem ANTES do primeiro despacho. E aqui que o isolamento
   // deixa de ser promessa: nao ha instante em que uma saida esteja disponivel
   // para entrar no prompt de outro ramo.
-  const ramos = montarRamos(enunciado, enquadramentos)
+  const ramos = montarRamos(enunciado, enquadramentos, IDEIAS_POR_RAMO, orcamento.porRamoUsd)
   const saidas = await Promise.all(ramos.map(r => despachante(r)))
   const propostas = saidas.flatMap(s => (s.ok ? parsePropostas(s.texto, s.enquadramento) : []))
   return {
@@ -118,6 +159,7 @@ export async function despacharDivergencia(
     propostas,
     custoUsd: saidas.reduce((a, s) => a + s.custoUsd, 0),
     orcamento,
+    estouraram: ramosQueEstouraram(saidas, orcamento.porRamoUsd),
   }
 }
 

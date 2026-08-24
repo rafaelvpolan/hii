@@ -1182,7 +1182,7 @@ ENTRYPOINT ["node", "core/main.js"]
 - **Configuração via variável de ambiente** (12-factor), nunca arquivo de config amarrado a um provedor.
 - **Estado persistido em volume externo ao container** (worktrees, ledger, `.hii/`, `skills/`) — em VPS isso é um disco montado; em qualquer nuvem isso é o volume/bucket equivalente, mas o hii não sabe nem precisa saber qual.
 - **Sem serviço gerenciado de nuvem como dependência obrigatória.** O hii fala HTTP com as APIs das IAs (claude/codex/kimi/qwen) e nada mais — isso já é portável por definição, contanto que nenhum código novo comece a assumir IAM da AWS ou Key Vault do Azure como pré-requisito.
-- **`docker-compose.yml` cobre o caso VPS**; o mesmo `Dockerfile` sobe como container service em qualquer uma das três nuvens sem mudança — a diferença fica inteira na camada de infra (rede, volume, DNS), nunca no código do hii.
+- **`docker-stack.yml` cobre o caso VPS** (swarm; compose ficou PROIBIDO por `config/regras-inegociaveis.json` r-0001, porque ignora `deploy.resources.limits` e tornaria decorativo o teto do item 32 — ver WORKFLOW-EXECUCAO.md, "Divergencias conscientes do esboco da Parte VI"); o mesmo `Dockerfile` sobe como container service em qualquer uma das três nuvens sem mudança — a diferença fica inteira na camada de infra (rede, volume, DNS), nunca no código do hii.
 
 ---
 
@@ -1238,7 +1238,7 @@ Não precisa de solução cara nesse porte — volume com snapshot automático (
 O Parte III (seção 9) já recomenda N cards em paralelo via worktree. Em produção, isso precisa de teto de CPU/memória/disco por worktree — senão um card com repair-loop preso consome recurso do host e derruba os outros:
 
 ```yaml
-# docker-compose.yml (trecho) — mesmo efeito via limite de container em qualquer nuvem
+# docker-stack.yml (trecho) — mesmo efeito via limite de container em qualquer nuvem
 services:
   hii-worker:
     deploy:
@@ -1259,7 +1259,7 @@ Mesmo princípio de `orcamentoPorCard` (Parte V, seção 4) — lá é teto de c
 | 25 | `core/idempotency.ts` em toda operação com efeito colateral externo | Seção 1 — a lacuna mais séria encontrada nesta rodada |
 | 26 | `core/recovery.ts` — retomada de card a partir do ledger no restart | Seção 2 |
 | 27 | Categoria de evento `orfao` no ledger + compensação por tipo de operação | Seção 3 |
-| 28 | `Dockerfile` + `docker-compose.yml` únicos, sem SDK de nuvem no core | Seção 4 |
+| 28 | `Dockerfile` + `docker-stack.yml` únicos, sem SDK de nuvem no core | Seção 4 |
 | 29 | `core/secrets.ts` com `EnvSecretProvider` como caminho sempre-funcional | Seção 5 |
 | 30 | `GET /health` + shutdown gracioso em `SIGTERM` | Seção 6 |
 | 31 | Snapshot automático do volume (ledger, worktrees) + `skills/`/regras sempre em git | Seção 7 |
@@ -1303,7 +1303,7 @@ Os itens abaixo já estão numerados de forma contínua nas Partes III, V e VI �
 | 25 | `core/idempotency.ts` em toda operação com efeito colateral externo | Maior lacuna de confiabilidade encontrada | VI |
 | 26 | `core/recovery.ts` — retomada de card a partir do ledger no restart | Sobrevive a crash sem duplicar trabalho | VI |
 | 27 | Categoria de evento `orfao` no ledger + compensação por tipo de operação | Falha parcial (padrão saga) | VI |
-| 28 | `Dockerfile` + `docker-compose.yml` únicos, sem SDK de nuvem no core | Portabilidade VPS/AWS/Azure/GCP | VI |
+| 28 | `Dockerfile` + `docker-stack.yml` únicos, sem SDK de nuvem no core | Portabilidade VPS/AWS/Azure/GCP | VI |
 | 29 | `core/secrets.ts` com `EnvSecretProvider` como caminho sempre-funcional | Segredos portáveis | VI |
 | 30 | `GET /health` + shutdown gracioso em `SIGTERM` | Observabilidade de infraestrutura | VI |
 | 31 | Snapshot automático do volume + `skills/`/regras sempre em git | Backup e disaster recovery | VI |

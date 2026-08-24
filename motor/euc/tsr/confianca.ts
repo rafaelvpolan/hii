@@ -85,12 +85,34 @@ export function sessaoParaChamada(id: string): string {
   return id ? sessaoDoCard(id) : `conversa-${sessaoAtual()}`
 }
 
+// O registro NAO pode derrubar a chamada de agente que ele descreve: o token ja
+// foi gasto, e perder o resultado por causa do ledger seria trocar um problema
+// por um pior. Mas engolir calado fazia o unico escritor do ledger falhar em
+// silencio — o gasto desaparecia da conta e do teto, e nada no diario dizia que
+// desapareceu. Grita, uma vez por motivo, para o gasto perdido ser um fato
+// observavel em vez de uma lacuna.
+const falhasDeRegistroAvisadas = new Set<string>()
+
 function semPropagarFalhaDeRegistro(registro: () => void): void {
   try {
     registro()
-  } catch {
-    return
+  } catch (e) {
+    const motivo = String((e as Error).message ?? e).slice(0, 160)
+    if (falhasDeRegistroAvisadas.has(motivo)) return
+    falhasDeRegistroAvisadas.add(motivo)
+    // A causa anunciada apontava para o lugar errado: o teto por card le
+    // `card.fm.cost_usd`, escrito pelo executar/fechar independentemente do ledger.
+    // O que se perde aqui e o ledger por SESSAO e por PAPEL (o /config e o
+    // historico), nao o portao de orcamento.
+    process.stderr.write(`[hicode] NAO consegui registrar uma chamada de agente no ledger da sessao (${motivo}) — esta chamada nao vai aparecer no /config nem no historico por papel. O teto por card nao e afetado (ele le cost_usd do card). O trabalho continua; a conta por sessao fica incompleta.\n`)
   }
+}
+
+// Chamado pelo teste (e disponivel para quem precise reabrir o aviso num daemon
+// longo): o Set e por processo, entao sem reset a segunda falha do MESMO motivo
+// volta a ser silenciosa.
+export function esquecerAvisosDeLedger(): void {
+  falhasDeRegistroAvisadas.clear()
 }
 
 function anotarChamada(id: string, provider: Harness, req: AgentRequest, papel: PapelDeChamada, res: AgentResult, t0: number): void {

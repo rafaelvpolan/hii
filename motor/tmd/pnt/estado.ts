@@ -36,11 +36,34 @@ export interface DisponibilidadeExterna {
   usavel: boolean
   motivo: string
   tools: string[]
+  // true = a indisponibilidade pode passar (o binario nao respondeu agora).
+  // Quem decide HALT vs retry le isto em vez de assumir terminal para tudo.
+  transitorio?: boolean
+}
+
+// "Listei e nao achei" e "nao consegui listar" nao podem ter a mesma
+// representacao. Enquanto `servidoresComEstado()` devolvia [] nas duas situacoes,
+// o motivo entregue ao humano era "nenhum servidor MCP de X aparece em mcp list"
+// — afirmacao FALSA quando o binario nao rodou — e a falha ia classificada como
+// `terminal`, ou seja HALT sem retry por um erro que muitas vezes e transitorio.
+export interface ListaDeServidores {
+  readonly servidores: readonly ServidorMcp[]
+  // Vazio = consegui listar. Preenchido = a listagem falhou, e este e o motivo.
+  readonly falhou: string
+}
+
+// Mesma distincao da listagem, agora tambem no ESCOPO: "o binario nao respondeu"
+// e "respondeu e nao tem linha de scope" nao podem ter o mesmo valor. Colapsar os
+// dois em 'nao-verificavel' fazia um timeout de `claude mcp get` virar HALT sem
+// retry, pelo mesmo motivo que a listagem.
+export interface EscopoDaConsulta {
+  readonly escopo: EscopoServidor
+  readonly falhou: string
 }
 
 export interface ConsultaMcp {
-  servidores: () => Promise<ServidorMcp[]>
-  escopo: (nome: string) => Promise<EscopoServidor>
+  servidores: () => Promise<ListaDeServidores>
+  escopo: (nome: string) => Promise<EscopoDaConsulta>
   prefixo: (nome: string) => string
 }
 
@@ -57,8 +80,16 @@ export async function disponibilidadeExterna(
   ferramenta: string,
   consulta: ConsultaMcp,
 ): Promise<DisponibilidadeExterna> {
-  const todos = await consulta.servidores()
-  const candidatos = todos.filter(s => combinam(ferramenta, s.nome))
+  const lista = await consulta.servidores()
+  if (lista.falhou) {
+    return {
+      usavel: false,
+      motivo: `nao consegui LISTAR os servidores MCP para saber se ${ferramenta} existe — isto NAO significa que ele nao existe: ${lista.falhou}`,
+      tools: [],
+      transitorio: true,
+    }
+  }
+  const candidatos = lista.servidores.filter(s => combinam(ferramenta, s.nome))
   if (!candidatos.length) {
     return { usavel: false, motivo: `nenhum servidor MCP de ${ferramenta} aparece em "claude mcp list"`, tools: [] }
   }
@@ -72,12 +103,22 @@ export async function disponibilidadeExterna(
   }
   const persistentes: string[] = []
   let naoVerificavel = false
+  let falhaAoVerificar = ''
   for (const s of conectados) {
-    const escopo = await consulta.escopo(s.nome)
-    if (escopo === 'persistente') persistentes.push(s.nome)
-    if (escopo === 'nao-verificavel') naoVerificavel = true
+    const r = await consulta.escopo(s.nome)
+    if (r.escopo === 'persistente') persistentes.push(s.nome)
+    if (r.escopo === 'nao-verificavel') naoVerificavel = true
+    if (r.falhou && !falhaAoVerificar) falhaAoVerificar = r.falhou
   }
   if (!persistentes.length) {
+    if (falhaAoVerificar) {
+      return {
+        usavel: false,
+        motivo: `nao consegui LER o escopo do conector ${ferramenta} — isto NAO significa que ele e dinamico: ${falhaAoVerificar}`,
+        tools: [],
+        transitorio: true,
+      }
+    }
     return {
       usavel: false,
       motivo: naoVerificavel

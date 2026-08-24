@@ -73,8 +73,10 @@ export function packsAusentes(acervo: readonly Skill[] = carregarAcervo()): Pack
     c.packs.filter(p => !existentes.has(p)).map(p => ({ comando: c.nome, pack: p })))
 }
 
-// Chamada no arranque e no teste. LANCA de proposito: atalho que pre-carrega
-// vazio e a falha silenciosa que este item passou tres ondas evitando.
+// Chamada no arranque do daemon (runner.ts, logo depois de warnProviderConfig) e
+// no teste. LANCA de proposito: atalho que pre-carrega vazio e a falha silenciosa
+// que este item passou tres ondas evitando. Quem chama no arranque converte o
+// lance em aviso — derrubar o motor por causa de um atalho seria pior.
 export function validarComandosManuais(acervo: readonly Skill[] = carregarAcervo()): void {
   const ausentes = packsAusentes(acervo)
   if (ausentes.length) {
@@ -121,6 +123,9 @@ export function packsDoCard(valor: string | undefined): string[] {
   return (valor ?? '').split(',').map(s => s.trim()).filter(Boolean)
 }
 
+// O /help da TUI monta os atalhos direto de COMANDOS_MANUAIS
+// (motor/mir/render/help.ts), que e a mesma fonte. Esta funcao existe para a saida
+// de UMA LINHA por atalho, usada por `hii --help` no terminal.
 export function ajudaDeComandosManuais(): string[] {
-  return COMANDOS_MANUAIS.map(c => `  ${c.nome.padEnd(22)} ${c.descricao}`)
+  return COMANDOS_MANUAIS.map(c => `  ${c.nome.padEnd(24)} ${c.descricao}`)
 }

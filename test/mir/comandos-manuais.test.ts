@@ -184,3 +184,15 @@ test('comandoManual devolve undefined para nome que nao e atalho', () => {
   expect(comandoManual('/help')).toBeUndefined()
   expect(comandoManual('')).toBeUndefined()
 })
+
+// O comentario da funcao afirmava "chamada no arranque e no teste" e SO o teste
+// chamava. Guarda contra a afirmacao voltar a ser falsa.
+test('INVARIANTE o arranque do daemon chama validarComandosManuais de verdade', async () => {
+  const fonte = await Bun.file('runner.ts').text()
+  expect(fonte).toContain("from './motor/mir/comandos-manuais.ts'")
+  const iChamada = fonte.indexOf('validarComandosManuais()')
+  expect(iChamada, 'a chamada nao esta no runner: o comentario da funcao volta a mentir').toBeGreaterThan(-1)
+  // E converte o lance em aviso: um atalho quebrado nao pode tirar o motor do ar.
+  const trecho = fonte.slice(Math.max(0, iChamada - 200), iChamada + 200)
+  expect(trecho, 'sem try/catch, acervo incompleto derruba o daemon').toContain('catch')
+})
