@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
-import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../cdl/ali/config'
-import { run } from '../../qlb/git'
-import { readContract } from '../../cdl/bss/armazenar'
-import { devCommand, devCwd, hasCommand } from '../../mir/comandos'
-import { noProxyArgs } from '../../qlb/alf/loopback'
-import { runtimeDeScript } from '../../cdl/ali/runtime'
+import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../cdl/ali/config.ts'
+import { run } from '../../qlb/git.ts'
+import { readContract } from '../../cdl/bss/armazenar.ts'
+import { devCommand, devCwd, hasCommand } from '../../mir/comandos.ts'
+import { noProxyArgs } from '../../qlb/alf/loopback.ts'
+import { runtimeDeScript } from '../../cdl/ali/runtime.ts'
 
 export interface UrlHealth {
   ok: boolean

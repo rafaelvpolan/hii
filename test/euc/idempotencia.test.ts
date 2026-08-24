@@ -8,8 +8,8 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { executarComIdempotencia, chaveDeEfeito, efeitoJaProduzido } = await import('../../motor/qlb/slv/idempotencia')
-const { anexarEvento, eventosDoCard, arquivoDeEventos, ultimoEvento, cardFechado } = await import('../../motor/euc/eventos')
+const { executarComIdempotencia, chaveDeEfeito, efeitoJaProduzido } = await import('../../motor/qlb/slv/idempotencia.ts')
+const { anexarEvento, eventosDoCard, arquivoDeEventos, ultimoEvento, cardFechado } = await import('../../motor/euc/eventos.ts')
 
 let seq = 0
 function card(): string { return `idem-${++seq}` }

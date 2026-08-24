@@ -1,6 +1,6 @@
-import type { PipelineStep } from '../../nmy/tipos'
-import { lerAcaoExterna } from './externo'
-import type { VeredictoDaLei } from '../../csd/lei/guarda'
+import type { PipelineStep } from '../../nmy/tipos.ts'
+import { lerAcaoExterna } from './externo.ts'
+import type { VeredictoDaLei } from '../../csd/lei/guarda.ts'
 
 export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'externo'
 

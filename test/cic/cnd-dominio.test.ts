@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const CND = await import('../../motor/cic/cnd/gauntlet')
+const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
 test('frontend e jogos habilitam gauntlet — existe referencia de mercado comparavel', () => {
   expect(CND.gauntletVale(['common', 'frontend-web']).vale).toBe(true)

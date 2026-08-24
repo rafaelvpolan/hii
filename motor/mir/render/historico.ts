@@ -1,9 +1,9 @@
-import { larguraDeTexto } from '../tui/largura'
-import { pintar, type Tom } from '../tui/paleta'
-import { chaveDaSessao, idDaSessao } from '../historico'
-import type { HistoricoDeSessoes, Sessao } from '../historico'
-import { idCurto } from '../../euc/ias-da-sessao'
-import type { IaDaSessao } from '../../cdl/tipos'
+import { larguraDeTexto } from '../tui/largura.ts'
+import { pintar, type Tom } from '../tui/paleta.ts'
+import { chaveDaSessao, idDaSessao } from '../historico.ts'
+import type { HistoricoDeSessoes, Sessao } from '../historico.ts'
+import { idCurto } from '../../euc/ias-da-sessao.ts'
+import type { IaDaSessao } from '../../cdl/tipos.ts'
 
 export interface OpcoesDoHistorico {
   color?: boolean

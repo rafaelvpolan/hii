@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir, reposFile } from '../../cdl/ali/config'
-import { allCards, listRepos, normalizeId } from '../../cdl/store'
-import { memoArquivo, memoChave, memoTempo } from '../../tmd/eco/memo'
-import { parseLog } from '../atividade'
+import { cardsDir, reposFile } from '../../cdl/ali/config.ts'
+import { allCards, listRepos, normalizeId } from '../../cdl/store.ts'
+import { memoArquivo, memoChave, memoTempo } from '../../tmd/eco/memo.ts'
+import { parseLog } from '../atividade.ts'
 
-export { passosAtivos, planoDoCard, passosDe } from '../../nmy/passos'
+export { passosAtivos, planoDoCard, passosDe } from '../../nmy/passos.ts'
 
 export const atividadeDe = memoArquivo(
   (id) => join(cardsDir(), 'runs', `${normalizeId(id)}.live.log`),

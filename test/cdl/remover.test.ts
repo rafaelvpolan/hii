@@ -21,7 +21,7 @@ function run(nome: string): void {
 }
 
 test('plano lista o que sera limpo e nao apaga nada', async () => {
-  const { planejarRemocao } = await import('../../motor/cdl/remover')
+  const { planejarRemocao } = await import('../../motor/cdl/remover.ts')
   card('099', { status: 'READY', title: 'teste', repo: 'org/app', branch: 'hicode/099' })
   run('099.live.log')
   run('099-20260101.json')
@@ -32,7 +32,7 @@ test('plano lista o que sera limpo e nao apaga nada', async () => {
 })
 
 test('plano carrega o piso do custo direto do card, e o card medido nao inventa piso', async () => {
-  const { planejarRemocao } = await import('../../motor/cdl/remover')
+  const { planejarRemocao } = await import('../../motor/cdl/remover.ts')
   card('099', { status: 'READY', title: 'x', repo: 'org/app', cost_usd: '0.7726', cost_floor: 'codex' })
   card('098', { status: 'READY', title: 'x', repo: 'org/app', cost_usd: '0.7726' })
   expect(planejarRemocao('099')?.piso).toBe('codex')
@@ -40,7 +40,7 @@ test('plano carrega o piso do custo direto do card, e o card medido nao inventa 
 })
 
 test('remove o card e SO os arquivos dele', async () => {
-  const { remover } = await import('../../motor/cdl/remover')
+  const { remover } = await import('../../motor/cdl/remover.ts')
   card('099', { status: 'READY', title: 'x', repo: 'org/app' })
   run('099.live.log')
   run('098-outro.json')
@@ -51,7 +51,7 @@ test('remove o card e SO os arquivos dele', async () => {
 })
 
 test('RECUSA apagar card em voo — o motor esta gastando nele', async () => {
-  const { remover } = await import('../../motor/cdl/remover')
+  const { remover } = await import('../../motor/cdl/remover.ts')
   for (const status of ['EXECUTING', 'CORRECTING']) {
     card('100', { status, title: 'x', repo: 'org/app' })
     const r = await remover('100')
@@ -62,31 +62,31 @@ test('RECUSA apagar card em voo — o motor esta gastando nele', async () => {
 })
 
 test('force apaga o card em voo', async () => {
-  const { remover } = await import('../../motor/cdl/remover')
+  const { remover } = await import('../../motor/cdl/remover.ts')
   card('100', { status: 'EXECUTING', title: 'x', repo: 'org/app' })
   expect((await remover('100', true)).ok).toBe(true)
 })
 
 test('PR aberto avisa que o PR nao fecha sozinho', async () => {
-  const { planejarRemocao } = await import('../../motor/cdl/remover')
+  const { planejarRemocao } = await import('../../motor/cdl/remover.ts')
   card('101', { status: 'PR_OPEN', title: 'x', repo: 'org/app' })
   expect(planejarRemocao('101')?.avisos.join(' ')).toContain('PR continua aberto')
 })
 
 test('card inexistente nao explode', async () => {
-  const { planejarRemocao, remover } = await import('../../motor/cdl/remover')
+  const { planejarRemocao, remover } = await import('../../motor/cdl/remover.ts')
   expect(planejarRemocao('777')).toBe(null)
   expect((await remover('777')).ok).toBe(false)
 })
 
 test('id sem zero a esquerda acha o card', async () => {
-  const { planejarRemocao } = await import('../../motor/cdl/remover')
+  const { planejarRemocao } = await import('../../motor/cdl/remover.ts')
   card('099', { status: 'READY', title: 'x', repo: 'org/app' })
   expect(planejarRemocao('99')?.id).toBe('99')
 })
 
 test('lote normaliza id: 23 e 023 sao o mesmo card', async () => {
-  const { planejarLote } = await import('../../motor/cdl/remover')
+  const { planejarLote } = await import('../../motor/cdl/remover.ts')
   card('023', { status: 'READY', title: 'x', repo: 'org/app' })
   const lote = planejarLote(['23', '023', ' 23 '])
   expect(lote.removiveis.length).toBe(1)
@@ -94,7 +94,7 @@ test('lote normaliza id: 23 e 023 sao o mesmo card', async () => {
 })
 
 test('lote separa removivel, bloqueado e ausente', async () => {
-  const { planejarLote } = await import('../../motor/cdl/remover')
+  const { planejarLote } = await import('../../motor/cdl/remover.ts')
   card('023', { status: 'READY', title: 'x', repo: 'org/app' })
   card('024', { status: 'EXECUTING', title: 'x', repo: 'org/app' })
   const lote = planejarLote(['23', '24', '99'])
@@ -104,13 +104,13 @@ test('lote separa removivel, bloqueado e ausente', async () => {
 })
 
 test('lote vazio nao explode', async () => {
-  const { planejarLote } = await import('../../motor/cdl/remover')
+  const { planejarLote } = await import('../../motor/cdl/remover.ts')
   const lote = planejarLote(['', '   '])
   expect(lote.removiveis.length + lote.bloqueados.length + lote.ausentes.length).toBe(0)
 })
 
 test('removerLote relata sucesso e falha por id', async () => {
-  const { removerLote } = await import('../../motor/cdl/remover')
+  const { removerLote } = await import('../../motor/cdl/remover.ts')
   card('023', { status: 'READY', title: 'x', repo: 'org/app' })
   const r = await removerLote(['023', '099'], true)
   expect(r.apagados).toEqual(['023'])

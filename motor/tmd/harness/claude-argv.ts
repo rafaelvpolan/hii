@@ -1,6 +1,6 @@
-import type { AgentRequest } from '../tipos'
-import { resolverModo } from '../modo-puro'
-import type { CatalogoDeModo } from '../tipos'
+import type { AgentRequest } from '../tipos.ts'
+import { resolverModo } from '../modo-puro.ts'
+import type { CatalogoDeModo } from '../tipos.ts'
 
 export const CLAUDE_MODOS: CatalogoDeModo = { modos: ['default', 'acceptEdits', 'plan'], padrao: 'acceptEdits' }
 

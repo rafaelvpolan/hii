@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const L = await import('../../motor/qlb/limites')
+const L = await import('../../motor/qlb/limites.ts')
 
 test('quantos worktrees cabem sai da divisao do orcamento, nao de um numero chutado', () => {
   const c = L.quantosWorktreesCabem({ totalMemoriaMb: 8192, memoriaPorWorktreeMb: 2048, totalCpus: 4, cpuPorWorktree: 1 })

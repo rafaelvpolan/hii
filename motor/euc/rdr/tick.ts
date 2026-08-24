@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../../cdl'
-import { cardsDir } from '../../cdl/ali/config'
+import { isoNow } from '../../cdl/index.ts'
+import { cardsDir } from '../../cdl/ali/config.ts'
 
 export interface DaemonHealth {
   consecutiveFailures: number

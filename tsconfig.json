@@ -16,6 +16,10 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noEmit": true,
+    // Node exige extensao explicita no especificador ESM; o Bun aceita. Com os
+    // dois carregando o mesmo codigo-fonte, a extensao passa a ser obrigatoria
+    // — ver test/cdl/import-com-extensao.test.ts.
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

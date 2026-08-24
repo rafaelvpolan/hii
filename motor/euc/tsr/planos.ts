@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { memoArquivo } from '../../tmd/eco/memo'
+import { memoArquivo } from '../../tmd/eco/memo.ts'
 
-export type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos'
-import type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos'
+export type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos.ts'
+import type { JanelaDeUso, PlanoDoProvedor } from '../../tmd/tipos.ts'
 
 const NOME_DO_TIER: Record<string, string> = {
   default_claude_max_5x: 'Max 5x',

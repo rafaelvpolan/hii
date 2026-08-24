@@ -1,5 +1,5 @@
 import { cpus, totalmem } from 'node:os'
-import { numeroDeEnv } from '../cdl/ali/config'
+import { numeroDeEnv } from '../cdl/ali/config.ts'
 
 // QLB — teto de recurso por worktree paralelo.
 //

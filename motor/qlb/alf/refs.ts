@@ -1,9 +1,9 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from '../../euc/estado-em-disco'
-import { downloadToFile } from './download'
-import { clip, refuse } from './url-guard'
-import type { Refusal } from './url-guard'
+import { garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from '../../euc/estado-em-disco.ts'
+import { downloadToFile } from './download.ts'
+import { clip, refuse } from './url-guard.ts'
+import type { Refusal } from './url-guard.ts'
 
 const PARECE_URI = /^[a-z][a-z0-9+.-]*:\/\//i
 const PARECE_HOST = /^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?$/i

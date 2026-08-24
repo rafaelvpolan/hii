@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { AgentRequest, AgentResult } from '../../motor/tmd/tipos'
+import type { AgentRequest, AgentResult } from '../../motor/tmd/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-marca-custo-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -37,12 +37,12 @@ FIM
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${binDir}:${pathOriginal}`
 
-const { ClaudeProvider } = await import('../../motor/tmd/harness/claude')
-const { CodexProvider } = await import('../../motor/tmd/harness/codex')
-const { emptyUsage } = await import('../../motor/tmd/uso')
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { runProvider, warnBudgetWithoutGuarantee } = await import('../../motor/euc/tsr/confianca')
-const { classifyCostGap } = await import('../../motor/euc/tsr/lacuna')
+const { ClaudeProvider } = await import('../../motor/tmd/harness/claude.ts')
+const { CodexProvider } = await import('../../motor/tmd/harness/codex.ts')
+const { emptyUsage } = await import('../../motor/tmd/uso.ts')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { runProvider, warnBudgetWithoutGuarantee } = await import('../../motor/euc/tsr/confianca.ts')
+const { classifyCostGap } = await import('../../motor/euc/tsr/lacuna.ts')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

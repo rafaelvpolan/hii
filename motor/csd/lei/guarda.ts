@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
-import { ENV_REGRAS_FILE } from '../../cdl/ali/contrato'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { ENV_REGRAS_FILE } from '../../cdl/ali/contrato.ts'
 
 // LEI — o que o gate cobra sempre, sem interpretacao de modelo.
 //

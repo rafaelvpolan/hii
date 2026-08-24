@@ -1,12 +1,12 @@
 import { basename } from 'node:path'
-import { colarImagem, comoObter, depsPadrao } from './clipboard'
-import type { DepsDeColagem } from './clipboard'
-import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, mb, refsDir, usoDeDisco } from '../euc/estado-em-disco'
-import { textoDoDisco } from './render/disco'
-import { anexarNaSessao, anexarNaTarefa, ehUrlDeRef, escreverFontes, fontesDaSessao, proximoBaseLocal } from '../qlb/alf/anexo'
-import type { Anexo } from '../qlb/alf/anexo'
-import { readRefSources } from '../qlb/alf/refs'
-import { sessaoAtual } from '../euc/sessao'
+import { colarImagem, comoObter, depsPadrao } from './clipboard.ts'
+import type { DepsDeColagem } from './clipboard.ts'
+import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, mb, refsDir, usoDeDisco } from '../euc/estado-em-disco.ts'
+import { textoDoDisco } from './render/disco.ts'
+import { anexarNaSessao, anexarNaTarefa, ehUrlDeRef, escreverFontes, fontesDaSessao, proximoBaseLocal } from '../qlb/alf/anexo.ts'
+import type { Anexo } from '../qlb/alf/anexo.ts'
+import { readRefSources } from '../qlb/alf/refs.ts'
+import { sessaoAtual } from '../euc/sessao.ts'
 
 export const PALAVRAS_DE_CLIPBOARD = ['clipboard', 'cola', 'colar', 'paste', 'print']
 

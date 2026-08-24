@@ -1,12 +1,12 @@
-import { ROOT } from '../../cdl/ali/config'
-import { providerFor, modelFor } from '../../tmd/registro'
-import { runProvider } from '../../euc/tsr/confianca'
-import { sumTokens } from '../../tmd/uso'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { providerFor, modelFor } from '../../tmd/registro.ts'
+import { runProvider } from '../../euc/tsr/confianca.ts'
+import { sumTokens } from '../../tmd/uso.ts'
 import {
   escolherLentes, promptDivergir, promptConvergir,
   parseIdeias, parseConvergencia,
-} from './ideacao'
-import type { Convergencia } from './ideacao'
+} from './ideacao.ts'
+import type { Convergencia } from './ideacao.ts'
 
 export const IDEATE_LENTES = Number(process.env.HICODE_IDEATE_FRAMES || 4)
 export const IDEATE_IDEIAS = Number(process.env.HICODE_IDEATE_IDEAS || 5)

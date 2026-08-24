@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 
 const REPO = join(import.meta.dir, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-shutproc-'))

@@ -40,7 +40,7 @@ function gravarRun(nome: string, corpo: Record<string, unknown>): void {
 }
 
 test('REGRESSAO cota estourada no gate marca o provedor do GATE, nao o do implement', async () => {
-  const { lerCota } = await import('../../motor/euc/tsr/cota')
+  const { lerCota } = await import('../../motor/euc/tsr/cota.ts')
   gravarRun('001', {
     provider: 'claude',
     failure_class: 'quota',
@@ -54,14 +54,14 @@ test('REGRESSAO cota estourada no gate marca o provedor do GATE, nao o do implem
 })
 
 test('registro antigo sem ledger continua caindo no provedor do topo', async () => {
-  const { lerCota } = await import('../../motor/euc/tsr/cota')
+  const { lerCota } = await import('../../motor/euc/tsr/cota.ts')
   gravarRun('002', { provider: 'claude', failure_class: 'quota', ias: [] })
   const cota = lerCota(Date.now())
   expect(cota.provedores.find(p => p.provedor === 'claude')?.limiteAtingido).toBe(true)
 })
 
 test('REGRESSAO classeDeFalha sobrevive ao ida-e-volta do ledger — sem isso a atribuicao de cota e cega', async () => {
-  const { registrarChamada, chamadasDaSessao, agregarPorIa } = await import('../../motor/euc/ias-da-sessao')
+  const { registrarChamada, chamadasDaSessao, agregarPorIa } = await import('../../motor/euc/ias-da-sessao.ts')
   registrarChamada('001-20260101000000', {
     ts: new Date().toISOString(), papel: 'gate', provedor: 'kimi', modelo: 'k2',
     custoUsd: 0.1, custoMedido: true, tokens: 10, tokensEntrada: 5, tokensSaida: 5,
@@ -73,7 +73,7 @@ test('REGRESSAO classeDeFalha sobrevive ao ida-e-volta do ledger — sem isso a 
 })
 
 test('classe de falha desconhecida no ledger nao vira classe valida', async () => {
-  const { registrarChamada, chamadasDaSessao } = await import('../../motor/euc/ias-da-sessao')
+  const { registrarChamada, chamadasDaSessao } = await import('../../motor/euc/ias-da-sessao.ts')
   registrarChamada('002-20260101000000', {
     ts: new Date().toISOString(), papel: 'gate', provedor: 'kimi', modelo: 'k2',
     custoUsd: 0, custoMedido: true, tokens: 0, tokensEntrada: 0, tokensSaida: 0,

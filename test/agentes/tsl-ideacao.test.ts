@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import {
   LENTES, preflight, escolherLentes, promptDivergir, promptConvergir,
   parseIdeias, parseConvergencia, ordenar, pontuacao, comoOpcoes,
-} from '../../motor/agentes/tsl/ideacao'
+} from '../../motor/agentes/tsl/ideacao.ts'
 
 const base = { titulo: '', objetivo: '', perfil: 'padrao', override: '' }
 

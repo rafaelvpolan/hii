@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { carregarAcervo, gatilhoBate, lerSkill, renderizarSkills, skillsPara } from '../../motor/csd/acervo'
+import { carregarAcervo, gatilhoBate, lerSkill, renderizarSkills, skillsPara } from '../../motor/csd/acervo.ts'
 
 const criados: string[] = []
 afterAll(() => { for (const d of criados) rmSync(d, { recursive: true, force: true }) })
@@ -133,7 +133,7 @@ test('REGRESSAO clone sem _resolved ainda carrega o acervo — _resolved e cache
 })
 
 test('a fusao ao vivo e a partir do cache dao o mesmo conjunto de ids', async () => {
-  const { fundirOrigens } = await import('../../motor/csd/acervo')
+  const { fundirOrigens } = await import('../../motor/csd/acervo.ts')
   const aoVivo = fundirOrigens().skills.map(s => s.id).sort()
   expect(carregarAcervo().map(s => s.id).sort()).toEqual(aoVivo)
 })

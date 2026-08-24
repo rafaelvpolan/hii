@@ -1,5 +1,5 @@
-import { CANTO } from '../../tui/paleta'
-import { visibleLen, truncVisible, padVisible, stripAnsi } from '../../tui/layout'
+import { CANTO } from '../../tui/paleta.ts'
+import { visibleLen, truncVisible, padVisible, stripAnsi } from '../../tui/layout.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

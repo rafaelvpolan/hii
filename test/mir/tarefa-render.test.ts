@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { renderCabecalhoTarefa } from '../../motor/mir/render/tarefa'
-import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout'
-import type { Card } from '../../motor/cdl'
+import { renderCabecalhoTarefa } from '../../motor/mir/render/tarefa.ts'
+import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
+import type { Card } from '../../motor/cdl/index.ts'
 
 function card(fm: Record<string, string> = {}, body = '## Objetivo\nremova o selo\n'): Card {
   return {
@@ -75,7 +75,7 @@ test('com cor, o conteudo visivel e o mesmo', () => {
   expect(com).toEqual(sem)
 })
 
-import { renderParada } from '../../motor/mir/render/tarefa'
+import { renderParada } from '../../motor/mir/render/tarefa.ts'
 
 test('painel de parada oferece retomar, apagar e sair', () => {
   const t = renderParada('022', { width: 78 }).join('\n')

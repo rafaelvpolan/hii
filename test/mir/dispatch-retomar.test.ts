@@ -2,9 +2,9 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../../motor/mir/sessao'
-import type { SessionState } from '../../motor/mir/sessao'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
+import { handle, newSession } from '../../motor/mir/sessao.ts'
+import type { SessionState } from '../../motor/mir/sessao.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 
 let dir = ''
 let saida: string[] = []
@@ -29,7 +29,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -39,16 +39,16 @@ async function digitar(linhas: string[], inicial?: SessionState): Promise<Sessio
 }
 
 test('retomar so vale para tarefa parada', async () => {
-  const { readCard } = await import('../../motor/cdl/store')
-  const { retomando } = await import('../../motor/mir/sessao')
+  const { readCard } = await import('../../motor/cdl/store.ts')
+  const { retomando } = await import('../../motor/mir/sessao.ts')
   card('022', { status: 'HALTED' })
   await digitar([''], retomando(newSession('org/app'), '022'))
   expect(readCard('022')?.fm.status).toBe('EXECUTING')
 })
 
 test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
-  const { readCard } = await import('../../motor/cdl/store')
-  const { retomando } = await import('../../motor/mir/sessao')
+  const { readCard } = await import('../../motor/cdl/store.ts')
+  const { retomando } = await import('../../motor/mir/sessao.ts')
   card('022', { status: 'URL' })
   await digitar([''], retomando(newSession('org/app'), '022'))
   expect(readCard('022')?.fm.status).toBe('URL')
@@ -56,7 +56,7 @@ test('retomar tarefa que nao esta parada nao mexe no estado', async () => {
 })
 
 test('retomar card inexistente avisa', async () => {
-  const { retomando } = await import('../../motor/mir/sessao')
+  const { retomando } = await import('../../motor/mir/sessao.ts')
   await digitar([''], retomando(newSession('org/app'), '099'))
   expect(saida.join(' ')).toContain('nao encontrado')
 })

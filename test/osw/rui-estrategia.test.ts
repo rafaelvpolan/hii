@@ -8,8 +8,8 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { tierDoCard, registrarTier } = await import('../../motor/osw/rui')
-const { eventosDoCard } = await import('../../motor/euc/eventos')
+const { tierDoCard, registrarTier } = await import('../../motor/osw/rui.ts')
+const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
 
 test('sem pedido nenhum, vale o tier declarado no catalogo para a acao', () => {
   const e = tierDoCard('documentacao', {})
@@ -35,8 +35,8 @@ test('tier invalido no card nao vira tier barato calado — fica o do catalogo, 
 })
 
 test('todo passo de config/pipeline.json tem tier declarado — passo novo nao roda sem governanca', async () => {
-  const { activeSteps } = await import('../../motor/nmy/config')
-  const { lerGovernanca } = await import('../../motor/euc/tsr/orcamento')
+  const { activeSteps } = await import('../../motor/nmy/config.ts')
+  const { lerGovernanca } = await import('../../motor/euc/tsr/orcamento.ts')
   const g = lerGovernanca()
   for (const passo of activeSteps()) {
     expect(g.criterios[passo.id], `passo "${passo.id}" do pipeline sem tier em model-tier.json`).toBeDefined()

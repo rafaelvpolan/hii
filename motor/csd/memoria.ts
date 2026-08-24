@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../cdl'
+import { isoNow } from '../cdl/index.ts'
 
 // CSD — memoria do projeto: decisoes e convencoes acumuladas entre cards,
 // injetada no prompt do implementador (motor/cic/agente.ts).

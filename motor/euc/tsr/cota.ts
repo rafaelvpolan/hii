@@ -1,6 +1,6 @@
-import { isoAt } from '../../cdl'
-import { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO, contribuicoesDoRegistro, loteDesde } from './cota-runs'
-import type { ContribuicaoDeProvedor, RegistroDeRun } from './cota-runs'
+import { isoAt } from '../../cdl/index.ts'
+import { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO, contribuicoesDoRegistro, loteDesde } from './cota-runs.ts'
+import type { ContribuicaoDeProvedor, RegistroDeRun } from './cota-runs.ts'
 
 export { JANELA_COTA_MS, PROVEDOR_DESCONHECIDO }
 export type { RegistroDeRun }

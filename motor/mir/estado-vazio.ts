@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir, ROOT } from '../cdl/ali/config'
-import { ENV_CARDS_DIR } from '../cdl/ali/contrato'
+import { cardsDir, ROOT } from '../cdl/ali/config.ts'
+import { ENV_CARDS_DIR } from '../cdl/ali/contrato.ts'
 
 export interface EstadoVazio {
   vazio: boolean

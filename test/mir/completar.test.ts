@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { complete } from '../../motor/mir/completar'
-import { ALIASES, COMMANDS } from '../../motor/mir/sessao'
-import { AJUDA_DO_COMANDO } from '../../motor/mir/render/sugestoes'
+import { complete } from '../../motor/mir/completar.ts'
+import { ALIASES, COMMANDS } from '../../motor/mir/sessao.ts'
+import { AJUDA_DO_COMANDO } from '../../motor/mir/render/sugestoes.ts'
 
 const ctx = { repos: ['acme/site', 'acme/api'], cards: ['019', '020'] }
 

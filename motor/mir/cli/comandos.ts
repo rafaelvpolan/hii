@@ -1,11 +1,11 @@
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
-import { renderFleet } from '../render/fleet'
-import { daemonPid, daemonStatus, readPrefs, writePrefs } from '../../osw/mtr/daemon'
-import type { SessionState } from '../sessao'
-import { color, dim, say } from './saida'
-import { todosOsCards } from './dados'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { renderFleet } from '../render/fleet.ts'
+import { daemonPid, daemonStatus, readPrefs, writePrefs } from '../../osw/mtr/daemon.ts'
+import type { SessionState } from '../sessao.ts'
+import { color, dim, say } from './saida.ts'
+import { todosOsCards } from './dados.ts'
 
 export function fleet(state: SessionState): void {
   say('')

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
-import { DEFAULT_PROVIDER } from '../../tmd/registro'
+import { DEFAULT_PROVIDER } from '../../tmd/registro.ts'
 
 export interface ProjectConfig {
   provider?: string

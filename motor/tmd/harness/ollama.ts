@@ -1,13 +1,13 @@
-import { run } from '../../qlb/git'
-import { isPrivateNetworkHost } from '../../qlb/alf/rede-privada'
-import { noProxyArgs } from '../../qlb/alf/loopback'
-import { emptyUsage } from '../uso'
-import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euc/tsr/custo'
-import type { CostReading } from '../../euc/tsr/custo'
-import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
-import { planoLocal } from '../../euc/tsr/planos'
-import { estadoDoOllama } from './ollama-estado'
-import { alcancavelPorHttp, urlDoOllama } from '../sonda'
+import { run } from '../../qlb/git.ts'
+import { isPrivateNetworkHost } from '../../qlb/alf/rede-privada.ts'
+import { noProxyArgs } from '../../qlb/alf/loopback.ts'
+import { emptyUsage } from '../uso.ts'
+import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euc/tsr/custo.ts'
+import type { CostReading } from '../../euc/tsr/custo.ts'
+import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
+import { planoLocal } from '../../euc/tsr/planos.ts'
+import { estadoDoOllama } from './ollama-estado.ts'
+import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
 
 interface OllamaResponse {
   response?: string

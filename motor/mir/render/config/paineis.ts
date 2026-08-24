@@ -1,7 +1,7 @@
-import { padVisible, truncVisible } from '../../tui/layout'
-import { barraRotulada } from '../widget/barra'
-import type { ConsumoDoProvedor } from '../../../euc/tsr/consumo'
-import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LedgerDaSessao, LinhaDeProvedor, OpcoesConfig } from './tipos'
+import { padVisible, truncVisible } from '../../tui/layout.ts'
+import { barraRotulada } from '../widget/barra.ts'
+import type { ConsumoDoProvedor } from '../../../euc/tsr/consumo.ts'
+import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LedgerDaSessao, LinhaDeProvedor, OpcoesConfig } from './tipos.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

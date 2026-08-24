@@ -1,5 +1,5 @@
-import type { ConsumoDoProvedor } from '../../../euc/tsr/consumo'
-import type { Situacao } from '../../../tmd/disponibilidade'
+import type { ConsumoDoProvedor } from '../../../euc/tsr/consumo.ts'
+import type { Situacao } from '../../../tmd/disponibilidade.ts'
 
 
 export interface JanelaDoPainel {

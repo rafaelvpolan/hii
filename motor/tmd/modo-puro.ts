@@ -1,4 +1,4 @@
-import type { AgentRole, CatalogoDeModo } from './tipos'
+import type { AgentRole, CatalogoDeModo } from './tipos.ts'
 
 // Puro e sem dependencia do registro, de proposito: os adaptadores em
 // harness/ precisam resolver o proprio modo, e importar o registro dali

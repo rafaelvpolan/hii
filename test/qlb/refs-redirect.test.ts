@@ -2,16 +2,16 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MAX_REDIRECTS } from '../../motor/qlb/alf/redirect'
-import { isBlockedHost, validateHttpUrl } from '../../motor/qlb/alf/url-guard'
-import { curlArgs, downloadToFile, parseHop } from '../../motor/qlb/alf/download'
-import { run } from '../../motor/qlb/git'
-import { LOGO, METADADOS, METADADOS_GCP_PONTO, destino, movedTo, net, recusa, segue } from '../fixtures/rede-falsa'
+import { MAX_REDIRECTS } from '../../motor/qlb/alf/redirect.ts'
+import { isBlockedHost, validateHttpUrl } from '../../motor/qlb/alf/url-guard.ts'
+import { curlArgs, downloadToFile, parseHop } from '../../motor/qlb/alf/download.ts'
+import { run } from '../../motor/qlb/git.ts'
+import { LOGO, METADADOS, METADADOS_GCP_PONTO, destino, movedTo, net, recusa, segue } from '../fixtures/rede-falsa.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-refs-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { refPaths, resolveRefs } = await import('../../motor/qlb/alf/refs')
+const { refPaths, resolveRefs } = await import('../../motor/qlb/alf/refs.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from '../cdl/ali/config'
-import { readCard } from '../cdl/store'
-import { JANELA_HISTORICO_MS } from '../mir/historico'
+import { cardsDir } from '../cdl/ali/config.ts'
+import { readCard } from '../cdl/store.ts'
+import { JANELA_HISTORICO_MS } from '../mir/historico.ts'
 
 const SUFIXO_DO_LEDGER = '.ias.jsonl'
 const PREFIXO_DA_CONVERSA = 'conversa-'

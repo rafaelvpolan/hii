@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { serie, esparklinha, type OpcoesSerie } from '../../motor/mir/render/widget/serie'
-import { severidadeDe, type Severidade } from '../../motor/mir/render/widget/barra'
-import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout'
+import { serie, esparklinha, type OpcoesSerie } from '../../motor/mir/render/widget/serie.ts'
+import { severidadeDe, type Severidade } from '../../motor/mir/render/widget/barra.ts'
+import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
 
 const semCor = (largura: number, altura: number): OpcoesSerie => ({ color: false, largura, altura })
 const comCor = (largura: number, altura: number): OpcoesSerie => ({ color: true, largura, altura })

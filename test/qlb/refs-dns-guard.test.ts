@@ -2,10 +2,10 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect'
-import type { AddressPin } from '../../motor/qlb/alf/host'
-import { curlArgs, downloadToFile, parseHop } from '../../motor/qlb/alf/download'
-import { run } from '../../motor/qlb/git'
+import type { HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect.ts'
+import type { AddressPin } from '../../motor/qlb/alf/host.ts'
+import { curlArgs, downloadToFile, parseHop } from '../../motor/qlb/alf/download.ts'
+import { run } from '../../motor/qlb/git.ts'
 import {
   DNS,
   LOGO,
@@ -18,7 +18,7 @@ import {
   net,
   recusa,
   segue,
-} from '../fixtures/rede-falsa'
+} from '../fixtures/rede-falsa.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-dns-'))
 

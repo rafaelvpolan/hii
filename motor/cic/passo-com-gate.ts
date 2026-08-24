@@ -1,12 +1,12 @@
-import { isoNow } from '../cdl'
-import type { FailureClass, StepMetric } from '../cdl'
-import { maxReajuste, GATE_RETRIES } from '../cdl/ali/config'
-import { patchCard } from '../cdl/store'
-import { runStep } from './agente'
-import { runGatedReview, withGateRetry } from './crv/gate'
-import { anexarEvento } from '../euc/eventos'
-import { abrirPrompt, anexarInstrucao, montar } from '../tmd/eco/prefixo'
-import type { GateResult } from './crv/gate'
+import { isoNow } from '../cdl/index.ts'
+import type { FailureClass, StepMetric } from '../cdl/index.ts'
+import { maxReajuste, GATE_RETRIES } from '../cdl/ali/config.ts'
+import { patchCard } from '../cdl/store.ts'
+import { runStep } from './agente.ts'
+import { runGatedReview, withGateRetry } from './crv/gate.ts'
+import { anexarEvento } from '../euc/eventos.ts'
+import { abrirPrompt, anexarInstrucao, montar } from '../tmd/eco/prefixo.ts'
+import type { GateResult } from './crv/gate.ts'
 
 export interface GatedDeps {
   runStep: typeof runStep

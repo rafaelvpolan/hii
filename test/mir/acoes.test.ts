@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-actions-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const A = await import('../../motor/mir/acoes')
-const { readCard } = await import('../../motor/cdl/store')
+const A = await import('../../motor/mir/acoes.ts')
+const { readCard } = await import('../../motor/cdl/store.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -74,7 +74,7 @@ test('requestCorrection grava ancora e instrucao quando o worktree existe', () =
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store')
+  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store.ts')
   patchCard(id, { worktree: wt })
   const r = A.requestCorrection(id, 'src/a.vue', 'tirar o negrito', '42', 'texto\nquebrado')
   expect(r?.status).toBe('CORRECTING')
@@ -92,7 +92,7 @@ test('answerClarify grava resposta, marca clarified e volta a EXECUTING', () => 
   const r = A.answerClarify(id, [{ q: 'um por vez?', answer: 'nao' }])
   expect(r?.status).toBe('EXECUTING')
   expect(r?.clarified).toBe('true')
-  const { readClarify } = require('../../motor/agentes/clr/clarificar') as typeof import('../../motor/agentes/clr/clarificar')
+  const { readClarify } = require('../../motor/agentes/clr/clarificar') as typeof import('../../motor/agentes/clr/clarificar.ts')
   expect(readClarify(id)[0]?.answer).toBe('nao')
 })
 
@@ -180,7 +180,7 @@ test('rejectUrl com motivo e worktree valido pede correcao', () => {
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store')
+  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store.ts')
   patchCard(id, { worktree: wt })
   const r = A.rejectUrl(id, 'o selo ficou torto')
   expect(r.card?.status).toBe('CORRECTING')

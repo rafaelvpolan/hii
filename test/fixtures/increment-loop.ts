@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 const [, , cardsDir, id, field, times, barrier] = process.argv
 process.env.HICODE_CARDS_DIR = cardsDir ?? ''
 
-const { patchCardWith } = await import('../../motor/cdl/store')
+const { patchCardWith } = await import('../../motor/cdl/store.ts')
 
 while (barrier && !existsSync(barrier)) await Bun.sleep(1)
 

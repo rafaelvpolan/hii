@@ -1,4 +1,4 @@
-import { linhasDaAtividade } from './render/execucao'
+import { linhasDaAtividade } from './render/execucao.ts'
 
 export type TipoAtividade = 'sessao' | 'agente' | 'skill' | 'arquivo' | 'shell' | 'busca' | 'mcp' | 'texto' | 'fim'
 

@@ -1,9 +1,9 @@
-import { caixa, grade } from '../widget/caixa'
-import { serie } from '../widget/serie'
-import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis'
-import type { EstadoDaConfig, OpcoesConfig } from './tipos'
+import { caixa, grade } from '../widget/caixa.ts'
+import { serie } from '../widget/serie.ts'
+import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis.ts'
+import type { EstadoDaConfig, OpcoesConfig } from './tipos.ts'
 
-export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos'
+export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

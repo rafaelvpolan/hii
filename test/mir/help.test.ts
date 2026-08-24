@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { renderHelp } from '../../motor/mir/render/help'
-import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout'
+import { renderHelp } from '../../motor/mir/render/help.ts'
+import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 
 test('agrupa por proposito, nao numa lista solta', () => {
   const t = renderHelp().join('\n')
@@ -17,7 +17,7 @@ test('cobre todos os comandos que a sessao aceita', () => {
 })
 
 test('todo comando que o /help anuncia e aceito pelo parser', async () => {
-  const { handle, newSession } = await import('../../motor/mir/sessao')
+  const { handle, newSession } = await import('../../motor/mir/sessao.ts')
   const texto = renderHelp().join('\n')
   const anunciados = [...new Set([...texto.matchAll(/(?:^|\s)(\/[a-z?-]+)/gm)].map(m => m[1] ?? ''))]
   expect(anunciados.length).toBeGreaterThan(8)

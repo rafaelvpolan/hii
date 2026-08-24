@@ -1,5 +1,5 @@
-import { GithubIssuesSync } from './github-issues'
-import type { TaskSync } from './tipos'
+import { GithubIssuesSync } from './github-issues.ts'
+import type { TaskSync } from './tipos.ts'
 
 const SYNCS: Record<string, TaskSync> = {
   'github-issues': new GithubIssuesSync(),

@@ -1,8 +1,8 @@
-import { isoNow } from '../../cdl'
-import type { Job, Fields } from '../../cdl'
-import { allCards, cardsByStatus, patchCard } from '../../cdl/store'
-import { marcarOrfao, prOrfaoDe } from '../../qlb/slv/compensacao'
-import { encerrando } from './encerramento'
+import { isoNow } from '../../cdl/index.ts'
+import type { Job, Fields } from '../../cdl/index.ts'
+import { allCards, cardsByStatus, patchCard } from '../../cdl/store.ts'
+import { marcarOrfao, prOrfaoDe } from '../../qlb/slv/compensacao.ts'
+import { encerrando } from './encerramento.ts'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']

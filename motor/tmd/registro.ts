@@ -1,10 +1,10 @@
-import { ClaudeProvider } from './harness/claude'
-import { CodexProvider } from './harness/codex'
-import { OllamaProvider } from './harness/ollama'
-import { KimiProvider } from './harness/kimi'
-import type { AgentRole, CorDeMarca, Harness, HarnessId, HarnessCapabilities } from './tipos'
-import { preferenciaDoPapel, esforcoPara } from './preferencias'
-import { resolverModo } from './modo-puro'
+import { ClaudeProvider } from './harness/claude.ts'
+import { CodexProvider } from './harness/codex.ts'
+import { OllamaProvider } from './harness/ollama.ts'
+import { KimiProvider } from './harness/kimi.ts'
+import type { AgentRole, CorDeMarca, Harness, HarnessId, HarnessCapabilities } from './tipos.ts'
+import { preferenciaDoPapel, esforcoPara } from './preferencias.ts'
+import { resolverModo } from './modo-puro.ts'
 
 export const DEFAULT_PROVIDER: HarnessId = 'claude'
 

@@ -1,9 +1,9 @@
-import { isoAt, isoNow } from '../../cdl'
-import type { Fields } from '../../cdl'
-import { maxWaitingAttempts } from '../../cdl/ali/config'
-import { cardsByStatus, patchCard, patchCardWith } from '../../cdl/store'
-import { probeProviderHealth } from '../../tmd/registro'
-import { backoffMsFor } from './politica'
+import { isoAt, isoNow } from '../../cdl/index.ts'
+import type { Fields } from '../../cdl/index.ts'
+import { maxWaitingAttempts } from '../../cdl/ali/config.ts'
+import { cardsByStatus, patchCard, patchCardWith } from '../../cdl/store.ts'
+import { probeProviderHealth } from '../../tmd/registro.ts'
+import { backoffMsFor } from './politica.ts'
 
 function isDue(waitUntil: string): boolean {
   const t = Date.parse(waitUntil)

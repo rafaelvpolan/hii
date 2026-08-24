@@ -1,4 +1,4 @@
-import type { Atividade } from '../atividade'
+import type { Atividade } from '../atividade.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

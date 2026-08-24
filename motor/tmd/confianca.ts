@@ -1,7 +1,7 @@
-import { isoNow } from '../cdl'
-import type { Fields } from '../cdl'
-import { providerNames } from './registro'
-import { patchCardWith } from '../cdl/store'
+import { isoNow } from '../cdl/index.ts'
+import type { Fields } from '../cdl/index.ts'
+import { providerNames } from './registro.ts'
+import { patchCardWith } from '../cdl/store.ts'
 
 export function markProviderSubstituted(id: string, requested: string, used: string): void {
   if (!id || !requested || requested === used) return

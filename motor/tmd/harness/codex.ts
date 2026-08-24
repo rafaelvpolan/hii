@@ -1,12 +1,12 @@
-import { run } from '../../qlb/git'
-import { emptyUsage } from '../uso'
-import { COST_UNKNOWN } from '../../euc/tsr/custo'
-import { resolverModo } from '../modo-puro'
-import { codexAutenticado } from '../../euc/tsr/planos'
-import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
-import { SEM_PLANO } from '../tipos'
-import { alcancavelPorHttp } from '../sonda'
-import type { Usage } from '../../cdl'
+import { run } from '../../qlb/git.ts'
+import { emptyUsage } from '../uso.ts'
+import { COST_UNKNOWN } from '../../euc/tsr/custo.ts'
+import { resolverModo } from '../modo-puro.ts'
+import { codexAutenticado } from '../../euc/tsr/planos.ts'
+import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
+import { SEM_PLANO } from '../tipos.ts'
+import { alcancavelPorHttp } from '../sonda.ts'
+import type { Usage } from '../../cdl/index.ts'
 
 export const CODEX_MODOS: CatalogoDeModo = { modos: ['untrusted', 'on-request', 'never'], padrao: 'never' }
 

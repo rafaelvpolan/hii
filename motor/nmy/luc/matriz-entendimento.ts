@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from '../../cdl/ali/config'
-import { executarComIdempotencia } from '../../qlb/slv/idempotencia'
+import { cardsDir } from '../../cdl/ali/config.ts'
+import { executarComIdempotencia } from '../../qlb/slv/idempotencia.ts'
 
 // LUC — Lucio Costa: a estrutura vem antes de erguer parede.
 //

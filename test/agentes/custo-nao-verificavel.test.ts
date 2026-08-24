@@ -3,8 +3,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:f
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Card } from '../../motor/cdl'
-import type { AgentRequest, AgentResult, AgentRole } from '../../motor/tmd/tipos'
+import type { Card } from '../../motor/cdl/index.ts'
+import type { AgentRequest, AgentResult, AgentRole } from '../../motor/tmd/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-cego-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -42,12 +42,12 @@ writeFileSync(join(clone, 'a.txt'), 'um\ndois\n')
 git(clone, ['add', '-A'])
 git(clone, ['commit', '-qm', 'mudanca do card'])
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { clarify } = await import('../../motor/agentes/clr/clarificar')
-const { evaluate } = await import('../../motor/cic/crv/avaliar')
-const { idear } = await import('../../motor/agentes/tsl/ideate-run')
-const { runProvider } = await import('../../motor/euc/tsr/confianca')
-const { providerFor, modelFor } = await import('../../motor/tmd/registro')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { clarify } = await import('../../motor/agentes/clr/clarificar.ts')
+const { evaluate } = await import('../../motor/cic/crv/avaliar.ts')
+const { idear } = await import('../../motor/agentes/tsl/ideate-run.ts')
+const { runProvider } = await import('../../motor/euc/tsr/confianca.ts')
+const { providerFor, modelFor } = await import('../../motor/tmd/registro.ts')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

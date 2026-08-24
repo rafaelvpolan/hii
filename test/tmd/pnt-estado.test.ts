@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import {
   lerLinhaDeServidor, lerListaDeServidores, lerEscopo, combinam, disponibilidadeExterna,
-} from '../../motor/tmd/pnt/estado'
-import type { ConsultaMcp, ServidorMcp } from '../../motor/tmd/pnt/estado'
+} from '../../motor/tmd/pnt/estado.ts'
+import type { ConsultaMcp, ServidorMcp } from '../../motor/tmd/pnt/estado.ts'
 
 const LISTA = [
   'Checking MCP server health…',

@@ -1,11 +1,11 @@
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { beforeEach, test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ImplementResult } from '../../motor/cdl'
-import type { ExecuteDeps } from '../../motor/osw/executar'
+import type { ImplementResult } from '../../motor/cdl/index.ts'
+import type { ExecuteDeps } from '../../motor/osw/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-wtfate-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -40,9 +40,9 @@ writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo',
 
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0', usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 } }
 
-const { createCard, readCard, patchCard } = await import('../../motor/cdl/store')
-const { handleExecute } = await import('../../motor/osw/executar')
-const { maxWaitingAttempts } = await import('../../motor/cdl/ali/config')
+const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
+const { handleExecute } = await import('../../motor/osw/executar.ts')
+const { maxWaitingAttempts } = await import('../../motor/cdl/ali/config.ts')
 
 const agente: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => Promise.resolve(resultadoDoAgente),

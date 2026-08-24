@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../cdl'
-import type { FailureClass, IaDaSessao, ImplementResult, Run, StepMap } from '../cdl'
-import { cardsDir } from '../cdl/ali/config'
-import { chamadasDaSessao, resumoDaSessao, sessaoDoCard } from './ias-da-sessao'
+import { isoNow } from '../cdl/index.ts'
+import type { FailureClass, IaDaSessao, ImplementResult, Run, StepMap } from '../cdl/index.ts'
+import { cardsDir } from '../cdl/ali/config.ts'
+import { chamadasDaSessao, resumoDaSessao, sessaoDoCard } from './ias-da-sessao.ts'
 
 export const MOTIVO_SEM_CLASSIFICACAO = 'falha nao classificada — tratada como terminal'
 

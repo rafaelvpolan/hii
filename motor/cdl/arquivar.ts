@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fields } from './'
-import { cardsDir } from './ali/config'
-import { allCards, cardFiles, findCardFile, normalizeId } from './store'
+import type { Fields } from './/index.ts'
+import { cardsDir } from './ali/config.ts'
+import { allCards, cardFiles, findCardFile, normalizeId } from './store.ts'
 
 export const MAX_CARDS = Number(process.env.HICODE_MAX_CARDS || 10)
 

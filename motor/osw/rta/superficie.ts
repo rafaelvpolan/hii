@@ -1,4 +1,4 @@
-import { lerAcaoExterna } from './externo'
+import { lerAcaoExterna } from './externo.ts'
 
 export type Surface = 'visual' | 'api' | 'none'
 

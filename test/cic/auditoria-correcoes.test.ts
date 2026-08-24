@@ -3,11 +3,11 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { numeroDeEnv } from '../../motor/cdl/ali/config'
-import { disponibilidadeExterna } from '../../motor/tmd/pnt/estado'
-import type { ConsultaMcp, ServidorMcp } from '../../motor/tmd/pnt/estado'
-import { syncWithBase } from '../../motor/qlb/ctr/sync'
-import { runCodefoxGate } from '../../motor/cic/crv/gate'
+import { numeroDeEnv } from '../../motor/cdl/ali/config.ts'
+import { disponibilidadeExterna } from '../../motor/tmd/pnt/estado.ts'
+import type { ConsultaMcp, ServidorMcp } from '../../motor/tmd/pnt/estado.ts'
+import { syncWithBase } from '../../motor/qlb/ctr/sync.ts'
+import { runCodefoxGate } from '../../motor/cic/crv/gate.ts'
 
 const criados: string[] = []
 function dirTemp(prefixo: string): string {
@@ -61,7 +61,7 @@ const passoQueDizQueResolveu = async (): Promise<{ ok: boolean; text: string; co
 
 test('REGRESSAO agente que NAO tirou os marcadores nao faz o conflito passar como resolvido', async () => {
   const wt = repoComConflitoReal()
-  const r = await syncWithBase('999', wt, 'main', 'objetivo', {}, passoQueDizQueResolveu as unknown as typeof import('../../motor/cic/agente').runStep)
+  const r = await syncWithBase('999', wt, 'main', 'objetivo', {}, passoQueDizQueResolveu as unknown as typeof import('../../motor/cic/agente.ts').runStep)
   expect(r.ok).toBe(false)
 })
 
@@ -69,7 +69,7 @@ test('REGRESSAO agente que NAO executou nao faz o conflito passar como resolvido
   const wt = repoComConflitoReal()
   const naoExecutou = async (): Promise<{ ok: boolean; text: string; cost: number; tokens: number; costMeasured: boolean; time: number }> =>
     ({ ok: false, text: 'provider nao-agentico — step NAO executou', cost: 0, tokens: 0, costMeasured: true, time: 0 })
-  const r = await syncWithBase('998', wt, 'main', 'objetivo', {}, naoExecutou as unknown as typeof import('../../motor/cic/agente').runStep)
+  const r = await syncWithBase('998', wt, 'main', 'objetivo', {}, naoExecutou as unknown as typeof import('../../motor/cic/agente.ts').runStep)
   expect(r.ok).toBe(false)
 })
 

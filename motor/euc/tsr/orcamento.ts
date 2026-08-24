@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, numeroDeEnv } from '../../cdl/ali/config'
-import { ENV_TIER_FILE } from '../../cdl/ali/contrato'
+import { ROOT, numeroDeEnv } from '../../cdl/ali/config.ts'
+import { ENV_TIER_FILE } from '../../cdl/ali/contrato.ts'
 
 // TSR — governanca de custo como DADO versionado, nao habito no codigo.
 //

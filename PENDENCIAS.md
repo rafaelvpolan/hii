@@ -6,12 +6,29 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## PRÓXIMA ONDA — Onda 11, produção (itens 28, 29, 31, 32)
+## PRÓXIMA ONDA — Onda 12, divergência antes de convergir (MCN, item 33)
 
-`Dockerfile` + `docker-compose.yml` sem SDK de nuvem, `core/secrets.ts` com
-`EnvSecretProvider` sempre funcional, snapshot do volume, e teto de CPU/memória
-por worktree. É a última das ondas dos 32 itens originais. Depois dela ficam a
-12 (MCN) e a 13 (TUI).
+Gerar alternativas e levar a divergência para decisão humana no `CLARIFY`, em vez
+de convergir na primeira solução que aparece. Esboço em `WORKFLOW-EXECUCAO.md:742`.
+Depois dela fica só a 13 (TUI). Os 32 itens originais estão fechados.
+
+---
+
+## PENDÊNCIA — a suíte só prova o motor sob Bun
+
+Os 2134 testes rodam sob `bun:test`, que não tem equivalente direto em Node. O CI
+ganhou `node bin/hii.ts --help`, que prova que o grafo de import do CLI carrega sob
+Node — o runtime da imagem de produção (`node:24-slim`). Não prova o resto.
+
+Não é hipótese: foi exatamente essa cegueira que deixou a Onda 11 mergear verde com
+uma imagem que morria em `ERR_MODULE_NOT_FOUND` no arranque, porque o Bun resolve
+import relativo sem extensão e o Node não. `docker build` dava exit 0 e ninguém
+tinha rodado o ENTRYPOINT. O invariante de `test/cdl/import-com-extensao.test.ts`
+fecha ESSA falha; a assimetria de runtime que a produziu continua aberta.
+
+Onde mexer: um passo de CI que exercite os caminhos de produção sob Node — subir o
+daemon, bater no `/health`, fechar um card de ponta a ponta — ou migrar a suíte
+para um runner que rode nos dois.
 
 ---
 

@@ -7,7 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-tickhealth-'))
 process.env.HICODE_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 
-const { tick } = await import('../../motor/osw/mtr/fila')
+const { tick } = await import('../../motor/osw/mtr/fila.ts')
 
 const checkMergedFalhando = (): Promise<void> => Promise.reject(new Error('gh indisponivel'))
 

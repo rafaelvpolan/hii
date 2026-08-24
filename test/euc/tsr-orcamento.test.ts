@@ -9,7 +9,7 @@ afterAll(() => {
   delete process.env.HICODE_TIER_FILE
 })
 
-const G = await import('../../motor/euc/tsr/orcamento')
+const G = await import('../../motor/euc/tsr/orcamento.ts')
 
 let n = 0
 function comArquivo<T>(conteudo: string, fn: () => T): T {
@@ -116,6 +116,6 @@ test('INVARIANTE quem barra por orcamento chama tetoDoCard', async () => {
 })
 
 test('model_tier_selected e um tipo de evento do diario, nao texto solto', async () => {
-  const { TIPOS_DE_EVENTO } = await import('../../motor/euc/eventos')
+  const { TIPOS_DE_EVENTO } = await import('../../motor/euc/eventos.ts')
   expect(TIPOS_DE_EVENTO).toContain('model_tier_selected')
 })

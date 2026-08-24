@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { handle, newSession, COMMANDS, ALIASES, canonico } from '../../motor/mir/sessao'
-import type { EffectKind } from '../../motor/mir/sessao'
+import { handle, newSession, COMMANDS, ALIASES, canonico } from '../../motor/mir/sessao.ts'
+import type { EffectKind } from '../../motor/mir/sessao.ts'
 
 const raiz = join(import.meta.dir, '..', '..')
 const fonteDispatch = readFileSync(join(raiz, 'motor/mir/despacho.ts'), 'utf8')

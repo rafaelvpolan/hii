@@ -1,6 +1,6 @@
-import { renderFrame } from './layout'
-import { PASTE_ON, PASTE_OFF, TECLAS_ON, TECLAS_OFF } from './keys'
-import type { FrameInput } from './layout'
+import { renderFrame } from './layout.ts'
+import { PASTE_ON, PASTE_OFF, TECLAS_ON, TECLAS_OFF } from './keys.ts'
+import type { FrameInput } from './layout.ts'
 
 const ALT_ON = '\x1b[?1049h'
 const ALT_OFF = '\x1b[?1049l'

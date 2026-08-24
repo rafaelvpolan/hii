@@ -1,6 +1,6 @@
-import { readDaemonHealth } from './tick'
-import { pending, quantosEmVoo } from '../../osw/mtr/estado-da-fila'
-import { encerrando } from '../../osw/mtr/encerramento'
+import { readDaemonHealth } from './tick.ts'
+import { pending, quantosEmVoo } from '../../osw/mtr/estado-da-fila.ts'
+import { encerrando } from '../../osw/mtr/encerramento.ts'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 

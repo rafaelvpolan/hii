@@ -85,12 +85,12 @@ afterAll(() => {
   rmSync(BASE, { recursive: true, force: true })
 })
 
-const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO } = await import('../../motor/cic/agente')
-const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../../motor/agentes/registro')
-const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../../motor/tmd/pnt/mcp')
-const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../../motor/tmd/harness/claude')
-const { verifyVisual } = await import('../../motor/cic/agente')
-const { ROOT } = await import('../../motor/cdl/ali/config')
+const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO } = await import('../../motor/cic/agente.ts')
+const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../../motor/agentes/registro.ts')
+const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../../motor/tmd/pnt/mcp.ts')
+const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../../motor/tmd/harness/claude.ts')
+const { verifyVisual } = await import('../../motor/cic/agente.ts')
+const { ROOT } = await import('../../motor/cdl/ali/config.ts')
 const CARTAO = { file: '', fm: { title: 'ajustar o rodape da pagina' }, order: [], body: '' }
 
 function argvDoDisco(): string[] {

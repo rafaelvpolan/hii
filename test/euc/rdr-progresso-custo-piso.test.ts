@@ -8,7 +8,7 @@ const BASE = mkdtempSync(join(tmpdir(), 'hicode-progresso-piso-'))
 process.env.HICODE_CARDS_DIR = BASE
 mkdirSync(join(BASE, 'runs'), { recursive: true })
 
-const { renderProgress } = await import('../../motor/euc/rdr/progresso')
+const { renderProgress } = await import('../../motor/euc/rdr/progresso.ts')
 
 afterAll(() => {
   if (ANTERIOR === undefined) delete process.env.HICODE_CARDS_DIR

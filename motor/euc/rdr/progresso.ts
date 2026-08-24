@@ -1,8 +1,8 @@
-import { isoNow } from '../../cdl'
-import type { Fields } from '../../cdl'
-import { instabilidadePorAlvo, relatoDeInstabilidade } from '../tsr/instabilidade'
-import { allCards } from '../../cdl/store'
-import { floorProviders } from '../tsr/lacuna'
+import { isoNow } from '../../cdl/index.ts'
+import type { Fields } from '../../cdl/index.ts'
+import { instabilidadePorAlvo, relatoDeInstabilidade } from '../tsr/instabilidade.ts'
+import { allCards } from '../../cdl/store.ts'
+import { floorProviders } from '../tsr/lacuna.ts'
 
 const RESET = '\x1b[0m'
 const BOLD = '\x1b[1m'
@@ -10,7 +10,7 @@ const DIM = '\x1b[2m'
 const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
 
-import { PHASES, phaseIndex } from '../../mir/render/phases'
+import { PHASES, phaseIndex } from '../../mir/render/phases.ts'
 
 function track(status: string): string {
   if (status === 'HALTED') return `${RED}■ ■ ■ ■ ■ ■  parou${RESET}`

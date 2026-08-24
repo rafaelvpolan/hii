@@ -1,10 +1,10 @@
-import { extractObjetivo } from '../../cdl'
-import type { Card } from '../../cdl'
-import { ROOT, GATE_DIFF_LIMIT } from '../../cdl/ali/config'
-import { runGit } from '../../qlb/git'
-import { providerFor, modelFor } from '../../tmd/registro'
-import { runProvider } from '../../euc/tsr/confianca'
-import { sumTokens } from '../../tmd/uso'
+import { extractObjetivo } from '../../cdl/index.ts'
+import type { Card } from '../../cdl/index.ts'
+import { ROOT, GATE_DIFF_LIMIT } from '../../cdl/ali/config.ts'
+import { runGit } from '../../qlb/git.ts'
+import { providerFor, modelFor } from '../../tmd/registro.ts'
+import { runProvider } from '../../euc/tsr/confianca.ts'
+import { sumTokens } from '../../tmd/uso.ts'
 
 export interface EvalResult {
   score: number

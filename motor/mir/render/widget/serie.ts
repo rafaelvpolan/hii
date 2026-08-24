@@ -1,4 +1,4 @@
-import { severidadeDe, type Severidade } from './barra'
+import { severidadeDe, type Severidade } from './barra.ts'
 
 const RESET = '\x1b[0m'
 const VERDE = '\x1b[32m'

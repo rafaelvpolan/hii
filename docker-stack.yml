@@ -9,8 +9,12 @@
 # memoria do item 32 viraria decorativo. Teto decorativo e pior que teto nenhum,
 # porque parece que existe.
 #
-# Swarm nao aceita `build:` — a imagem vem pronta de um registry, o que tambem
-# obriga a versionar o que esta em producao em vez de construir no host.
+# `build:` num stack de swarm nao e recusado: o deploy imprime "Ignoring
+# unsupported options: build" e SOBE ASSIM MESMO, com exit 0 (verificado em
+# docker 29.6). Quem escrever build: aqui acha que construiu e publicou a imagem
+# velha — ignorar em silencio e pior que recusar, e e por isso que quem barra e
+# o teste (test/cdl/sem-compose.test.ts), nao o docker. A imagem vem pronta de um
+# registry, o que tambem obriga a versionar o que esta em producao.
 version: "3.9"
 
 services:

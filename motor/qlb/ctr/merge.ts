@@ -1,10 +1,10 @@
-import { isoNow } from '../../cdl'
-import { run } from '../git'
-import { cardsByStatus, patchCard, repoPath } from '../../cdl/store'
-import { MERGE_POLL_MS } from '../../cdl/ali/config'
-import { anexarEvento, cardFechado } from '../../euc/eventos'
-import { aprendizFechaCard } from '../../csd/fre/aprendiz'
-import { readContract } from '../../cdl/bss/armazenar'
+import { isoNow } from '../../cdl/index.ts'
+import { run } from '../git.ts'
+import { cardsByStatus, patchCard, repoPath } from '../../cdl/store.ts'
+import { MERGE_POLL_MS } from '../../cdl/ali/config.ts'
+import { anexarEvento, cardFechado } from '../../euc/eventos.ts'
+import { aprendizFechaCard } from '../../csd/fre/aprendiz.ts'
+import { readContract } from '../../cdl/bss/armazenar.ts'
 
 // O merge e o unico momento em que o card acabou de verdade — e por isso e aqui
 // que o aprendiz le o diario e o card e fechado.

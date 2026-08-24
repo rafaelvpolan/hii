@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-fre-'))
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const C = await import('../../motor/csd/fre/candidatos')
+const C = await import('../../motor/csd/fre/candidatos.ts')
 
 let n = 0
 const alvo = (): string => join(BASE, `alvo-${n++}`)

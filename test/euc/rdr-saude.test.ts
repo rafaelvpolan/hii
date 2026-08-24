@@ -2,13 +2,13 @@ import { test, expect, beforeEach, afterAll } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Fields } from '../../motor/cdl'
+import type { Fields } from '../../motor/cdl/index.ts'
 
 process.env.HICODE_COTA_TTL_MS = '0'
 
-const { lerSaudeDoMotor } = await import('../../motor/euc/rdr/saude')
-const { PROVEDOR_DESCONHECIDO } = await import('../../motor/euc/tsr/cota')
-const { createCard } = await import('../../motor/cdl/store')
+const { lerSaudeDoMotor } = await import('../../motor/euc/rdr/saude.ts')
+const { PROVEDOR_DESCONHECIDO } = await import('../../motor/euc/tsr/cota.ts')
+const { createCard } = await import('../../motor/cdl/store.ts')
 
 const criados: string[] = []
 let dir = ''

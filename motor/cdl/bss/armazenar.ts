@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { probeContract } from './sondar'
-import type { Contract } from './tipos'
+import { probeContract } from './sondar.ts'
+import type { Contract } from './tipos.ts'
 
 export function contractFile(repo: string): string {
   return join(repo, '.hii', 'contract.json')

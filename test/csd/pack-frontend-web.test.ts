@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 
-const A = await import('../../motor/csd/acervo')
-const CND = await import('../../motor/cic/cnd/gauntlet')
+const A = await import('../../motor/csd/acervo.ts')
+const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
 const ACERVO = A.carregarAcervo()
 const DO_PACK = ACERVO.filter(s => s.pack === 'frontend-web')

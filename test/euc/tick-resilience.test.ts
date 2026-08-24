@@ -8,7 +8,7 @@ const CARDS_QUEBRADO = join(BASE, 'cards-e-um-arquivo')
 writeFileSync(CARDS_QUEBRADO, 'isto e um arquivo, nao um diretorio de cards\n')
 process.env.HICODE_CARDS_DIR = CARDS_QUEBRADO
 
-const { tick } = await import('../../motor/osw/mtr/fila')
+const { tick } = await import('../../motor/osw/mtr/fila.ts')
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
@@ -21,7 +21,7 @@ test('REGRESSAO: tick() repetido continua sem lancar (nao vira crash em loop)', 
 })
 
 test('reportTickFailure e recordTickSuccess nunca lancam mesmo sem conseguir gravar em disco', async () => {
-  const { reportTickFailure, recordTickSuccess } = await import('../../motor/euc/rdr/tick')
+  const { reportTickFailure, recordTickSuccess } = await import('../../motor/euc/rdr/tick.ts')
   expect(() => reportTickFailure('ctx', new Error('x'))).not.toThrow()
   expect(() => recordTickSuccess()).not.toThrow()
   expect(existsSync(join(CARDS_QUEBRADO, 'runs'))).toBe(false)

@@ -1,5 +1,5 @@
-import { PHASES } from './phases'
-import { truncVisible } from '../tui/layout'
+import { PHASES } from './phases.ts'
+import { truncVisible } from '../tui/layout.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

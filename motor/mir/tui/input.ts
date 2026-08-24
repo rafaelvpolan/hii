@@ -1,4 +1,4 @@
-import { ehCola, textoDaCola } from './keys'
+import { ehCola, textoDaCola } from './keys.ts'
 
 export type ModoNavegacao = '' | 'board' | 'rodape'
 

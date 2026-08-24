@@ -1,4 +1,4 @@
-import type { Usage } from '../cdl'
+import type { Usage } from '../cdl/index.ts'
 
 export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 

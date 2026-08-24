@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { lerAcaoExterna, instrucaoDe } from '../../motor/osw/rta/externo'
-import { planSteps } from '../../motor/osw/rta/perfil'
-import { classifySurface } from '../../motor/osw/rta/superficie'
-import type { PipelineStep } from '../../motor/nmy/tipos'
+import { lerAcaoExterna, instrucaoDe } from '../../motor/osw/rta/externo.ts'
+import { planSteps } from '../../motor/osw/rta/perfil.ts'
+import { classifySurface } from '../../motor/osw/rta/superficie.ts'
+import type { PipelineStep } from '../../motor/nmy/tipos.ts'
 
 const passo = (id: string, label: string, kind: PipelineStep['kind'], agent: string): PipelineStep => ({
   id, label, kind, agent, state: 'REFINED', gate: 'none', enabled: true, instruction: '',

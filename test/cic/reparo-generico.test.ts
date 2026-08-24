@@ -8,8 +8,8 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { repararAteOTeto, reprovado, inconclusivo, APROVADO, relatoParaHumano } = await import('../../motor/cic/reparo')
-const { eventosDoCard } = await import('../../motor/euc/eventos')
+const { repararAteOTeto, reprovado, inconclusivo, APROVADO, relatoParaHumano } = await import('../../motor/cic/reparo.ts')
+const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
 
 interface Roteiro { veredictos: ReturnType<typeof reprovado>[]; consertos: number }
 

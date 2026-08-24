@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { lerGovernanca } from '../../euc/tsr/orcamento'
-import { cardsDir } from '../../cdl/ali/config'
+import { lerGovernanca } from '../../euc/tsr/orcamento.ts'
+import { cardsDir } from '../../cdl/ali/config.ts'
 
 // CND — Canudos. A solucao tem de sobreviver a varias investidas.
 //

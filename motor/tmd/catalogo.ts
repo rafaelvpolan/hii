@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../cdl/ali/config'
-import { memoArquivo } from './eco/memo'
-import { modelFor, providerNameFor, agentRoles } from './registro'
-import type { HarnessId } from './tipos'
+import { ROOT } from '../cdl/ali/config.ts'
+import { memoArquivo } from './eco/memo.ts'
+import { modelFor, providerNameFor, agentRoles } from './registro.ts'
+import type { HarnessId } from './tipos.ts'
 
 export type CatalogoDeModelos = Partial<Record<HarnessId, string[]>>
 

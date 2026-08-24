@@ -10,8 +10,8 @@ let saudavel = true
 let atrasoMs = 0
 const sonda = (): Promise<boolean> => new Promise(resolve => setTimeout(() => resolve(saudavel), atrasoMs))
 
-const { createCard, readCard, patchCard } = await import('../../motor/cdl/store')
-const { wakeDueWaiting } = await import('../../motor/cic/rpr/espera')
+const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
+const { wakeDueWaiting } = await import('../../motor/cic/rpr/espera.ts')
 
 beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '2' })
 

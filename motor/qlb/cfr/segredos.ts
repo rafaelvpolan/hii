@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ENV_SECRETS_DIR } from '../../cdl/ali/contrato'
+import { ENV_SECRETS_DIR } from '../../cdl/ali/contrato.ts'
 // CFR — Cofre. Segredo portavel: variavel de ambiente e o caminho que SEMPRE
 // funciona, e cofre de nuvem e opcional e plugavel.
 //

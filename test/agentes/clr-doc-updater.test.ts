@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const C = await import('../../motor/agentes/clr/doc-updater')
+const C = await import('../../motor/agentes/clr/doc-updater.ts')
 
 test('mudanca em export publico afeta contrato', () => {
   const v = C.contratoPublicoMudou({

@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 
 process.env.HICODE_COTA_TTL_MS = '0'
 
-const { consumoPorProvedor, serieDeCusto, JANELA_5H, JANELA_SEMANA } = await import('../../motor/euc/tsr/consumo')
-const { PROVEDOR_DESCONHECIDO } = await import('../../motor/euc/tsr/cota-runs')
+const { consumoPorProvedor, serieDeCusto, JANELA_5H, JANELA_SEMANA } = await import('../../motor/euc/tsr/consumo.ts')
+const { PROVEDOR_DESCONHECIDO } = await import('../../motor/euc/tsr/cota-runs.ts')
 
 const HORA_MS = 60 * 60 * 1000
 const DIA_MS = 24 * HORA_MS

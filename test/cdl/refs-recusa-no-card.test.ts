@@ -2,8 +2,8 @@ import { test, expect, afterAll } from 'bun:test'
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Card } from '../../motor/cdl'
-import { createCard, readCard } from '../../motor/cdl/store'
+import type { Card } from '../../motor/cdl/index.ts'
+import { createCard, readCard } from '../../motor/cdl/store.ts'
 
 const REPO = join(import.meta.dir, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-ref-recusada-'))

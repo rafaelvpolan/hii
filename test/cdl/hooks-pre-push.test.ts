@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { installPrePush, uninstallPrePush } from '../../motor/cdl/ali/hooks'
+import { installPrePush, uninstallPrePush } from '../../motor/cdl/ali/hooks.ts'
 
 const criados: string[] = []
 let repo = ''

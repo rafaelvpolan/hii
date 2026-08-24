@@ -2,10 +2,10 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { avaliarDiff, casaPadrao, lerRegras, regrasQueBatem } from '../../motor/csd/lei/guarda'
-import { aplicarLei, planSteps } from '../../motor/osw/rta/perfil'
-import { activeSteps } from '../../motor/nmy/config'
-import type { RegraInegociavel } from '../../motor/csd/lei/guarda'
+import { avaliarDiff, casaPadrao, lerRegras, regrasQueBatem } from '../../motor/csd/lei/guarda.ts'
+import { aplicarLei, planSteps } from '../../motor/osw/rta/perfil.ts'
+import { activeSteps } from '../../motor/nmy/config.ts'
+import type { RegraInegociavel } from '../../motor/csd/lei/guarda.ts'
 
 const criados: string[] = []
 afterAll(() => { for (const d of criados) rmSync(d, { recursive: true, force: true }) })

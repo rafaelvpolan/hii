@@ -1,10 +1,10 @@
-import { extractObjetivo } from '../../cdl'
-import type { Card } from '../../cdl'
-import { planSteps } from '../../osw/rta/perfil'
-import { classifySurface } from '../../osw/rta/superficie'
-import { activeSteps } from '../config'
-import { waves } from './ondas'
-import type { PipelineStep } from '../tipos'
+import { extractObjetivo } from '../../cdl/index.ts'
+import type { Card } from '../../cdl/index.ts'
+import { planSteps } from '../../osw/rta/perfil.ts'
+import { classifySurface } from '../../osw/rta/superficie.ts'
+import { activeSteps } from '../config.ts'
+import { waves } from './ondas.ts'
+import type { PipelineStep } from '../tipos.ts'
 
 export interface PlanWave {
   n: number

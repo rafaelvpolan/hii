@@ -1,8 +1,8 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { diretorioDeSkills, fundirOrigens } from './acervo'
-import type { Fusao } from './acervo'
-import { ROOT } from '../cdl/ali/config'
+import { diretorioDeSkills, fundirOrigens } from './acervo.ts'
+import type { Fusao } from './acervo.ts'
+import { ROOT } from '../cdl/ali/config.ts'
 
 // CSD — a fusao. `_resolved/` e GERADA a partir de `_native/` e `_sources/*`.
 // Ninguem edita `_resolved/` na mao: e recalculada quando skill-sources.json

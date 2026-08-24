@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const D = await import('../../motor/osw/despacho-de-agentes')
+const D = await import('../../motor/osw/despacho-de-agentes.ts')
 
 test('as especs vem de FUNCAO PURA sobre o diff — mesma entrada, mesma saida', () => {
   const ctx = { arquivos: ['src/Botao.vue', 'database/migrations/2026_cria.php'] }

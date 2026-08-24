@@ -1,6 +1,6 @@
-import { anexarEvento, cardFechado, cardsComDiario, eventosDoCard, ultimoEvento } from './eventos'
-import type { TipoDeEvento } from './eventos'
-import type { EventoDoCard } from './eventos'
+import { anexarEvento, cardFechado, cardsComDiario, eventosDoCard, ultimoEvento } from './eventos.ts'
+import type { TipoDeEvento } from './eventos.ts'
+import type { EventoDoCard } from './eventos.ts'
 
 // EUC — retomada. No restart, o motor precisa reconstruir ONDE cada card parou
 // lendo o proprio diario, em vez de assumir que tudo recomeca do zero.

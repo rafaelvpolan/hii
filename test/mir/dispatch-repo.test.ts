@@ -2,9 +2,9 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../../motor/mir/sessao'
-import type { SessionState } from '../../motor/mir/sessao'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
+import { handle, newSession } from '../../motor/mir/sessao.ts'
+import type { SessionState } from '../../motor/mir/sessao.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 
 let dir = ''
 let saida: string[] = []
@@ -23,7 +23,7 @@ beforeEach(() => {
 })
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -69,7 +69,7 @@ test('projeto nao registrado e RECUSADO, com a lista do que existe', async () =>
 
 test('trocar de projeto solta a tarefa aberta do projeto anterior', async () => {
   comRepos()
-  const { seguir } = await import('../../motor/mir/sessao')
+  const { seguir } = await import('../../motor/mir/sessao.ts')
   const state = await digitar(['/repo 1'], seguir(newSession('org/app'), '022'))
   expect(state.repo).toBe('acme/site')
   expect(state.seguindo).toBe('')

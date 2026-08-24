@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { conferirSetup, relatoDoSetup } from '../../motor/cdl/bss/setup-ferramental'
+import { conferirSetup, relatoDoSetup } from '../../motor/cdl/bss/setup-ferramental.ts'
 
 const criados: string[] = []
 afterAll(() => { for (const d of criados) rmSync(d, { recursive: true, force: true }) })

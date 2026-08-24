@@ -1,8 +1,8 @@
-import { isoNow } from '../../cdl'
-import { clip } from './url-guard'
-import type { Refusal } from './url-guard'
-import { patchCard } from '../../cdl/store'
-import type { RefOutcome } from './refs'
+import { isoNow } from '../../cdl/index.ts'
+import { clip } from './url-guard.ts'
+import type { Refusal } from './url-guard.ts'
+import { patchCard } from '../../cdl/store.ts'
+import type { RefOutcome } from './refs.ts'
 
 export function refRefusalLine(source: string, refusal: Refusal): string {
   return `${isoNow()} referencia recusada: ${clip(source)} (${refusal.reason}) — ${clip(refusal.detail)} — implementando sem ela`

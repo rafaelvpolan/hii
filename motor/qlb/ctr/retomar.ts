@@ -1,6 +1,6 @@
-import { isoNow } from '../../cdl'
-import { patchCard } from '../../cdl/store'
-import type { PipelineStep } from '../../nmy/tipos'
+import { isoNow } from '../../cdl/index.ts'
+import { patchCard } from '../../cdl/store.ts'
+import type { PipelineStep } from '../../nmy/tipos.ts'
 
 export const RESUME_POST_STEPS = '__apos_passos__'
 

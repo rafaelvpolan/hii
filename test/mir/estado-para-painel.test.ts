@@ -30,7 +30,7 @@ function clarify(id: string): void {
 }
 
 test('o snapshot tem versao de contrato, para o painel saber com o que esta falando', async () => {
-  const { snapshotDoMotor, VERSAO_DO_CONTRATO } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor, VERSAO_DO_CONTRATO } = await import('../../motor/mir/estado-json.ts')
   const s = snapshotDoMotor()
   expect(s.versao).toBe(VERSAO_DO_CONTRATO)
   expect(s.raizDoEstado).toBe(estado)
@@ -39,7 +39,7 @@ test('o snapshot tem versao de contrato, para o painel saber com o que esta fala
 
 test('cada tarefa leva status, fase, url, pr e o que o humano precisa fazer', async () => {
   card('023', { status: 'URL', url: 'http://localhost:5200', cost_usd: '0.42', tokens_total: '52394' })
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   const t = snapshotDoMotor().tarefas[0]
   expect(t?.id).toBe('023')
   expect(t?.status).toBe('URL')
@@ -52,7 +52,7 @@ test('cada tarefa leva status, fase, url, pr e o que o humano precisa fazer', as
 
 test('tarefa em execucao nao aparece como esperando humano', async () => {
   card('023', { status: 'EXECUTING' })
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   const t = snapshotDoMotor().tarefas[0]
   expect(t?.ativa).toBe(true)
   expect(t?.esperandoHumano).toBe(false)
@@ -62,7 +62,7 @@ test('tarefa em execucao nao aparece como esperando humano', async () => {
 test('PERGUNTA ABERTA chega no snapshot com opcoes e recomendada', async () => {
   card('024', { status: 'CLARIFY' })
   clarify('024')
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   const t = snapshotDoMotor().tarefas[0]
   expect(t?.pergunta?.pergunta).toBe('o filtro vem de onde?')
   expect(t?.pergunta?.opcoes).toEqual(['querystring', 'estado local'])
@@ -73,7 +73,7 @@ test('PERGUNTA ABERTA chega no snapshot com opcoes e recomendada', async () => {
 
 test('tarefa sem pergunta aberta traz pergunta nula', async () => {
   card('023', { status: 'EXECUTING' })
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   expect(snapshotDoMotor().tarefas[0]?.pergunta).toBeNull()
 })
 
@@ -81,13 +81,13 @@ test('as tarefas saem ordenadas por id e o filtro de repo funciona', async () =>
   card('025', { repo: 'org/outro' })
   card('023')
   card('024')
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   expect(snapshotDoMotor().tarefas.map(t => t.id)).toEqual(['023', '024', '025'])
   expect(snapshotDoMotor({ repo: 'org/app' }).tarefas.map(t => t.id)).toEqual(['023', '024'])
 })
 
 test('o snapshot carrega disco, cota e daemon, que o painel mostra junto', async () => {
-  const { snapshotDoMotor } = await import('../../motor/mir/estado-json')
+  const { snapshotDoMotor } = await import('../../motor/mir/estado-json.ts')
   const s = snapshotDoMotor()
   expect(s.disco.nivel).toBe('ok')
   expect(Array.isArray(s.cota.provedores)).toBe(true)
@@ -96,7 +96,7 @@ test('o snapshot carrega disco, cota e daemon, que o painel mostra junto', async
 })
 
 test('a revisao muda quando o estado muda, e nao muda quando nada acontece', async () => {
-  const { revisaoDoEstado } = await import('../../motor/mir/estado-json')
+  const { revisaoDoEstado } = await import('../../motor/mir/estado-json.ts')
   card('023')
   const antes = revisaoDoEstado()
   expect(revisaoDoEstado()).toBe(antes)
@@ -106,7 +106,7 @@ test('a revisao muda quando o estado muda, e nao muda quando nada acontece', asy
 
 test('aprovar url move a tarefa e devolve resultado de maquina', async () => {
   card('023', { status: 'URL', url: 'http://localhost:5200' })
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   const r = executarAcao('aprovar-url', '023')
   expect(r.ok).toBe(true)
   expect(r.acao).toBe('aprovar-url')
@@ -115,14 +115,14 @@ test('aprovar url move a tarefa e devolve resultado de maquina', async () => {
 
 test('aprovar url de tarefa que nao esta em URL recusa, com motivo', async () => {
   card('023', { status: 'EXECUTING' })
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   const r = executarAcao('aprovar-url', '023')
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('EXECUTING')
 })
 
 test('tarefa inexistente devolve erro em vez de estourar', async () => {
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   const r = executarAcao('aprovar-url', '999')
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('nao encontrado')
@@ -131,7 +131,7 @@ test('tarefa inexistente devolve erro em vez de estourar', async () => {
 
 test('recusar com motivo pede correcao; sem motivo, refaz', async () => {
   card('023', { status: 'URL', url: 'http://x' })
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   expect(executarAcao('recusar', '023', 'o botao ficou fora do lugar').mensagem).toContain('corrigir')
   card('024', { status: 'URL', url: 'http://x' })
   expect(executarAcao('recusar', '024').mensagem).toContain('refazer')
@@ -139,7 +139,7 @@ test('recusar com motivo pede correcao; sem motivo, refaz', async () => {
 
 test('parar a tarefa registra e devolve o status novo', async () => {
   card('023', { status: 'EXECUTING' })
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   const r = executarAcao('parar', '023', 'chega por hoje')
   expect(r.ok).toBe(true)
   expect(r.status).toBe('HALTED')
@@ -148,7 +148,7 @@ test('parar a tarefa registra e devolve o status novo', async () => {
 test('RESPONDER a pergunta pela porta de maquina retoma a tarefa', async () => {
   card('024', { status: 'CLARIFY' })
   clarify('024')
-  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa')
+  const { executarAcao } = await import('../../motor/mir/comandos-de-tarefa.ts')
   const r = executarAcao('responder', '024', 'querystring')
   expect(r.ok).toBe(true)
   expect(r.mensagem).toContain('querystring')

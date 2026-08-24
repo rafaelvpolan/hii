@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../cdl/ali/config'
-import { ENV_TOPOLOGIA_FILE } from '../cdl/ali/contrato'
-import { STATUSES } from '../cdl'
-import type { Status } from '../cdl'
+import { ROOT } from '../cdl/ali/config.ts'
+import { ENV_TOPOLOGIA_FILE } from '../cdl/ali/contrato.ts'
+import { STATUSES } from '../cdl/index.ts'
+import type { Status } from '../cdl/index.ts'
 
 export interface Topologia {
   readonly versao: number

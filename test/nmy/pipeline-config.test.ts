@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { loadPipeline, activeSteps } from '../../motor/nmy/config'
+import { loadPipeline, activeSteps } from '../../motor/nmy/config.ts'
 
 test('loadPipeline sempre devolve ao menos os steps default', () => {
   expect(loadPipeline().steps.length).toBeGreaterThan(0)
@@ -40,7 +40,7 @@ test('step com state fora do enum e descartado (cai no default)', () => {
 })
 
 test('REGRESSAO todos os steps invalidos NAO produzem pipeline vazio — o card nao vai ao PR sem gate', async () => {
-  const { DEFAULT_STEPS } = await import('../../motor/nmy/config')
+  const { DEFAULT_STEPS } = await import('../../motor/nmy/config.ts')
   const d = mkdtempSync(join(tmpdir(), 'wt4-'))
   mkdirSync(join(d, '.hii'), { recursive: true })
   writeFileSync(join(d, '.hii', 'pipeline.json'), JSON.stringify({
@@ -56,7 +56,7 @@ test('REGRESSAO todos os steps invalidos NAO produzem pipeline vazio — o card 
 })
 
 test('REGRESSAO o pipeline default cobre testes, seguranca e review — nao e so um passo qualquer', async () => {
-  const { DEFAULT_STEPS } = await import('../../motor/nmy/config')
+  const { DEFAULT_STEPS } = await import('../../motor/nmy/config.ts')
   const ids = DEFAULT_STEPS.map(s => s.id)
   for (const obrigatorio of ['testes', 'seguranca', 'review']) expect(ids).toContain(obrigatorio)
 })

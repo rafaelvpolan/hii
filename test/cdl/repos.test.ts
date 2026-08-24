@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-repos-'))
 process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 
-const { addRepo, removeRepo, repoStatus, detectBranch, isGitRepo } = await import('../../motor/cdl/repos')
+const { addRepo, removeRepo, repoStatus, detectBranch, isGitRepo } = await import('../../motor/cdl/repos.ts')
 
 const NOW = '2026-08-13T00:00:00Z'
 let seq = 0
@@ -108,24 +108,24 @@ test('isGitRepo e detectBranch nao lancam em caminho invalido', () => {
 })
 
 test('doctor: clone ausente e erro com conserto acionavel', async () => {
-  const { checkGitPush } = await import('../../motor/euc/rdr/doctor')
+  const { checkGitPush } = await import('../../motor/euc/rdr/doctor.ts')
   const c = checkGitPush(join(BASE, 'nao-existe'), 'acme/x')
   expect(c.severidade).toBe('erro')
   expect(c.conserto).toContain('hii repo add')
 })
 
 test('doctor: contrato ausente e aviso, nao erro', async () => {
-  const { checkContract } = await import('../../motor/euc/rdr/doctor')
+  const { checkContract } = await import('../../motor/euc/rdr/doctor.ts')
   const c = checkContract(join(BASE, 'sem-contrato'))
   expect(c.severidade).toBe('aviso')
   expect(c.conserto).toContain('hii contract')
 })
 
 test('doctor: contrato sem build nem test avisa que os gates serao pulados', async () => {
-  const { checkContract } = await import('../../motor/euc/rdr/doctor')
+  const { checkContract } = await import('../../motor/euc/rdr/doctor.ts')
   const dir = clone()
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'sem-scripts' }))
-  const { syncContract } = await import('../../motor/cdl/bss/armazenar')
+  const { syncContract } = await import('../../motor/cdl/bss/armazenar.ts')
   syncContract(dir, NOW)
   const c = checkContract(dir)
   expect(c.severidade).toBe('aviso')

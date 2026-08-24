@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { avisoDeEstadoVazio } from '../../motor/mir/estado-vazio'
+import { avisoDeEstadoVazio } from '../../motor/mir/estado-vazio.ts'
 
 test('estado com cards nao gera aviso nenhum', () => {
   expect(avisoDeEstadoVazio({ vazio: false, apontadoPorEnv: false, caminho: '/x/cards', outroEstado: '' })).toEqual([])

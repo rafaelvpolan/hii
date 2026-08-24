@@ -19,9 +19,9 @@ afterAll(() => {
 })
 
 test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pelo escritor de verdade', async () => {
-  const { registrarChamada } = await import('../../motor/euc/ias-da-sessao')
-  const { sessaoParaChamada } = await import('../../motor/euc/tsr/confianca')
-  const { lerConfig } = await import('../../motor/cdl/ali/snapshot')
+  const { registrarChamada } = await import('../../motor/euc/ias-da-sessao.ts')
+  const { sessaoParaChamada } = await import('../../motor/euc/tsr/confianca.ts')
+  const { lerConfig } = await import('../../motor/cdl/ali/snapshot.ts')
 
   registrarChamada(sessaoParaChamada(''), {
     ts: new Date().toISOString(), papel: 'conversa', provedor: 'claude', modelo: 'opus',
@@ -38,6 +38,6 @@ test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pe
 })
 
 test('sessao sem nenhuma chamada devolve painel vazio, sem inventar papel', async () => {
-  const { lerConfig } = await import('../../motor/cdl/ali/snapshot')
+  const { lerConfig } = await import('../../motor/cdl/ali/snapshot.ts')
   expect(lerConfig('', '').sessao.papeis).toEqual([])
 })

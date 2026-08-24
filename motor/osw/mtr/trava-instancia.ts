@@ -1,9 +1,9 @@
 import { linkSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { alive, argvDoProcesso, argvIlegivelEhOMotor, eOMotor } from './daemon'
-import { ROOT } from '../../cdl/ali/config'
-import { ENV_RUNNER_LOCK } from '../../cdl/ali/contrato'
-import { temEncerramentoGracioso } from './encerramento'
+import { alive, argvDoProcesso, argvIlegivelEhOMotor, eOMotor } from './daemon.ts'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { ENV_RUNNER_LOCK } from '../../cdl/ali/contrato.ts'
+import { temEncerramentoGracioso } from './encerramento.ts'
 
 const STEAL_ATTEMPTS = 3
 

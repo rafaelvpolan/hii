@@ -8,9 +8,9 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const I = await import('../../motor/euc/tsr/instabilidade')
-const { anexarEvento } = await import('../../motor/euc/eventos')
-const A = await import('../../motor/mir/acoes')
+const I = await import('../../motor/euc/tsr/instabilidade.ts')
+const { anexarEvento } = await import('../../motor/euc/eventos.ts')
+const A = await import('../../motor/mir/acoes.ts')
 
 function cardCom(repo: string, tentativas: number, fase: string): string {
   const id = A.submit({ title: `card de ${repo}`, repo, desc: 'x' })
@@ -60,7 +60,7 @@ test('o relato diz o teto atual, senao o numero nao serve de decisao', () => {
 })
 
 test('hii status mostra o reparo por alvo quando houver — numero sem quem ver nao decide nada', async () => {
-  const { renderProgress } = await import('../../motor/euc/rdr/progresso')
+  const { renderProgress } = await import('../../motor/euc/rdr/progresso.ts')
   const saida = renderProgress()
   expect(saida).toContain('reparo por alvo')
   expect(saida).toContain('org/instavel')

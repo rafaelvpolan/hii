@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { snapshotDoAmbiente, candidatosNaPergunta, instalado } from '../../motor/cdl/ali/ambiente'
+import { snapshotDoAmbiente, candidatosNaPergunta, instalado } from '../../motor/cdl/ali/ambiente.ts'
 
 test('REGRESSAO: "tem X instalado" e respondivel — o motor entrega o fato, nao a IA adivinha', () => {
   const registro = join(mkdtempSync(join(tmpdir(), 'hicode-repos-ambiente-')), 'repos.json')

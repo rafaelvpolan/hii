@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { subPrompts, anexarSubPrompt } from '../../motor/mir/instruir'
+import { subPrompts, anexarSubPrompt } from '../../motor/mir/instruir.ts'
 
 let dir = ''
 
@@ -43,8 +43,8 @@ test('card sem instrucoes devolve lista vazia', () => {
 })
 
 test('instrucao em tarefa com worktree vivo vira correcao', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { status: 'EXECUTED', worktree: dir })
   const r = instruir('022', 'tira tambem o do hero')
   expect(r.ok).toBe(true)
@@ -56,8 +56,8 @@ test('instrucao em tarefa com worktree vivo vira correcao', async () => {
 })
 
 test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { status: 'HALTED', worktree: '/caminho/que/nao/existe' })
   const r = instruir('022', 'retome e me mostre o url')
   expect(r.refaz).toBe(true)
@@ -68,16 +68,16 @@ test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', a
 })
 
 test('card sem campo de worktree tambem refaz', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { status: 'HALTED' })
   expect(instruir('022', 'continue').refaz).toBe(true)
   expect(readCard('022')?.fm.status).toBe('EXECUTING')
 })
 
 test('REGRESSAO paste multilinha vira UMA instrucao, nao sete', async () => {
-  const { instruir, subPrompts } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir, subPrompts } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { status: 'HALTED' })
   instruir('022', 'deu erro:\nApp.vue:97:7\n95 |\n96 |  <EngineConsole />\n   |   ^')
   const subs = subPrompts(readCard('022')?.body ?? '')
@@ -87,8 +87,8 @@ test('REGRESSAO paste multilinha vira UMA instrucao, nao sete', async () => {
 })
 
 test('instrucao antes de executar so anota, sem forcar correcao', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   for (const status of ['READY', 'CLARIFY', 'PLAN_APPROVED']) {
     card('030', { status })
     const r = instruir('030', 'considera o mobile tambem')
@@ -99,7 +99,7 @@ test('instrucao antes de executar so anota, sem forcar correcao', async () => {
 })
 
 test('tarefa entregue recusa instrucao e explica', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
   for (const status of ['MERGED', 'DEPLOYED']) {
     card('020', { status })
     const r = instruir('020', 'muda mais uma coisa')
@@ -109,36 +109,36 @@ test('tarefa entregue recusa instrucao e explica', async () => {
 })
 
 test('instrucao vazia nao suja o card', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
   card('022')
   expect(instruir('022', '   ').ok).toBe(false)
 })
 
 test('card inexistente nao explode', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
   expect(instruir('777', 'x').ok).toBe(false)
 })
 
 test('cada instrucao entra no log de estado do card', async () => {
-  const { instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { worktree: dir })
   instruir('022', 'primeira coisa')
   expect(readCard('022')?.body).toContain('instrucao 1: primeira coisa')
 })
 
 test('umaLinha preserva o conteudo e marca as quebras', async () => {
-  const { umaLinha } = await import('../../motor/mir/instruir')
+  const { umaLinha } = await import('../../motor/mir/instruir.ts')
   expect(umaLinha('linha um\nlinha dois')).toBe('linha um ⏎ linha dois')
   expect(umaLinha('  espacos   demais  ')).toBe('espacos demais')
   expect(umaLinha('so uma')).toBe('so uma')
 })
 
 test('texto colado chega INTEIRO na instrucao, nao o marcador', async () => {
-  const { newInput, keypress } = await import('../../motor/mir/tui/input')
-  const { marcarCola } = await import('../../motor/mir/tui/keys')
-  const { instruir, subPrompts } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { newInput, keypress } = await import('../../motor/mir/tui/input.ts')
+  const { marcarCola } = await import('../../motor/mir/tui/keys.ts')
+  const { instruir, subPrompts } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   const erro = 'deu erro:\nApp.vue:97:7\n95 |\n96 |  <EngineConsole />'
 
   let s = newInput()
@@ -158,9 +158,9 @@ test('texto colado chega INTEIRO na instrucao, nao o marcador', async () => {
 })
 
 test('varios pastes na mesma linha chegam todos', async () => {
-  const { newInput, keypress } = await import('../../motor/mir/tui/input')
-  const { marcarCola } = await import('../../motor/mir/tui/keys')
-  const { umaLinha } = await import('../../motor/mir/instruir')
+  const { newInput, keypress } = await import('../../motor/mir/tui/input.ts')
+  const { marcarCola } = await import('../../motor/mir/tui/keys.ts')
+  const { umaLinha } = await import('../../motor/mir/instruir.ts')
   let s = newInput()
   s = keypress(s, marcarCola('primeiro bloco\ncom duas linhas')).state
   for (const c of ' e ') s = keypress(s, c).state
@@ -173,16 +173,16 @@ test('varios pastes na mesma linha chegam todos', async () => {
 })
 
 test('paste curto nao vira marcador, entra direto', async () => {
-  const { newInput, keypress } = await import('../../motor/mir/tui/input')
-  const { marcarCola } = await import('../../motor/mir/tui/keys')
+  const { newInput, keypress } = await import('../../motor/mir/tui/input.ts')
+  const { marcarCola } = await import('../../motor/mir/tui/keys.ts')
   const s = keypress(newInput(), marcarCola('http://localhost:5222')).state
   expect(s.buffer).toBe('http://localhost:5222')
   expect(s.buffer).not.toContain('[colado')
 })
 
 test('REGRESSAO instrucao dada antes de executar CHEGA ao objetivo que vira prompt', async () => {
-  const { objetivoComInstrucoes, instruir } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { objetivoComInstrucoes, instruir } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('077', { status: 'READY' })
   instruir('077', 'use a paleta escura')
   instruir('077', 'nao mexa no header')
@@ -194,8 +194,8 @@ test('REGRESSAO instrucao dada antes de executar CHEGA ao objetivo que vira prom
 })
 
 test('sem instrucao, o objetivo sai igual ao de antes — sem cabecalho vazio', async () => {
-  const { objetivoComInstrucoes } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { objetivoComInstrucoes } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('078', { status: 'READY' })
   const body = readCard('078')?.body ?? ''
   expect(objetivoComInstrucoes(body, 'tarefa 078')).not.toContain('INSTRUCOES ADICIONAIS')

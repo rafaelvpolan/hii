@@ -1,5 +1,5 @@
-import { mb } from '../../euc/estado-em-disco'
-import type { NivelDeDisco, UsoDeDisco } from '../../euc/estado-em-disco'
+import { mb } from '../../euc/estado-em-disco.ts'
+import type { NivelDeDisco, UsoDeDisco } from '../../euc/estado-em-disco.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

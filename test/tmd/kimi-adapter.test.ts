@@ -2,9 +2,9 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { KimiProvider, KIMI_CAPACIDADES, kimiArgv } from '../../motor/tmd/harness/kimi'
-import { isProviderName, modelFor, providerLimits, providerNames } from '../../motor/tmd/registro'
-import type { AgentMode, AgentRequest } from '../../motor/tmd/tipos'
+import { KimiProvider, KIMI_CAPACIDADES, kimiArgv } from '../../motor/tmd/harness/kimi.ts'
+import { isProviderName, modelFor, providerLimits, providerNames } from '../../motor/tmd/registro.ts'
+import type { AgentMode, AgentRequest } from '../../motor/tmd/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-kimi-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -70,7 +70,7 @@ test('flags que o CLI TEM mas o motor nao usa ficam de fora de proposito', () =>
 })
 
 test('modo readonly NAO ganha --auto, e o motor recusa o kimi nesse modo em vez de deixar editar', async () => {
-  const { recusaPorLimite } = await import('../../motor/euc/tsr/confianca')
+  const { recusaPorLimite } = await import('../../motor/euc/tsr/confianca.ts')
   expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
   expect(KIMI_CAPACIDADES.isolatesReadonly).toBe(false)
   expect(KIMI_CAPACIDADES.restrictsTools).toBe(false)

@@ -1,11 +1,11 @@
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { beforeEach, test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ImplementResult, Run } from '../../motor/cdl'
-import type { ExecuteDeps } from '../../motor/osw/executar'
+import type { ImplementResult, Run } from '../../motor/cdl/index.ts'
+import type { ExecuteDeps } from '../../motor/osw/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telemfalha-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -39,15 +39,15 @@ git(clone, ['config', 'user.name', 't'])
 process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
 writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
-const { createCard, readCard, patchCard } = await import('../../motor/cdl/store')
-const { handleExecute } = await import('../../motor/osw/executar')
-const { classifyFailure } = await import('../../motor/cic/rpr/classe-de-falha')
-const { harnessPorNome } = await import('../../motor/tmd/registro')
-const { readFailureAttempts } = await import('../../motor/cic/rpr/tentativas')
-const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../../motor/euc/registros')
-const { applyFailurePolicy } = await import('../../motor/cic/rpr/politica')
-const { loteDesde } = await import('../../motor/euc/tsr/cota-runs')
-const { lerCota } = await import('../../motor/euc/tsr/cota')
+const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
+const { handleExecute } = await import('../../motor/osw/executar.ts')
+const { classifyFailure } = await import('../../motor/cic/rpr/classe-de-falha.ts')
+const { harnessPorNome } = await import('../../motor/tmd/registro.ts')
+const { readFailureAttempts } = await import('../../motor/cic/rpr/tentativas.ts')
+const { writeRun, MOTIVO_SEM_CLASSIFICACAO } = await import('../../motor/euc/registros.ts')
+const { applyFailurePolicy } = await import('../../motor/cic/rpr/politica.ts')
+const { loteDesde } = await import('../../motor/euc/tsr/cota-runs.ts')
+const { lerCota } = await import('../../motor/euc/tsr/cota.ts')
 
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0' }
 

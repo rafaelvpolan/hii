@@ -10,8 +10,8 @@ import { tmpdir } from 'node:os'
 const TTL_MS = 60_000
 process.env.HICODE_COTA_TTL_MS = String(TTL_MS)
 
-const { lerCota } = await import('../../motor/euc/tsr/cota')
-const { esquecerLoteEmCache } = await import('../../motor/euc/tsr/cota-runs')
+const { lerCota } = await import('../../motor/euc/tsr/cota.ts')
+const { esquecerLoteEmCache } = await import('../../motor/euc/tsr/cota-runs.ts')
 
 const HORA_MS = 60 * 60 * 1000
 const MTIME_FIXO_S = 1_000_000

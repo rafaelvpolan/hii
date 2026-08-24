@@ -1,14 +1,14 @@
 import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { delimiter, join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
-import { provedoresDisponiveis } from '../../tmd/disponibilidade'
-import { urlDoOllama } from '../../tmd/harness/ollama-estado'
-import { rotuloDoBloqueio } from '../despacho'
-import type { Check, Severity } from '../../euc/rdr/doctor'
-import { runtimeDeScript } from '../../cdl/ali/runtime'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { provedoresDisponiveis } from '../../tmd/disponibilidade.ts'
+import { urlDoOllama } from '../../tmd/harness/ollama-estado.ts'
+import { rotuloDoBloqueio } from '../despacho.ts'
+import type { Check, Severity } from '../../euc/rdr/doctor.ts'
+import { runtimeDeScript } from '../../cdl/ali/runtime.ts'
 
-export type { Severity as Severidade, Check as ChecagemDeAmbiente } from '../../euc/rdr/doctor'
+export type { Severity as Severidade, Check as ChecagemDeAmbiente } from '../../euc/rdr/doctor.ts'
 
 function estaNoPath(binario: string): boolean {
   const caminhos = (process.env.PATH ?? '').split(delimiter).filter(Boolean)

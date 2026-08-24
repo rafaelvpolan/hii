@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { STATUSES } from '../../motor/cdl/tipos'
-import { phaseLabel } from '../../motor/mir/render/phases'
+import { STATUSES } from '../../motor/cdl/tipos.ts'
+import { phaseLabel } from '../../motor/mir/render/phases.ts'
 
 test('REGRESSAO nenhum status vaza cru para o campo fase do painel', () => {
   const crus = STATUSES.filter(s => phaseLabel(s) === s)

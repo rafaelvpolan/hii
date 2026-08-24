@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { markdownParaAnsi } from '../../motor/mir/render/markdown'
-import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout'
+import { markdownParaAnsi } from '../../motor/mir/render/markdown.ts'
+import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 
 function semCor(texto: string): string[] {
   return markdownParaAnsi(texto, { color: false })

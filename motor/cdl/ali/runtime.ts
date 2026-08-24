@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { ENV_RUNTIME } from './contrato'
+import { ENV_RUNTIME } from './contrato.ts'
 
 // ALI — qual runtime de JS o motor usa para rodar os proprios scripts auxiliares
 // e para (re)subir o daemon.

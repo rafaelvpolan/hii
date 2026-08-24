@@ -1,4 +1,4 @@
-import { ipv4Octets } from './ipv4'
+import { ipv4Octets } from './ipv4.ts'
 
 const IPV6_LOOPBACK_MAPPED = /^::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}$/
 

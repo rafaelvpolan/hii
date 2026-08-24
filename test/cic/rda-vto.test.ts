@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 
-const VTO = await import('../../motor/cic/vto')
-const RDA = await import('../../motor/cic/rda')
+const VTO = await import('../../motor/cic/vto.ts')
+const RDA = await import('../../motor/cic/rda.ts')
 
 const voto = (lente: string, escolha: string) => ({ lente, escolha, porque: `${lente} preferiu ${escolha}` })
 

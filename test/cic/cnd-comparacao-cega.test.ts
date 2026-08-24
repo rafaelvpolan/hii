@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const CND = await import('../../motor/cic/cnd/gauntlet')
+const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
 const CANDIDATOS = [
   { origem: 'motor', conteudo: 'tela com card em grade e acao primaria no topo' },

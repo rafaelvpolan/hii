@@ -1,5 +1,5 @@
-import { cercarSaida } from './tipos'
-import type { ReparadorDeBuild } from './tipos'
+import { cercarSaida } from './tipos.ts'
+import type { ReparadorDeBuild } from './tipos.ts'
 
 const MARCAS = [/(^|\/)composer\.json$/, /(^|\/)artisan$/, /\.php$/, /(^|\/)database\/migrations\//]
 

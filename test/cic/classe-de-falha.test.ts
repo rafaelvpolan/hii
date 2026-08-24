@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { classifyFailure } from '../../motor/cic/rpr/classe-de-falha'
-import { harnessPorNome } from '../../motor/tmd/registro'
+import { classifyFailure } from '../../motor/cic/rpr/classe-de-falha.ts'
+import { harnessPorNome } from '../../motor/tmd/registro.ts'
 
 function ctx(over: { timedOut?: boolean; detail?: string; text?: string }): { timedOut: boolean; detail: string; text: string } {
   return { timedOut: false, detail: '', text: '', ...over }

@@ -8,7 +8,7 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { exigirRedAntesDoGreen, registrarRed, evidenciaDeRed, FASE_RED } = await import('../../motor/agentes/chg/red-primeiro')
+const { exigirRedAntesDoGreen, registrarRed, evidenciaDeRed, FASE_RED } = await import('../../motor/agentes/chg/red-primeiro.ts')
 
 test('perfil completo sem RED no diario reprova, dizendo o porque', () => {
   const r = exigirRedAntesDoGreen('chg-1', 'completo')
@@ -34,7 +34,7 @@ test('so o perfil completo exige — nos outros o custo nao paga', () => {
 })
 
 test('o RED e um evento do diario, na fase propria — nao um campo que o modelo escreve', async () => {
-  const { eventosDoCard } = await import('../../motor/euc/eventos')
+  const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
   registrarRed('chg-4', 'detalhe')
   const ev = eventosDoCard('chg-4').filter(e => e.fase === FASE_RED)
   expect(ev.length).toBe(1)

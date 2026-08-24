@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-failpolicy-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { applyFailurePolicy, backoffMsFor } = await import('../../motor/cic/rpr/politica')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { applyFailurePolicy, backoffMsFor } = await import('../../motor/cic/rpr/politica.ts')
 
 beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '3' })
 

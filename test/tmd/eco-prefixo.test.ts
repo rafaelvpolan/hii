@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { abrirPrompt, anexarInstrucao, montar, prefixoEstavel, conferirPrefixo } from '../../motor/tmd/eco/prefixo'
+import { abrirPrompt, anexarInstrucao, montar, prefixoEstavel, conferirPrefixo } from '../../motor/tmd/eco/prefixo.ts'
 
 const PREFIXO = 'SISTEMA: voce edita o worktree.\nSKILLS: laravel-patterns\nTAREFA: corrigir o calculo de comissao'
 

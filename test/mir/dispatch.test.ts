@@ -2,8 +2,8 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { newSession } from '../../motor/mir/sessao'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
+import { newSession } from '../../motor/mir/sessao.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 
 let saida: string[] = []
 
@@ -21,7 +21,7 @@ beforeEach(() => {
 })
 
 test('nenhum efeito da sessao pode sumir em silencio', async () => {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   const kinds = ['submit', 'approve-plan', 'halt', 'plan',
     'help', 'error', 'approve-url', 'reject-url', 'answer', 'rm', 'confirm-rm']
   for (const kind of kinds) {
@@ -34,13 +34,13 @@ test('nenhum efeito da sessao pode sumir em silencio', async () => {
 })
 
 test('efeito desconhecido grita em vez de sumir', async () => {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   await dispatch({ kind: 'inventado' } as never, newSession('org/app'), io)
   expect(saida.join(' ')).toContain('bug do hii')
 })
 
 test('quit e board ficam para quem chamou; o resto o despachante trata', async () => {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   for (const kind of ['quit', 'historico']) {
     expect((await dispatch({ kind } as never, newSession(''), io)).tratado).toBe(false)
   }

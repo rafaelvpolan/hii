@@ -9,7 +9,7 @@ afterAll(() => {
   delete process.env.HICODE_SKILLS_DIR
 })
 
-const A = await import('../../motor/csd/acervo')
+const A = await import('../../motor/csd/acervo.ts')
 
 let n = 0
 function acervoCom(corpo: string): string {

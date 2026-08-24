@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { recusaPorLimite } from '../../motor/euc/tsr/confianca'
-import { KimiProvider } from '../../motor/tmd/harness/kimi'
-import { ClaudeProvider } from '../../motor/tmd/harness/claude'
-import type { AgentRequest } from '../../motor/tmd/tipos'
+import { recusaPorLimite } from '../../motor/euc/tsr/confianca.ts'
+import { KimiProvider } from '../../motor/tmd/harness/kimi.ts'
+import { ClaudeProvider } from '../../motor/tmd/harness/claude.ts'
+import type { AgentRequest } from '../../motor/tmd/tipos.ts'
 
 const pedido = (mode: AgentRequest['mode']): AgentRequest => ({
   prompt: 'x', cwd: '/tmp', dirs: [], mode, useAgents: false, timeoutMs: 1000,
@@ -24,13 +24,13 @@ test('claude passa nos dois modos', () => {
 })
 
 test('kimi em modo de edicao passa --auto — sem isso ele trava esperando aprovacao', async () => {
-  const { kimiArgv } = await import('../../motor/tmd/harness/kimi')
+  const { kimiArgv } = await import('../../motor/tmd/harness/kimi.ts')
   expect(kimiArgv(pedido('edit'))).toContain('--auto')
   expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
 })
 
 test('kimi nunca recebe flag que o CLI dele nao tem', async () => {
-  const { kimiArgv } = await import('../../motor/tmd/harness/kimi')
+  const { kimiArgv } = await import('../../motor/tmd/harness/kimi.ts')
   const argv = kimiArgv({ ...pedido('edit'), effort: 'high', model: 'kimi-for-coding' }).join(' ')
   expect(argv).not.toContain('--allowedTools')
   expect(argv).not.toContain('--effort')

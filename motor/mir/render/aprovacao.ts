@@ -1,4 +1,4 @@
-import { truncVisible } from '../tui/layout'
+import { truncVisible } from '../tui/layout.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
-import { splitFrontMatter, serializeCard, appendLog, isoNow } from './'
-import type { Card, Fields } from './'
-import { cardsDir, reposFile, ROOT } from './ali/config'
-import { withFileLock, writeFileAtomic } from '../osw/mtr/trava-arquivo'
-import { memoArquivo } from '../tmd/eco/memo'
+import { splitFrontMatter, serializeCard, appendLog, isoNow } from './/index.ts'
+import type { Card, Fields } from './/index.ts'
+import { cardsDir, reposFile, ROOT } from './ali/config.ts'
+import { withFileLock, writeFileAtomic } from '../osw/mtr/trava-arquivo.ts'
+import { memoArquivo } from '../tmd/eco/memo.ts'
 
 interface RepoConfig {
   name: string

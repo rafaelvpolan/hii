@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const CND = await import('../../motor/cic/cnd/gauntlet')
+const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
 const PACKS_FRONT = ['common', 'frontend-web']
 const REF = ['/cards/refs/042/ref-1.png']

@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { diretorioDeSkills } from '../cdl/ali/config'
-import { casaPadrao } from './lei/guarda'
-import { auditarTexto, relatoDaAuditoria } from '../agentes/vtb/auditoria-harness'
+import { diretorioDeSkills } from '../cdl/ali/config.ts'
+import { casaPadrao } from './lei/guarda.ts'
+import { auditarTexto, relatoDaAuditoria } from '../agentes/vtb/auditoria-harness.ts'
 
 export { diretorioDeSkills }
 

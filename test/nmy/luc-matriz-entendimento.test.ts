@@ -15,7 +15,7 @@ const {
   criarMatriz,
   conferirMatriz,
   relatoDaMatriz,
-} = await import('../../motor/nmy/luc/matriz-entendimento')
+} = await import('../../motor/nmy/luc/matriz-entendimento.ts')
 
 const IDS = SECOES_DA_MATRIZ.map(s => s.id)
 
@@ -135,7 +135,7 @@ test('resposta que MENCIONA o titulo da secao continua contando', () => {
 })
 
 test('falha real de escrita PROPAGA — o diario nao pode registrar efeito que nao aconteceu', async () => {
-  const { eventosDoCard } = await import('../../motor/euc/eventos')
+  const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
   mkdirSync(arquivoDaMatriz('mtz-erro'), { recursive: true })
   let lancou = false
   try {
@@ -228,8 +228,8 @@ test('IDEMPOTENCIA reexecutar o card NAO sobrescreve a matriz que o humano ja pr
 })
 
 test('a criacao entra no diario como efeito, com chave propria', async () => {
-  const { eventosDoCard } = await import('../../motor/euc/eventos')
-  const { chaveDeEfeito } = await import('../../motor/qlb/slv/idempotencia')
+  const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
+  const { chaveDeEfeito } = await import('../../motor/qlb/slv/idempotencia.ts')
   await criarMatriz('mtz-diario', 'titulo')
   const efeitos = eventosDoCard('mtz-diario').filter(e => e.evento === 'efeito_registrado')
   expect(efeitos.length).toBe(1)

@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { arquivoDeCriterios, idsDeCriterio, lerCriterios, renderizarCriterios } from '../../motor/cic/crv/criterios'
+import { arquivoDeCriterios, idsDeCriterio, lerCriterios, renderizarCriterios } from '../../motor/cic/crv/criterios.ts'
 
 const criados: string[] = []
 afterAll(() => { for (const d of criados) rmSync(d, { recursive: true, force: true }) })

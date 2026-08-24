@@ -1,5 +1,5 @@
-import type { FailureClass } from '../../cdl'
-import type { Harness, SinalDeFalha, SinaisDoHarness } from '../../tmd/tipos'
+import type { FailureClass } from '../../cdl/index.ts'
+import type { Harness, SinalDeFalha, SinaisDoHarness } from '../../tmd/tipos.ts'
 
 export interface FailureContext {
   timedOut: boolean
