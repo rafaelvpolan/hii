@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { diretorioDeSkills } from '../../csd/acervo'
+import { diretorioDeSkills } from '../../cdl/ali/config'
 
 // VTB — a configuracao do proprio agente como superficie de ataque.
 //

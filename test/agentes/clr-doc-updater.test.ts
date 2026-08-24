@@ -44,3 +44,9 @@ test('relato diz o que mudou e onde mexer', () => {
   expect(r).toContain('pipeline.json')
   expect(C.relatoDeContrato({ mudou: false, motivos: [], docsSugeridos: [] })).toContain('nao mexe')
 })
+
+test('INVARIANTE o fechamento consulta o contrato publico e registra no card', async () => {
+  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  expect(fonte).toContain('contratoPublicoMudou(')
+  expect(fonte, 'o veredicto tem de ficar no card para o humano ver antes do merge').toContain('contrato_publico')
+})

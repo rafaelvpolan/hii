@@ -1,7 +1,27 @@
 import { isoNow } from '../../cdl'
 import { run } from '../git'
-import { cardsByStatus, patchCard } from '../../cdl/store'
+import { cardsByStatus, patchCard, repoPath } from '../../cdl/store'
 import { MERGE_POLL_MS } from '../../cdl/ali/config'
+import { anexarEvento, cardFechado } from '../../euc/eventos'
+import { aprendizFechaCard } from '../../csd/fre/aprendiz'
+import { readContract } from '../../cdl/bss/armazenar'
+
+// O merge e o unico momento em que o card acabou de verdade — e por isso e aqui
+// que o aprendiz le o diario e o card e fechado.
+//
+// A ordem importa e tem teste: aprendiz PRIMEIRO. Fechar antes esconderia dele
+// exatamente o rastro que ele existe para auditar.
+//
+// `card_fechado` era um tipo de evento que ninguem escrevia: recuperar.ts
+// filtrava por ele e nunca filtrava nada, entao a retomada varria todo card que
+// algum dia teve diario, para sempre. Era a degradacao que a Parte VI marca como
+// o erro mais comum de checkpoint.
+
+export async function aoMergear(card: string, alvo: string, dominio: string): Promise<void> {
+  if (cardFechado(card)) return
+  await aprendizFechaCard(card, { alvo, dominio })
+  anexarEvento({ card, evento: 'card_fechado', detalhe: 'PR mergeada — card encerrado' })
+}
 
 interface PrState {
   state?: string
@@ -25,6 +45,8 @@ export async function checkMerged(now: number): Promise<void> {
       try { pr = JSON.parse(stdout) as PrState } catch { continue }
       if (pr.state === 'MERGED') {
         patchCard(c.id ?? '', { status: 'MERGED', merged_at: pr.mergedAt || isoNow() }, `${isoNow()} PR_OPEN->MERGED PR mergeada no GitHub (merge humano) ${url}`)
+        const alvo = repoPath(c.repo ?? '')
+        await aoMergear(c.id ?? '', alvo, readContract(alvo)?.stack || 'desconhecido')
         process.stdout.write(`[runner] #${c.id}: MERGED ${url}\n`)
       } else if (pr.state === 'CLOSED' && c.pr_closed !== 'true') {
         patchCard(c.id ?? '', { pr_closed: 'true' }, `${isoNow()} PR ${url} fechada sem merge (rejeitada no GitHub) — card mantido em PR_OPEN`)

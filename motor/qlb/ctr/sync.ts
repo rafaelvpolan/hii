@@ -9,12 +9,26 @@ import { runStep } from '../../cic/agente'
 import { ensureUrl, hasDevServer, httpOk, inspectUrl, urlPort, waitHttp } from '../../cic/crv/url-viva'
 import { isNonVisual } from '../../osw/rta/superficie'
 import { addMetric } from '../../euc/metricas-de-fecho'
+import { anexarEvento } from '../../euc/eventos'
+
+// O laco de conflito tem semantica propria e por isso NAO usa repararAteOTeto:
+// GateReparavel modela "roda verificacao -> veredicto -> conserto estreito", e
+// resolucao de conflito nao tem verificacao re-executavel — o veredicto e o
+// proprio `git diff --diff-filter=U` e o conserto edita os arquivos em conflito.
+// Forcar no molde compraria uniformidade pagando com abstracao errada.
+//
+// O que faltava era mais estreito: ele escrevia no log do card e registrava
+// metrica, mas nao emitia evento nenhum. Sem evento, recuperar.ts nao enxerga um
+// laco interrompido por crash e o aprendiz nao consegue contar conflito
+// recorrente como padrao.
 
 export interface SyncResult {
   ok: boolean
   changed: boolean
   detail?: string
 }
+
+export const FASE_DO_CONFLITO = 'conflito'
 
 const MARCADORES = /^(<{7}|={7}|>{7})/m
 
@@ -50,6 +64,7 @@ export async function syncWithBase(id: string, wt: string, base: string, desc: s
     const marcadores = await arquivosComMarcador(wt, files)
     const naoExecutou = rr.ok ? '' : `o agente nao concluiu: ${(rr.text || 'sem detalhe').slice(0, 120)}`
     const pendente = naoExecutou || (marcadores.length ? `marcador de conflito ainda em ${marcadores.join(', ')}` : '')
+    anexarEvento({ card: id, evento: 'repair_attempt', fase: FASE_DO_CONFLITO, detalhe: `${attempt}/${MAX_CONFLICT}: ${pendente || 'resolvido'}` })
     patchCard(id, {}, `${isoNow()} CONFLITO (${attempt}/${MAX_CONFLICT}, limpio): ${rr.text || 'resolveu'} — ${pendente || 'resolvido'}`)
     process.stdout.write(`[runner] #${id}: CONFLITO ${attempt} (limpio)\n`)
     if (!pendente) {
@@ -57,10 +72,15 @@ export async function syncWithBase(id: string, wt: string, base: string, desc: s
       const restou = (await runGit(wt, ['diff', '--name-only', '--diff-filter=U'])).stdout.trim()
       if (restou) continue
       const cm = await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '--no-edit'])
-      if (cm.err) return { ok: false, changed: false, detail: `commit da resolucao falhou: ${String(cm.stderr || '').split('\n')[0] ?? ''}` }
+      if (cm.err) {
+        anexarEvento({ card: id, evento: 'gate_verdict', fase: FASE_DO_CONFLITO, detalhe: 'falhou: commit da resolucao nao passou' })
+        return { ok: false, changed: false, detail: `commit da resolucao falhou: ${String(cm.stderr || '').split('\n')[0] ?? ''}` }
+      }
+      anexarEvento({ card: id, evento: 'gate_verdict', fase: FASE_DO_CONFLITO, detalhe: 'ok: conflito resolvido' })
       return { ok: true, changed: true }
     }
   }
+  anexarEvento({ card: id, evento: 'gate_verdict', fase: FASE_DO_CONFLITO, detalhe: `falhou: teto de ${MAX_CONFLICT} tentativas de resolucao esgotado` })
   await runGit(wt, ['merge', '--abort'])
   return { ok: false, changed: true }
 }

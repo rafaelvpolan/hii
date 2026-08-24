@@ -39,6 +39,6 @@ export const CONTRATO_MOTOR_PAINEL: readonly VariavelDoContrato[] = [
   { nome: ENV_TOPOLOGIA_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/nmy/topologia.ts'], lado: 'motor' },
   { nome: ENV_REGRAS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/csd/lei/guarda.ts'], lado: 'motor' },
   { nome: ENV_CRITERIOS_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cic/crv/criterios.ts'], lado: 'motor' },
-  { nome: ENV_SKILLS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/csd/acervo.ts'], lado: 'motor' },
+  { nome: ENV_SKILLS_DIR, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/cdl/ali/config.ts'], lado: 'motor' },
   { nome: ENV_TIER_FILE, precisaSerCompartilhadaEntreClones: false, resolvidoPor: ['motor/euc/tsr/orcamento.ts'], lado: 'motor' },
 ]

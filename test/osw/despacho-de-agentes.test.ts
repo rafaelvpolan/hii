@@ -55,3 +55,23 @@ test('teto de agentes por fase — despacho sem limite e o mesmo loop sem teto q
   const specs = D.decidirEspecs({ arquivos: muitos })
   expect(specs.length).toBeLessThanOrEqual(D.MAX_AGENTES_POR_FASE)
 })
+
+test('sem diff (card novo), o roteamento sai da dependencia declarada do alvo', () => {
+  const specs = D.decidirEspecs({ arquivos: [], deps: ['vue'] })
+  expect(specs.map(s => s.agente)).toEqual(['vitro'])
+})
+
+test('sem diff e sem dep, o titulo da tarefa ainda decide', () => {
+  expect(D.decidirEspecs({ arquivos: [], titulo: 'criar migration de comissao' }).map(s => s.agente)).toEqual(['radix'])
+  expect(D.decidirEspecs({ arquivos: [], titulo: 'refatorar o calculo' }).map(s => s.agente)).toEqual(['rufus'])
+})
+
+test('sem sinal nenhum devolve vazio — e vazio significa NAO delegar, nao "a IA escolhe"', () => {
+  expect(D.decidirEspecs({ arquivos: [], deps: [], titulo: 'algo' })).toEqual([])
+})
+
+test('INVARIANTE o prompt de implementacao nao entrega o menu para a IA rotear', async () => {
+  const fonte = await Bun.file('motor/cic/agente.ts').text()
+  expect(fonte, 'o roteamento tem de vir de decidirEspecs, nao de um menu no prompt').toContain('decidirEspecs(')
+  expect(fonte).not.toContain('function roteamentoImplement')
+})

@@ -1,4 +1,7 @@
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { lerGovernanca } from '../../euc/tsr/orcamento'
+import { cardsDir } from '../../cdl/ali/config'
 
 // CND — Canudos. A solucao tem de sobreviver a varias investidas.
 //
@@ -112,4 +115,40 @@ export function renderizarComparacao(c: ComparacaoCega): string {
     '',
     'Responda qual candidato cumpre melhor o objetivo, e por que, citando o que viu em cada um.',
   ].join('\n')
+}
+
+export type ModoDoCrivo = 'gauntlet' | 'criterio-escrito'
+
+export interface EscolhaDeModo {
+  readonly modo: ModoDoCrivo
+  readonly motivo: string
+}
+
+export interface ContextoDoModo {
+  readonly packs: readonly string[]
+  readonly referencias: readonly string[]
+  readonly permissao?: PermissaoDeInicio
+}
+
+export function modoDoCrivo(ctx: ContextoDoModo): EscolhaDeModo {
+  const permissao = ctx.permissao ?? podeIniciar()
+  if (!permissao.pode) return { modo: 'criterio-escrito', motivo: `sem teto de orcamento legivel: ${permissao.motivo}` }
+  const dominio = gauntletVale(ctx.packs)
+  if (!dominio.vale) return { modo: 'criterio-escrito', motivo: dominio.motivo }
+  if (!ctx.referencias.length) {
+    return { modo: 'criterio-escrito', motivo: 'dominio comportaria gauntlet, mas o card nao tem referencia externa anexada — sem referencia a comparacao cega seria opiniao com nome novo' }
+  }
+  return { modo: 'gauntlet', motivo: `${dominio.motivo}, e o card tem ${ctx.referencias.length} referencia(s) anexada(s)` }
+}
+
+const IMAGEM = /\.(?:png|jpe?g|webp|gif)$/i
+
+export function referenciasDoCard(card: string): string[] {
+  const dir = join(cardsDir(), 'refs', card)
+  if (!existsSync(dir)) return []
+  return readdirSync(dir).filter(n => IMAGEM.test(n)).map(n => join(dir, n)).sort()
+}
+
+export function telaDoCard(card: string): string {
+  return join(cardsDir(), 'urls', String(card), 'url.png')
 }

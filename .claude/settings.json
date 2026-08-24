@@ -43,6 +43,15 @@
   },
   "enabledPlugins": {
     "claude-code-setup@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "ecc@ecc": true,
+    "javascript-typescript@claude-code-workflows": true,
+    "backend-development@claude-code-workflows": true,
+    "tdd-workflows@claude-code-workflows": true,
+    "plugin-eval@claude-code-workflows": true,
+    "cloud-infrastructure@claude-code-workflows": true,
+    "deployment-strategies@claude-code-workflows": true,
+    "observability-monitoring@claude-code-workflows": true,
+    "git-pr-workflows@claude-code-workflows": true
   }
 }

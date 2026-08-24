@@ -85,7 +85,7 @@ afterAll(() => {
   rmSync(BASE, { recursive: true, force: true })
 })
 
-const { implement, runStep, AGENTES_IMPLEMENT } = await import('../../motor/cic/agente')
+const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO } = await import('../../motor/cic/agente')
 const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../../motor/agentes/registro')
 const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../../motor/tmd/pnt/mcp')
 const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../../motor/tmd/harness/claude')
@@ -232,14 +232,23 @@ test('agentsArgv omite a flag com JSON vazio, ausente ou so espaco', () => {
   expect(claudeArgv({ ...base, agentsJson: '{"x":{}}' })).toContain('--agents')
 })
 
-test('implement confina no worktree e injeta os agentes de roteamento, sem o crivo', async () => {
+test('implement confina no worktree e injeta SO o agente escolhido pelo motor, sem o crivo', async () => {
   limpar()
   await implement(CARTAO, WT)
   expect(cwdDoDisco()).toBe(WT)
   const injetados = Object.keys(agentesDoDisco())
-  expect(injetados.sort()).toEqual([...AGENTES_IMPLEMENT].sort())
+  // Antes do item 11 isto injetava os cinco AGENTES_IMPLEMENT e mandava a IA
+  // rotear. Agora quem escolhe e `decidirEspecs`; sem sinal, o AGENTE_PADRAO.
+  expect(injetados).toEqual([AGENTE_PADRAO])
+  expect(AGENTES_IMPLEMENT).toContain(AGENTE_PADRAO)
   for (const fora of ['crivo', 'testudo', 'escudo', 'pura']) expect(injetados).not.toContain(fora)
   expect(argvDoDisco()[argvDoDisco().indexOf('--add-dir') + 1]).toBe(WT)
+})
+
+test('com sinal no titulo, o motor escolhe o especialista do dominio em vez do padrao', async () => {
+  limpar()
+  await implement({ ...CARTAO, fm: { ...CARTAO.fm, title: 'criar migration de comissao' } }, WT)
+  expect(Object.keys(agentesDoDisco())).toEqual(['radix'])
 })
 
 test('o prompt de implement so roteia para agente que ele mesmo injeta', async () => {
@@ -247,10 +256,10 @@ test('o prompt de implement so roteia para agente que ele mesmo injeta', async (
   await implement(CARTAO, WT)
   const a = argvDoDisco()
   const prompt = String(a[a.indexOf('-p') + 1] ?? '')
-  const roteados = [...prompt.matchAll(/->\s*([a-z]+)/g)].map(m => m[1] ?? '')
+  const citados = [...prompt.matchAll(/(\w+) \(escolhido pelo/g)].map(m => m[1] ?? '')
   const injetados = Object.keys(agentesDoDisco())
-  expect(roteados.length).toBeGreaterThan(0)
-  for (const agente of roteados) expect(injetados).toContain(agente)
+  for (const agente of citados) expect(injetados).toContain(agente)
+  expect(prompt, 'quem escolhe o especialista e codigo, nao o modelo').not.toContain('Roteie via Task')
 })
 
 test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENTES_IMPLEMENT, o roteamento cita SO os presentes', async () => {
@@ -263,12 +272,19 @@ test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENT
     limpar()
     await implement(CARTAO, WT)
     const injetados = Object.keys(agentesDoDisco())
-    expect(injetados.sort()).toEqual(['limpio', 'radix'])
-    for (const fora of ['vitro', 'frontiteto', 'rufus']) expect(injetados).not.toContain(fora)
+    // Item 11: o motor escolhe. Este card nao tem diff, nem framework no
+    // contrato, nem titulo com sinal — cai no AGENTE_PADRAO declarado, e nao
+    // num menu para a IA percorrer. radix esta no disco mas nao foi escolhido.
+    expect(injetados.sort()).toEqual(['limpio'])
+    for (const fora of ['vitro', 'frontiteto', 'rufus', 'radix']) expect(injetados).not.toContain(fora)
     const a = argvDoDisco()
     const prompt = String(a[a.indexOf('-p') + 1] ?? '')
-    const roteados = [...prompt.matchAll(/->\s*([a-z]+)/g)].map(m => m[1] ?? '')
-    expect(roteados.sort()).toEqual(['limpio', 'radix'])
+    // Item 11 mudou a regra: o prompt nao entrega mais o menu para a IA rotear.
+    // Ele nomeia SO o que o motor escolheu deterministicamente, e todo nome
+    // citado tem de estar entre os injetados.
+    const citados = [...prompt.matchAll(/(\w+) \(escolhido pelo/g)].map(m => m[1] ?? '')
+    for (const agente of citados) expect(injetados).toContain(agente)
+    expect(prompt, 'menu para a IA escolher e exatamente o que o item 11 proibe').not.toContain('Roteie via Task')
   } finally {
     process.env.HICODE_AGENTS_DIR = dirOriginal
     rmSync(SUBSET_DIR, { recursive: true, force: true })
