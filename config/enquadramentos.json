@@ -1,0 +1,16 @@
+{
+  "versao": 1,
+  "_porque": "MCN, Macunaima. Os enquadramentos sao DADO, nao codigo: quem quer uma lente nova edita este arquivo e o diff mostra a mudanca de comportamento. Hardcoded em ideacao.ts eles nao davam para versionar, auditar nem discutir em review.",
+  "minimoDeRamos": 3,
+  "_porque_minimo": "Dois ramos sao uma dicotomia, nao divergencia — e no voto dois ramos so produzem empate ou unanimidade, os dois casos em que o VTO se recusa a decidir sozinho. Tres e o menor numero que permite maioria.",
+  "enquadramentos": [
+    { "id": "inversao", "nome": "inversao", "lente": "Como garantir que isso FALHE? Liste os modos de falha e depois inverta cada um numa solucao." },
+    { "id": "atacante", "nome": "concorrente/atacante", "lente": "Voce quer quebrar ou superar isso. Onde ataca primeiro, e o que a defesa obvia deixa passar?" },
+    { "id": "plantao", "nome": "3h da manha", "lente": "Voce foi acordado por causa disso em producao. O que queria que existisse antes de dormir?" },
+    { "id": "zero", "nome": "US$0 e 1 hora", "lente": "Sem orcamento e sem tempo. Qual e a versao que ainda resolve o problema de verdade?" },
+    { "id": "dez-anos", "nome": "orcamento infinito, 10 anos", "lente": "Sem restricao de custo nem prazo. Qual e a forma certa, e o que ela exige que hoje nao existe?" },
+    { "id": "premissa", "nome": "remocao de premissa", "lente": "Liste as premissas embutidas no enunciado e remova a mais forte. O que muda?" },
+    { "id": "regulador", "nome": "regulador", "lente": "Auditoria, privacidade, rastreabilidade e reversibilidade importam mais que elegancia." },
+    { "id": "logistica", "nome": "logistica", "lente": "Trate como fluxo de material: fila, gargalo, lote, estoque parado, tempo de espera." }
+  ]
+}

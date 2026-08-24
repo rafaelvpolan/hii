@@ -1,6 +1,6 @@
 import { extractObjetivo } from '../../cdl/index.ts'
 import type { Card } from '../../cdl/index.ts'
-import { planSteps } from '../../osw/rta/perfil.ts'
+import { planSteps, valeDivergir } from '../../osw/rta/perfil.ts'
 import { classifySurface } from '../../osw/rta/superficie.ts'
 import { activeSteps } from '../config.ts'
 import { waves } from './ondas.ts'
@@ -25,6 +25,7 @@ export interface Plan {
   profileReason: string
   layout: PlanFlags
   pilha: PlanFlags
+  divergencia: PlanFlags
   waves: PlanWave[]
   skipped: string[]
   gatedLabels: string[]
@@ -59,6 +60,17 @@ function pilhaFlag(card: Card, fileCount: number, limit: number): PlanFlags {
   return { on: false, reason: `${fileCount} arquivo(s), teto ${limit}` }
 }
 
+// MCN entra na Fase 3, e entra COMO FLAG VISIVEL. Divergir multiplica o custo
+// por N: uma decisao dessas nao pode acontecer sem aparecer no plano que o
+// humano le antes de aprovar. Mesmo formato de layout e pilha, de proposito.
+function divergenciaFlag(card: Card, objetivo: string, surface: string): PlanFlags {
+  const v = valeDivergir({
+    title: card.fm.title, objetivo, risk: card.fm.risk, surface,
+    divergir: card.fm.divergir,
+  })
+  return { on: v.vale, reason: v.motivo }
+}
+
 export function buildPlan(input: PlanInput): Plan {
   const { card } = input
   const objetivo = extractObjetivo(card.body) || card.fm.title || ''
@@ -77,6 +89,7 @@ export function buildPlan(input: PlanInput): Plan {
     profileReason: plan.reason,
     layout: layoutFlag(card, surface === 'visual', objetivo),
     pilha: pilhaFlag(card, input.fileCount ?? 0, input.sliceLimit ?? 30),
+    divergencia: divergenciaFlag(card, objetivo, surface),
     waves: waves(plan.steps).map((steps, i) => ({ n: i + 1, steps })),
     skipped: plan.skipped,
     gatedLabels: plan.steps.filter(s => s.gated).map(s => s.label),

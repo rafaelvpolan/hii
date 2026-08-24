@@ -1,0 +1,113 @@
+import { test, expect } from 'bun:test'
+import {
+  promptDoRamo, montarRamos, despacharDivergencia, orcamentoDaDivergencia,
+  parsePropostas, enquadramentosParaCard,
+} from '../../motor/cic/mcn/divergir.ts'
+import type { Ramo, SaidaDeRamo } from '../../motor/cic/mcn/divergir.ts'
+import { lerEnquadramentos } from '../../motor/cic/mcn/enquadramentos.ts'
+
+const FONTE = lerEnquadramentos()
+const QUATRO = FONTE.enquadramentos.slice(0, 4)
+const ENUNCIADO = 'como estruturar o cache de sessao entre os nos'
+
+function despachanteQueGrava(recebidos: Ramo[]): (r: Ramo) => Promise<SaidaDeRamo> {
+  return async (r: Ramo) => {
+    recebidos.push(r)
+    // Marcador unico por ramo. Se qualquer prompt contiver o marcador de outro
+    // ramo, o isolamento vazou.
+    return { enquadramento: r.enquadramento, ok: true, texto: `{"propostas":["MARCADOR-${r.enquadramento}"]}`, custoUsd: 0.01 }
+  }
+}
+
+test('ISOLAMENTO o prompt de um ramo nao cita nenhum outro enquadramento', () => {
+  const ramos = montarRamos(ENUNCIADO, QUATRO)
+  expect(ramos).toHaveLength(4)
+  for (const ramo of ramos) {
+    const eu = QUATRO.find(e => e.id === ramo.enquadramento)
+    expect(eu).toBeDefined()
+    for (const outro of QUATRO) {
+      if (outro.id === ramo.enquadramento) continue
+      expect(ramo.prompt, `ramo "${ramo.enquadramento}" cita o id de "${outro.id}"`).not.toContain(outro.id)
+      expect(ramo.prompt, `ramo "${ramo.enquadramento}" cita o nome de "${outro.id}"`).not.toContain(outro.nome)
+      expect(ramo.prompt, `ramo "${ramo.enquadramento}" cita a lente de "${outro.id}"`).not.toContain(outro.lente)
+    }
+  }
+})
+
+test('ISOLAMENTO nenhuma saida de ramo entra no prompt de outro ramo', async () => {
+  const recebidos: Ramo[] = []
+  const d = await despacharDivergencia(ENUNCIADO, QUATRO, despachanteQueGrava(recebidos))
+  expect(recebidos).toHaveLength(4)
+  // Todo ramo devolveu um MARCADOR. Se o despacho fosse sequencial com
+  // acumulacao de contexto, algum prompt teria o marcador de um anterior.
+  for (const r of recebidos) {
+    expect(r.prompt, `o prompt de "${r.enquadramento}" carrega a saida de outro ramo`).not.toContain('MARCADOR-')
+  }
+  expect(d.propostas).toHaveLength(4)
+  expect(new Set(d.propostas.map(p => p.enquadramento)).size).toBe(4)
+})
+
+test('ISOLAMENTO promptDoRamo nao tem como ver a lista — recebe UM enquadramento', () => {
+  const so = QUATRO[0]
+  expect(so).toBeDefined()
+  if (!so) return
+  const p = promptDoRamo(so, ENUNCIADO)
+  expect(p).toContain(so.nome)
+  expect(p).toContain(ENUNCIADO)
+  // A funcao e pura sobre um enquadramento: o mesmo par sempre da o mesmo texto.
+  expect(promptDoRamo(so, ENUNCIADO)).toBe(p)
+})
+
+test('o critico e outro agente — o ramo e proibido de avaliar e a instrucao esta no prompt', () => {
+  const so = QUATRO[0]
+  if (!so) return
+  const p = promptDoRamo(so, ENUNCIADO)
+  expect(p).toContain('NAO avalie')
+  expect(p).toContain('outro agente faz isso')
+})
+
+test('TETO divergencia com menos de 2 ramos LANCA', () => {
+  expect(() => orcamentoDaDivergencia(1, 0)).toThrow('nao e divergencia')
+})
+
+test('TETO card que ja consumiu o orcamento nao abre ramo nenhum', () => {
+  const teto = orcamentoDaDivergencia(4, 0).tetoUsd
+  expect(() => orcamentoDaDivergencia(4, teto)).toThrow('estouraria o orcamento')
+})
+
+test('TETO o restante e dividido pelos ramos — N ramos multiplicam o custo por N', () => {
+  const o = orcamentoDaDivergencia(4, 0)
+  expect(o.porRamoUsd).toBeCloseTo(o.restanteUsd / 4, 10)
+  const oitoRamos = orcamentoDaDivergencia(8, 0)
+  expect(oitoRamos.porRamoUsd).toBeLessThan(o.porRamoUsd)
+})
+
+test('divergencia sem enunciado LANCA — N lentes sobre nada dao N respostas sobre nada', () => {
+  expect(() => montarRamos('   ', QUATRO)).toThrow('sem enunciado')
+})
+
+test('proposta ilegivel vira lista vazia, nunca proposta inventada', () => {
+  expect(parsePropostas('resposta em prosa, sem json', 'inversao')).toEqual([])
+  expect(parsePropostas('{"propostas": "nao e array"}', 'inversao')).toEqual([])
+  expect(parsePropostas('{"propostas":["  ", ""]}', 'inversao')).toEqual([])
+})
+
+test('ramo que falhou nao contribui proposta — falha nao vira ideia', async () => {
+  const d = await despacharDivergencia(ENUNCIADO, QUATRO, async (r: Ramo) => ({
+    enquadramento: r.enquadramento,
+    ok: r.enquadramento !== QUATRO[0]?.id,
+    texto: '{"propostas":["ok"]}',
+    custoUsd: 0.01,
+  }))
+  expect(d.propostas).toHaveLength(3)
+  expect(d.ramos).toHaveLength(4)
+  expect(d.custoUsd).toBeCloseTo(0.04, 10)
+})
+
+test('a escolha de enquadramento e DETERMINISTICA — mesma semente, mesmos ramos', () => {
+  const a = enquadramentosParaCard('card-42').map(e => e.id)
+  const b = enquadramentosParaCard('card-42').map(e => e.id)
+  expect(a).toEqual(b)
+  const outro = enquadramentosParaCard('card-99').map(e => e.id)
+  expect(a.length).toBe(outro.length)
+})

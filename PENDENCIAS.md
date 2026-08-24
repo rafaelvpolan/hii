@@ -6,17 +6,38 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## PRÓXIMA ONDA — Onda 12, divergência antes de convergir (MCN, item 33)
+## PRÓXIMA ONDA — Onda 13, superfície humana sem travamento (MIR, item 34)
 
-Gerar alternativas e levar a divergência para decisão humana no `CLARIFY`, em vez
-de convergir na primeira solução que aparece. Esboço em `WORKFLOW-EXECUCAO.md:742`.
-Depois dela fica só a 13 (TUI). Os 32 itens originais estão fechados.
+A última planejada. A cobertura de comportamento da TUI já é boa (~50 arquivos em
+`test/mir/`); o que falta é garantia contra travamento: varredura que exige teste
+para todo comando de `COMMANDS`, percurso end-to-end por menus e modos, orçamento
+de tempo por quadro medido em vez de "parece rápido", e redimensionamento extremo.
+Escopo em `WORKFLOW-EXECUCAO.md`, seção ONDA 13.
+
+---
+
+## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
+
+A Onda 12 entregou o mecanismo completo e ligado ao plano: `valeDivergir()` decide,
+e a flag aparece em `buildPlan()` para o humano ver antes de aprovar. O que **não**
+existe é o consumidor que de fato despacha os ramos contra um provedor de IA —
+`despacharDivergencia()` recebe o despachante injetado, e hoje só os testes o
+passam.
+
+Isso é escolha, não esquecimento: o despachante é injetado justamente para o
+isolamento ser verificável sem rede, e ligar o provedor de verdade é uma decisão
+de custo (N ramos multiplicam por N) que merece ser tomada olhando o gasto real
+por card, não junto com a entrega do mecanismo.
+
+Onde mexer: `motor/agentes/clr/clarificar.ts:77` já chama `idear()` do TSL no
+`CLARIFY`. É o ponto onde o MCN substitui o TSL — mesma fase, com isolamento real
+entre ramos e crítico separado.
 
 ---
 
 ## PENDÊNCIA — a suíte só prova o motor sob Bun
 
-Os 2134 testes rodam sob `bun:test`, que não tem equivalente direto em Node. O CI
+A suíte inteira roda sob `bun:test`, que não tem equivalente direto em Node. O CI
 ganhou `node bin/hii.ts --help`, que prova que o grafo de import do CLI carrega sob
 Node — o runtime da imagem de produção (`node:24-slim`). Não prova o resto.
 

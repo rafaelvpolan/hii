@@ -128,3 +128,28 @@ test('o plano nao ensina comando que nao existe mais', () => {
   const t = renderPlan(buildPlan({ card: card({ title: 'x', repo: 'org/app' }), hasDevServer: true }))
   for (const morto of ['/url', '/ok', '/plan', '/watch', '/cards']) expect(t).not.toContain(morto)
 })
+
+// MCN — a divergencia entra na Fase 3 como FLAG VISIVEL. Ela multiplica o custo
+// por N, entao nao pode acontecer sem aparecer no plano que o humano aprova.
+test('MCN o plano carrega a flag de divergencia, com motivo', () => {
+  const p = buildPlan({ card: card({ title: 'repensar a arquitetura do cache' }, 'repensar a arquitetura do cache'), hasDevServer: false })
+  expect(p.divergencia.on).toBe(true)
+  expect(p.divergencia.reason.length).toBeGreaterThan(15)
+})
+
+test('MCN card de resposta unica chega ao plano com divergencia desligada', () => {
+  const p = buildPlan({ card: card({ title: 'corrigir o calculo de comissao' }, 'corrigir o calculo de comissao'), hasDevServer: false })
+  expect(p.divergencia.on).toBe(false)
+  expect(p.divergencia.reason).toContain('resposta unica')
+})
+
+test('MCN o card manda no plano — divergir: off desliga pergunta aberta', () => {
+  const p = buildPlan({ card: card({ title: 'repensar a arquitetura', divergir: 'off' }, 'repensar a arquitetura'), hasDevServer: false })
+  expect(p.divergencia.on).toBe(false)
+  expect(p.divergencia.reason).toContain('desligado no card')
+})
+
+test('MCN o padrao no plano e nao divergir — custo multiplicado precisa de motivo', () => {
+  const p = buildPlan({ card: card({ title: 'mexer numa coisa' }, 'fazer o que foi pedido'), hasDevServer: false })
+  expect(p.divergencia.on).toBe(false)
+})
