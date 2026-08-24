@@ -52,7 +52,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ 20 e 4 feitos · 16 adiado |
 | **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | ✅ feita |
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | ✅ feita |
-| **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | — |
+| **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | ✅ feita |
 | **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Não (infra) | — |
 | **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | — |
 | **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | — |
@@ -589,12 +589,33 @@ Nenhuma das duas trilhas — instinto macio ou regra dura — é lida de volta c
 
 ```bash
 bun run test
-bun test ./test/fre-assinatura.test.ts       # mesma causa raiz em cards diferentes = mesma assinatura
-bun test ./test/fre-limiar.test.ts           # 2 ocorrências não promovem; 3 propõem; promoção exige humano
-bun test ./test/fre-nao-executa.test.ts      # candidato NUNCA afeta gate antes de virar LEI
-bun test ./test/osw-despacho.test.ts         # specs vêm de função pura; paralelo só sem sobreposição de arquivo
-bun test ./test/clr-doc-updater.test.ts
+bun test ./test/csd/fre-assinatura.test.ts        # mesma causa raiz em cards diferentes = mesma assinatura
+bun test ./test/csd/fre-limiar.test.ts            # 2 ocorrências não promovem; 3 propõem; promoção exige humano
+bun test ./test/csd/fre-nao-executa.test.ts       # candidato NUNCA é lido de volta para dentro de prompt
+bun test ./test/osw/despacho-de-agentes.test.ts   # specs vêm de função pura; paralelo só sem sobreposição
+bun test ./test/agentes/clr-doc-updater.test.ts   # contrato público vs. mudança de corpo de função
 ```
+
+> Caminhos corrigidos: o gate original apontava para `test/fre-*.test.ts` na raiz
+> de `test/`, o que reprovaria em `test/mapa-de-testes.test.ts` — desde a Onda 1b
+> a raiz só aceita os cinco guardas do repositório.
+
+### Estado
+
+Os três itens têm mecanismo e teste. **Nenhum está ligado ao pipeline ainda** —
+`aprendizFechaCard` precisa ser chamado no fechamento do card (depois do merge,
+não antes), `despacharAgentesNaFase` precisa de uma fase que o chame, e
+`contratoPublicoMudou` precisa de um passo de documentação que o `pipeline.json`
+não tem.
+
+Duas coisas que a onda provou na prática:
+
+O **limiar por card**, não por evento. Um card com build instável dispara o mesmo
+gate cinco vezes; contar isso como cinco cards faria um problema local inventar
+um padrão global e promover regra sem a recorrência que a justifica.
+
+O **registro de efeitos externos** da Onda 9 pegou o `aprendiz`: a suíte reprovou
+até o efeito novo ser declarado. Era exatamente para isso que a lista existe.
 
 ---
 
