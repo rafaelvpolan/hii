@@ -70,6 +70,7 @@ function arquivosDoMotor(raiz = 'motor'): string[] {
 }
 
 const EFEITOS_EXTERNOS_DECLARADOS: readonly string[] = [
+  'motor/csd/fre/aprendiz.ts',
   'motor/nmy/luc/matriz-entendimento.ts',
   'motor/qlb/ctr/fechar.ts',
 ]
