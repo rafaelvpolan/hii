@@ -30,27 +30,43 @@ interface Especialidade {
   readonly agente: string
   readonly papel: PapelDeSkill
   readonly rx: RegExp
+  readonly dep?: RegExp
+  readonly titulo?: RegExp
 }
 
 const ESPECIALIDADES: readonly Especialidade[] = [
-  { agente: 'vitro', papel: 'implementador', rx: /\.(?:vue|tsx|jsx)$/i },
-  { agente: 'radix', papel: 'implementador', rx: /(?:^|\/)migrations?\/|\.sql$|(?:^|\/)schema\./i },
-  { agente: 'escudo', papel: 'seguranca', rx: /auth|payment|pagamento|credencial|\.env$/i },
-  { agente: 'testudo', papel: 'avaliador', rx: /(?:^|\/)tests?\/|\.(?:test|spec)\.[a-z]+$/i },
+  { agente: 'vitro', papel: 'implementador', rx: /\.(?:vue|tsx|jsx)$/i, dep: /^(?:vue|nuxt|react|next)$/i, titulo: /\b(?:tela|componente|botao|layout|css|estilo)\b/i },
+  { agente: 'radix', papel: 'implementador', rx: /(?:^|\/)migrations?\/|\.sql$|(?:^|\/)schema\./i, dep: /^(?:prisma|typeorm|eloquent)$/i, titulo: /\b(?:migration|migracao|schema|tabela|coluna|indice|query)\b/i },
+  { agente: 'escudo', papel: 'seguranca', rx: /auth|payment|pagamento|credencial|\.env$/i, titulo: /\b(?:auth|autentica\w*|senha|token|permissao|pagamento|payment)\b/i },
+  { agente: 'testudo', papel: 'avaliador', rx: /(?:^|\/)tests?\/|\.(?:test|spec)\.[a-z]+$/i, titulo: /\b(?:teste|testes|cobertura)\b/i },
+  { agente: 'rufus', papel: 'reparador', rx: /(?!)/, titulo: /\b(?:refator\w*|refactor\w*|limpar|simplificar)\b/i },
 ]
 
 export interface ContextoDeDespacho {
   readonly arquivos: readonly string[]
+  // Card novo nao tem diff: o worktree acabou de nascer. Ai o sinal vem da
+  // dependencia declarada no contrato do alvo e do titulo da tarefa — os dois
+  // deterministicos, os dois lidos de disco.
+  readonly deps?: readonly string[]
+  readonly titulo?: string
 }
 
 export function decidirEspecs(ctx: ContextoDeDespacho): EspecDeAgente[] {
   const porAgente = new Map<string, { papel: PapelDeSkill; arquivos: string[] }>()
+  const somar = (e: Especialidade, arquivo: string): void => {
+    const atual = porAgente.get(e.agente) ?? { papel: e.papel, arquivos: [] }
+    if (arquivo) atual.arquivos.push(arquivo)
+    porAgente.set(e.agente, atual)
+  }
   for (const arquivo of ctx.arquivos) {
     for (const e of ESPECIALIDADES) {
-      if (!e.rx.test(arquivo)) continue
-      const atual = porAgente.get(e.agente) ?? { papel: e.papel, arquivos: [] }
-      atual.arquivos.push(arquivo)
-      porAgente.set(e.agente, atual)
+      if (e.rx.test(arquivo)) somar(e, arquivo)
+    }
+  }
+  if (!porAgente.size) {
+    for (const e of ESPECIALIDADES) {
+      if (e.dep && (ctx.deps ?? []).some(d => e.dep?.test(d))) somar(e, '')
+      else if (e.titulo && ctx.titulo && e.titulo.test(ctx.titulo)) somar(e, '')
     }
   }
   return [...porAgente.entries()]

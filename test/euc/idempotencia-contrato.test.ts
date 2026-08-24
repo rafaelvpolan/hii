@@ -87,3 +87,21 @@ test('REGISTRO os chamadores de executarComIdempotencia sao exatamente os declar
 test('REGISTRO a varredura enxerga os arquivos — senao o invariante passaria vazio', () => {
   expect(arquivosDoMotor().length).toBeGreaterThan(100)
 })
+
+const EXCECOES_DECLARADAS: ReadonlyArray<readonly [string, string]> = [
+  ['push', 'idempotente por natureza: --force-with-lease ancorado no ultimo push conhecido produz o mesmo estado remoto quando repetido, e recusa quando o remoto mudou'],
+  ['merge da resolucao de conflito', 'efeito LOCAL no worktree, nao externo: o commit de merge nao sai da maquina ate o push, que ja tem a garantia acima'],
+]
+
+test('REGISTRO as excecoes a chave de idempotencia sao declaradas com o motivo, nao esquecidas', () => {
+  expect(EXCECOES_DECLARADAS.length).toBe(2)
+  for (const [operacao, motivo] of EXCECOES_DECLARADAS) {
+    expect(operacao.length, 'excecao sem nome nao e excecao, e lacuna').toBeGreaterThan(0)
+    expect(motivo.length, 'excecao sem motivo escrito e a mesma coisa que nao ter pensado nela').toBeGreaterThan(40)
+  }
+})
+
+test('REGISTRO push segue fora da chave, e o motivo continua valendo no codigo', async () => {
+  const fonte = await Bun.file('motor/qlb/git.ts').text()
+  expect(fonte, 'o motivo da excecao e --force-with-lease; se ele sair, a excecao cai').toContain('--force-with-lease')
+})

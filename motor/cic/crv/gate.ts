@@ -8,6 +8,9 @@ import { runProvider } from '../../euc/tsr/confianca'
 import { sumTokens } from '../../tmd/uso'
 import { classifyFailure } from '../rpr/classe-de-falha'
 import { renderizarCriterios } from './criterios'
+import { cegar, modoDoCrivo, referenciasDoCard, renderizarComparacao, telaDoCard } from '../cnd/gauntlet'
+import { skillsPara } from '../../csd/acervo'
+import { existsSync } from 'node:fs'
 
 export type GateVerdict = 'APPROVED' | 'CONDITIONAL' | 'BLOCKED'
 
@@ -115,6 +118,31 @@ function primeiraLinha(texto: string): string {
   return String(texto || '').split('\n').filter(Boolean)[0]?.slice(0, 160) ?? 'sem detalhe'
 }
 
+function arquivosDoDiff(names: string): string[] {
+  return names.split('\n').map(l => l.split('\t').pop() ?? '').filter(Boolean)
+}
+
+function packsAtivos(diff: DiffParts): string[] {
+  return [...new Set(skillsPara('avaliador', { arquivos: arquivosDoDiff(diff.names), deps: [] }).map(s => s.pack))]
+}
+
+function buildPromptGauntlet(desc: string, tela: string, referencias: readonly string[], id: string): string {
+  const candidatos = [
+    { origem: 'motor', conteudo: `abra a imagem com a tool Read: ${tela}` },
+    ...referencias.map(r => ({ origem: 'referencia', conteudo: `abra a imagem com a tool Read: ${r}` })),
+  ]
+  return [
+    'Voce e o CRIVO em modo GAUNTLET — julgamento de qualidade subjetiva por comparacao, read-only.',
+    renderizarComparacao(cegar(candidatos, id)),
+    `TAREFA (objetivo do card): "${desc}"`,
+    '',
+    'Emita 1-3 PERGUNTAS que forcem o revisor humano a OLHAR as telas antes do merge.',
+    'Responda APENAS um JSON em uma unica linha, sem prosa antes ou depois:',
+    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","questions":["p1","p2"]}',
+    'BLOCKED apenas quando o resultado fica claramente abaixo do outro candidato. Em duvida, CONDITIONAL.',
+  ].join('\n')
+}
+
 function buildPrompt(desc: string, diff: DiffParts): string {
   return [
     'Voce e o CRIVO — revisor adversarial read-only. Revise o diff ACUMULADO abaixo (toda a cadeia de alteracoes da branch vs a base) contra a tarefa e o criterio escrito.',
@@ -152,10 +180,21 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     return { ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
   const provider = providerFor('gate')
+  const referencias = referenciasDoCard(id)
+  const tela = telaDoCard(id)
+  const escolha = modoDoCrivo({ packs: packsAtivos(diff), referencias })
+  const podeVer = provider.supportsVision && existsSync(tela)
+  const gauntlet = escolha.modo === 'gauntlet' && podeVer
+  const motivoDoModo = gauntlet
+    ? escolha.motivo
+    : escolha.modo === 'gauntlet'
+      ? `${escolha.motivo}, mas ${provider.supportsVision ? 'o card nao tem tela renderizada' : `${provider.name} nao le imagem`} — cai no criterio escrito`
+      : escolha.motivo
+  if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} CND: ${motivoDoModo}`)
   const res = await runProvider(id, provider, {
-    prompt: buildPrompt(desc, diff),
+    prompt: gauntlet ? buildPromptGauntlet(desc, tela, referencias, id) : buildPrompt(desc, diff),
     cwd: ROOT,
-    dirs: [wt],
+    dirs: gauntlet ? [wt, ...referencias.map(r => r.replace(/\/[^/]+$/, '')), tela.replace(/\/[^/]+$/, '')] : [wt],
     mode: 'readonly',
     useAgents: false,
     model: modelFor('gate'),

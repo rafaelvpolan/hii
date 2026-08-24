@@ -1,5 +1,6 @@
 import { isoNow } from '../../cdl'
 import type { Fields } from '../../cdl'
+import { instabilidadePorAlvo, relatoDeInstabilidade } from '../tsr/instabilidade'
 import { allCards } from '../../cdl/store'
 import { floorProviders } from '../tsr/lacuna'
 
@@ -48,5 +49,10 @@ export function renderProgress(): string {
   out.push('')
   if (!cards.length) out.push(`${DIM} (nenhum card ainda)${RESET}`)
   for (const c of cards) out.push(row(c))
+  const instabilidade = instabilidadePorAlvo()
+  if (instabilidade.length) {
+    out.push('')
+    out.push(`${DIM}${relatoDeInstabilidade(instabilidade)}${RESET}`)
+  }
   return out.join('\n')
 }

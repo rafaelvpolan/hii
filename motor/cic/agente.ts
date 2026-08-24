@@ -24,6 +24,7 @@ import { markRefsRefused } from '../qlb/alf/confianca'
 import { lerAcaoExterna } from '../osw/rta/externo'
 import { execFileSync } from 'node:child_process'
 import { renderizarSkills, skillsPara } from '../csd/acervo'
+import { decidirEspecs } from '../osw/despacho-de-agentes'
 import { checklistParaStack, renderizarChecklist } from '../agentes/vtb/checklist'
 import type { ContextoDeGatilho, PapelDeSkill } from '../csd/acervo'
 
@@ -43,21 +44,33 @@ function firstLine(s: string, max: number): string {
   return String(s || '').split('\n')[0]?.slice(0, max) ?? ''
 }
 
-const ROTEAMENTO_IMPLEMENT: ReadonlyArray<readonly [string, string]> = [
-  ['frontend/Vue/UI', 'vitro'],
-  ['estrutura/design-system de frontend', 'frontiteto'],
-  ['logica/feature', 'limpio'],
-  ['banco', 'radix'],
-  ['refactor', 'rufus'],
-]
+export const AGENTES_IMPLEMENT: readonly string[] = ['vitro', 'frontiteto', 'limpio', 'radix', 'rufus']
 
-export const AGENTES_IMPLEMENT: readonly string[] = ROTEAMENTO_IMPLEMENT.map(([, agente]) => agente)
+// Item 11: quem decide qual especialista atua e CODIGO, nunca o modelo. Antes
+// daqui o prompt entregava o menu inteiro ("frontend -> vitro; banco -> radix;
+// ...") e mandava a IA rotear — uma escolha que muda de opiniao entre execucoes
+// e que ninguem auditou depois. Agora `decidirEspecs` decide a partir do diff,
+// da dependencia declarada no contrato do alvo e do titulo da tarefa.
+//
+// Sem sinal nenhum, o resultado e vazio — e vazio significa NAO delegar, em vez
+// de "a IA escolhe": nada e injetado e a implementacao segue direta. Menos
+// delegacao sem motivo tambem e menos custo.
+// Sem sinal nenhum (card novo, contrato sem framework, titulo generico) o
+// padrao e DECLARADO aqui, nao escolhido pelo modelo. Nao injetar nada seria
+// deterministico tambem, mas perderia capacidade em silencio; deixar a IA
+// escolher e o que o item 11 proibe. Declarar o padrao mantem as duas coisas.
+export const AGENTE_PADRAO = 'limpio'
 
-function roteamentoImplement(nomesInjetados: readonly string[]): string {
-  return ROTEAMENTO_IMPLEMENT
-    .filter(([, agente]) => nomesInjetados.includes(agente))
-    .map(([dominio, agente]) => `${dominio} -> ${agente}`)
-    .join('; ')
+function agentesEscolhidos(ctx: ContextoDeGatilho, titulo: string): string[] {
+  const permitidos = new Set<string>(AGENTES_IMPLEMENT)
+  const escolhidos = decidirEspecs({ arquivos: ctx.arquivos, deps: ctx.deps, titulo })
+    .map(e => e.agente)
+    .filter(a => permitidos.has(a))
+  return escolhidos.length ? escolhidos : [AGENTE_PADRAO]
+}
+
+function roteamentoDeterministico(escolhidos: readonly string[]): string {
+  return escolhidos.map(a => `${a} (escolhido pelo diff/contrato/titulo do card)`).join('; ')
 }
 
 function agentesInjetaveis(provider: Harness, nomes: readonly string[], ferramentasExtra: readonly string[]): Record<string, AgenteInjetado> {
@@ -96,7 +109,7 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
     ? [
         'Use os AGENTES NEXUS deste projeto para implementar a tarefa abaixo (auto-construcao do hicode).',
         `O codigo a alterar fica em: ${workdir} — ${stack}. Edite os arquivos DESSE diretorio.`,
-        `Roteie via Task: ${roteamentoImplement(agentesInjetados)}. NAO rode crivo/review nesta etapa (nao chame o crivo): a revisao adversarial e os gates rodam DEPOIS, na fase de polimento do motor. Apenas implemente.`,
+        `Use via Task exatamente estes: ${roteamentoDeterministico(agentesInjetados)}. A escolha ja foi feita pelo motor — nao substitua por outro agente. NAO rode crivo/review nesta etapa (nao chame o crivo): a revisao adversarial e os gates rodam DEPOIS, na fase de polimento do motor. Apenas implemente.`,
       ]
     : [
         'Implemente a tarefa abaixo (auto-construcao do hicode).',
@@ -167,11 +180,13 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const memory = PROJECT_MEMORY ? readProjectMemory(target) : ''
   const navegacao = acaoExterna.externo ? [] : await navegacaoSemantica()
   extraTools = extraTools.concat(navegacao)
-  const agentesInjetados = acaoExterna.externo ? {} : agentesInjetaveis(provider, AGENTES_IMPLEMENT, navegacao)
+  const ctxSkill = contextoDeSkill(workdir, card.fm.repo ?? '')
+  const escolhidos = agentesEscolhidos(ctxSkill, `${card.fm.title ?? ''} ${desc}`)
+  const agentesInjetados = acaoExterna.externo || !escolhidos.length ? {} : agentesInjetaveis(provider, escolhidos, navegacao)
   const nomesInjetados = Object.keys(agentesInjetados)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', contextoDeSkill(workdir, card.fm.repo ?? ''))))
+    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)))
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,
