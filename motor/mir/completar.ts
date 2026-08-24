@@ -27,7 +27,16 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (partes.length === 1) {
     const hii = byPrefix([...COMMANDS], head)
     const daIa = byPrefix(ctx.comandosDaIa ?? [], head).filter(c => !hii.includes(c))
-    const teto = hii.length ? Math.max(0, hii.length - 1) : Math.min(6, daIa.length)
+    // MAIORIA ESTRITA do hii continua valendo: `hii.length - 1` comandos da ia,
+    // para o que o harness expoe nao afogar os comandos do proprio motor. Essa
+    // parte e politica, e fica.
+    //
+    // O que sai e o teto ARBITRARIO de 6 no caso em que a ia aparece SOZINHA (sem
+    // match do hii): ali nao havia maioria a proteger, e o corte fazia o "e mais N"
+    // contar um resto que a navegacao nunca alcancava, porque o dado ja chegava
+    // truncado no renderizador. Quem decide quantos CABEM na tela e quem desenha,
+    // com janela em volta da selecao.
+    const teto = hii.length ? Math.max(0, hii.length - 1) : daIa.length
     return [[...hii, ...daIa.slice(0, teto)], head]
   }
 

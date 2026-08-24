@@ -94,3 +94,21 @@ test('comando da ia que colide com um comando do hii nao aparece duplicado', () 
 test('sem comandosDaIa no contexto, o comportamento e identico ao de antes', () => {
   expect(complete('/re', ctx)[0]).toEqual(['/ref', '/repo'])
 })
+
+// O "+more" era beco sem saida por DOIS motivos, e este e o segundo: quando a ia
+// aparecia sozinha (sem match do hii), a lista era cortada em 6 AQUI — o dado
+// chegava truncado no renderizador, e navegar nunca alcançava o resto.
+test('ia sozinha NAO tem teto arbitrario — a navegacao tem de alcancar tudo', () => {
+  const muitos = Array.from({ length: 25 }, (_, i) => `/x${String(i).padStart(2, '0')}`)
+  const r = complete('/x', { ...ctx, comandosDaIa: muitos })[0]
+  expect(r.length, 'cortar aqui fazia o "e mais N" contar um resto inalcancavel').toBe(25)
+})
+
+test('mas a MAIORIA ESTRITA do hii continua valendo quando ha match dos dois', () => {
+  const muitos = Array.from({ length: 25 }, (_, i) => `/rex${i}`)
+  const r = complete('/re', { ...ctx, comandosDaIa: muitos })[0]
+  const doHii = r.filter(c => ['/ref', '/repo'].includes(c))
+  const daIa = r.filter(c => c.startsWith('/rex'))
+  expect(doHii.length).toBe(2)
+  expect(daIa.length, 'o que o harness expoe nao pode afogar os comandos do motor').toBeLessThan(doHii.length)
+})

@@ -1,6 +1,8 @@
 import { dirname, join } from 'node:path'
 import { objetivoComInstrucoes } from '../mir/instruir.ts'
 import { existsSync } from 'node:fs'
+import { lerEscopo, SEM_ESCOPO } from '../osw/rta/escopo.ts'
+import type { EscopoDeEscrita } from '../osw/rta/escopo.ts'
 import { extractObjetivo } from '../cdl/index.ts'
 import type { Card, FailureClass, ImplementResult, VerifyResult } from '../cdl/index.ts'
 import { cardsDir, ROOT, RUN_TIMEOUT_MS, PROJECT_MEMORY } from '../cdl/ali/config.ts'
@@ -105,7 +107,31 @@ function stackOf(repo: string): string {
   return c?.stack ?? 'stack nao detectado — inspecione o projeto antes de editar'
 }
 
-function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string): string {
+// O bloco de escopo vai no TOPO do prompt, antes de qualquer contexto: e a unica
+// instrucao cuja violacao o motor barra depois. Dizer no prompt nao basta — quem
+// garante e a checagem do diff em motor/osw/executar.ts —, mas o agente merece
+// saber a regra antes de trabalhar em vez de descobrir no HALT.
+function blocoDeEscopo(e: EscopoDeEscrita): string {
+  if (!e.alvos.length && !e.referencias.length) return ''
+  // Cada linha diz a verdade sobre o que o motor faz com ela. A regra de LEITURA e
+  // conferida no diff em dois pontos (osw/executar.ts depois do implement,
+  // qlb/ctr/fechar.ts contra origin/<base>) e para a tarefa. O "escreva somente em"
+  // NAO e barrado: `foraDoEscopo` so barra escrita DENTRO de referencia declarada,
+  // porque tratar todo caminho nao citado como proibido trocaria "editou onde nao
+  // devia" por "nao consegue editar o import que precisava" — o primeiro aparece no
+  // diff, o segundo parece motor quebrado. Anunciar cumprimento que nao existe seria
+  // pior que nao anunciar: o modelo calibra pelo que a mensagem afirma.
+  const linhas = ['ESCOPO DE ESCRITA (lido do pedido do humano):']
+  if (e.alvos.length) linhas.push(`- O alvo do pedido e: ${e.alvos.join(', ')} — comece por ai e nao espalhe a mudanca sem necessidade.`)
+  if (e.referencias.length) {
+    linhas.push(`- SO LEITURA (nao edite, nao crie, nao apague nada aqui): ${e.referencias.join(', ')}`)
+    linhas.push('  Estes caminhos sao REFERENCIA: leia deles o que precisar (cores, tokens, convencoes) e aplique no alvo.')
+    linhas.push('  O motor CONFERE isto no diff e PARA a tarefa se for violado.')
+  }
+  return `${linhas.join('\n')}\n`
+}
+
+function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
     : ''
@@ -120,6 +146,7 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
         `O codigo a alterar fica em: ${workdir} — ${stack}. Edite os arquivos DESSE diretorio.`,
       ]
   return [
+    blocoDeEscopo(escopo),
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
     skills ? `${skills}\n` : '',
     memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : '',
@@ -148,6 +175,13 @@ function acaoExternaPrompt(ferramenta: string, desc: string, feedback: string): 
     '',
     'Ao terminar, responda em 1 linha o que foi criado e o link ou ID do resultado.',
   ].filter(Boolean).join('\n')
+}
+
+// O escopo e lido do PEDIDO, com checagem de existencia contra o worktree — prosa
+// com barra ("feito/executado em ...") nao vira caminho.
+export function escopoDoCard(card: Card, workdir: string): EscopoDeEscrita {
+  const texto = `${card.fm.title ?? ''} ${objetivoComInstrucoes(card.body, card.fm.title ?? '')}`
+  return lerEscopo(texto, caminho => existsSync(join(workdir, caminho)))
 }
 
 export async function implement(card: Card, workdir: string, feedback = '', visual = false): Promise<ImplementResult> {
@@ -201,7 +235,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const nomesInjetados = Object.keys(agentesInjetados)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)))
+    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir))
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,
@@ -284,11 +318,12 @@ export function skillsDoAgente(agent: string, wt: string, alvo: string, packs: r
   return [skills, checklist].filter(Boolean).join('\n\n')
 }
 
-function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruction: string, rules: string, stack: string, skills: string): string {
+function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruction: string, rules: string, stack: string, skills: string, escopo: EscopoDeEscrita): string {
   const head = agenteInjetado
     ? `Use o agente Nexus ${agent} no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
     : `Atue no papel "${agent}" no projeto em ${wt} — ${stack}. Edite arquivos apenas se necessario.`
   return [
+    blocoDeEscopo(escopo),
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
     skills ? `${skills}\n` : '',
     head,
@@ -308,7 +343,9 @@ function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruct
 // (rufus, escudo, testudo, pura, glossia) recebiam lista vazia, entao o
 // conhecimento pre-carregado pelo `/orquestrador-*` nao alcancava justamente quem
 // revisa. Sem default: o compilador reprova o proximo call site que esquecer.
-export async function runStep(wt: string, agent: string, instruction: string, id: string, repo: string, packs: readonly string[] = []): Promise<StepResult> {
+// `escopo` tambem nos passos de polimento: o rufus e o pura editam arquivo, e um
+// escopo que valesse so para o implementador seria escopo pela metade.
+export async function runStep(wt: string, agent: string, instruction: string, id: string, repo: string, packs: readonly string[] = [], escopo: EscopoDeEscrita = SEM_ESCOPO): Promise<StepResult> {
   const t = Date.now()
   const provider = providerFor('step')
   if (!provider.agentic) return { time: 0, cost: 0, costMeasured: true, tokens: 0, ok: false, text: `provider ${provider.name} nao-agentico — step "${agent}" NAO executou (use claude/codex para steps que editam)`, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos', provider: provider.name }
@@ -316,7 +353,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const agenteInjetado = agentesInjetaveis(provider, [agent], navegacao)
   const injetou = Object.keys(agenteInjetado).length > 0
   const res = await runProvider(id, provider, {
-    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo), skillsDoAgente(agent, wt, repo, packs)),
+    prompt: stepPrompt(injetou, wt, agent, instruction, readProjectRules(wt), stackOf(repo), skillsDoAgente(agent, wt, repo, packs), escopo),
     cwd: wt,
     dirs: [wt],
     mode: 'edit',

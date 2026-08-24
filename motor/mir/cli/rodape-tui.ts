@@ -81,7 +81,10 @@ export function dicaDa(state: SessionState, sugerindo = false): string {
     if (state.retomando) return 'enter retoma de onde parou · ctrl+c sai do hii'
     if (state.removendo) return 'enter confirma · n cancela'
     if (state.perguntando) return '↑/↓ escolhe · numero responde · enter confirma'
-    if (state.seguindo) return 'escreva para instruir · /board volta'
+    // `/board` saiu da TUI de proposito (navegar cards e do painel web), e este
+    // texto continuou anunciando ele: quem digitava recebia "comando desconhecido".
+    // Quem de fato sai da tarefa aberta e `/historico` — e `esc` tambem.
+    if (state.seguindo) return 'escreva para instruir · esc ou /historico sai da tarefa'
     const aqui = cardsPerguntando(todosOsCards(), state.repo)
     if (aqui.length) return `#${aqui[0]} espera resposta · /ask responde`
     const noutro = cardsPerguntando(todosOsCards())

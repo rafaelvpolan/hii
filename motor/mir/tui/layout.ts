@@ -238,7 +238,11 @@ export function renderFrame(f: FrameInput): Frame {
     linhasDeRodape: rodape.length,
     linhasAcima: sugestoes.length,
   })
-  const sugVisiveis = sugestoes.slice(0, orcamento.sugVisiveis)
+  // Corta pelo FIM da lista inteira perdia as SUGESTOES e preservava o painel de
+  // aprovacao que app.ts prepende (`[...acima, ...sugestoes]`) — inclusive a opcao
+  // SELECIONADA, quando a selecao estava no fim. Quem esta com a lista de
+  // completacao aberta precisa ver a completacao; o painel de cima e o que cede.
+  const sugVisiveis = sugestoes.slice(Math.max(0, sugestoes.length - orcamento.sugVisiveis))
   const rodapeVisivel = rodape.slice(0, orcamento.rodapeVisivel)
   const alturaCorpo = orcamento.alturaCorpo
   const pinado = f.fixo ?? []

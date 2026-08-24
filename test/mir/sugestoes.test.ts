@@ -39,11 +39,41 @@ test('sem selecao, nenhuma fica destacada', () => {
   expect(linhas.join('')).not.toContain('\x1b[7m')
 })
 
-test('mostra no maximo 6 e conta o resto', () => {
+test('mostra no maximo 6 e conta o resto ABAIXO quando a selecao esta no topo', () => {
   const muitos = Array.from({ length: 10 }, (_, i) => `/cmd${i}`)
   const linhas = renderSugestoes(muitos, { width: 78 })
   expect(linhas.length).toBe(7)
-  expect(linhas[6]).toContain('e mais 4')
+  expect(linhas[6]).toContain('4 abaixo')
+})
+
+// `slice(0, 6)` fixo fazia o "e mais N" ser beco sem saida: apertar ↓ movia a
+// selecao para a setima opcao e a tela continuava nas seis primeiras.
+test('a janela SEGUE a selecao — a setima opcao e alcancavel', () => {
+  const muitos = Array.from({ length: 10 }, (_, i) => `/cmd${i}`)
+  const noFim = renderSugestoes(muitos, { width: 78, selecionado: 9 }).join('\n')
+  expect(noFim, 'a ultima opcao tem de aparecer na tela').toContain('/cmd9')
+  expect(noFim, 'e a contagem passa a ser do que ficou ACIMA').toContain('4 acima')
+  expect(noFim).not.toContain('abaixo')
+})
+
+test('a opcao selecionada esta SEMPRE na tela, em qualquer posicao da lista', () => {
+  const muitos = Array.from({ length: 40 }, (_, i) => `/cmd${String(i).padStart(2, '0')}`)
+  for (let sel = 0; sel < muitos.length; sel++) {
+    const texto = renderSugestoes(muitos, { width: 78, selecionado: sel }).join('\n')
+    expect(texto, `selecionado ${sel} fora da tela`).toContain(muitos[sel] ?? '')
+  }
+})
+
+test('a janela respeita o teto de linhas do terminal — senao o quadro corta e a navegacao morre', async () => {
+  const { cabemQuantasSugestoes } = await import('../../motor/mir/render/sugestoes.ts')
+  expect(cabemQuantasSugestoes(60), 'terminal alto: o teto padrao').toBe(6)
+  expect(cabemQuantasSugestoes(20)).toBe(6)
+  expect(cabemQuantasSugestoes(18)).toBe(4)
+  expect(cabemQuantasSugestoes(8), 'terminal baixo: menos opcoes, mas navegaveis').toBe(1)
+  const muitos = Array.from({ length: 20 }, (_, i) => `/cmd${i}`)
+  const apertado = renderSugestoes(muitos, { width: 78, selecionado: 19, maxLinhas: 2 })
+  expect(apertado.filter(l => l.includes('/cmd')).length).toBe(2)
+  expect(apertado.join('\n'), 'a selecao continua visivel no aperto').toContain('/cmd19')
 })
 
 test('lista vazia nao ocupa espaco', () => {
@@ -147,4 +177,46 @@ test('comando digitado pode sair colorido sem mover o cursor', () => {
   expect(comCor.cursorCol).toBe(semCor.cursorCol)
   expect(comCor.cursorRow).toBe(semCor.cursorRow)
   expect(stripAnsi(comCor.lines[comCor.cursorRow - 1] ?? '')).toBe(stripAnsi(semCor.lines[semCor.cursorRow - 1] ?? ''))
+})
+
+// app.ts monta `sugestoes: [...acima, ...sugestoes]`, e o corte era pelo FIM: o
+// painel de aprovacao sobrevivia e as SUGESTOES morriam — inclusive a opcao
+// selecionada, quando a selecao estava no fim da lista. Quem tem a lista de
+// completacao aberta precisa ver a completacao.
+test('REGRESSAO: quando o espaco aperta, quem cede e o painel de cima, nao a sugestao', async () => {
+  const { renderFrame } = await import('../../motor/mir/tui/layout.ts')
+  const painel = ['  APROVAR?', '  [1] sim', '  [2] nao', '  [3] comentar', '  ---']
+  const opcoes = ['/ajuda', '/config', '>>> /verificar <<<']
+  const f = renderFrame({
+    header: 'h', corpo: ['linha'], rodape: [], input: '/', cursor: 1,
+    cols: 60, rows: 9, sugestoes: [...painel, ...opcoes], prompt: '> ', dica: '',
+  })
+  const tela = f.lines.join('\n')
+  expect(tela, 'a opcao selecionada tem de sobreviver ao corte').toContain('>>> /verificar <<<')
+  expect(tela.includes('APROVAR?'), 'o topo do painel e o que cede').toBe(false)
+})
+
+test('sem aperto, painel e sugestoes aparecem juntos', async () => {
+  const { renderFrame } = await import('../../motor/mir/tui/layout.ts')
+  const f = renderFrame({
+    header: 'h', corpo: ['linha'], rodape: [], input: '/', cursor: 1,
+    cols: 60, rows: 40, sugestoes: ['  APROVAR?', '/ajuda'], prompt: '> ', dica: '',
+  })
+  const tela = f.lines.join('\n')
+  expect(tela).toContain('APROVAR?')
+  expect(tela).toContain('/ajuda')
+})
+
+// `slice(-n || length)` acertava por ACIDENTE: com n=0, `-0` e falsy e o fallback
+// `slice(length)` da vazio por coincidencia. Estes tres pontos travam o
+// comportamento nas bordas para a proxima reescrita nao passar em silencio.
+test('as bordas do corte de sugestao: nenhuma, algumas, todas', async () => {
+  const { orcamentoDoCorpo } = await import('../../motor/mir/tui/layout.ts')
+  const base = { temLegenda: false, temDica: false, linhasDeEntrada: 1, linhasDeRodape: 0 }
+  const s = ['a', 'b', 'c']
+  const corta = (n: number): string[] => s.slice(Math.max(0, s.length - n))
+  expect(corta(0), 'orcamento zero mostra NADA, nao tudo').toEqual([])
+  expect(corta(2), 'mantem o FIM, que e onde estao as sugestoes').toEqual(['b', 'c'])
+  expect(corta(9), 'orcamento maior que a lista nao duplica nem estoura').toEqual(['a', 'b', 'c'])
+  expect(orcamentoDoCorpo({ ...base, rows: 5, linhasAcima: 3 }).sugVisiveis).toBeGreaterThanOrEqual(0)
 })

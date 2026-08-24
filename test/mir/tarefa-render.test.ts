@@ -32,10 +32,19 @@ test('sem sub-prompt, nao inventa secao vazia', () => {
   expect(t).not.toContain('depois')
 })
 
-test('convida a escrever mais instrucoes', () => {
+test('convida a escrever mais instrucoes, e diz como SAIR com comando que existe', async () => {
   const t = renderCabecalhoTarefa(card(), { width: 78 }).join('\n')
   expect(t).toContain('escreva para mandar mais instrucoes')
-  expect(t).toContain('/board volta')
+  // Anunciava `/board volta`, e /board saiu da TUI de proposito (dispatch-integridade):
+  // quem digitava recebia "comando desconhecido". Quem sai da tarefa e /historico.
+  expect(t, 'nao pode anunciar comando removido').not.toContain('/board')
+  const { COMMANDS, handle, newSession } = await import('../../motor/mir/sessao.ts')
+  const anunciados = [...t.matchAll(/(?:^|\s)(\/[a-z?-]+)/gm)].map(m => m[1] ?? '')
+  expect(anunciados.length, 'a tela tem de dizer COMO sair').toBeGreaterThan(0)
+  for (const cmd of anunciados) {
+    expect(COMMANDS as readonly string[], `${cmd} anunciado e nao existe`).toContain(cmd)
+    expect(handle(cmd, { ...newSession('org/app'), seguindo: '022' }).effect.kind, cmd).not.toBe('error')
+  }
 })
 
 test('url so aparece se o card tiver URL — quem sobe e o humano ou o painel', () => {

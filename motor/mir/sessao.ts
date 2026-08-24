@@ -1,9 +1,10 @@
 import { interpretarIntake } from './comandos-manuais.ts'
+import { lerLinhaNaTarefa } from './pergunta.ts'
 export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'config' | 'ref' | 'login' | 'intake'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -194,6 +195,7 @@ function command(line: string, state: SessionState): Reply {
     case 'gauntlet':
     case 'crivo':
       return reply({ kind: 'gauntlet', text: arg }, state)
+
     case 'login':
       return reply({ kind: 'login', text: arg }, state)
     case 'repo':
@@ -245,7 +247,14 @@ export function handle(raw: string, state: SessionState): Reply {
     return reply({ kind: 'plan', id: line.replace('#', '') }, state)
   }
   if (state.seguindo) {
-    return reply({ kind: 'instruct', id: state.seguindo, text: line }, state)
+    // Pergunta dentro da tarefa era anexada ao card como instrucao e nunca
+    // respondida. Agora ela e lida como pergunta e respondida na hora — e `!` no
+    // comeco forca instrucao, para a heuristica ter escape.
+    const leitura = lerLinhaNaTarefa(line)
+    if (leitura.tipo === 'pergunta') {
+      return reply({ kind: 'situacao', id: state.seguindo, text: leitura.texto }, state)
+    }
+    return reply({ kind: 'instruct', id: state.seguindo, text: leitura.texto }, state)
   }
   if (state.pendingPlan) {
     return reply({ kind: 'submit', text: line }, { ...state, pendingPlan: '' })

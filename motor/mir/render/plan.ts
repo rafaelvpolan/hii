@@ -58,6 +58,20 @@ function linhaDeAjuda(comando: string, explicacao: string, o: RenderOptions): st
   return `    ${cmd}${nota}`
 }
 
+function linhasDeEscopo(e: Plan['escopo'], o: RenderOptions): string[] {
+  if (!e.alvos.length && !e.referencias.length) return []
+  const fora: string[] = []
+  // `Escreve` / `So le`, e nao `Alvo`: a linha `Alvo` acima ja quer dizer o REPO, e
+  // duas etiquetas iguais com sentidos diferentes na mesma tela e pior que nenhuma.
+  if (e.alvos.length) {
+    fora.push(`    ${'Escreve'.padEnd(10)} ${paint(oneLine(e.alvos.join(' · '), o.width - 20), WARN, o)}`)
+  }
+  if (e.referencias.length) {
+    fora.push(`    ${'So le'.padEnd(10)} ${paint(oneLine(e.referencias.join(' · '), o.width - 20), DIM, o)}`)
+  }
+  return fora
+}
+
 export function renderPlan(plan: Plan, opts: Partial<RenderOptions> = {}): string {
   const o = { ...DEFAULT_RENDER, ...opts }
   const out: string[] = []
@@ -71,6 +85,10 @@ export function renderPlan(plan: Plan, opts: Partial<RenderOptions> = {}): strin
   // sem aparecer no plano que o humano aprova. O campo existia em buildPlan desde a
   // Onda 12 e nenhum renderizador o lia — a promessa estava no comentario, nao na tela.
   out.push(flag('Divergir', plan.divergencia.on, plan.divergencia.reason, o))
+  // ESCOPO na tela, e nao so no objeto: o agente editou a REFERENCIA porque nada
+  // distinguia "leia aqui" de "escreva ali", e restringir escrita sem o humano ver
+  // seria trocar uma surpresa por outra. Aqui ele aprova sabendo.
+  for (const linha of linhasDeEscopo(plan.escopo, o)) out.push(linha)
   out.push('')
   out.push(rule('Realizacao', o))
   if (!plan.waves.length) out.push(paint('    (nenhum passo de polimento neste perfil)', DIM, o))

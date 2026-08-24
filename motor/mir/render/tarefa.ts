@@ -51,7 +51,7 @@ export function renderCabecalhoTarefa(card: Card, opts: Partial<TarefaOptions> =
   if (piso) out.push(campo('', paint(`piso: ${piso} sem reporte de gasto`, YELLOW, o), o))
 
   out.push('')
-  out.push(`  ${paint('escreva para mandar mais instrucoes nesta tarefa', YELLOW, o)}${paint('  ·  /board volta', DIM, o)}`)
+  out.push(`  ${paint('escreva para mandar mais instrucoes nesta tarefa', YELLOW, o)}${paint('  ·  esc ou /historico sai', DIM, o)}`)
   out.push('')
   return out.map(l => truncVisible(l, o.width))
 }

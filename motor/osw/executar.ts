@@ -14,7 +14,8 @@ import type { WorktreeFate } from '../qlb/git.ts'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../cic/crv/url-viva.ts'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './rta/superficie.ts'
 import { instrucaoDeAjuste, instrucaoDeConserto, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from '../cic/rpr/url-ajuste.ts'
-import { implement, verifyVisual } from '../cic/agente.ts'
+import { escopoDoCard, implement, verifyVisual } from '../cic/agente.ts'
+import { foraDoEscopo } from './rta/escopo.ts'
 import { resolvedFailure, writeRun } from '../euc/registros.ts'
 import { abrirSessao } from '../euc/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euc/tsr/confianca.ts'
@@ -104,6 +105,48 @@ export async function consertarUmaVez(id: string, card: Card, wt: string, url: s
   }
   const sobrou = depois.detail || detalhe
   return { vstate: 'falhou', vreason: `url ainda com erro depois de uma tentativa de conserto (${sobrou}) — precisa de voce`, custo, tokens }
+}
+
+// `git diff --name-only HEAD` NAO lista arquivo novo (untracked) — e o commit
+// depois usa `git add -A`, entao um arquivo CRIADO dentro da referencia entrava no
+// PR sem passar pela checagem de escopo. `status --porcelain` ve rastreado,
+// nao-rastreado e renomeado.
+// Parse PURO da saida de `status --porcelain -z`, separado da chamada do git para
+// poder ser testado nos codigos que a tabela do `git help status` documenta e que
+// nao sao triviais de produzir num repo de teste (R na segunda coluna).
+export function tocadosDoPorcelain(saidaZ: string): string[] {
+  const campos = saidaZ.split('\0').filter(Boolean)
+  const saida: string[] = []
+  for (let i = 0; i < campos.length; i++) {
+    const linha = campos[i] ?? ''
+    if (linha.length < 4) continue
+    const x = linha[0] ?? ''
+    const y = linha[1] ?? ''
+    saida.push(linha.slice(3))
+    // Rename/copy gasta DOIS campos: `R  novo\0antigo\0`. O antigo tambem foi
+    // tocado — sair de dentro da referencia e mexer nela.
+    //
+    // R/C aparecem em QUALQUER das duas colunas: a tabela do `git help status` lista
+    // "renamed in index" (R na 1a) e "renamed in work tree" (R na 2a, com a 1a
+    // vazia). Olhar so a primeira nao era so perder o campo antigo: o campo extra
+    // seguia na fila e virava a "linha" da iteracao seguinte, entao `slice(3)`
+    // cortava tres caracteres do caminho e TODO o resto da saida saia deslocado — a
+    // checagem de escopo ficava cega para os arquivos seguintes.
+    if (x === 'R' || x === 'C' || y === 'R' || y === 'C') {
+      const antigo = campos[++i]
+      if (antigo) saida.push(antigo)
+    }
+  }
+  return saida
+}
+
+export async function tocadosNoWorktree(wt: string): Promise<string[]> {
+  // `:!node_modules` casa o que `stageAll` de fato commita (qlb/git.ts). Sem isto,
+  // em alvo onde node_modules nao esta ignorado, `-uall` enumera a arvore inteira:
+  // estoura o maxBuffer do execFile (a checagem falharia ABERTA, em silencio, so no
+  // repo grande) e enche `escopo_violado` de arquivos que nem seriam commitados.
+  const r = await runGit(wt, ['status', '--porcelain', '-z', '--untracked-files=all', '--', '.', ':!node_modules'])
+  return tocadosDoPorcelain(r.stdout)
 }
 
 async function commitAndRecord(id: string, wt: string, card: Card, steps: ExecuteSteps, res: ImplementResult, t0: number): Promise<{ costSum: number; tokensTotal: number }> {
@@ -223,6 +266,16 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const shotPath = join(cardsDir(), 'urls', String(id), 'url.png')
   const steps = initialSteps()
   const tx = Date.now()
+  // Escopo lido ANTES do implement, contra o worktree INTACTO. Lido depois, o
+  // agente que APAGA o diretorio de referencia desligava a propria checagem: sem
+  // o caminho em `referencias`, foraDoEscopo curto-circuita para [].
+  const escopo = escopoDoCard(card, wt)
+  // Grava no card para a TUI poder MOSTRAR o escopo enquanto a tarefa roda: escopo
+  // que so existe no prompt do agente e invisivel para quem acompanha.
+  if (escopo.alvos.length || escopo.referencias.length) {
+    patchCard(id, { escopo_alvos: escopo.alvos.join(', '), escopo_refs: escopo.referencias.join(', ') },
+      `${isoNow()} escopo lido do pedido: ${escopo.motivo}`)
+  }
   const res = await deps.implement(card, wt, '', surface.surface === 'visual')
   steps.Executando.time += toSeconds(Date.now() - tx)
   steps.Executando.cost += parseFloat(res.cost) || 0
@@ -262,6 +315,40 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   // wait_attempts. Anunciar "EXECUTING->EXECUTED" narrava um estado que o card
   // nunca entrou — EXECUTED esta declarado em topologia.json como estado que
   // nenhum arquivo de motor/ escreve, e as duas coisas nao podiam ser verdade.
+  // ESCOPO — o cumprimento, e nao a promessa. O prompt do agente diz "escreva
+  // somente em X, Y e so leitura"; aqui o motor CONFERE no diff. Sem isto, o
+  // escopo seria mais uma instrucao em texto que o modelo pode ignorar — e foi
+  // ignorando que ele editou o projeto de referencia.
+  //
+  // Barra ANTES do polimento e antes de subir url: o gasto para aqui.
+  const violou = foraDoEscopo(escopo, await tocadosNoWorktree(wt))
+  if (violou.length) {
+    // O implement JA gastou. Parar sem lancar o gasto deixaria dinheiro fora do
+    // livro — e o teto de orcamento le `cost_usd`, entao o retry seguinte comecaria
+    // achando que nada foi gasto. Mesma contabilidade do caminho de falha acima.
+    // `res.ok` e true (o implement rodou), mas o card PAROU. Gravar o run como
+    // sucesso deixaria a causa fora do ledger: quem le runs/*.json para taxa de
+    // sucesso ou para saber por que o card parou nao encontraria nada.
+    const rec = writeRun(id, {
+      ...res,
+      ok: false,
+      // 'terminal', nao uma classe nova: nao e transitorio nem cota, e repetir sem
+      // mudar o pedido daria o mesmo resultado. A causa vai no motivo.
+      failureClass: 'terminal',
+      failureReason: `escreveu fora do escopo: ${violou.slice(0, 10).join(', ')}`,
+    }, toSeconds(Date.now() - t0), asStepMap(steps))
+    patchCard(id, {
+      status: 'HALTED',
+      // Teto: `escopo_violado` vai para o frontmatter numa linha so. Sem limite, uma
+      // violacao em massa (diretorio inteiro) tornaria o card ilegivel.
+      escopo_violado: violou.slice(0, 20).join(',') + (violou.length > 20 ? ` +${violou.length - 20}` : ''),
+      cost_usd: (baseCost + auxCost + steps.Executando.cost).toFixed(4),
+      tokens_total: String(baseTokens + auxTokens + rec.tokens_total),
+    },
+      `${isoNow()} EXECUTING->HALTED o agente escreveu FORA do escopo: ${violou.join(', ')} — o pedido marcou esses caminhos como referencia (${escopo.motivo}). O worktree fica para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`)
+    process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
+    return
+  }
   patchCard(id, { wait_attempts: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)

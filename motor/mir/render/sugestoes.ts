@@ -40,6 +40,22 @@ export interface GrupoDeSugestao {
   cor: Rgb
 }
 
+export const SUGESTOES_VISIVEIS = 6
+
+// Duas linhas ficam para as setas de "N acima"/"N abaixo".
+const LINHAS_DAS_SETAS = 2
+
+// Quantas linhas de OPCAO cabem, dadas as linhas do terminal. Conservador de
+// proposito: e melhor mostrar 3 navegaveis que 6 cortadas pelo quadro.
+export function cabemQuantasSugestoes(rows: number): number {
+  const disponivel = (Number.isFinite(rows) ? rows : 24) - 12 - LINHAS_DAS_SETAS
+  return Math.max(1, Math.min(SUGESTOES_VISIVEIS, disponivel))
+}
+
+// Janela em volta da SELECAO, e nao os N primeiros. Com `slice(0, 6)` fixo, apertar
+// ↓ movia a selecao para a setima opcao e a tela continuava mostrando as seis
+// primeiras: o "e mais N" era um beco sem saida. A mesma forma que
+// `janelaDaLista` ja usava para as listas do rodape.
 export interface SugestoesOptions {
   color: boolean
   width: number
@@ -47,9 +63,11 @@ export interface SugestoesOptions {
   grupoDe?: (opcao: string) => GrupoDeSugestao | null
   descricaoDe?: (opcao: string) => string | undefined
   profundidade?: Profundidade
+  // Teto de linhas de OPCAO (sem contar as setas). Ver cabemQuantasSugestoes.
+  maxLinhas: number
 }
 
-const PADRAO: SugestoesOptions = { color: false, width: 78, selecionado: -1 }
+const PADRAO: SugestoesOptions = { color: false, width: 78, selecionado: -1, maxLinhas: SUGESTOES_VISIVEIS }
 
 function paint(s: string, cor: string, o: SugestoesOptions): string {
   return o.color ? `${cor}${s}${RESET}` : s
@@ -90,16 +108,33 @@ function renderAgrupado(mostrar: string[], largura: number, o: SugestoesOptions,
   return linhas
 }
 
+export function janelaDeSugestoes(total: number, selecionado: number, max: number): { inicio: number; fim: number } {
+  if (total <= max) return { inicio: 0, fim: total }
+  const i = selecionado < 0 ? 0 : Math.min(selecionado, total - 1)
+  const inicio = Math.max(0, Math.min(i - Math.floor((max - 1) / 2), total - max))
+  return { inicio, fim: inicio + max }
+}
+
 export function renderSugestoes(opcoes: string[], opts: Partial<SugestoesOptions> = {}): string[] {
   const o = { ...PADRAO, ...opts }
   if (!opcoes.length) return []
-  const mostrar = opcoes.slice(0, 6)
+  // `maxLinhas` e o teto de linhas de OPCAO que cabem na tela. Sem ele a janela era
+  // sempre de 6 e o quadro (renderFrame) cortava as PRIMEIRAS N por falta de altura
+  // — re-quebrando a navegacao num terminal baixo, exatamente onde ela mais falta.
+  const janela = janelaDeSugestoes(opcoes.length, o.selecionado, Math.max(1, o.maxLinhas))
+  const mostrar = opcoes.slice(janela.inicio, janela.fim)
   const largura = mostrar.reduce((a, s) => Math.max(a, s.length), 0)
+  // `selecionado` e indice na lista INTEIRA; dentro da janela ele desloca.
+  const selecionadoNaJanela = o.selecionado - janela.inicio
   const linhas = o.grupoDe && temGrupoDeIa(mostrar, o.grupoDe)
-    ? renderAgrupado(mostrar, largura, o, o.grupoDe)
-    : mostrar.map((opcao, i) => linhaDaOpcao(opcao, largura, i === o.selecionado, CYAN, o))
-  const resto = opcoes.length - mostrar.length
-  if (resto > 0) linhas.push(paint(`  e mais ${resto}`, DIM, o))
+    ? renderAgrupado(mostrar, largura, { ...o, selecionado: selecionadoNaJanela }, o.grupoDe)
+    : mostrar.map((opcao, i) => linhaDaOpcao(opcao, largura, i === selecionadoNaJanela, CYAN, o))
+  // Conta os dois lados: esconder que ha opcao ACIMA e o que fazia a lista parecer
+  // o comeco quando ja estava no meio.
+  const acima = janela.inicio
+  const abaixo = opcoes.length - janela.fim
+  if (acima > 0) linhas.unshift(paint(`  ↑ ${acima} acima`, DIM, o))
+  if (abaixo > 0) linhas.push(paint(`  ↓ ${abaixo} abaixo`, DIM, o))
   return linhas
 }
 
