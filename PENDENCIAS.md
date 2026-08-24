@@ -6,13 +6,32 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## PRÓXIMA ONDA — Onda 13, superfície humana sem travamento (MIR, item 34)
+## ESTADO — as 13 ondas estão fechadas
 
-A última planejada. A cobertura de comportamento da TUI já é boa (~50 arquivos em
-`test/mir/`); o que falta é garantia contra travamento: varredura que exige teste
-para todo comando de `COMMANDS`, percurso end-to-end por menus e modos, orçamento
-de tempo por quadro medido em vez de "parece rápido", e redimensionamento extremo.
-Escopo em `WORKFLOW-EXECUCAO.md`, seção ONDA 13.
+Itens 1 a 34, incluindo os dois novos (33 MCN, 34 MIR). Não há próxima onda
+planejada: o que vier daqui em diante entra como pendência nomeada abaixo ou
+como onda nova em `WORKFLOW-EXECUCAO.md`.
+
+---
+
+## PENDÊNCIA — `truncVisible` percorre o texto inteiro para cortar 80 colunas
+
+`larguraDeTexto`, `stripAnsi` e o `split` de `motor/mir/tui/layout.ts` varrem a
+string toda antes do corte: medido ~189× mais caro num texto 500× maior.
+
+**Não é travamento** — em absoluto são ~0,5ms para meio milhão de caracteres, e
+`test/mir/tui-sob-carga.test.ts` guarda esse tempo. É ineficiência num caminho
+quente: cada linha visível paga o custo da linha inteira, então log com linhas
+gigantes encarece cada quadro.
+
+Não corrigido de propósito. A função tem semântica delicada de grafema e ANSI, e
+a saída óbvia — medir só um prefixo — parte cluster de grafema quando o corte cai
+no meio de um. A margem segura existe, mas provar qual é ela merece atenção
+própria, não um remendo no fim de uma onda de testes.
+
+Onde mexer: `truncVisible` em `motor/mir/tui/layout.ts`. A rede está pronta —
+`test/mir/largura.test.ts` fixa a tabela exata de cortes, grafemas, surrogates e
+ANSI, então uma reescrita que passe ali preservou o comportamento.
 
 ---
 
