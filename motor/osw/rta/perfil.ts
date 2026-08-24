@@ -10,6 +10,7 @@ export interface TaskInput {
   risk?: string
   surface?: string
   override?: string
+  divergir?: string
 }
 
 export interface StepPlan {
@@ -26,6 +27,13 @@ const DEPS = ['dependenc\\w*', 'pacote\\w*', 'package\\w*', 'lockfile', 'bump', 
 const LOGIC = ['fix', 'bug', 'refator\\w*', 'refatora\\w*', 'refactor\\w*', 'feature', 'funcionalidade\\w*', 'funcao\\w*', 'function\\w*', 'logic\\w*', 'calcul\\w*', 'algoritmo\\w*', 'estado', 'store', 'hook\\w*', 'valida\\w*', 'integr\\w*', 'fluxo\\w*', 'regra\\w*', 'comportamento\\w*', 'component\\w*', 'componente\\w*']
 const COSMETIC = ['texto\\w*', 'text', 'copy', 'copie', 'redac\\w*', 'palavra\\w*', 'frase\\w*', 'typo', 'ortograf\\w*', 'gramatic\\w*', 'label\\w*', 'rotulo\\w*', 'wording', 'mensagem\\w*', 'conteudo\\w*', 'readme', 'documentac\\w*', 'docs', 'comentario\\w*', 'tradu\\w*', 'idioma', 'renomear']
 
+// MCN — vocabulario de pergunta ABERTA: onde existe mais de uma forma certa e a
+// escolha e de desenho. So aqui divergir se paga.
+const ABERTO = ['arquitet\\w*', 'desenh\\w*', 'design', 'estrateg\\w*', 'abordagem\\w*', 'alternativ\\w*', 'reestrutur\\w*', 'repens\\w*', 'escalab\\w*', 'modelag\\w*', 'nomenclatura\\w*', 'naming', 'nomear', 'contrato\\w*', 'protocolo\\w*', 'tradeoff\\w*', 'padr\\w*']
+// Vocabulario de RESPOSTA UNICA: calculo de comissao nao tem "varias formas
+// certas". Abrir N ramos sobre aritmetica gasta N vezes para reencontrar a
+// mesma resposta.
+const FECHADO = ['calcul\\w*', 'formula\\w*', 'aritmetic\\w*', 'convers\\w*', 'arredond\\w*', 'comiss\\w*', 'imposto\\w*', 'aliquota\\w*', 'juros', 'typo', 'ortograf\\w*', 'bump', 'lockfile', 'reparo\\w*', 'build']
 function buildRe(stems: string[]): RegExp {
   return new RegExp('\\b(?:' + stems.join('|') + ')\\b')
 }
@@ -36,6 +44,8 @@ const DATA_RE = buildRe(DATA)
 const DEPS_RE = buildRe(DEPS)
 const LOGIC_RE = buildRe(LOGIC)
 const COSMETIC_RE = buildRe(COSMETIC)
+const ABERTO_RE = buildRe(ABERTO)
+const FECHADO_RE = buildRe(FECHADO)
 
 function norm(s: string | undefined): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -163,4 +173,35 @@ export function aplicarLei(plano: StepPlan, lei: VeredictoDaLei, todos: Pipeline
     steps,
     skipped: [],
   }
+}
+
+// MCN — o gatilho da divergencia. Deliberado: mesmo formato de veredicto do CND
+// (`{ vale, motivo }`), porque os dois respondem a mesma pergunta — "este card
+// merece um modo que custa varias vezes mais?".
+//
+// O PADRAO E NAO DIVERGIR, e isso nao e timidez. N ramos multiplicam o custo por
+// N; um gatilho que erra para o lado de ligar transforma cada card ambiguo numa
+// conta multiplicada, e o operador so descobre no fim do mes. Quando nada no
+// enunciado indica pergunta de desenho, a resposta certa e nao gastar.
+//
+// Note a ordem: FECHADO vence ABERTO. "arquitetura do calculo de comissao" tem
+// as duas marcas, e a resposta continua sendo uma so.
+export interface VeredictoDeDivergencia {
+  readonly vale: boolean
+  readonly motivo: string
+}
+
+export function valeDivergir(task: TaskInput): VeredictoDeDivergencia {
+  const ov = (task.divergir ?? '').trim()
+  if (ov === 'on') return { vale: true, motivo: 'ligado no card (divergir: on)' }
+  if (ov === 'off') return { vale: false, motivo: 'desligado no card (divergir: off)' }
+
+  const s = signalsOf(task)
+  if (s.externo) return { vale: false, motivo: `${s.motivoExterno} — acao externa nao tem alternativa de desenho para comparar` }
+  if (s.lean) return { vale: false, motivo: 'mudanca cosmetica/visual — nao ha decisao de arquitetura a tomar' }
+
+  const t = ` ${norm(task.title)} ${norm(task.objetivo)} `
+  if (FECHADO_RE.test(t)) return { vale: false, motivo: 'enunciado com resposta unica — divergir gastaria N vezes para reencontrar a mesma resposta' }
+  if (ABERTO_RE.test(t)) return { vale: true, motivo: 'pergunta aberta de desenho — ha mais de uma forma certa, e a escolha merece alternativas isoladas' }
+  return { vale: false, motivo: 'nada no enunciado indica pergunta de desenho — o padrao e nao multiplicar o custo por N' }
 }

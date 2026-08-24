@@ -55,7 +55,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | ✅ feita |
 | **10c** | Ligação — mecanismo ocioso vira motor | 9, 12, 14 + defeito | FRE, VTB, CLR, CTR | Sim | ✅ feita |
 | **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Sim (runtime) | ✅ feita |
-| **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | — |
+| **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | ✅ feita |
 | **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | — |
 
 **Caminho crítico:** 0 → 1 → 2 → 3 → 4 → 5. As ondas 6 a 11 têm folga de ordem entre si depois da 5, com duas exceções travadas: **8 depende de 9** (o modo gauntlet não liga sem `orcamentoPorCard`) e **10 depende de 3** (o `aprendiz` lê o diário por evento).
@@ -779,11 +779,46 @@ design, mas descreve o evento, não o comportamento de ramificar.
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/` |
+| 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/enquadramentos.json`, `motor/cic/mcn/enquadramentos.ts` |
 | 33 | `despacharDivergencia(enunciado, frames)` — N invocações **sem contexto compartilhado**; teste prova que nenhum ramo enxerga o outro | `motor/cic/mcn/divergir.ts` |
 | 33 | Convergência **reusa** `CRV` (critério escrito) e `VTO`; nenhum juiz novo | `motor/cic/mcn/convergir.ts` |
 | 33 | Teto obrigatório: recusa iniciar sem `orcamentoPorCard` — N ramos multiplicam custo por N | `motor/cic/mcn/divergir.ts` |
-| 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/osw/rta/perfil.ts` |
+| 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/osw/rta/perfil.ts`, `motor/nmy/luc/plano.ts` |
+
+### Como conferir
+
+```bash
+bun test ./test/cic/mcn-divergir.test.ts       # isolamento: nenhum ramo cita ou lê outro
+bun test ./test/cic/mcn-enquadramentos.test.ts # lente é dado versionado; ausente/vazio/duplicado LANÇA
+bun test ./test/cic/mcn-convergir.test.ts      # nenhum juiz novo — delega a VTO e RDA
+bun test ./test/osw/rta-divergencia.test.ts    # gatilho: FECHADO vence ABERTO, e o padrão é não divergir
+bun test ./test/nmy/luc-plano-render.test.ts   # a divergência aparece no plano que o humano aprova
+```
+
+> **O isolamento é estrutural, não prometido.** `promptDoRamo()` recebe **um**
+> enquadramento — não a lista —, então um ramo não tem como citar outro. E
+> `despacharDivergencia()` constrói **todos** os prompts antes do primeiro
+> despacho, então nenhuma saída pode entrar no prompt de outro ramo: no instante
+> em que os prompts existem, ainda não há saída nenhuma. O teste planta um
+> marcador por ramo e reprova se algum aparecer em prompt alheio.
+
+### Divergências conscientes do esboço
+
+**O padrão é NÃO divergir.** N ramos multiplicam o custo por N. Um gatilho que
+erra para o lado de ligar transforma todo card ambíguo numa conta multiplicada, e
+o operador só descobre no fim do mês. Enunciado sem marca de desenho não diverge.
+
+**`FECHADO` vence `ABERTO` na ordem de avaliação.** "Arquitetura do cálculo de
+comissão" tem as duas marcas e continua tendo uma resposta só.
+
+**Os críticos são os critérios escritos do `CRV`, não os enquadramentos que
+geraram.** Se os mesmos frames julgassem, o placar mediria de novo a preferência
+de quem propôs — que é o ancoramento que a divergência acabou de gastar dinheiro
+para evitar.
+
+**O `despachante` é injetado, não importado.** Testar isolamento exige capturar o
+que foi enviado, e um módulo que fala com a rede por dentro não deixa. Manter
+`divergir.ts` puro torna a regra verificável sem provedor de IA nenhum.
 
 ### Onde entra, e onde NÃO entra
 
