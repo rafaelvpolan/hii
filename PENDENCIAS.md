@@ -6,105 +6,86 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## RESPOSTA — `/end`: não faz sentido como comando, mas o seu instinto achou um defeito real
+## DECISÃO SUA — item 11 muda o custo do polimento, e isso é política
 
-Você descreveu: *"começar outra tarefa/conversa com outro contexto, sem manter
-memória anterior enviando tudo para IA"*.
+`despacharAgentesNaFase` existe, tem teste e **não está ligado**. Para ligar
+falta uma coisa só: `config/pipeline.json` aceitando mais de um agente por passo
+(`agents: []` em vez de `agent`). A mudança é contida — `motor/nmy/tipos.ts`,
+`motor/nmy/config.ts` e o laço de `motor/qlb/ctr/fechar.ts`.
 
-**Não recomendo criar o `/end`**, por três motivos concretos:
+**Por que não fiz por dentro.** Hoje cada passo do polimento é uma chamada de
+agente. Com dois especialistas num passo, o mesmo card passa a fazer duas — e o
+pior caso do orçamento (`orcamentoPorCard.tetoUsd`, hoje US$ 16, calibrado em 8
+chamadas) sobe junto. Quanto exatamente depende de quantos passos ganham
+especialista, e isso é decisão de quanto você quer gastar por card, não de
+engenharia.
 
-1. **O card já é a fronteira de contexto.** Cada card roda no próprio worktree
-   e monta o prompt do zero (`motor/cic/agente.ts`). Não existe conversa que
-   atravesse cards — não há o que "encerrar".
-2. **A TUI já tem `/new-session`** (`motor/mir/sessao.ts:58`), que faz
-   exatamente "outra conversa, contexto limpo".
-3. **A única coisa que de fato atravessa para o prompt da IA** é
-   `.hii/memory/motor.md` (`motor/cic/agente.ts:167`) — e **já existe o
-   interruptor** para não mandar nada: `HICODE_PROJECT_MEMORY=off`.
-
-Um `/end` que apaga memória duplicaria esse interruptor e destruiria o rastro
-que o `aprendiz` (item 12, Onda 10) foi desenhado para ler.
-
-**Mas investigar isso achou um defeito de verdade, e eu corrigi.**
-`readProjectMemory` cortava com `.slice(0, 2500)` — os 2500 caracteres **mais
-antigos**. Como o arquivo cresce por append cronológico, a memória do projeto
-**congelava no passado**: tudo que o motor aprendia depois nunca chegava ao
-prompt, e nada avisava. Agora mantém o recente e declara quando corta
-(`memoria truncada: N caracteres mais antigos omitidos`). Seu instinto estava
-certo na direção — não era "manda tudo", era "manda a fatia errada, para
-sempre, em silêncio".
-
-**Se quiser mesmo um controle por card** — "este card não recebe memória
-nenhuma" — isso é honesto e pequeno: um campo `memoria: off` no frontmatter,
-lido no mesmo ponto onde `PROJECT_MEMORY` já é lido. Diga e eu faço; é uma
-linha e um teste.
-
-
-R: o /end seria para ele começar outra tarefa/conversa com outro contexto, sem manter memoria anterior enviando tudo para IA. Veja se faz sentido, caso contrario não faz.
+**O que preciso:** ligar e recalibrar o teto, ou deixar declarado como
+mecanismo pronto sem consumidor (como o item 18).
 
 ---
 
-## RECOMENDAÇÕES — os três itens que você mandou avaliar
+## DECISÃO SUA — de onde sai a referência externa do gauntlet (item 23)
 
-### 1. Laço de conflito do `sync.ts` — NÃO migrar, mas fechar o buraco real
+O `CND` está completo e testado: comparação cega, boundary de orçamento, gatilho
+por pack. **Não está ligado** porque falta a metade que não é código — de onde
+vem a referência concreta e buscável contra a qual comparar.
 
-**Não migre para `repararAteOTeto`.** `GateReparavel` modela "roda uma
-verificação → veredicto → conserto estreito → roda de novo". Resolução de
-conflito não tem verificação re-executável: o "veredicto" é `git diff
---diff-filter=U` e o conserto edita os arquivos em conflito. Forçar no molde
-compra uniformidade pagando com abstração errada.
+Sem referência não há comparação cega, só opinião com nome novo. As opções que
+vejo:
 
-**O buraco real é mais estreito.** Conferido: `motor/qlb/ctr/sync.ts` escreve
-no log do card (`CONFLITO n/MAX`) e registra métrica de custo
-(`addMetric(fsteps, 'Conflito', …)`), mas tem **zero** chamadas a
-`anexarEvento`. Consequências concretas: `motor/euc/recuperar.ts` não enxerga
-um laço de conflito interrompido por crash, e o `aprendiz` (item 12) não
-conseguirá contar conflito recorrente como `ProblemSignature`.
+1. **Captura de tela de produto real**, anexada ao card como referência (o motor
+   já sabe receber imagem: `motor/qlb/alf/anexo.ts`, usado pelo `implement`).
+   É o caminho mais direto e reusa o que existe.
+2. **Exemplo publicado** apontado por URL no card, buscado pelo `alf/refs.ts`
+   com as guardas de rede que já existem.
+3. **Biblioteca de referências por pack**, versionada em `skills/` — mais
+   trabalho, mas reprodutível e auditável.
 
-**Recomendo:** emitir `repair_attempt` por tentativa e `gate_verdict` no fim.
-Três linhas, nenhuma mudança de abstração, e resolve o que de fato falta —
-invisibilidade, não falta de uniformidade.
+Minha recomendação é **(1)**, porque não inventa mecanismo novo: o card já pode
+carregar imagem de referência, e o gauntlet passaria a comparar o resultado
+contra ela. Diga qual e eu ligo.
 
-R: fazer recomendação
+---
 
-### 2. Reduzir os tetos de reparo — medir antes de automatizar
+## PRÓXIMA ONDA — medir instabilidade por alvo antes de automatizar teto
 
-**Os dois tetos já são ajustáveis sem código novo:**
-`HICODE_REAJUSTE_RETRIES` e `HICODE_CONFLICT_RETRIES`, default 2 cada
-(`motor/cdl/ali/config.ts:56-59`). Então "reduzir para builds cronicamente
-instáveis" não precisa de implementação para ser *possível* — precisa de um
-jeito de saber **quais** alvos são instáveis.
+Sua decisão sobre reduzir `maxReajuste()`/`MAX_CONFLICT` para builds
+cronicamente instáveis. Os dois tetos **já são** ajustáveis por env
+(`HICODE_REAJUSTE_RETRIES`, `HICODE_CONFLICT_RETRIES`, default 2) — não falta
+código para ser possível, falta saber **quais** alvos são instáveis.
 
-**Não recomendo construir o detector automático.** Ele exigiria limiar, política
-de decaimento e armazenamento, e ainda seria um *proxy* para "isto está
-custando demais" — que o `orcamentoPorCard.tetoUsd` (entregue nesta onda) já
-mede direto, sem proxy.
+**O pré-requisito agora existe.** O laço de conflito do `sync.ts` passou a emitir
+`repair_attempt` e `gate_verdict` no diário, então os quatro pontos de reparo
+finalmente contam. Falta a contagem por alvo e a exibição em `hii status`.
 
-**Recomendo:** contar `repair_attempt` por alvo no diário e mostrar em
-`hii status`. Aí baixar o env para aquele alvo vira decisão sua com dado atrás.
-**Depende do item 1 acima** — sem os eventos do `sync.ts`, o laço de conflito
-fica fora da contagem, e ele é justamente um dos quatro pontos de reparo.
+Continuo não recomendando detector automático: exigiria limiar, política de
+decaimento e armazenamento, e ainda seria proxy para "isto está custando demais"
+— que o `orcamentoPorCard` mede direto.
 
-R: FAzer recomendação
+---
 
-### 3. Ligar `executarEmBlocos` — recomendo NÃO ligar agora, e parar de contar como pronto
+## Item 25 — dois efeitos externos ainda fora da chave
 
-O laço de polimento do `fechar.ts` **já** faz executa → valida → para cedo. Rotear
-por TJL ali seria refatoração sem ganho de comportamento: cerimônia para dar um
-chamador ao módulo e um ✅ ao roadmap, sem entregar economia nenhuma.
+`executarComIdempotencia` tem **três** chamadores declarados em
+`test/euc/idempotencia-contrato.test.ts`: `pr_create`, `matriz_criada` e
+`aprendiz`. Continuam fora: `push` (`motor/qlb/git.ts:188-194`) e o laço de
+conflito de `motor/qlb/ctr/sync.ts`.
 
-O valor real do TJL é fatiar **uma** chamada de implementação em blocos
-validados (schema → migration → model → controller → teste). Mas o plano exige
-que quem decide os blocos seja função determinística, nunca a IA — e essa
-decisão é conhecimento **por stack**. Ou seja: o fatiador pertence à camada de
-skill, não ao `core/`.
+O registro de chamadores está fazendo o trabalho — reprovou duas vezes até o
+efeito novo ser declarado. Fechar os dois restantes é trabalho pequeno; o que
+falta é decidir se `push` precisa (é idempotente por natureza com
+`--force-with-lease`) ou se basta declarar a exceção com o motivo.
 
-**Recomendo:** marcar o item 18 como *"mecanismo pronto, sem consumidor"* no
-`WORKFLOW-EXECUCAO.md` em vez de fingir conclusão, e deixar o primeiro
-consumidor chegar junto com o pack `backend-web` — o mesmo pack que o item 16
-está esperando.
+---
 
-R: FAzer recomendação
+## PRECISO DE VOCÊ — `receipts/` sem rastreio
+
+`receipts/receipts.jsonl` (32K, do plugin protect-mcp) está sem rastreio e fora
+do `.gitignore`, e cresce a cada sessão. Não decidi por você porque as duas
+leituras são plausíveis: log local descartável (vai pro `.gitignore`) ou trilha
+de auditoria assinada que você quer versionada.
+
 ---
 
 ## ESTADO — o que está atrás de `HICODE_RIGOR_ESTRITO=1`
@@ -120,3 +101,14 @@ veredicto no card e só barram com o interruptor ligado:
 
 Enquanto desligado dá para ver, card a card, quem passou sem provar — que é o
 insumo para decidir quando apertar. Ligar hoje pararia todo trabalho em voo.
+
+---
+
+## ESTADO — mecanismo pronto sem consumidor, por decisão
+
+Não são pendências: são escolhas registradas para não parecerem esquecimento.
+
+**Item 18 (`executarEmBlocos`).** O laço de `motor/qlb/ctr/fechar.ts` já faz
+executa → valida → para cedo. Rotear por TJL ali é cerimônia. O valor real —
+fatiar uma implementação em blocos validados — exige fatiador determinístico por
+stack, que pertence à camada de skill, não ao `core/`.

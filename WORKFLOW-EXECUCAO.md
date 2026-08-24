@@ -635,6 +635,7 @@ comportamento.
 | Item 12 — `aprendiz` | `motor/qlb/ctr/merge.ts` (`aoMergear`) | No merge, o aprendiz lê o diário e registra candidato a regra |
 | **Defeito** — `card_fechado` | `motor/qlb/ctr/merge.ts` | Era tipo de evento que **ninguém escrevia**: `recuperar.ts` filtrava por ele e nunca filtrava nada, então a retomada varria todo card que algum dia teve diário, para sempre. Exatamente a degradação que a Parte VI marca como o erro mais comum de checkpoint |
 | Item 9 — `doc-updater` | `motor/qlb/ctr/fechar.ts` | Cada card registra `contrato_publico: mudou\|estavel` antes do PR |
+| **Recomendação 1** — diário do conflito | `motor/qlb/ctr/sync.ts` | O laço de conflito passa a emitir `repair_attempt` por tentativa e `gate_verdict` nas três saídas. Era a última cópia de reparo invisível ao diário — e sem ela o `aprendiz` não conseguia contar conflito recorrente como padrão |
 
 A ordem em `aoMergear` tem teste: **aprendiz primeiro, fechamento depois**.
 Fechar antes esconderia dele exatamente o rastro que ele existe para auditar.
@@ -652,8 +653,16 @@ não há comparação cega, só opinião com nome novo.
 **Item 11 (`despacharAgentesNaFase`)** — precisa de `config/pipeline.json`
 aceitando mais de um agente por passo (`agents: []` em vez de `agent`). É
 contido, mas **muda o perfil de custo da fase de polimento** — mais de uma
-chamada de agente por passo. Decisão de política, não de engenharia: fica
-declarada aqui em vez de entrar por dentro.
+chamada de agente por passo, e o teto de `orcamentoPorCard` foi calibrado em 8.
+Decisão de política, não de engenharia: fica em `PENDENCIAS.md` esperando
+resposta, em vez de entrar por dentro.
+
+O laço de conflito do `sync.ts` **não** migrou para `repararAteOTeto`, e isso é
+escolha: `GateReparavel` modela "roda verificação → veredicto → conserto
+estreito", e resolução de conflito não tem verificação re-executável — o
+veredicto é o próprio `git diff --diff-filter=U`. Forçar no molde compraria
+uniformidade pagando com abstração errada. O que faltava era só o diário, e esse
+foi fechado.
 
 ### Dois guardas próprios dispararam, e os dois estavam certos
 
