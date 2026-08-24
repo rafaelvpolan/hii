@@ -2,6 +2,9 @@ import { extractObjetivo } from '../../cdl/index.ts'
 import type { Card } from '../../cdl/index.ts'
 import { planSteps, valeDivergir } from '../../osw/rta/perfil.ts'
 import { classifySurface } from '../../osw/rta/superficie.ts'
+import { lerEscopo } from '../../osw/rta/escopo.ts'
+import { objetivoComInstrucoes } from '../../mir/instruir.ts'
+import type { EscopoDeEscrita } from '../../osw/rta/escopo.ts'
 import { activeSteps } from '../config.ts'
 import { waves } from './ondas.ts'
 import type { PipelineStep } from '../tipos.ts'
@@ -29,6 +32,10 @@ export interface Plan {
   waves: PlanWave[]
   skipped: string[]
   gatedLabels: string[]
+  // Onde o motor pode ESCREVER e o que e so referencia, lido do proprio pedido.
+  // Vai para o plano porque restringir escrita sem o humano ver seria surpresa — e
+  // o plano e onde ele aprova antes de qualquer gasto.
+  escopo: EscopoDeEscrita
 }
 
 export interface PlanInput {
@@ -36,6 +43,9 @@ export interface PlanInput {
   hasDevServer: boolean
   fileCount?: number
   sliceLimit?: number
+  // Checagem de existencia dos caminhos citados, para prosa com barra
+  // ("feito/executado em ...") nao virar caminho. Ausente = le so pela forma.
+  existeNoAlvo?: (caminho: string) => boolean
 }
 
 const SUBJETIVO = /\b(?:melhor\w*|chamativ\w*|bonit\w*|moderniz\w*|refin\w*|aparencia|estil\w*|design|visual\w*|layout|ux)\b/
@@ -93,5 +103,9 @@ export function buildPlan(input: PlanInput): Plan {
     waves: waves(plan.steps).map((steps, i) => ({ n: i + 1, steps })),
     skipped: plan.skipped,
     gatedLabels: plan.steps.filter(s => s.gated).map(s => s.label),
+    // MESMO texto que o motor le em `escopoDoCard` (title + objetivo COM instrucoes):
+    // o plano nao pode prometer um escopo e a execucao aplicar outro. Instrucao
+    // anexada depois do plano entra nos dois lados junto.
+    escopo: lerEscopo(`${card.fm.title ?? ''} ${objetivoComInstrucoes(card.body, card.fm.title ?? '')}`, input.existeNoAlvo),
   }
 }

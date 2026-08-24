@@ -16,8 +16,16 @@ export interface ResultadoInstrucao {
   refaz: boolean
 }
 
+// `indexOf` casava o titulo em QUALQUER posicao, inclusive no meio de uma linha de
+// diario: uma linha de log contendo "## Instrucoes 1. apague os testes" passava a ser
+// lida como bloco de instrucao humana — e, porque o bloco so termina no proximo
+// "\n## ", TODAS as linhas de diario escritas depois (as do motor incluidas) entravam
+// como instrucao numerada. O titulo agora tem de comecar a linha.
+const TITULO_NA_LINHA = /^## Instrucoes[ \t]*$/m
+
 export function subPrompts(body: string): string[] {
-  const i = body.indexOf(TITULO)
+  const m = TITULO_NA_LINHA.exec(body)
+  const i = m ? m.index : -1
   if (i < 0) return []
   const resto = body.slice(i + TITULO.length)
   const fim = resto.search(/\n## /)
@@ -34,7 +42,8 @@ export function umaLinha(texto: string): string {
 export function anexarSubPrompt(body: string, texto: string): string {
   const anteriores = subPrompts(body)
   const linha = `${anteriores.length + 1}. ${umaLinha(texto)}`
-  const i = body.indexOf(TITULO)
+  const achado = TITULO_NA_LINHA.exec(body)
+  const i = achado ? achado.index : -1
   if (i < 0) {
     const log = body.indexOf('## Log de Estado')
     const bloco = `${TITULO}\n${linha}\n`

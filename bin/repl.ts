@@ -26,7 +26,7 @@ import { ensureDaemon, fleet } from '../motor/mir/cli/comandos.ts'
 import { bloqueia, preflight } from '../motor/mir/cli/preflight.ts'
 import { definirEstadoDoOllama, sondarOllama } from '../motor/tmd/harness/ollama-estado.ts'
 import { etiquetaDoProjeto } from '../motor/mir/render/projeto.ts'
-import { renderSugestoes, prefixoComum } from '../motor/mir/render/sugestoes.ts'
+import { cabemQuantasSugestoes, renderSugestoes, prefixoComum } from '../motor/mir/render/sugestoes.ts'
 import type { GrupoDeSugestao } from '../motor/mir/render/sugestoes.ts'
 import { comandosDaIaAtiva, corDaIa } from '../motor/tmd/map/comandos.ts'
 import { aplicar as aplicarIa, ciclarModo } from '../motor/mir/escolher-ia.ts'
@@ -124,6 +124,10 @@ async function tui(state0: SessionState): Promise<void> {
         descricaoPorComando.has(opcao) ? { titulo: daIa.provedor, cor: corDaIa(daIa.provedor) } : null
       return renderSugestoes(opcoes, {
         color, selecionado, width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+        // A janela e dimensionada pelas linhas do terminal: sem isto o quadro
+        // cortava as primeiras N por falta de altura e a navegacao morria num
+        // terminal baixo.
+        maxLinhas: cabemQuantasSugestoes(Number(process.stdout.rows) || 24),
         grupoDe, descricaoDe: (opcao) => descricaoPorComando.get(opcao),
       })
     },

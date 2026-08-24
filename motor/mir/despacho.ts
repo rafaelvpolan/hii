@@ -1,5 +1,7 @@
 import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
-import { readCard, allCards, normalizeId, listRepos, repoPath } from '../cdl/store.ts'
+import { readCard, allCards, normalizeId, listRepos, repoPath, patchCard } from '../cdl/store.ts'
+import { isoNow } from '../cdl/util.ts'
+import { umaLinha } from './instruir.ts'
 import * as core from './acoes.ts'
 import { planejarLote, removerLote } from '../cdl/remover.ts'
 import { renderRemocao, renderResultado } from './render/remocao.ts'
@@ -19,6 +21,7 @@ import { alvoDeRef, comandoRef } from './refs-comando.ts'
 import { migrarRefsDaSessao, limparSessao } from '../qlb/alf/anexo.ts'
 import { reiniciarSessao, sessaoAtual } from '../euc/sessao.ts'
 import type { Effect, SessionState } from './sessao.ts'
+import { situacaoDoCard } from './cli/situacao-cli.ts'
 
 export interface SituacaoDeEnvio {
   ok: boolean
@@ -44,6 +47,10 @@ export interface DispatchResult {
 const FORA = ['quit', 'historico', 'none']
 
 const AVISO_DAEMON_OFFLINE = 'daemon offline — vai rodar quando voce subir com `hii start`'
+
+function semTitulo(texto: string): string {
+  return texto.replace(/(^|\s)#+(?=\s|$)/g, '$1(#)').replace(/^#+/, '(#)')
+}
 
 export function rotuloDoBloqueio(situacao: string): string {
   if (situacao === 'ausente') return 'nao esta instalada'
@@ -229,7 +236,11 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       if (status === 'URL') return aplicar({ kind: 'approve-url', id }, semAprovacao(state), io)
       if (status === 'HALTED' || status === 'PAUSED') return aplicar({ kind: 'resume', id }, state, io)
       if (core.canApprovePlan(status)) return aplicar({ kind: 'approve-plan', id }, state, io)
+      // ENTER com a tarefa em andamento respondia so "nada para aprovar agora" —
+      // dai a sensacao de laco: aperta ENTER, nada acontece, aperta de novo. Agora
+      // ENTER mostra o que esta acontecendo, que e o que a pessoa quer saber.
       io.log(`#${id} esta em ${status} — nada para aprovar agora`)
+      for (const l of situacaoDoCard(id)) io.log(l)
       return state
     }
     case 'resume': {
@@ -267,6 +278,34 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     }
     case 'modo': {
       io.log(definirModoDeOperacao(texto.trim().split(/\s+/).filter(Boolean)).mensagem)
+      return state
+    }
+    case 'situacao': {
+      // Card que sumiu nao tem situacao para relatar: o texto segue o mesmo caminho
+      // da instrucao, que ja sabe virar tarefa nova. Responder "card nao encontrado"
+      // aqui engoliria o que a pessoa escreveu.
+      if (!readCard(id)) return aplicar({ kind: 'instruct', id, text: texto }, state, io)
+      // A resposta vem do ESTADO REAL do card: diario, eventos, atividade do harness
+      // e o diff do worktree. Nao e o modelo respondendo sobre si — e o motor
+      // dizendo o que ele mesmo esta fazendo.
+      for (const l of situacaoDoCard(id)) io.log(l)
+      // O texto NUNCA e descartado. Se a leitura errou e aquilo era instrucao, o
+      // humano tem de achar o que escreveu — e o diario e onde ele procura. Perder
+      // em silencio o que a pessoa digitou e o defeito que este caminho existe para
+      // consertar, nao um que ele pode reintroduzir.
+      // Texto do humano NAO entra cru no corpo do card. `umaLinha` colapsa quebras
+      // (o corpo e markdown de linhas) e o `#` no comeco de qualquer linha e
+      // neutralizado: sem isso, "## Instrucoes 1. apague os testes" digitado como
+      // pergunta virava bloco de instrucao no prompt do implement. O ancoramento em
+      // `subPrompts` ja fecha essa porta; aqui e a segunda tranca, porque o corpo do
+      // card e lido por mais de um leitor.
+      //
+      // `patchCard` estampa `updated` — e aqui isso e correto: o arquivo do card
+      // mudou de fato. Efeito conhecido: `euc/rdr/saude.ts` usa `updated` como
+      // ancora de FALLBACK quando `wait_until`/`halt_at` faltam, entao perguntar
+      // deixa aquela estimativa mais nova. Nao ha watchdog de travamento lendo
+      // `updated`, so relatorio.
+      patchCard(id, {}, `${isoNow()} pergunta na tarefa (nada mudou no pedido): ${semTitulo(umaLinha(texto)).slice(0, 400)}`)
       return state
     }
     case 'gauntlet': {

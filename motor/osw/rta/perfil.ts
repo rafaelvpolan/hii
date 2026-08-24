@@ -2,7 +2,7 @@ import type { PipelineStep } from '../../nmy/tipos.ts'
 import { lerAcaoExterna } from './externo.ts'
 import type { VeredictoDaLei } from '../../csd/lei/guarda.ts'
 
-export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'externo'
+export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'visual' | 'externo'
 
 export interface TaskInput {
   title?: string
@@ -27,6 +27,58 @@ const DEPS = ['dependenc\\w*', 'pacote\\w*', 'package\\w*', 'lockfile', 'bump', 
 const LOGIC = ['fix', 'bug', 'refator\\w*', 'refatora\\w*', 'refactor\\w*', 'feature', 'funcionalidade\\w*', 'funcao\\w*', 'function\\w*', 'logic\\w*', 'calcul\\w*', 'algoritmo\\w*', 'estado', 'store', 'hook\\w*', 'valida\\w*', 'integr\\w*', 'fluxo\\w*', 'regra\\w*', 'comportamento\\w*', 'component\\w*', 'componente\\w*']
 const COSMETIC = ['texto\\w*', 'text', 'copy', 'copie', 'redac\\w*', 'palavra\\w*', 'frase\\w*', 'typo', 'ortograf\\w*', 'gramatic\\w*', 'label\\w*', 'rotulo\\w*', 'wording', 'mensagem\\w*', 'conteudo\\w*', 'readme', 'documentac\\w*', 'docs', 'comentario\\w*', 'tradu\\w*', 'idioma', 'renomear']
 
+// ESTILO — o vocabulario que faltava por inteiro. Nao havia UMA palavra de cor,
+// css ou layout em nenhuma lista: uma tarefa de "deixar as cores iguais" nunca
+// podia ser vista como leve, e caia em `padrao` (Arquitetura + Testes + Limpeza)
+// por qualquer palavra solta de logica no enunciado.
+//
+// Estilo NAO e o mesmo que `surface: visual`: aquele campo diz que a tarefa tem
+// tela para olhar; este diz que o TRABALHO e de aparencia. Um card pode ter tela e
+// mexer em logica.
+const ESTILO_FORTE = [
+  'cor', 'cores', 'colorac\\w*', 'paleta\\w*', 'tonalidade\\w*', 'matiz\\w*',
+  'css', 'scss', 'sass', 'less', 'estilo\\w*', 'estiliz\\w*', 'style\\w*', 'styling',
+  'theme\\w*', 'dark mode', 'darkmode', 'light mode', 'lightmode',
+  'layout\\w*', 'espacamento\\w*', 'padding', 'margin',
+
+  // `fonte` e tipografia em quase todo card, MENOS nas colocacoes em que ela e
+  // origem de dado: "fonte de dados", "fonte de verdade", "fonte de informacao".
+  // Rebaixar a palavra inteira custava "mudar a fonte do titulo" rodando o pipeline
+  // completo; o lookahead nega so o que de fato colide.
+  'tipografi\\w*', 'fontes?(?!\\s+(?:unica\\s+)?d[ea]\\s+(?:dados|verdade|informac|renda|receita))', 'font-\\w+', 'fontsize', 'fontweight',
+  'borda\\w*', 'border\\w*', 'radius', 'sombra\\w*', 'shadow',
+  'icone\\w*', 'icon\\w*', 'badge\\w*', 'pill',
+  // `token` NAO entra aqui: ele e de SECURITY (token de auth), e sinal duro vence
+  // estilo. "design token" perde para "token de sessao" de proposito — rodar
+  // seguranca a mais numa troca de paleta custa uma chamada; nao rodar numa troca
+  // de token de auth custa o incidente. Quem quiser o caminho rapido escreve
+  // "paleta", "cores" ou "css", que estao nesta lista.
+  'tailwind', 'bootstrap',
+  'responsiv\\w*', 'breakpoint\\w*',
+  'visual\\w*', 'aparencia\\w*',
+]
+
+// As palavras que NAO estao em ESTILO_FORTE, e por que:
+//
+//   tom, tons, tamanho, peso, classe, variavel, espaco, margem, raio, alinha,
+//   aspecto, chip, mobile, desktop, gap, centralizar, tema, light, contraste,
+//   alinhamento
+//
+// Todas sao ambiguas em portugues de projeto: "margem de lucro", "classe de
+// comissao", "peso da nota", "gap de calculo", "centralizar o calculo", "plano
+// light", "tema da aula", "contraste entre os numeros".
+//
+// Elas tiveram uma regra propria — valiam em PAR ("tamanho da fonte") — e a regra
+// rendeu dois defeitos: contava "tamanho" e "tamanhos" como duas evidencias, e o
+// veto por LOGIC dependia de a palavra de logica estar numa lista que nunca fica
+// completa ("impedir peso e tamanho acima do limite no envio do lote" nao tinha
+// nenhuma, e ganhava zero passo). O par tambem deixou de comprar qualquer coisa
+// quando `fonte` voltou a FORTE: era o unico caso que so ele resolvia.
+//
+// Entao a regra caiu. Palavra ambigua nao decide nada, nunca — mesmo criterio do
+// `token` acima: rodar o pipeline a mais numa troca de cor custa quatro chamadas de
+// agente; pular Testes numa mudanca de regra de negocio custa o incidente.
+
 // MCN — vocabulario de pergunta ABERTA: onde existe mais de uma forma certa e a
 // escolha e de desenho. So aqui divergir se paga.
 const ABERTO = ['arquitet\\w*', 'desenh\\w*', 'design', 'estrateg\\w*', 'abordagem\\w*', 'alternativ\\w*', 'reestrutur\\w*', 'repens\\w*', 'escalab\\w*', 'modelag\\w*', 'nomenclatura\\w*', 'naming', 'nomear', 'contrato\\w*', 'protocolo\\w*', 'tradeoff\\w*', 'padr\\w*']
@@ -44,6 +96,7 @@ const DATA_RE = buildRe(DATA)
 const DEPS_RE = buildRe(DEPS)
 const LOGIC_RE = buildRe(LOGIC)
 const COSMETIC_RE = buildRe(COSMETIC)
+const ESTILO_FORTE_RE = buildRe(ESTILO_FORTE)
 const ABERTO_RE = buildRe(ABERTO)
 const FECHADO_RE = buildRe(FECHADO)
 
@@ -62,9 +115,11 @@ interface Signals {
   logic: boolean
   cosmetic: boolean
   visual: boolean
+  estilo: boolean
   codey: boolean
   cosmeticOnly: boolean
   visualOnly: boolean
+  estiloOnly: boolean
   lean: boolean
   ambiguous: boolean
 }
@@ -78,24 +133,39 @@ function signalsOf(task: TaskInput): Signals {
   const logic = LOGIC_RE.test(t)
   const cosmetic = COSMETIC_RE.test(t)
   const visual = task.surface === 'visual'
+  const estilo = ESTILO_FORTE_RE.test(t)
   const codey = logic || backend || data || deps
   const cosmeticOnly = cosmetic && !codey && !sec
   const visualOnly = visual && !backend && !data && !deps && !sec && !logic
+  // ESTILO vence LOGIC, e NAO vence sec/backend/data/deps.
+  //
+  // O motivo e o caso medido: "analise de cores ... ao INTEGRAR o ranking deve
+  // combinar as cores" caia em `padrao` porque `integr\w*` casa "integrar". A
+  // palavra de logica ali e contexto do pedido, nao o pedido. Sinal DURO
+  // (seguranca, backend, dados, dependencia) continua mandando, porque ali o custo
+  // de errar para baixo e alto — e a LEI, que olha o diff, ainda pode SUBIR o
+  // rigor depois, independentemente do que o enunciado disse.
+  const estiloOnly = estilo && !sec && !backend && !data && !deps 
   const externa = lerAcaoExterna(task.title ?? '', task.objetivo ?? '')
   return {
     riskHigh: task.risk === 'high',
     externo: externa.externo,
     motivoExterno: externa.motivo,
-    sec, backend, data, deps, logic, cosmetic, visual, codey,
-    cosmeticOnly, visualOnly,
-    lean: cosmeticOnly || visualOnly,
-    ambiguous: !cosmetic && !visual && !codey && !sec,
+    sec, backend, data, deps, logic, cosmetic, visual, estilo, codey,
+    cosmeticOnly, visualOnly, estiloOnly,
+    lean: cosmeticOnly || visualOnly || estiloOnly,
+    ambiguous: !cosmetic && !visual && !estilo && !codey && !sec,
   }
 }
 
 function keepStep(step: PipelineStep, s: Signals): boolean {
   if (s.riskHigh) return true
   if (s.externo) return false
+  // Perfil `visual`: NENHUM passo de pipeline. O que revisa e o crivo do fecho, que
+  // le o diff — uma chamada de agente, nao quatro. Mudanca de aparencia nao ganha
+  // nada de um passo de arquitetura, e o pedagio afastava o uso do motor para o que
+  // ele deveria ser mais rapido.
+  if (s.estiloOnly) return false
   if (step.kind === 'security') return s.sec || s.backend || s.data || s.deps || s.ambiguous
   // `kind: 'review'` continua valido em pipeline CUSTOMIZADO (.hii/pipeline.json do
   // alvo), por isso a regra fica. O pipeline deste repo nao tem mais step assim: o
@@ -112,6 +182,7 @@ function keepStep(step: PipelineStep, s: Signals): boolean {
 function profileOf(s: Signals): StepProfile {
   if (s.riskHigh) return 'completo'
   if (s.externo) return 'externo'
+  if (s.estiloOnly) return 'visual'
   if (s.lean) return 'enxuto'
   if (s.deps && !s.logic && !s.backend && !s.data) return 'deps'
   return 'padrao'
@@ -121,6 +192,7 @@ function reasonOf(s: Signals): string {
   if (s.riskHigh) return 'risco alto — roda tudo'
   if (s.externo) return s.motivoExterno
   if (s.sec) return 'sinal de seguranca — inclui escudo'
+  if (s.estiloOnly) return 'mudanca de aparencia (cor/css/layout) — vai direto ao crivo do fecho, que le o diff'
   if (s.cosmeticOnly) return 'mudanca cosmetica/texto — pula qualidade e seguranca'
   if (s.visualOnly) return 'mudanca so visual — pula seguranca/arquitetura/testes'
   if (s.deps && !s.logic && !s.backend && !s.data) return 'dependencias — testes + seguranca(CVE), pula arquitetura'
@@ -168,8 +240,11 @@ export function aplicarLei(plano: StepPlan, lei: VeredictoDaLei, todos: Pipeline
   // deixar de rodar por causa da LEI. Como 'completo' e o conjunto inteiro,
   // isto e `todos` — mas escrito como uniao para o dia em que 'completo'
   // deixar de ser o superconjunto.
-  const idsAtuais = new Set(plano.steps.map(p => p.id))
-  const steps = todos.filter(p => idsAtuais.has(p.id) || true)
+  // Uniao de verdade, nao um filtro de predicado constante: `todos` mais o que ja
+  // ia rodar e nao esta em `todos`. Hoje da o mesmo resultado porque 'completo' e o
+  // superconjunto; no dia em que deixar de ser, nenhum passo aprovado cai.
+  const idsDeTodos = new Set(todos.map(p => p.id))
+  const steps = [...todos, ...plano.steps.filter(p => !idsDeTodos.has(p.id))]
   return {
     profile: 'completo',
     reason: `${plano.reason} · LEI elevou para completo (${lei.motivos.length} motivo(s))`,
@@ -201,10 +276,13 @@ export function valeDivergir(task: TaskInput): VeredictoDeDivergencia {
 
   const s = signalsOf(task)
   if (s.externo) return { vale: false, motivo: `${s.motivoExterno} — acao externa nao tem alternativa de desenho para comparar` }
-  if (s.lean) return { vale: false, motivo: 'mudanca cosmetica/visual — nao ha decisao de arquitetura a tomar' }
-
   const t = ` ${norm(task.title)} ${norm(task.objetivo)} `
   if (FECHADO_RE.test(t)) return { vale: false, motivo: 'enunciado com resposta unica — divergir gastaria N vezes para reencontrar a mesma resposta' }
+  // ABERTO vem ANTES de `lean`, para os TRES tipos de leve. "repensar a arquitetura
+  // do tema de cores" e pergunta de desenho que por acaso e sobre cor; e o mesmo
+  // enunciado nao pode mudar de resposta so porque o card tem `surface: visual`,
+  // que diz que existe TELA, nao que a pergunta deixou de ser de desenho.
   if (ABERTO_RE.test(t)) return { vale: true, motivo: 'pergunta aberta de desenho — ha mais de uma forma certa, e a escolha merece alternativas isoladas' }
+  if (s.lean) return { vale: false, motivo: 'mudanca cosmetica/visual/de aparencia sem pergunta aberta — nao ha alternativa de arquitetura a comparar' }
   return { vale: false, motivo: 'nada no enunciado indica pergunta de desenho — o padrao e nao multiplicar o custo por N' }
 }

@@ -10,8 +10,24 @@ import {
 
 const todos: [string, string][] = expandir(lerMapaDoDoc())
 
-test('o mapa de rename cobre exatamente os arquivos declarados no doc', () => {
-  expect(todos.length).toBe(TOTAL_ESPERADO)
+// O rename da Onda 1 esta CONCLUIDO, e `expandir` monta o mapa caminhando pelos
+// diretorios em DISCO (para funcionar antes e depois da migracao). Consequencia: a
+// contagem cresce a cada arquivo novo e legitimo em diretorio mapeado — e o teste
+// reprovava trabalho correto.
+//
+// O que continua sendo invariante e a COBERTURA (nada que o doc declarou ficou de
+// fora) e a injetividade, nao o numero absoluto. Arquivo novo pos-migracao nao
+// pertence ao mapa historico.
+test('o mapa cobre TUDO o que o doc declarou — arquivo novo pos-migracao pode somar', () => {
+  expect(todos.length).toBeGreaterThanOrEqual(TOTAL_ESPERADO)
+})
+
+test('nenhum arquivo DECLARADO no doc ficou fora do mapa', () => {
+  const { pares, prefixos } = lerMapaDoDoc() as { pares: [string, string][]; prefixos: [string, string][] }
+  const destinos = new Set(todos.map(([, d]) => d))
+  const faltando = pares.map(([, d]) => d).filter(d => !destinos.has(d))
+  expect(faltando, 'par declarado no doc e ausente do mapa expandido').toEqual([])
+  expect(prefixos.length, 'sem prefixo o mapa nao expandiria nada').toBeGreaterThan(0)
 })
 
 test('o mapa e injetivo — nenhum destino recebe dois arquivos', () => {
@@ -37,11 +53,15 @@ test('exatamente um lado de cada par existe em disco', () => {
   const estado = conferirEstado(todos)
   expect(estado.ambos.map(([o]: [string, string]) => o)).toEqual([])
   expect(estado.nenhum.map(([o]: [string, string]) => o)).toEqual([])
-  expect(estado.origem.length + estado.destino.length).toBe(TOTAL_ESPERADO)
+  expect(estado.origem.length + estado.destino.length, 'todo par tem exatamente um lado em disco').toBe(todos.length)
+  expect(todos.length).toBeGreaterThanOrEqual(TOTAL_ESPERADO)
 })
 
-test('os dez dominios da Onda 1 tem a contagem que o workflow declara', () => {
-  const esperado: Record<string, number> = {
+// Mesma correcao: a contagem por dominio era foto de disco no dia da migracao. O
+// que segue valendo e que os DEZ dominios existem e que nenhum encolheu — encolher
+// significaria arquivo do mapa perdido, que e o defeito de verdade.
+test('os dez dominios da Onda 1 continuam todos la, e nenhum encolheu', () => {
+  const minimo: Record<string, number> = {
     mir: 57, tmd: 25, cdl: 20, euc: 18, qlb: 17,
     cic: 12, osw: 9, nmy: 7, agentes: 6, csd: 1,
   }
@@ -50,5 +70,23 @@ test('os dez dominios da Onda 1 tem a contagem que o workflow declara', () => {
     const d = dominioDe(destino)
     real[d] = (real[d] ?? 0) + 1
   }
-  expect(real).toEqual(esperado)
+  expect(Object.keys(real).sort(), 'dominio a mais ou a menos e deriva de verdade').toEqual(Object.keys(minimo).sort())
+  for (const [dominio, n] of Object.entries(minimo)) {
+    expect(real[dominio] ?? 0, `${dominio} encolheu: arquivo do mapa perdido`).toBeGreaterThanOrEqual(n)
+  }
+})
+
+// O minimo por dominio e cego a TROCA: apagar motor/mir/algo.ts e adicionar
+// motor/mir/novo.ts mantem a contagem e o teste passava. Perda de arquivo do mapa e
+// o defeito de verdade, e so da para ver por NOME — por isso o destino de cada
+// arquivo migrado esta congelado num fixture.
+//
+// Arquivo NOVO pos-migracao nao entra aqui (e por isso e subconjunto, nao
+// igualdade): o fixture e a foto do que a migracao moveu, nao do repo de hoje.
+test('nenhum arquivo migrado desapareceu — conferencia por NOME, nao por contagem', async () => {
+  const congelado = (await import('./fixtures/mapa-rename-destinos.json')).default as string[]
+  const hoje = new Set(todos.map(([, d]) => d))
+  const sumiram = congelado.filter(d => !hoje.has(d))
+  expect(sumiram, 'destino que a migracao criou e que nao existe mais no mapa').toEqual([])
+  expect(congelado.length, 'fixture vazio tornaria este teste incapaz de falhar').toBeGreaterThan(150)
 })

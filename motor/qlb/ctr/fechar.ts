@@ -16,6 +16,8 @@ import { activeSteps } from '../../nmy/config.ts'
 import { aplicarLei, planSteps } from '../../osw/rta/perfil.ts'
 import { SUFIXO_DO_GATE, runGatedStep } from '../../cic/passo-com-gate.ts'
 import { updateRunSteps } from '../../euc/registros.ts'
+import { escopoDoCard } from '../../cic/agente.ts'
+import { foraDoEscopo } from '../../osw/rta/escopo.ts'
 import { runCodefoxGate, runGatedReview, persistGate, buildPrBody, gateOutcome, gateHaltReason, withGateRetry } from '../../cic/crv/gate.ts'
 import { ensureContract } from '../../cdl/bss/armazenar.ts'
 import { podeAbrirPr } from '../../euc/rdr/doctor.ts'
@@ -99,6 +101,21 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     return
   }
   const changed = diffNomes.stdout.split('\n').filter(Boolean)
+  // SEGUNDO ponto de cumprimento do escopo. O primeiro (osw/executar.ts) roda logo
+  // depois do implement e ve so aquela escrita; depois dele ainda escrevem o ajuste
+  // de url, o reparo e os passos do pipeline — e o prompt de todos eles AFIRMA que o
+  // motor confere. Aqui o diff e contra `origin/<base>`, entao cobre tudo o que
+  // entrou no branch, de qualquer origem. Custa zero git a mais: `changed` ja estava
+  // lido acima.
+  const violouEscopo = foraDoEscopo(escopoDoCard(card, wt), changed)
+  if (violouEscopo.length) {
+    patchCard(id, {
+      status: 'HALTED',
+      escopo_violado: violouEscopo.slice(0, 20).join(',') + (violouEscopo.length > 20 ? ` +${violouEscopo.length - 20}` : ''),
+    }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED o branch tocou caminho que o pedido marcou como referencia: ${violouEscopo.slice(0, 10).join(', ')} — worktree e url mantidos para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`)
+    process.stdout.write(`[runner] #${id}: HALTED — o branch escreveu fora do escopo: ${violouEscopo.slice(0, 5).join(', ')}\n`)
+    return
+  }
   const pkg = affectedPackage(contract, changed)
   const ctx: RunCtx = { contract, pkg, target, arquivos: changed }
   patchCard(id, {}, `${isoNow()} contrato: ${contract.stack}${pkg ? ` · pacote afetado: ${pkg.name}` : ''}`)

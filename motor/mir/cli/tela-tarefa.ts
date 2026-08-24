@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { readCard, repoPath } from '../../cdl/store.ts'
 import { hasDevServer } from '../../cic/crv/url-viva.ts'
 import { buildPlan } from '../../nmy/luc/plano.ts'
@@ -14,12 +15,29 @@ import { formatar, ultimaAcao, ultimoAgente } from '../atividade.ts'
 import type { SessionState } from '../sessao.ts'
 import { color } from './saida.ts'
 import { atividadeDe, passosDe } from './dados.ts'
+import { renderSituacao } from '../render/situacao.ts'
+import { eventosDoCard } from '../../euc/eventos.ts'
 
 export function planoDe(id: string): string {
   const card = readCard(id)
   if (!card) return ''
   const alvo = repoPath(card.fm.repo ?? '')
-  const plano = buildPlan({ card, hasDevServer: existsSync(alvo) && hasDevServer(alvo) })
+  // `existeNoAlvo` fecha o falso positivo de PROSA: "esta sendo feito/executado em
+  // ..." tem barra e casa a forma de caminho. Sem esta checagem o plano mostraria
+  // "feito/executado" como se fosse arquivo — e o plano e o que o humano aprova.
+  //
+  // A raiz e a MESMA que o motor usa (`escopoDoCard(card, wt)`): quando o worktree
+  // ja existe, e ele. Conferir contra o clone principal enquanto o motor confere
+  // contra o worktree fazia o plano prometer um escopo que a execucao nao aplicava
+  // — build output gitignorado presente no clone e ausente no worktree novo
+  // aparecia como "so le" no plano e sumia na hora de valer.
+  const wt = String(card.fm.worktree ?? '')
+  const raiz = wt && existsSync(wt) ? wt : alvo
+  const plano = buildPlan({
+    card,
+    hasDevServer: existsSync(alvo) && hasDevServer(alvo),
+    existeNoAlvo: (caminho) => existsSync(join(raiz, caminho)),
+  })
   return renderPlan(plano, { color })
 }
 
@@ -39,9 +57,13 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
     detalhe: status === 'PR_OPEN' ? String(card.fm.pr_url ?? '') : '',
   })
   const passos = passosDe(card.fm)
-  if (!passos.length) return [...cab, ...pend]
   const at = atividadeDe(state.seguindo)
-  const processos = renderProcessos(passos, {
+  // Sem passos NAO e sem informacao: o perfil `visual` roda zero passo de pipeline,
+  // e era exatamente o card do incidente. Um early return aqui esconderia o painel
+  // do motor justamente na tarefa rapida — onde acompanhar importa mais, porque
+  // acaba antes. Sem renderProcessos, `agentes` e `ultima acao` voltam ao painel:
+  // ninguem mais os mostra.
+  const processos = !passos.length ? [] : renderProcessos(passos, {
     color,
     width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
     metricas: readRunSteps(state.seguindo) ?? {},
@@ -50,7 +72,25 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
     desde: idadeDe(card.fm.updated, Date.now()),
     parado: ['HALTED', 'PAUSED', 'CLARIFY'].includes(status),
   })
-  return [...cab, ...pend, ...processos, '']
+  // A queixa era: a area de execucao mostrava o que a IA fazia (Read, Edit, Task) e
+  // nada do que o MOTOR decidia. Estas linhas ficam FIXADAS (repl.ts passa este
+  // cabecalho como `fixo`), entao nao rolam para fora com o feed.
+  const doMotor = renderSituacao({
+    fm: card.fm,
+    eventos: eventosDoCard(state.seguindo),
+    atividades: at,
+    tocados: [],
+  }, {
+    color,
+    width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+    // `agentes` e `ultima acao` ja estao no renderProcessos acima.
+    omitir: passos.length ? ['agentes', 'ultima acao'] : [],
+    cabecalho: false,
+  })
+  // `doMotor` vem ANTES de `processos`: renderFrame corta o pinado pelo FIM
+  // (tui/layout.ts), e num terminal baixo o que tem de sobreviver e a decisao do
+  // motor (perfil, escopo, fase, gate, gasto), nao a lista de passos.
+  return [...cab, ...pend, ...doMotor, ...processos, '']
 }
 
 export function seguimento(state: SessionState): string[] {
