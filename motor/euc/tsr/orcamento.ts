@@ -80,10 +80,10 @@ export function lerGovernanca(): Governanca {
     if (!c.motivo) throw new Error(`model-tier.json: acao "${acao}" sem motivo — tier sem porque nao e auditavel`)
     criterios[acao] = { tier: exigirTier(c.tier, `criterios.${acao}`), motivo: c.motivo }
   }
-  const teto = cru.orcamentoPorCard?.tetoUsd ?? 0
+  const teto = cru.orcamentoPorCard?.tetoUsd
   const acaoAoEstourar = cru.orcamentoPorCard?.acaoAoEstourar ?? ''
-  if (!(teto > 0) || !acaoAoEstourar) {
-    throw new Error('model-tier.json: orcamentoPorCard precisa de tetoUsd > 0 e acaoAoEstourar — orcamento opcional nao e orcamento')
+  if (typeof teto !== 'number' || !Number.isFinite(teto) || teto <= 0 || !acaoAoEstourar) {
+    throw new Error(`model-tier.json: orcamentoPorCard precisa de tetoUsd numero finito > 0 e acaoAoEstourar — recebido ${JSON.stringify(teto)}. Teto infinito ou de outro tipo e a ausencia de orcamento com outro nome`)
   }
   return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar } }
 }
