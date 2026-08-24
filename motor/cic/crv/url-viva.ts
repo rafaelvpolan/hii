@@ -6,6 +6,7 @@ import { run } from '../../qlb/git'
 import { readContract } from '../../cdl/bss/armazenar'
 import { devCommand, devCwd, hasCommand } from '../../mir/comandos'
 import { noProxyArgs } from '../../qlb/alf/loopback'
+import { runtimeDeScript } from '../../cdl/ali/runtime'
 
 export interface UrlHealth {
   ok: boolean
@@ -92,7 +93,7 @@ export async function inspectUrl(id: string, url: string, capture: boolean): Pro
   const dir = join(cardsDir(), 'urls', String(id))
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const out = capture ? join(dir, 'url.png') : ''
-  const r = await run('bun', [join(ROOT, 'scripts', 'inspect-url.mjs'), url, out], { cwd: ROOT, timeout: 60000 })
+  const r = await run(runtimeDeScript(), [join(ROOT, 'scripts', 'inspect-preview.mjs'), url, out], { cwd: ROOT, timeout: 60000 })
   try {
     const j = JSON.parse(String(r.stdout || '')) as { ok?: boolean; conclusive?: boolean; detail?: string }
     return { ok: !!j.ok, conclusive: !!j.conclusive, detail: String(j.detail || '') }

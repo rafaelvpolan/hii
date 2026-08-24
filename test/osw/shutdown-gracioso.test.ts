@@ -55,7 +55,7 @@ test('/health responde 503 enquanto drena — o balanceador precisa tirar este p
   enc.pedirEncerramento()
   const r = respostaDeSaude('/health')
   expect(r.status).toBe(503)
-  const corpo = (await r.json()) as { ok: boolean; encerrando: boolean }
+  const corpo = JSON.parse(r.corpo) as { ok: boolean; encerrando: boolean }
   expect(corpo.ok).toBe(false)
   expect(corpo.encerrando).toBe(true)
 })

@@ -6,6 +6,7 @@ import { provedoresDisponiveis } from '../../tmd/disponibilidade'
 import { urlDoOllama } from '../../tmd/harness/ollama-estado'
 import { rotuloDoBloqueio } from '../despacho'
 import type { Check, Severity } from '../../euc/rdr/doctor'
+import { runtimeDeScript } from '../../cdl/ali/runtime'
 
 export type { Severity as Severidade, Check as ChecagemDeAmbiente } from '../../euc/rdr/doctor'
 
@@ -38,7 +39,7 @@ export function checarDependencias(root = ROOT): Check {
     return { nome: 'dependencias', severidade: 'aviso', detalhe: `node_modules ausente em ${root}`, conserto: `cd ${root} && bun install` }
   }
   try {
-    execFileSync('bun', [join(root, 'scripts', 'check-clone-limpo.mjs')], { cwd: root, stdio: 'ignore', timeout: 10000 })
+    execFileSync(runtimeDeScript(), [join(root, 'scripts', 'check-clone-limpo.mjs')], { cwd: root, stdio: 'ignore', timeout: 10000 })
     return { nome: 'dependencias', severidade: 'ok', detalhe: 'clone consistente (lockfile, links, CI)', conserto: '' }
   } catch (erro) {
     const naoRodou = (erro as { code?: string }).code === 'ENOENT'
@@ -50,7 +51,7 @@ export function checarDependencias(root = ROOT): Check {
 
 export function preflight(ollamaAlcancavel = false, root = ROOT): Check[] {
   return [
-    checarBinario('bun', 'instale o bun (https://bun.sh)'),
+    checarBinario(runtimeDeScript(), 'instale bun (https://bun.sh) ou use node 24+ com HICODE_RUNTIME=node'),
     checarBinario('git', 'instale o git'),
     checarBinario('gh', 'instale o gh CLI', 'aviso'),
     checarIa(ollamaAlcancavel),

@@ -13,6 +13,7 @@ import { snapshotDoMotor, revisaoDoEstado } from '../motor/mir/estado-json'
 import { executarAcao, criarTarefa } from '../motor/mir/comandos-de-tarefa'
 import type { AcaoDeTarefa } from '../motor/mir/comandos-de-tarefa'
 import { prepararMatriz } from '../motor/qlb/ctr/aprovar-plano'
+import { runtimeDeScript } from '../motor/cdl/ali/runtime'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -30,11 +31,11 @@ function semBoard(): number {
 }
 
 function script(name: string, extra: string[]): number {
-  return spawnSync('bun', [join(ROOT, 'scripts', 'setup', `${name}.mjs`), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
+  return spawnSync(runtimeDeScript(), [join(ROOT, 'scripts', 'setup', `${name}.mjs`), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
 function runnerBun(extra: string[]): number {
-  return spawnSync('bun', [join(ROOT, 'runner.ts'), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
+  return spawnSync(runtimeDeScript(), [join(ROOT, 'runner.ts'), ...extra], { stdio: 'inherit', cwd: ROOT }).status ?? 1
 }
 
 function disco(extra: string[]): number {
@@ -285,7 +286,7 @@ async function main(): Promise<number> {
     case 'quadro':
       return semBoard()
     case undefined:
-      return spawnSync('bun', [join(ROOT, 'bin', 'repl.ts')], { stdio: 'inherit', cwd: ROOT }).status ?? 0
+      return spawnSync(runtimeDeScript(), [join(ROOT, 'bin', 'repl.ts')], { stdio: 'inherit', cwd: ROOT }).status ?? 0
     default:
       usage()
       return 1
