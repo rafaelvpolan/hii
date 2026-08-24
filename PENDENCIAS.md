@@ -77,14 +77,6 @@ efeito novo ser declarado. Fechar os dois restantes é trabalho pequeno; o que
 falta é decidir se `push` precisa (é idempotente por natureza com
 `--force-with-lease`) ou se basta declarar a exceção com o motivo.
 
----
-
-## PRECISO DE VOCÊ — `receipts/` sem rastreio
-
-`receipts/receipts.jsonl` (32K, do plugin protect-mcp) está sem rastreio e fora
-do `.gitignore`, e cresce a cada sessão. Não decidi por você porque as duas
-leituras são plausíveis: log local descartável (vai pro `.gitignore`) ou trilha
-de auditoria assinada que você quer versionada.
 
 ---
 
