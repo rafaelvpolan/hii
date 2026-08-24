@@ -238,3 +238,98 @@ test('REGRESSAO quebrarEmLargura conta colunas: linha de CJK nao passa da largur
   for (const l of linhas) expect([l, larguraDeTexto(l) <= 40]).toEqual([l, true])
   expect(linhas.join(' ').split(/\s+/)).toEqual(new Array<string>(40).fill('中文'))
 })
+
+// ─── Onda 13 · redimensionamento extremo ─────────────────────────────────────
+// Largura minima e altura de uma linha nao sao hipotese: e o que acontece quando
+// alguem arrasta a divisoria do terminal ate o fim, ou abre a TUI num painel
+// lateral. O quadro precisa continuar fechando, e o rodape nao pode ser cortado
+// no meio de uma linha — meia linha de rodape e pior que rodape nenhum, porque
+// parece conteudo.
+
+const EXTREMO = {
+  header: 'hii · org/app · daemon online e com nome bem comprido',
+  corpo: ['#020 uma tarefa', '#021 outra tarefa', '中文 😀 largura dupla'],
+  input: 'entrada do usuario',
+  cursor: 5,
+  dica: 'dica que tambem e comprida o suficiente para nao caber',
+  prompt: '› ',
+  rodape: ['rodape linha 1', 'rodape linha 2', 'rodape linha 3'],
+}
+
+const LARGURA_MINIMA = 24
+
+test('EXTREMO abaixo da largura minima o quadro para de encolher, nao quebra', () => {
+  for (const cols of [0, 1, 2, 5, 10, 23, 24, 25]) {
+    const f = renderFrame({ ...EXTREMO, rows: 12, cols })
+    const esperada = Math.max(LARGURA_MINIMA, cols)
+    expect([cols, [...new Set(f.lines.map(l => larguraDeTexto(l)))]]).toEqual([cols, [esperada]])
+  }
+})
+
+test('EXTREMO altura de 1 a 6 linhas nunca produz quadro maior que a tela', () => {
+  for (const rows of [0, 1, 2, 3, 4, 5, 6]) {
+    const f = renderFrame({ ...EXTREMO, rows, cols: 40 })
+    expect([rows, f.lines.length <= Math.max(rows, 4) + 2]).toEqual([rows, true])
+    expect([rows, [...new Set(f.lines.map(l => larguraDeTexto(l)))]]).toEqual([rows, [40]])
+  }
+})
+
+test('EXTREMO com altura de 1 linha o rodape SOME inteiro, nunca pela metade', () => {
+  for (const rows of [1, 2, 3, 4]) {
+    const f = renderFrame({ ...EXTREMO, rows, cols: 40 })
+    const juntas = f.lines.join('\n')
+    // Ou a linha de rodape aparece inteira, ou nao aparece. Rodape cortado no
+    // meio vira texto solto que o usuario le como conteudo.
+    for (const r of EXTREMO.rodape) {
+      const inteira = juntas.includes(r)
+      const pedaco = !inteira && juntas.includes(r.slice(0, Math.max(6, r.length - 4)))
+      expect([rows, r, pedaco]).toEqual([rows, r, false])
+    }
+  }
+})
+
+test('EXTREMO o cursor fica dentro do quadro em toda combinacao apertada', () => {
+  for (const rows of [1, 2, 3, 4, 8]) {
+    for (const cols of [1, 10, 24, 40]) {
+      for (const legenda of [undefined, 'entrada']) {
+        const f = renderFrame({ ...EXTREMO, rows, cols, legenda })
+        expect([rows, cols, f.cursorRow >= 1]).toEqual([rows, cols, true])
+        expect([rows, cols, f.cursorCol >= 1]).toEqual([rows, cols, true])
+        expect([rows, cols, f.cursorRow <= f.lines.length + 1]).toEqual([rows, cols, true])
+      }
+    }
+  }
+})
+
+test('EXTREMO entrada multilinha em tela de 1 linha nao estoura o quadro', () => {
+  const input = Array.from({ length: 200 }, (_, i) => `linha ${i}`).join('\n')
+  for (const rows of [1, 2, 3, 5, 10]) {
+    const f = renderFrame({ ...EXTREMO, rows, cols: 40, input, cursor: input.length })
+    expect([rows, f.lines.length <= Math.max(rows, 4) + 2]).toEqual([rows, true])
+    expect([rows, [...new Set(f.lines.map(l => larguraDeTexto(l)))]]).toEqual([rows, [40]])
+  }
+})
+
+test('EXTREMO legenda e dica somem antes do corpo — o corpo e o que o usuario veio ver', () => {
+  // Rotulo distintivo de proposito: "entrada" tambem aparece no texto digitado,
+  // e o teste mediria a coisa errada.
+  const ROTULO = 'ROTULO-DA-LEGENDA'
+  const semEspaco = renderFrame({ ...EXTREMO, rows: 4, cols: 40, legenda: ROTULO, dica: 'uma dica' })
+  expect(semEspaco.lines.length).toBeLessThanOrEqual(6)
+  // Com 4 linhas nao cabe moldura de legenda: ela nao pode roubar a linha do corpo.
+  expect(semEspaco.lines.join('\n')).not.toContain(ROTULO)
+  // E com espaco sobrando ela volta — senao o teste acima passaria por engano.
+  const comEspaco = renderFrame({ ...EXTREMO, rows: 20, cols: 40, legenda: ROTULO, dica: 'uma dica' })
+  expect(comEspaco.lines.join('\n')).toContain(ROTULO)
+})
+
+test('EXTREMO redimensionar do maior ao menor e de volta chega ao MESMO quadro', () => {
+  const grande = renderFrame({ ...EXTREMO, rows: 40, cols: 120 })
+  for (const [rows, cols] of [[1, 1], [3, 24], [12, 50], [40, 120]] as const) {
+    renderFrame({ ...EXTREMO, rows, cols })
+  }
+  const devolta = renderFrame({ ...EXTREMO, rows: 40, cols: 120 })
+  expect(devolta.lines, 'a pintura guardou estado entre quadros — redimensionar deixou residuo').toEqual(grande.lines)
+  expect(devolta.cursorRow).toBe(grande.cursorRow)
+  expect(devolta.cursorCol).toBe(grande.cursorCol)
+})

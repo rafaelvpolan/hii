@@ -56,7 +56,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **10c** | Ligação — mecanismo ocioso vira motor | 9, 12, 14 + defeito | FRE, VTB, CLR, CTR | Sim | ✅ feita |
 | **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Sim (runtime) | ✅ feita |
 | **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | ✅ feita |
-| **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | — |
+| **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | ✅ feita |
 
 **Caminho crítico:** 0 → 1 → 2 → 3 → 4 → 5. As ondas 6 a 11 têm folga de ordem entre si depois da 5, com duas exceções travadas: **8 depende de 9** (o modo gauntlet não liga sem `orcamentoPorCard`) e **10 depende de 3** (o `aprendiz` lê o diário por evento).
 
@@ -853,6 +853,40 @@ paleta, largura, help e cada render. A cobertura de **comportamento** é boa.
 | 34 | **Orçamento de tempo por quadro**: pintura e rolagem sob teto medido, não "parece rápido" — mesmo princípio do Core Web Vitals virar número | `test/mir/tempo-de-pintura.test.ts` |
 | 34 | Guarda contra travamento: nenhuma operação de render pode bloquear além de N ms com estado grande (muitos cards, log longo, terminal estreito) | `test/mir/tui-sob-carga.test.ts` |
 | 34 | Redimensionamento extremo (largura mínima, altura 1 linha) não estoura nem corta o rodapé | `test/mir/largura.test.ts` (estende) |
+
+### Como conferir
+
+```bash
+bun test ./test/mir/mapa-de-comandos.test.ts   # comando sem teste reprova
+bun test ./test/mir/percurso-completo.test.ts  # entrada × estado × layout, sem exceção
+bun test ./test/mir/tempo-de-pintura.test.ts   # teto em ms + custo O(área visível)
+bun test ./test/mir/tui-sob-carga.test.ts      # 200k linhas, 1 coluna, rodapé de 5k
+bun test ./test/mir/largura.test.ts            # redimensionamento extremo
+```
+
+> **A varredura encontrou o que devia.** `/ia`, `/model`, `/effort` e `/mode` —
+> os quatro comandos que decidem qual modelo gasta o token — não tinham teste
+> nenhum. `test/mir/comandos-de-modelo.test.ts` fechou a lacuna antes de o
+> invariante ficar verde.
+
+### O teto que aperta de verdade não é o de milissegundos
+
+O teto absoluto existe (`HICODE_TETO_QUADRO_MS`, folga larga porque runner de CI
+é lento e irregular — teste de tempo que pisca ensina a ignorar vermelho). Mas
+quem protege contra travamento é a asserção **algorítmica**: o custo do quadro
+não pode crescer com o tamanho do log, só com a área visível. Medido: corpo 500×
+maior custa o mesmo. Com um `map`/`filter` plantado antes do recorte, a razão
+salta para 12,6× e o teste reprova nomeando os dois tempos.
+
+### Uma ineficiência encontrada e NÃO corrigida, por decisão
+
+`truncVisible` é O(tamanho do texto), não O(colunas pedidas): `larguraDeTexto`,
+`stripAnsi` e o `split` percorrem a string inteira antes de cortar 80 colunas —
+~189× mais caro num texto 500× maior. **Não é travamento** (~0,5ms para meio
+milhão de caracteres), e por isso o teste guarda o tempo absoluto em vez de a
+razão. Corrigir exige reestruturar uma função com semântica delicada de grafema
+e ANSI — cortar um prefixo em índice arbitrário parte cluster —, e isso está em
+`PENDENCIAS.md` em vez de escondido atrás de um limite frouxo.
 
 **Critério de pronto:** o teto de tempo é medido e falha por número, não por
 impressão — senão é o mesmo teatro de qualidade que o motor recusa em gate.
