@@ -1,5 +1,5 @@
-import { COMMANDS, canonico } from './sessao'
-import { PALAVRAS_DE_CLIPBOARD } from './refs-comando'
+import { COMMANDS, canonico } from './sessao.ts'
+import { PALAVRAS_DE_CLIPBOARD } from './refs-comando.ts'
 
 export interface CompleteContext {
   repos: string[]

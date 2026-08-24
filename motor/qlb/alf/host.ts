@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises'
-import { isPrivateNetworkHost } from './rede-privada'
-import { clip, refuse } from './url-guard'
-import type { Refusal, UrlOk } from './url-guard'
+import { isPrivateNetworkHost } from './rede-privada.ts'
+import { clip, refuse } from './url-guard.ts'
+import type { Refusal, UrlOk } from './url-guard.ts'
 
 const IPV4_TEXT = /^\d{1,3}(\.\d{1,3}){3}$/
 

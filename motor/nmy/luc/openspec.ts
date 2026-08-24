@@ -1,4 +1,4 @@
-import { run } from '../../qlb/git'
+import { run } from '../../qlb/git.ts'
 
 interface OsIssue {
   level?: string

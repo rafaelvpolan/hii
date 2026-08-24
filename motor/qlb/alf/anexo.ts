@@ -1,8 +1,8 @@
 import { copyFileSync, existsSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, resolve } from 'node:path'
-import { MAX_FILESIZE_BYTES } from './download'
-import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from '../../euc/estado-em-disco'
-import { readRefSources } from './refs'
+import { MAX_FILESIZE_BYTES } from './download.ts'
+import { cabeNoDisco, dirDaSessao, garantirDir, MAX_REFS_POR_TAREFA, refsDir, refsFile } from '../../euc/estado-em-disco.ts'
+import { readRefSources } from './refs.ts'
 
 const EXT_DE_IMAGEM = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp']
 const PARECE_URL = /^https?:\/\//i

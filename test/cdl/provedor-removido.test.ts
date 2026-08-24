@@ -3,9 +3,9 @@ import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Card } from '../../motor/cdl'
-import { warnProviderConfig } from '../../motor/tmd/config'
-import { createCard, readCard } from '../../motor/cdl/store'
+import type { Card } from '../../motor/cdl/index.ts'
+import { warnProviderConfig } from '../../motor/tmd/config.ts'
+import { createCard, readCard } from '../../motor/cdl/store.ts'
 
 const REPO = join(import.meta.dir, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-provedor-removido-'))

@@ -2,9 +2,9 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../../motor/mir/sessao'
-import type { SessionState } from '../../motor/mir/sessao'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
+import { handle, newSession } from '../../motor/mir/sessao.ts'
+import type { SessionState } from '../../motor/mir/sessao.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 
 let dir = ''
 let saida: string[] = []
@@ -29,7 +29,7 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 async function digitar(linhas: string[], inicial?: SessionState): Promise<SessionState> {
-  const { dispatch } = await import('../../motor/mir/despacho')
+  const { dispatch } = await import('../../motor/mir/despacho.ts')
   let state = inicial ?? newSession('org/app')
   for (const linha of linhas) {
     const r = handle(linha, state)
@@ -45,8 +45,8 @@ test('FLUXO REAL: /rm + s apaga o card do disco', async () => {
 })
 
 test('FLUXO REAL: card apagado sai da faixa de espera', async () => {
-  const { esperandoVoce } = await import('../../motor/mir/render/rodape')
-  const { allCards } = await import('../../motor/cdl/store')
+  const { esperandoVoce } = await import('../../motor/mir/render/rodape.ts')
+  const { allCards } = await import('../../motor/cdl/store.ts')
   card('025')
   card('026')
   expect(esperandoVoce(allCards(), 'org/app').length).toBe(2)
@@ -126,7 +126,7 @@ test('LOTE: confirmacao relata quantos foram', async () => {
 })
 
 test('apagar a tarefa aberta tira voce de dentro dela', async () => {
-  const { seguir } = await import('../../motor/mir/sessao')
+  const { seguir } = await import('../../motor/mir/sessao.ts')
   card('022')
   const state = await digitar(['/rm 22', ''], seguir(newSession('org/app'), '022'))
   expect(state.seguindo).toBe('')
@@ -134,7 +134,7 @@ test('apagar a tarefa aberta tira voce de dentro dela', async () => {
 })
 
 test('apagar OUTRA tarefa nao tira voce da que esta aberta', async () => {
-  const { seguir } = await import('../../motor/mir/sessao')
+  const { seguir } = await import('../../motor/mir/sessao.ts')
   card('022'); card('023')
   const state = await digitar(['/rm 23', ''], seguir(newSession('org/app'), '022'))
   expect(state.seguindo).toBe('022')

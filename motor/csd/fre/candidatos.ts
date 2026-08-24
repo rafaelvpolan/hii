@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../../cdl'
+import { isoNow } from '../../cdl/index.ts'
 
 // FRE — o candidato a regra. Acumula SEM efeito no gate.
 //

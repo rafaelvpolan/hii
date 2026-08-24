@@ -2,10 +2,10 @@ import { test, expect, beforeEach, afterEach } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession, seguir } from '../../motor/mir/sessao'
-import { dispatch } from '../../motor/mir/despacho'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
-import { allCards } from '../../motor/cdl/store'
+import { handle, newSession, seguir } from '../../motor/mir/sessao.ts'
+import { dispatch } from '../../motor/mir/despacho.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
+import { allCards } from '../../motor/cdl/store.ts'
 
 let dir = ''
 let claudeHome = ''
@@ -40,8 +40,8 @@ function card(id: string, fields: Record<string, string> = {}): void {
 }
 
 test('/review (comando da ia ativa) dentro de uma tarefa aberta vira instrucao anexada, sem criar card nem autoaprovar', async () => {
-  const { subPrompts } = await import('../../motor/mir/instruir')
-  const { readCard } = await import('../../motor/cdl/store')
+  const { subPrompts } = await import('../../motor/mir/instruir.ts')
+  const { readCard } = await import('../../motor/cdl/store.ts')
   card('022', { worktree: dir })
   const antes = allCards().length
   const state = seguir(newSession('org/app'), '022')

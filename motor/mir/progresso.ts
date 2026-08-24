@@ -1,6 +1,6 @@
-import type { Fields, StepMap } from '../cdl'
-import { STATUSES } from '../cdl'
-import type { PipelineStep } from '../nmy/tipos'
+import type { Fields, StepMap } from '../cdl/index.ts'
+import { STATUSES } from '../cdl/index.ts'
+import type { PipelineStep } from '../nmy/tipos.ts'
 
 export type EstadoPasso = 'feito' | 'agora' | 'pendente' | 'pulado'
 

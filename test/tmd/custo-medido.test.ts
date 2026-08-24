@@ -2,8 +2,8 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Run } from '../../motor/cdl'
-import type { AgentRequest } from '../../motor/tmd/tipos'
+import type { Run } from '../../motor/cdl/index.ts'
+import type { AgentRequest } from '../../motor/tmd/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-medido-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -32,11 +32,11 @@ echo '{"response":"resposta gerada localmente","prompt_eval_count":800,"eval_cou
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${binDir}:${pathOriginal}`
 
-const { CodexProvider } = await import('../../motor/tmd/harness/codex')
-const { OllamaProvider } = await import('../../motor/tmd/harness/ollama')
-const { writeRun, updateRunSteps } = await import('../../motor/euc/registros')
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../../motor/euc/tsr/confianca')
+const { CodexProvider } = await import('../../motor/tmd/harness/codex.ts')
+const { OllamaProvider } = await import('../../motor/tmd/harness/ollama.ts')
+const { writeRun, updateRunSteps } = await import('../../motor/euc/registros.ts')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { markCostUnverified, warnBudgetWithoutGuarantee } = await import('../../motor/euc/tsr/confianca.ts')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

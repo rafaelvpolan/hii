@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { etiquetaDoProjeto, corDoProjeto, nomeCurto, CORES_DE_PROJETO } from '../../motor/mir/render/projeto'
-import { renderFrame, stripAnsi, visibleLen } from '../../motor/mir/tui/layout'
-import { CANTO } from '../../motor/mir/tui/paleta'
+import { etiquetaDoProjeto, corDoProjeto, nomeCurto, CORES_DE_PROJETO } from '../../motor/mir/render/projeto.ts'
+import { renderFrame, stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
+import { CANTO } from '../../motor/mir/tui/paleta.ts'
 
 test('mostra o nome curto em destaque e o dono discreto', () => {
   const t = etiquetaDoProjeto('rafaelvpolan/hicode-site')

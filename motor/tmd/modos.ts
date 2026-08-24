@@ -1,12 +1,12 @@
 // Camada fina por cima do registro, para quem so tem o NOME do harness em maos
 // (painel, CLI). Quem tem o harness usa modo-puro.ts direto — e e o que os
 // adaptadores fazem, senao fechariam ciclo com o registro.
-import { harnessSeExistir, modoPadraoDoProvedor, modosDoProvedor, temModos } from './registro'
-import { resolverModo } from './modo-puro'
-import type { HarnessId } from './tipos'
+import { harnessSeExistir, modoPadraoDoProvedor, modosDoProvedor, temModos } from './registro.ts'
+import { resolverModo } from './modo-puro.ts'
+import type { HarnessId } from './tipos.ts'
 
-export type { CatalogoDeModo } from './tipos'
-export { papelHonraModo } from './modo-puro'
+export type { CatalogoDeModo } from './tipos.ts'
+export { papelHonraModo } from './modo-puro.ts'
 export { modosDoProvedor, modoPadraoDoProvedor, temModos }
 
 export function ehModoValido(provedor: HarnessId, modo: string | undefined): modo is string {

@@ -1,4 +1,4 @@
-import type { PipelineStep } from '../tipos'
+import type { PipelineStep } from '../tipos.ts'
 
 export function waves(steps: PipelineStep[]): PipelineStep[][] {
   const present = new Set(steps.map(s => s.id))

@@ -1,7 +1,7 @@
-import { repoStatus } from '../../cdl/repos'
-import { renderProjetos, resumirProjetos } from '../render/board'
-import { projetosConhecidos } from '../../cdl/projetos-conhecidos'
-import { todosOsCards } from './dados'
+import { repoStatus } from '../../cdl/repos.ts'
+import { renderProjetos, resumirProjetos } from '../render/board.ts'
+import { projetosConhecidos } from '../../cdl/projetos-conhecidos.ts'
+import { todosOsCards } from './dados.ts'
 
 export const DIM = '\x1b[2m'
 export const RESET = '\x1b[0m'

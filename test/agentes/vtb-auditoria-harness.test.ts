@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-auditoria-harness-'))
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const A = await import('../../motor/agentes/vtb/auditoria-harness')
+const A = await import('../../motor/agentes/vtb/auditoria-harness.ts')
 
 let n = 0
 function skillCom(corpo: string): string {

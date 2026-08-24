@@ -1,4 +1,4 @@
-import type { ModoNavegacao } from '../tui/input'
+import type { ModoNavegacao } from '../tui/input.ts'
 
 let itemSelecionado = ''
 let modo: ModoNavegacao = ''

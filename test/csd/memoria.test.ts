@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-memoria-'))
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { readProjectMemory, appendProjectMemory, TETO_DA_MEMORIA } = await import('../../motor/csd/memoria')
+const { readProjectMemory, appendProjectMemory, TETO_DA_MEMORIA } = await import('../../motor/csd/memoria.ts')
 
 let n = 0
 function alvoCom(conteudo: string): string {

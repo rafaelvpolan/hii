@@ -1,5 +1,5 @@
 import { test, expect, afterAll } from 'bun:test'
-import { probeProviderHealth } from '../../motor/tmd/registro'
+import { probeProviderHealth } from '../../motor/tmd/registro.ts'
 
 let statusCode = 200
 const server = Bun.serve({

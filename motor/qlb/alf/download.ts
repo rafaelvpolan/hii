@@ -1,12 +1,12 @@
 import { execFile } from 'node:child_process'
 import type { ExecFileException } from 'node:child_process'
 import { existsSync, rmSync, statSync } from 'node:fs'
-import { clip, refuse } from './url-guard'
-import type { Refusal } from './url-guard'
-import { followRedirects, MAX_REDIRECTS } from './redirect'
-import type { HopFetcher, HopResponse } from './redirect'
-import { lookupReal, pinnedResolveArg } from './host'
-import type { AddressPin, HostResolver } from './host'
+import { clip, refuse } from './url-guard.ts'
+import type { Refusal } from './url-guard.ts'
+import { followRedirects, MAX_REDIRECTS } from './redirect.ts'
+import type { HopFetcher, HopResponse } from './redirect.ts'
+import { lookupReal, pinnedResolveArg } from './host.ts'
+import type { AddressPin, HostResolver } from './host.ts'
 
 export const MAX_FILESIZE_BYTES = 10485760
 const MAX_FILESIZE = String(MAX_FILESIZE_BYTES)

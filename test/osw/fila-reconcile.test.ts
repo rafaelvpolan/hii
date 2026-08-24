@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-queue-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { reconcileStranded, pending } = await import('../../motor/osw/mtr/estado-da-fila')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { reconcileStranded, pending } = await import('../../motor/osw/mtr/estado-da-fila.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -78,7 +78,7 @@ test('REGRESSAO: reinicio repetido nao duplica a linha de interrompido no card',
 })
 
 test('REGRESSAO: card que muda de estado volta a registrar o interrompido', async () => {
-  const { patchCard } = await import('../../motor/cdl/store')
+  const { patchCard } = await import('../../motor/cdl/store.ts')
   const id = card('EXECUTING')
   reconcileStranded()
   patchCard(id, { status: 'CORRECTING' })

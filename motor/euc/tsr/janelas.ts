@@ -1,6 +1,6 @@
-import { harnessPorNome } from '../../tmd/registro'
-import type { JanelaDeUso } from './planos'
-import type { HarnessId } from '../../tmd/tipos'
+import { harnessPorNome } from '../../tmd/registro.ts'
+import type { JanelaDeUso } from './planos.ts'
+import type { HarnessId } from '../../tmd/tipos.ts'
 
 const HORA_MS = 3600_000
 const DIA_MS = 24 * HORA_MS

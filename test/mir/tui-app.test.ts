@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../motor/mir/tui/app'
-import type { Terminal } from '../../motor/mir/tui/screen'
-import { telaVirtual } from '../fixtures/tela-virtual'
+import { createApp } from '../../motor/mir/tui/app.ts'
+import type { Terminal } from '../../motor/mir/tui/screen.ts'
+import { telaVirtual } from '../fixtures/tela-virtual.ts'
 
 interface Fake extends Terminal {
   saida: string[]

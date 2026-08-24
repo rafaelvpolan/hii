@@ -2,10 +2,10 @@ import { test, expect, afterAll } from 'bun:test'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MAX_FILESIZE_BYTES, bytesEmDisco, curlArgs, curlHopFetcher, downloadToFile } from '../../motor/qlb/alf/download'
-import type { HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect'
-import { refuse } from '../../motor/qlb/alf/url-guard'
-import { DNS, LOGO } from '../fixtures/rede-falsa'
+import { MAX_FILESIZE_BYTES, bytesEmDisco, curlArgs, curlHopFetcher, downloadToFile } from '../../motor/qlb/alf/download.ts'
+import type { HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect.ts'
+import { refuse } from '../../motor/qlb/alf/url-guard.ts'
+import { DNS, LOGO } from '../fixtures/rede-falsa.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-teto-'))
 const PEDACO = new Uint8Array(256 * 1024).fill(65)

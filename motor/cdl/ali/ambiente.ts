@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { listRepos } from '../store'
-import { binariosDeHarness } from '../../tmd/registro'
+import { listRepos } from '../store.ts'
+import { binariosDeHarness } from '../../tmd/registro.ts'
 
 const FERRAMENTAS = ['gh', 'git', 'node', 'bun']
 const RUIDO = new Set([

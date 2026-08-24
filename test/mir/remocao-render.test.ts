@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { renderRemocao, renderResultado } from '../../motor/mir/render/remocao'
-import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout'
-import type { PlanoLote, PlanoRemocao } from '../../motor/cdl/remover'
+import { renderRemocao, renderResultado } from '../../motor/mir/render/remocao.ts'
+import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
+import type { PlanoLote, PlanoRemocao } from '../../motor/cdl/remover.ts'
 
 function plano(over: Partial<PlanoRemocao> = {}): PlanoRemocao {
   return {

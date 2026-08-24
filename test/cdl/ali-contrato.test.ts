@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../motor/cdl/ali/config'
+import { ROOT } from '../../motor/cdl/ali/config.ts'
 import {
   CONTRATO_MOTOR_PAINEL,
   ENV_AGENTS_DIR,
@@ -11,7 +11,7 @@ import {
   ENV_RUNNER_LOCK,
   ENV_RUNNER_LOG,
   ENV_RUNNER_PIDFILE,
-} from '../../motor/cdl/ali/contrato'
+} from '../../motor/cdl/ali/contrato.ts'
 
 test('as constantes do contrato batem com os nomes de variavel documentados', () => {
   expect(ENV_ROOT).toBe('HICODE_ROOT')

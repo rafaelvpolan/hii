@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { lerEscopo } from '../../motor/tmd/pnt/estado'
+import { lerEscopo } from '../../motor/tmd/pnt/estado.ts'
 
 test('escopo dinamico e reconhecido', () => {
   expect(lerEscopo('Scope: Dynamic config (from CLI flags)')).toBe('dinamico')

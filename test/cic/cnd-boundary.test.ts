@@ -9,7 +9,7 @@ afterAll(() => {
   delete process.env.HICODE_TIER_FILE
 })
 
-const CND = await import('../../motor/cic/cnd/gauntlet')
+const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
 test('com governanca valida, o gauntlet pode iniciar e sabe qual e o teto', () => {
   delete process.env.HICODE_TIER_FILE

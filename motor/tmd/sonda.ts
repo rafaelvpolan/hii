@@ -1,5 +1,5 @@
-import { run } from '../qlb/git'
-import { noProxyArgs } from '../qlb/alf/loopback'
+import { run } from '../qlb/git.ts'
+import { noProxyArgs } from '../qlb/alf/loopback.ts'
 
 const PROBE_TIMEOUT_MS = Number(process.env.HICODE_HEALTH_PROBE_TIMEOUT_MS || 5000)
 

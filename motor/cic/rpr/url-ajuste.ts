@@ -1,6 +1,6 @@
-import { numeroDeEnv } from '../../cdl/ali/config'
-import { ensureUrl, waitHttp } from '../crv/url-viva'
-import { anexarEvento } from '../../euc/eventos'
+import { numeroDeEnv } from '../../cdl/ali/config.ts'
+import { ensureUrl, waitHttp } from '../crv/url-viva.ts'
+import { anexarEvento } from '../../euc/eventos.ts'
 
 export const TENTATIVAS_DE_AJUSTE = numeroDeEnv('HICODE_URL_AJUSTES', 2)
 

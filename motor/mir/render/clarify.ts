@@ -1,4 +1,4 @@
-import type { Pendencia } from '../responder'
+import type { Pendencia } from '../responder.ts'
 
 export interface OpcoesClarify {
   color?: boolean

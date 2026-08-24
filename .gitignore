@@ -15,6 +15,8 @@ cards/previews/
 cards/urls/
 cards/sessions/
 cards/*.md
+# saida do ferramental de harness (protect-mcp), nao do projeto
+receipts/
 
 # Nuxt
 panel/.nuxt/

@@ -15,7 +15,7 @@ import {
   temTesteCorrespondente,
   type AchadoAuditoria,
   type LoteAuditoria,
-  type PlanoAuditoria, coberturaDeTeste } from '../../motor/agentes/ass/auditoria'
+  type PlanoAuditoria, coberturaDeTeste } from '../../motor/agentes/ass/auditoria.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-auditoria-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -338,7 +338,7 @@ test('REGRESSAO fonte renomeado com teste de nome antigo NAO e reportado como se
   const listados = ['motor/qlb/ctr/fechar.ts', 'test/finish-cost.test.ts']
   const fontes: Record<string, string> = {
     'motor/qlb/ctr/fechar.ts': 'export const x = 1\n',
-    'test/finish-cost.test.ts': "import { handleFinish } from '../../motor/qlb/ctr/fechar'\n",
+    'test/finish-cost.test.ts': "import { handleFinish } from '../../motor/qlb/ctr/fechar.ts'\n",
   }
   const cobertura = coberturaDeTeste(listados, p => fontes[p] ?? null)
   expect(temTesteCorrespondente('motor/qlb/ctr/fechar.ts', cobertura)).toBe(true)
@@ -349,7 +349,7 @@ test('import dinamico tambem conta — metade da suite usa await import()', () =
   const listados = ['motor/euc/registros.ts', 'test/x.test.ts']
   const fontes: Record<string, string> = {
     'motor/euc/registros.ts': 'export const x = 1\n',
-    'test/x.test.ts': "const m = await import('../../motor/euc/registros')\n",
+    'test/x.test.ts': "const m = await import('../../motor/euc/registros.ts')\n",
   }
   expect(temTesteCorrespondente('motor/euc/registros.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
 })
@@ -358,7 +358,7 @@ test('import de diretorio resolve pelo index', () => {
   const listados = ['motor/cdl/index.ts', 'test/y.test.ts']
   const fontes: Record<string, string> = {
     'motor/cdl/index.ts': 'export const x = 1\n',
-    'test/y.test.ts': "import type { Card } from '../../motor/cdl'\n",
+    'test/y.test.ts': "import type { Card } from '../../motor/cdl/index.ts'\n",
   }
   expect(temTesteCorrespondente('motor/cdl/index.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
 })

@@ -1,11 +1,11 @@
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../cdl'
-import type { Fields } from '../cdl'
-import { cardsDir, rigorEstrito } from '../cdl/ali/config'
-import { createCard, findCardFile, patchCard, readCard, updateCard } from '../cdl/store'
-import { readClarify, writeClarify } from '../agentes/clr/clarificar'
-import { conferirParedeDoPlano } from '../qlb/ctr/aprovar-plano'
+import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../cdl/index.ts'
+import type { Fields } from '../cdl/index.ts'
+import { cardsDir, rigorEstrito } from '../cdl/ali/config.ts'
+import { createCard, findCardFile, patchCard, readCard, updateCard } from '../cdl/store.ts'
+import { readClarify, writeClarify } from '../agentes/clr/clarificar.ts'
+import { conferirParedeDoPlano } from '../qlb/ctr/aprovar-plano.ts'
 
 export interface NewCardInput {
   title: string

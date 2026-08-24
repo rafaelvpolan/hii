@@ -1,8 +1,8 @@
-import type { Fields } from '../../cdl'
-import { fleetFloorProviders, formatProviders } from '../../euc/tsr/lacuna'
-import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman } from './phases'
-import { marcaDoDisco } from './disco'
-import { usoDeDiscoCacheado } from '../../euc/estado-em-disco'
+import type { Fields } from '../../cdl/index.ts'
+import { fleetFloorProviders, formatProviders } from '../../euc/tsr/lacuna.ts'
+import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman } from './phases.ts'
+import { marcaDoDisco } from './disco.ts'
+import { usoDeDiscoCacheado } from '../../euc/estado-em-disco.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

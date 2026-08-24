@@ -1,5 +1,5 @@
-import { allCards, createCard } from '../../../cdl/store'
-import { taskSync } from './registro'
+import { allCards, createCard } from '../../../cdl/store.ts'
+import { taskSync } from './registro.ts'
 
 export interface SyncReport {
   pulled: number

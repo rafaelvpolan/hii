@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from 'bun:test'
 import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { DepsDeColagem, Rodada } from '../../motor/mir/clipboard'
+import type { DepsDeColagem, Rodada } from '../../motor/mir/clipboard.ts'
 
 let estado = ''
 
@@ -28,7 +28,7 @@ function deps(over: Partial<DepsDeColagem> = {}): DepsDeColagem {
 }
 
 test('o ambiente de clipboard e escolhido pela maquina, com WSL na frente', async () => {
-  const { ambienteDeClipboard } = await import('../../motor/mir/clipboard')
+  const { ambienteDeClipboard } = await import('../../motor/mir/clipboard.ts')
   const base = { plataforma: 'linux', temComando: () => true }
   expect(ambienteDeClipboard({ ...base, env: {}, procVersion: 'Linux version 6.18 microsoft-standard-WSL2' })).toBe('wsl')
   expect(ambienteDeClipboard({ ...base, env: { WSL_DISTRO_NAME: 'Ubuntu' }, procVersion: '' })).toBe('wsl')
@@ -39,7 +39,7 @@ test('o ambiente de clipboard e escolhido pela maquina, com WSL na frente', asyn
 })
 
 test('cada ambiente tem o comando certo, e o do WSL salva no caminho nativo', async () => {
-  const { comandoDeColagem } = await import('../../motor/mir/clipboard')
+  const { comandoDeColagem } = await import('../../motor/mir/clipboard.ts')
   const wsl = comandoDeColagem('wsl', 'C:\\tmp\\ref.bruto')
   expect(wsl?.cmd).toBe('powershell.exe')
   expect(wsl?.saida).toBe('arquivo')
@@ -52,7 +52,7 @@ test('cada ambiente tem o comando certo, e o do WSL salva no caminho nativo', as
 })
 
 test('a extensao vem da assinatura do arquivo, nao do que o clipboard diz', async () => {
-  const { extensaoPelaAssinatura } = await import('../../motor/mir/clipboard')
+  const { extensaoPelaAssinatura } = await import('../../motor/mir/clipboard.ts')
   expect(extensaoPelaAssinatura(PNG)).toBe('.png')
   expect(extensaoPelaAssinatura(JPG)).toBe('.jpg')
   expect(extensaoPelaAssinatura(Buffer.from('GIF89a'))).toBe('.gif')
@@ -62,7 +62,7 @@ test('a extensao vem da assinatura do arquivo, nao do que o clipboard diz', asyn
 })
 
 test('clipboard sem imagem responde o que fazer, em vez de gravar lixo', async () => {
-  const { colarImagem } = await import('../../motor/mir/clipboard')
+  const { colarImagem } = await import('../../motor/mir/clipboard.ts')
   const r = await colarImagem(join(estado, 'ref-1'), deps({ rodar: async () => rodada({ ok: false, code: 3 }) }))
   expect(r.ok).toBe(false)
   expect(r.motivo).toContain('nao ha imagem no clipboard')
@@ -70,7 +70,7 @@ test('clipboard sem imagem responde o que fazer, em vez de gravar lixo', async (
 })
 
 test('imagem que vem pela saida padrao e gravada com a extensao da assinatura', async () => {
-  const { colarImagem } = await import('../../motor/mir/clipboard')
+  const { colarImagem } = await import('../../motor/mir/clipboard.ts')
   const r = await colarImagem(join(estado, 'ref-1'), deps({ rodar: async () => rodada({ stdout: PNG }) }))
   expect(r.ok).toBe(true)
   expect(r.caminho).toBe(join(estado, 'ref-1.png'))
@@ -79,7 +79,7 @@ test('imagem que vem pela saida padrao e gravada com a extensao da assinatura', 
 })
 
 test('texto no clipboard e recusado com a saida limpa', async () => {
-  const { colarImagem } = await import('../../motor/mir/clipboard')
+  const { colarImagem } = await import('../../motor/mir/clipboard.ts')
   const r = await colarImagem(join(estado, 'ref-1'), deps({ rodar: async () => rodada({ stdout: Buffer.from('só texto') }) }))
   expect(r.ok).toBe(false)
   expect(r.motivo).toContain('nao e imagem reconhecida')
@@ -87,7 +87,7 @@ test('texto no clipboard e recusado com a saida limpa', async () => {
 })
 
 test('no WSL quem grava o arquivo e o powershell, e o resultado e validado igual', async () => {
-  const { colarImagem } = await import('../../motor/mir/clipboard')
+  const { colarImagem } = await import('../../motor/mir/clipboard.ts')
   const destino = join(estado, 'ref-1')
   const r = await colarImagem(destino, deps({
     ambiente: () => 'wsl',
@@ -103,14 +103,14 @@ test('no WSL quem grava o arquivo e o powershell, e o resultado e validado igual
 })
 
 test('maquina sem jeito de ler clipboard diz o que instalar', async () => {
-  const { colarImagem } = await import('../../motor/mir/clipboard')
+  const { colarImagem } = await import('../../motor/mir/clipboard.ts')
   const r = await colarImagem(join(estado, 'ref-1'), deps({ ambiente: () => 'nenhum' }))
   expect(r.ok).toBe(false)
   expect(r.motivo).toContain('clipboard')
 })
 
 test('/ref sem argumento lista as referencias e o uso de disco', async () => {
-  const { comandoRef } = await import('../../motor/mir/refs-comando')
+  const { comandoRef } = await import('../../motor/mir/refs-comando.ts')
   const vazio = await comandoRef('', { tarefa: '010', sessao: 's1' })
   const texto = vazio.linhas.join('\n')
   expect(texto).toContain('tarefa #010')
@@ -119,7 +119,7 @@ test('/ref sem argumento lista as referencias e o uso de disco', async () => {
 })
 
 test('/ref sem tarefa aberta guarda na sessao e avisa que vai junto com a proxima tarefa', async () => {
-  const { comandoRef } = await import('../../motor/mir/refs-comando')
+  const { comandoRef } = await import('../../motor/mir/refs-comando.ts')
   const r = await comandoRef('https://exemplo.com/tela.png', { tarefa: '', sessao: 's1' })
   expect(r.ok).toBe(true)
   expect(r.linhas.join('\n')).toContain('sessao')
@@ -128,8 +128,8 @@ test('/ref sem tarefa aberta guarda na sessao e avisa que vai junto com a proxim
 })
 
 test('/ref clipboard anexa a imagem colada na tarefa aberta', async () => {
-  const { comandoRef } = await import('../../motor/mir/refs-comando')
-  const { readRefSources } = await import('../../motor/qlb/alf/refs')
+  const { comandoRef } = await import('../../motor/mir/refs-comando.ts')
+  const { readRefSources } = await import('../../motor/qlb/alf/refs.ts')
   const r = await comandoRef('clipboard', { tarefa: '010', sessao: 's1' }, {
     clipboard: deps(),
     colar: async (destinoSemExt) => {
@@ -145,7 +145,7 @@ test('/ref clipboard anexa a imagem colada na tarefa aberta', async () => {
 })
 
 test('/ref ambiente diz por onde o clipboard seria lido', async () => {
-  const { comandoRef } = await import('../../motor/mir/refs-comando')
+  const { comandoRef } = await import('../../motor/mir/refs-comando.ts')
   const r = await comandoRef('ambiente', { tarefa: '', sessao: 's1' }, {
     clipboard: deps({ ambiente: () => 'wsl' }),
     colar: async () => ({ ok: false, motivo: '', caminho: '', bytes: 0 }),

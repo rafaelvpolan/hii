@@ -12,10 +12,10 @@ afterAll(() => {
   delete process.env.HICODE_RIGOR_ESTRITO
 })
 
-const { conferirParedeDoPlano, prepararMatriz } = await import('../../motor/qlb/ctr/aprovar-plano')
-const A = await import('../../motor/mir/acoes')
-const { readCard } = await import('../../motor/cdl/store')
-const { SECOES_DA_MATRIZ, arquivoDaMatriz, criarMatriz } = await import('../../motor/nmy/luc/matriz-entendimento')
+const { conferirParedeDoPlano, prepararMatriz } = await import('../../motor/qlb/ctr/aprovar-plano.ts')
+const A = await import('../../motor/mir/acoes.ts')
+const { readCard } = await import('../../motor/cdl/store.ts')
+const { SECOES_DA_MATRIZ, arquivoDaMatriz, criarMatriz } = await import('../../motor/nmy/luc/matriz-entendimento.ts')
 
 function novo(): string {
   return A.submit({ title: 'cobrar comissao', repo: 'org/app', desc: 'calcular comissao por corte' })

@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../cdl/ali/config'
-import { memoArquivo } from './eco/memo'
-import type { AgentRole } from './tipos'
+import { ROOT } from '../cdl/ali/config.ts'
+import { memoArquivo } from './eco/memo.ts'
+import type { AgentRole } from './tipos.ts'
 
 export const ESFORCOS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 export type Esforco = (typeof ESFORCOS)[number]

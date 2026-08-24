@@ -8,12 +8,12 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { reconcileStranded } = await import('../../motor/osw/mtr/estado-da-fila')
-const { anexarEvento } = await import('../../motor/euc/eventos')
-const { executarComIdempotencia } = await import('../../motor/qlb/slv/idempotencia')
-const { orfaosDoCard, temOrfao, prOrfaoDe } = await import('../../motor/qlb/slv/compensacao')
-const { faseInterrompida, emAndamento, ultimoPassoConhecido } = await import('../../motor/euc/recuperar')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { reconcileStranded } = await import('../../motor/osw/mtr/estado-da-fila.ts')
+const { anexarEvento } = await import('../../motor/euc/eventos.ts')
+const { executarComIdempotencia } = await import('../../motor/qlb/slv/idempotencia.ts')
+const { orfaosDoCard, temOrfao, prOrfaoDe } = await import('../../motor/qlb/slv/compensacao.ts')
+const { faseInterrompida, emAndamento, ultimoPassoConhecido } = await import('../../motor/euc/recuperar.ts')
 
 function cardEm(status: string): string {
   return createCard({ status, title: 't', repo: 'org/app', risk: 'low' }, '## Objetivo\nfazer\n')

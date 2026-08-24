@@ -8,9 +8,9 @@ process.env.HICODE_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 process.env.HICODE_REPOS_FILE = join(CARDS, 'repos-vazio.json')
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { archiveDir } = await import('../../motor/cdl/arquivar')
-const { tick } = await import('../../motor/osw/mtr/fila')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { archiveDir } = await import('../../motor/cdl/arquivar.ts')
+const { tick } = await import('../../motor/osw/mtr/fila.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

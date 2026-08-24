@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { classifySurface, isNonVisual } from '../../motor/osw/rta/superficie'
+import { classifySurface, isNonVisual } from '../../motor/osw/rta/superficie.ts'
 
 test('conflito de PR -> nao-visual', () => {
   expect(classifySurface('Essa PR esta com conflitos, corrija', '', true).surface).toBe('none')

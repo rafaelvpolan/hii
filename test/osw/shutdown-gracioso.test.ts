@@ -8,10 +8,10 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const enc = await import('../../motor/osw/mtr/encerramento')
-const fila = await import('../../motor/osw/mtr/estado-da-fila')
-const { lerSaude, respostaDeSaude, subirServidorDeSaude } = await import('../../motor/euc/rdr/servidor')
-const { createCard } = await import('../../motor/cdl/store')
+const enc = await import('../../motor/osw/mtr/encerramento.ts')
+const fila = await import('../../motor/osw/mtr/estado-da-fila.ts')
+const { lerSaude, respostaDeSaude, subirServidorDeSaude } = await import('../../motor/euc/rdr/servidor.ts')
+const { createCard } = await import('../../motor/cdl/store.ts')
 
 afterEach(() => {
   enc.cancelarEncerramento()
@@ -91,7 +91,7 @@ test('com porta configurada, o servidor sobe e responde de verdade', async () =>
   }
 })
 
-const { categoriaDoErro, enderecoDeSaude } = await import('../../motor/euc/rdr/servidor')
+const { categoriaDoErro, enderecoDeSaude } = await import('../../motor/euc/rdr/servidor.ts')
 
 // Achados do Escudo, confirmados pelo Crivo com linha exata.
 test('REGRESSAO /health nao devolve a mensagem crua de erro — ela carrega caminho e usuario do host', () => {

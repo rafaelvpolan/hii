@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../motor/mir/tui/app'
-import type { Terminal } from '../../motor/mir/tui/screen'
+import { createApp } from '../../motor/mir/tui/app.ts'
+import type { Terminal } from '../../motor/mir/tui/screen.ts'
 
 interface Fake extends Terminal {
   tecla: (k: string) => void

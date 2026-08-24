@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { harnessPorNome, providerNames } from '../../motor/tmd/registro'
-import type { HarnessCapabilities } from '../../motor/tmd/tipos'
+import { harnessPorNome, providerNames } from '../../motor/tmd/registro.ts'
+import type { HarnessCapabilities } from '../../motor/tmd/tipos.ts'
 
 const CHAVES: (keyof HarnessCapabilities)[] = [
   'restrictsTools', 'isolatesReadonly', 'acceptsEffort', 'reportsCostUsd', 'reportsTokens', 'mcp',
@@ -108,7 +108,7 @@ test('harnessPorNome lanca para id desconhecido — a guarda documentada nunca e
 })
 
 test('harnessSeExistir devolve undefined em vez de lancar — os dois contratos convivem', async () => {
-  const { harnessSeExistir } = await import('../../motor/tmd/registro')
+  const { harnessSeExistir } = await import('../../motor/tmd/registro.ts')
   expect(harnessSeExistir('provedor-que-nao-existe')).toBeUndefined()
   expect(harnessSeExistir(undefined)).toBeUndefined()
   expect(harnessSeExistir('claude')?.name).toBe('claude')

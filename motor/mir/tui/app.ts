@@ -1,13 +1,13 @@
-import { openScreen } from './screen'
-import type { Terminal } from './screen'
+import { openScreen } from './screen.ts'
+import type { Terminal } from './screen.ts'
 import {
   newInput, keypress, aplicarCompletar, pararNavegacao, classificarNavegacao,
   rolagemDe, ehEscape, ehInterrupt,
-} from './input'
-import type { ModoNavegacao } from './input'
-import { tokenizeParcial, agruparColagem } from './keys'
-import { linkificar, orcamentoDoCorpo, quebrarEmLargura } from './layout'
-import type { InputState } from './input'
+} from './input.ts'
+import type { ModoNavegacao } from './input.ts'
+import { tokenizeParcial, agruparColagem } from './keys.ts'
+import { linkificar, orcamentoDoCorpo, quebrarEmLargura } from './layout.ts'
+import type { InputState } from './input.ts'
 
 interface ErroLancado {
   message?: string

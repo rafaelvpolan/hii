@@ -40,7 +40,7 @@ function run(card: string, quandoMs: number, custo: string, provedor = 'claude')
 }
 
 test('a duracao vem do rotulo, em hora, dia ou minuto', async () => {
-  const { duracaoDaJanela } = await import('../../motor/euc/tsr/janelas')
+  const { duracaoDaJanela } = await import('../../motor/euc/tsr/janelas.ts')
   expect(duracaoDaJanela('5h')).toBe(5 * 3600_000)
   expect(duracaoDaJanela('4h')).toBe(4 * 3600_000)
   expect(duracaoDaJanela('7d')).toBe(7 * 24 * 3600_000)
@@ -49,7 +49,7 @@ test('a duracao vem do rotulo, em hora, dia ou minuto', async () => {
 })
 
 test('cada ia tem suas janelas, e a env manda quando quero 4h em vez de 5h', async () => {
-  const { rotulosDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { rotulosDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   expect(rotulosDoProvedor('claude')).toEqual(['5h', '7d'])
   expect(rotulosDoProvedor('ollama')).toEqual([])
   process.env.HICODE_JANELAS_CODEX = '4h, 7d'
@@ -61,7 +61,7 @@ test('cada ia tem suas janelas, e a env manda quando quero 4h em vez de 5h', asy
 test('ALINHAMENTO: a janela segue o reset do provedor, nao o relogio de agora', async () => {
   const resetaEm = '2026-08-21T23:00:00Z'
   claudeReporta({ seven_day: { utilization: 69, resets_at: resetaEm } })
-  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   const semana = janelasDoProvedor('claude', AGORA).find(j => j.rotulo === '7d')
   expect(semana?.fimMs).toBe(Date.parse(resetaEm))
   expect(semana?.inicioMs).toBe(Date.parse(resetaEm) - 7 * 24 * 3600_000)
@@ -71,7 +71,7 @@ test('ALINHAMENTO: a janela segue o reset do provedor, nao o relogio de agora', 
 
 test('sem reset reportado, a janela e corrida a partir de agora', async () => {
   claudeReporta({})
-  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   const cinco = janelasDoProvedor('claude', AGORA).find(j => j.rotulo === '5h')
   expect(cinco?.fimMs).toBe(AGORA)
   expect(cinco?.inicioMs).toBe(AGORA - 5 * 3600_000)
@@ -83,14 +83,14 @@ test('LEITURA VELHA: medicao mais antiga que a janela nao pode passar por limite
     { five_hour: { utilization: 0 }, seven_day: { utilization: 69 } },
     AGORA - 6 * 3600_000,
   )
-  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   const janelas = janelasDoProvedor('claude', AGORA)
   expect(janelas.find(j => j.rotulo === '5h')?.limiteConfiavel).toBe(false)
   expect(janelas.find(j => j.rotulo === '7d')?.limiteConfiavel).toBe(true)
 })
 
 test('provedor que nao reporta nada fica sem percentual, e nao inventa zero', async () => {
-  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   const janelas = janelasDoProvedor('codex', AGORA)
   expect(janelas.length).toBe(2)
   expect(janelas.every(j => j.percentualDoLimite === null)).toBe(true)
@@ -98,7 +98,7 @@ test('provedor que nao reporta nada fica sem percentual, e nao inventa zero', as
 })
 
 test('ia local nao tem janela de limite nenhuma', async () => {
-  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas')
+  const { janelasDoProvedor } = await import('../../motor/euc/tsr/janelas.ts')
   expect(janelasDoProvedor('ollama', AGORA)).toEqual([])
 })
 
@@ -108,7 +108,7 @@ test('o gasto do motor e contado DENTRO da janela do provedor, e o de fora fica 
   const inicio = fim - 7 * 24 * 3600_000
   run('010', inicio + 3600_000, '0.10')
   run('011', inicio - 3600_000, '0.99')
-  const { gastoDoMotorNoIntervalo } = await import('../../motor/euc/tsr/consumo')
+  const { gastoDoMotorNoIntervalo } = await import('../../motor/euc/tsr/consumo.ts')
   const dentro = gastoDoMotorNoIntervalo('claude', inicio, fim)
   expect(dentro.custoUsd).toBe(0.1)
   expect(dentro.runs).toBe(1)
@@ -117,14 +117,14 @@ test('o gasto do motor e contado DENTRO da janela do provedor, e o de fora fica 
 test('o gasto do motor e por provedor: o que foi do codex nao entra no claude', async () => {
   run('010', AGORA - 3600_000, '0.10', 'claude')
   run('011', AGORA - 3600_000, '0.02', 'codex')
-  const { gastoDoMotorNoIntervalo } = await import('../../motor/euc/tsr/consumo')
+  const { gastoDoMotorNoIntervalo } = await import('../../motor/euc/tsr/consumo.ts')
   expect(gastoDoMotorNoIntervalo('claude', AGORA - 5 * 3600_000, AGORA).custoUsd).toBe(0.1)
   expect(gastoDoMotorNoIntervalo('codex', AGORA - 5 * 3600_000, AGORA).custoUsd).toBe(0.02)
 })
 
 test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois', async () => {
-  const { renderConfig } = await import('../../motor/mir/render/config')
-  const { stripAnsi } = await import('../../motor/mir/tui/layout')
+  const { renderConfig } = await import('../../motor/mir/render/config/index.ts')
+  const { stripAnsi } = await import('../../motor/mir/tui/layout.ts')
   const base = {
     provedores: [{
       nome: 'claude', situacao: 'disponivel' as const, habilitado: true, motivo: '',
@@ -147,7 +147,7 @@ test('a tela separa o limite do provedor do gasto do motor, sem misturar os dois
 })
 
 test('REGRESSAO classificacao saiu dos papeis configuraveis junto com a leitura de intencao', async () => {
-  const { agentRoles } = await import('../../motor/tmd/registro')
+  const { agentRoles } = await import('../../motor/tmd/registro.ts')
   expect(agentRoles()).not.toContain('classificacao')
   expect(agentRoles()).toEqual(['implement', 'verify', 'gate', 'step'])
 })

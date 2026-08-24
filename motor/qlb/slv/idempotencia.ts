@@ -1,4 +1,4 @@
-import { anexarEvento, eventoPorChave } from '../../euc/eventos'
+import { anexarEvento, eventoPorChave } from '../../euc/eventos.ts'
 
 // SLV — Salvo-conduto. "Este ja foi liberado, nao revista de novo."
 //

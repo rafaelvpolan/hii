@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { newInput, keypress, aplicarCompletar } from '../../motor/mir/tui/input'
-import type { InputState } from '../../motor/mir/tui/input'
+import { newInput, keypress, aplicarCompletar } from '../../motor/mir/tui/input.ts'
+import type { InputState } from '../../motor/mir/tui/input.ts'
 
 function digitar(texto: string, inicial?: InputState): InputState {
   let s = inicial ?? newInput()
@@ -140,8 +140,8 @@ test('aplicarCompletar troca so a ultima palavra', () => {
   expect(aplicarCompletar(digitar('/re'), '/repo').buffer).toBe('/repo')
 })
 
-import { colar, expandir, LIMITE_COLA } from '../../motor/mir/tui/input'
-import { tokenize, marcarCola, ehCola, textoDaCola, agruparColagem } from '../../motor/mir/tui/keys'
+import { colar, expandir, LIMITE_COLA } from '../../motor/mir/tui/input.ts'
+import { tokenize, marcarCola, ehCola, textoDaCola, agruparColagem } from '../../motor/mir/tui/keys.ts'
 
 test('REGRESSAO colar texto curto entra inteiro no input', () => {
   const s = keypress(newInput(), marcarCola('https://github.com/org/repo/pull/18')).state
@@ -214,7 +214,7 @@ test('agruparColagem nao junta quando ha tecla de controle no meio', () => {
   expect(agruparColagem(['a', 'b', 'c', 'd', 'e', '\x1b[A']).length).toBe(6)
 })
 
-import { tokenizeParcial } from '../../motor/mir/tui/keys'
+import { tokenizeParcial } from '../../motor/mir/tui/keys.ts'
 
 test('REGRESSAO colagem partida em chunks nao vira duas colagens', () => {
   const a = tokenizeParcial('\x1b[200~primeira parte ')
@@ -238,7 +238,7 @@ test('colagem completa num chunk so nao fica pendente', () => {
   expect(textoDaCola(r.tokens[0] ?? '')).toBe('tudo junto')
 })
 
-import { inicioDaPalavra, fimDaPalavra } from '../../motor/mir/tui/input'
+import { inicioDaPalavra, fimDaPalavra } from '../../motor/mir/tui/input.ts'
 
 test('ctrl+seta move por palavra', () => {
   let s = digitar('adicionar selo beta')
@@ -334,7 +334,7 @@ test('colagem multilinha nao vira submit por causa do \\n', () => {
   expect(ehCola(tokens[0] ?? '')).toBe(true)
 })
 
-import { pararNavegacao } from '../../motor/mir/tui/input'
+import { pararNavegacao } from '../../motor/mir/tui/input.ts'
 
 test('seta para baixo com campo vazio vai para as tarefas do rodape', () => {
   const r = keypress(newInput(), '\x1b[B')

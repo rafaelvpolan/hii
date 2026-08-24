@@ -8,7 +8,7 @@ test('clone recem-feito sem cards/ consegue criar o primeiro card — ENOENT era
   const antes = process.env.HICODE_CARDS_DIR
   process.env.HICODE_CARDS_DIR = join(raiz, 'cards')
   try {
-    const { createCard, garantirCardsDir } = await import('../../motor/cdl/store')
+    const { createCard, garantirCardsDir } = await import('../../motor/cdl/store.ts')
     expect(existsSync(join(raiz, 'cards'))).toBe(false)
     garantirCardsDir()
     expect(existsSync(join(raiz, 'cards'))).toBe(true)

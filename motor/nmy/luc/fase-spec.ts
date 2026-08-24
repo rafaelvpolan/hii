@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs'
-import { objetivoComInstrucoes } from '../../mir/instruir'
-import { isoNow } from '../../cdl'
-import { maxReajuste } from '../../cdl/ali/config'
-import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store'
-import { ensureWorktree, runGit, stageAll, worktreePath } from '../../qlb/git'
-import { runStep } from '../../cic/agente'
-import { openspecAvailable, initOpenspec, validateChange } from './openspec'
-import type { SpecValidation } from './openspec'
+import { objetivoComInstrucoes } from '../../mir/instruir.ts'
+import { isoNow } from '../../cdl/index.ts'
+import { maxReajuste } from '../../cdl/ali/config.ts'
+import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store.ts'
+import { ensureWorktree, runGit, stageAll, worktreePath } from '../../qlb/git.ts'
+import { runStep } from '../../cic/agente.ts'
+import { openspecAvailable, initOpenspec, validateChange } from './openspec.ts'
+import type { SpecValidation } from './openspec.ts'
 
 function specPrompt(name: string, desc: string, feedback: string): string {
   return [

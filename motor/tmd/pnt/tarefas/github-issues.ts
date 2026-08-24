@@ -1,6 +1,6 @@
-import { run } from '../../../qlb/git'
-import type { Fields } from '../../../cdl'
-import type { ExternalTask, TaskSync } from './tipos'
+import { run } from '../../../qlb/git.ts'
+import type { Fields } from '../../../cdl/index.ts'
+import type { ExternalTask, TaskSync } from './tipos.ts'
 
 interface GhIssue {
   number?: number

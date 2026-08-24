@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
+import { ROOT } from '../../cdl/ali/config.ts'
 
 // VTB — Vital Brazil: soro especifico contra veneno especifico. Um checklist
 // generico de seguranca nao pega mass assignment de Eloquent nem SSRF de fetch;

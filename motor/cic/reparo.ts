@@ -1,4 +1,4 @@
-import { anexarEvento } from '../euc/eventos'
+import { anexarEvento } from '../euc/eventos.ts'
 
 // CIC — o repair loop generico. Uma tentativa DIRIGIDA por vez, com teto, e
 // sempre reportando ao humano o que ja foi tentado quando esgota.

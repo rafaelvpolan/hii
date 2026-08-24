@@ -1,5 +1,5 @@
-import { interpolar, rgbDoTom, sequenciaDe, profundidadeDeCor } from './paleta'
-import type { Profundidade, Tom } from './paleta'
+import { interpolar, rgbDoTom, sequenciaDe, profundidadeDeCor } from './paleta.ts'
+import type { Profundidade, Tom } from './paleta.ts'
 
 const RESET = '\x1b[0m'
 const BLOCOS = ['▏', '▎', '▍', '▌', '▋', '▊', '▉', '█']

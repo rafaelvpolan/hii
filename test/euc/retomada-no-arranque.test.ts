@@ -8,8 +8,8 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { anexarEvento, eventosDoCard } = await import('../../motor/euc/eventos')
-const { retomarAoIniciar, faseInterrompida } = await import('../../motor/euc/recuperar')
+const { anexarEvento, eventosDoCard } = await import('../../motor/euc/eventos.ts')
+const { retomarAoIniciar, faseInterrompida } = await import('../../motor/euc/recuperar.ts')
 
 // A auditoria (Pluto + Crivo) achou que motor/euc/recuperar.ts era um modulo
 // orfao: o item 26 da Onda 3 documenta retomarAoIniciar() rodando no arranque
@@ -18,7 +18,7 @@ const { retomarAoIniciar, faseInterrompida } = await import('../../motor/euc/rec
 // estivesse ativa.
 test('INVARIANTE runner.ts chama retomarAoIniciar no arranque — senao o modulo e orfao', async () => {
   const fonte = await Bun.file('runner.ts').text()
-  expect(fonte).toContain("from './motor/euc/recuperar'")
+  expect(fonte).toContain("from './motor/euc/recuperar.ts'")
   expect(fonte).toContain('retomarAoIniciar(')
   const ordem = fonte.indexOf('reconcileStranded()') < fonte.indexOf('retomarAoIniciar(')
   expect(ordem, 'a retomada tem de vir DEPOIS do reconcile, que decide o status do card').toBe(true)
@@ -62,7 +62,7 @@ test('rodar duas vezes e idempotente — o segundo arranque nao reabre nada', ()
 })
 
 test('o laco de ajuste de URL passou a registrar tentativa no diario', async () => {
-  const { subirUrlComAjuste } = await import('../../motor/cic/rpr/url-ajuste')
+  const { subirUrlComAjuste } = await import('../../motor/cic/rpr/url-ajuste.ts')
   let subidas = 0
   await subirUrlComAjuste({
     subir: (): Promise<number> => { subidas++; return Promise.resolve(0) },
@@ -76,7 +76,7 @@ test('o laco de ajuste de URL passou a registrar tentativa no diario', async () 
 })
 
 test('sem card, o ajuste de URL continua funcionando e nao tenta escrever diario', async () => {
-  const { subirUrlComAjuste } = await import('../../motor/cic/rpr/url-ajuste')
+  const { subirUrlComAjuste } = await import('../../motor/cic/rpr/url-ajuste.ts')
   const r = await subirUrlComAjuste({
     subir: (): Promise<number> => Promise.resolve(0),
     responde: (): Promise<boolean> => Promise.resolve(false),

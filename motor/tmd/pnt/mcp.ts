@@ -1,7 +1,7 @@
-import { run } from '../../qlb/git'
-import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado'
-import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado'
-import { harnessPorNome, providerNames } from '../registro'
+import { run } from '../../qlb/git.ts'
+import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado.ts'
+import type { ServidorMcp, EscopoServidor, DisponibilidadeExterna } from './estado.ts'
+import { harnessPorNome, providerNames } from '../registro.ts'
 
 const MCP_PREFIX = 'mcp__'
 const MCP_LIST_TIMEOUT_MS = 20000

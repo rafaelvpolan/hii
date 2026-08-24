@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../cdl/ali/config'
-import { ENV_AGENTS_DIR } from '../cdl/ali/contrato'
-import { memoTempo } from '../tmd/eco/memo'
+import { ROOT } from '../cdl/ali/config.ts'
+import { ENV_AGENTS_DIR } from '../cdl/ali/contrato.ts'
+import { memoTempo } from '../tmd/eco/memo.ts'
 
 export interface AgenteInjetado {
   description: string

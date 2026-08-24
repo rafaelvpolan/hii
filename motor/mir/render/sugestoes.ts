@@ -1,6 +1,6 @@
-import { truncVisible, padVisible } from '../tui/layout'
-import { profundidadeDeCor, sequenciaDe } from '../tui/paleta'
-import type { Profundidade, Rgb } from '../tui/paleta'
+import { truncVisible, padVisible } from '../tui/layout.ts'
+import { profundidadeDeCor, sequenciaDe } from '../tui/paleta.ts'
+import type { Profundidade, Rgb } from '../tui/paleta.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

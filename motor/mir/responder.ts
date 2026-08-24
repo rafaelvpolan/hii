@@ -1,7 +1,7 @@
-import { readClarify, writeClarify } from '../agentes/clr/clarificar'
-import { readCard } from '../cdl/store'
-import { answerClarify } from './acoes'
-import type { ClarifyQuestion, Fields } from '../cdl/tipos'
+import { readClarify, writeClarify } from '../agentes/clr/clarificar.ts'
+import { readCard } from '../cdl/store.ts'
+import { answerClarify } from './acoes.ts'
+import type { ClarifyQuestion, Fields } from '../cdl/tipos.ts'
 
 export interface Pendencia {
   id: string

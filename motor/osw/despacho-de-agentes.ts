@@ -1,4 +1,4 @@
-import type { PapelDeSkill } from '../csd/acervo'
+import type { PapelDeSkill } from '../csd/acervo.ts'
 
 // OSW — orchestrator-workers DENTRO de uma fase, sem motor novo.
 //

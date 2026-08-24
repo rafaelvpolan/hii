@@ -12,8 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      # O node NAO e detalhe do ambiente de teste: e o runtime da imagem de
+      # producao (node:24-slim no Dockerfile). O CI so tinha bun, e foi por isso
+      # que a Onda 11 mergeou verde com uma imagem que morria no arranque —
+      # o bun resolve import relativo sem extensao e o node nao.
+      # Pinado na MESMA major do Dockerfile de proposito: divergir aqui traria
+      # de volta exatamente a cegueira que este job existe para eliminar.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run lint:types
       - run: bun run lint:clone
       - run: bun run test:unit
+      # Fumaca sob node puro. A suite roda sob bun e por construcao nao enxerga
+      # o que so quebra no node — este passo enxerga.
+      - run: node bin/hii.ts --help

@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { podarRegistrosAntigos, ehRegistroPodavel, cardDoLedger } from '../../motor/euc/podar'
+import { podarRegistrosAntigos, ehRegistroPodavel, cardDoLedger } from '../../motor/euc/podar.ts'
 
 const DIA_MS = 24 * 60 * 60 * 1000
 const criados: string[] = []

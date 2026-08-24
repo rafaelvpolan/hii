@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { renderFleet } from '../../motor/mir/render/fleet'
-import { isActive, waitsHuman, phaseLabel } from '../../motor/mir/render/phases'
-import type { Fields } from '../../motor/cdl'
+import { renderFleet } from '../../motor/mir/render/fleet.ts'
+import { isActive, waitsHuman, phaseLabel } from '../../motor/mir/render/phases.ts'
+import type { Fields } from '../../motor/cdl/index.ts'
 
 function card(over: Partial<Fields>): Fields {
   return { id: '1', title: 't', status: 'READY', ...over }

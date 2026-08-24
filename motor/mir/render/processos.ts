@@ -1,7 +1,7 @@
-import { truncVisible, padVisible } from '../tui/layout'
-import { corDoPasso } from './board'
-import type { Passo } from '../progresso'
-import type { StepMetric } from '../../cdl/tipos'
+import { truncVisible, padVisible } from '../tui/layout.ts'
+import { corDoPasso } from './board.ts'
+import type { Passo } from '../progresso.ts'
+import type { StepMetric } from '../../cdl/tipos.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

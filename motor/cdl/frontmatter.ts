@@ -1,4 +1,4 @@
-import type { Fields, Parsed } from './tipos'
+import type { Fields, Parsed } from './tipos.ts'
 
 export function splitFrontMatter(text: string): Parsed {
   const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)

@@ -1,4 +1,4 @@
-import type { Status } from '../cdl'
+import type { Status } from '../cdl/index.ts'
 
 export type StepKind = 'quality' | 'security' | 'review' | 'cleanup' | 'custom'
 

@@ -46,7 +46,7 @@ test('PROIBIDO nada no projeto invoca docker compose', () => {
 })
 
 test('a regra esta declarada em config/regras-inegociaveis.json, nao so neste teste', async () => {
-  const { lerRegras } = await import('../../motor/csd/lei/guarda')
+  const { lerRegras } = await import('../../motor/csd/lei/guarda.ts')
   const regra = lerRegras().find(r => /compose/i.test(r.descricao))
   expect(regra, 'regra que so vive em teste ninguem le antes de escrever o arquivo errado').toBeDefined()
   expect(regra?.gatilho.arquivos?.length).toBeGreaterThan(0)
@@ -57,5 +57,5 @@ test('o stack de swarm existe e declara o teto de recurso que o compose ignorari
   expect(stack).toContain('deploy:')
   expect(stack).toContain('limits')
   const temChaveBuild = stack.split('\n').some(l => l.trim().startsWith('build:'))
-  expect(temChaveBuild, 'stack de swarm nao aceita build — a imagem vem pronta de um registry').toBe(false)
+  expect(temChaveBuild, 'o swarm IGNORA build: em silencio (exit 0) em vez de recusar — quem barra tem de ser este teste, senao sobe a imagem velha achando que construiu').toBe(false)
 })

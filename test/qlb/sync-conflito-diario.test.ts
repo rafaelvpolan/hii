@@ -8,10 +8,10 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { FASE_DO_CONFLITO } = await import('../../motor/qlb/ctr/sync')
-const { anexarEvento } = await import('../../motor/euc/eventos')
-const APR = await import('../../motor/csd/fre/aprendiz')
-const C = await import('../../motor/csd/fre/candidatos')
+const { FASE_DO_CONFLITO } = await import('../../motor/qlb/ctr/sync.ts')
+const { anexarEvento } = await import('../../motor/euc/eventos.ts')
+const APR = await import('../../motor/csd/fre/aprendiz.ts')
+const C = await import('../../motor/csd/fre/candidatos.ts')
 
 test('INVARIANTE cada tentativa de resolucao emite repair_attempt no diario', async () => {
   const fonte = await Bun.file('motor/qlb/ctr/sync.ts').text()

@@ -1,7 +1,7 @@
-import { laravelPhp } from './laravel-php'
-import type { ReparadorDeBuild } from './tipos'
+import { laravelPhp } from './laravel-php.ts'
+import type { ReparadorDeBuild } from './tipos.ts'
 
-export type { ReparadorDeBuild } from './tipos'
+export type { ReparadorDeBuild } from './tipos.ts'
 
 // Um arquivo novo por dominio, uma linha aqui. Ordem importa: o primeiro que
 // detectar vence, entao dominios mais especificos vem antes dos genericos.

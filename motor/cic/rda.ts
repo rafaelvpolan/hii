@@ -1,5 +1,5 @@
-import { apurar, contar } from './vto'
-import type { Voto } from './vto'
+import { apurar, contar } from './vto.ts'
+import type { Voto } from './vto.ts'
 
 // RDA — Roda. Mede se os criticos convergiram, e nomeia quem ficou fora.
 //

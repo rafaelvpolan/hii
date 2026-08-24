@@ -26,7 +26,7 @@ test('regra, criterio e acervo estao versionados — nao so no disco da maquina'
 })
 
 test('toda skill do acervo esta rastreada — skill so no disco de producao e skill que se perde', async () => {
-  const { carregarAcervo } = await import('../../motor/csd/acervo')
+  const { carregarAcervo } = await import('../../motor/csd/acervo.ts')
   const { relative } = await import('node:path')
   const fora = carregarAcervo().map(s => relative(process.cwd(), s.arquivo)).filter(c => !rastreado(c))
   expect(fora).toEqual([])

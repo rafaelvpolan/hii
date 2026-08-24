@@ -8,8 +8,8 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { executarComIdempotencia } = await import('../../motor/qlb/slv/idempotencia')
-const { eventosDoCard } = await import('../../motor/euc/eventos')
+const { executarComIdempotencia } = await import('../../motor/qlb/slv/idempotencia.ts')
+const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
 
 // Reproduz o cenario da Parte VI do MODERNIZATION.md: o `gh pr create` roda e
 // devolve a url, e o processo morre ANTES de o card gravar pr_url. No reinicio,
@@ -60,14 +60,14 @@ test('card que ja tinha pr_url no frontmatter continua nao reabrindo PR', async 
   expect(chamadas.n).toBe(0)
 })
 
-const { prOrfaoDe, temOrfao, ehUrlDePr } = await import('../../motor/qlb/slv/compensacao')
+const { prOrfaoDe, temOrfao, ehUrlDePr } = await import('../../motor/qlb/slv/compensacao.ts')
 
 // A auditoria (Escudo, confirmado pelo Crivo) mostrou o caminho completo: o
 // diario e JSONL sem assinatura, entao quem tem escrita no diretorio de runs
 // anexa um efeito_registrado forjado e reconcileStranded grava a url dele no
 // pr_url do card — o campo que o humano abre para revisar e mergear.
 test('REGRESSAO url forjada no diario NAO vira pr_url do card', async () => {
-  const { anexarEvento } = await import('../../motor/euc/eventos')
+  const { anexarEvento } = await import('../../motor/euc/eventos.ts')
   const id = 'forjado-1'
   anexarEvento({
     card: id, evento: 'efeito_registrado', fase: 'ctr',

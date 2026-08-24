@@ -2,12 +2,12 @@ import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { Run } from '../../motor/cdl'
+import type { Run } from '../../motor/cdl/index.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-run-falha-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { writeRun } = await import('../../motor/euc/registros')
+const { writeRun } = await import('../../motor/euc/registros.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

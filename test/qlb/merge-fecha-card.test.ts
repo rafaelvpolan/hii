@@ -8,10 +8,10 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const M = await import('../../motor/qlb/ctr/merge')
-const { anexarEvento, eventosDoCard, cardFechado } = await import('../../motor/euc/eventos')
-const C = await import('../../motor/csd/fre/candidatos')
-const { faseInterrompida } = await import('../../motor/euc/recuperar')
+const M = await import('../../motor/qlb/ctr/merge.ts')
+const { anexarEvento, eventosDoCard, cardFechado } = await import('../../motor/euc/eventos.ts')
+const C = await import('../../motor/csd/fre/candidatos.ts')
+const { faseInterrompida } = await import('../../motor/euc/recuperar.ts')
 
 test('ao mergear, o card e FECHADO no diario — sem isso a retomada varre card antigo para sempre', async () => {
   anexarEvento({ card: 'mrg-1', evento: 'fase_inicio', fase: 'seguranca' })

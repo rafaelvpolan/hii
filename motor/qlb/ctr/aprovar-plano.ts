@@ -1,5 +1,5 @@
-import { readCard } from '../../cdl/store'
-import { conferirMatriz, criarMatriz, relatoDaMatriz } from '../../nmy/luc/matriz-entendimento'
+import { readCard } from '../../cdl/store.ts'
+import { conferirMatriz, criarMatriz, relatoDaMatriz } from '../../nmy/luc/matriz-entendimento.ts'
 
 // CTR — a parede humana da Fase 4.
 //

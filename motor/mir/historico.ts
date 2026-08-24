@@ -1,11 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { splitFrontMatter } from '../cdl'
-import { allCards } from '../cdl/store'
-import { cardsDir } from '../cdl/ali/config'
-import { archiveDir } from '../cdl/arquivar'
-import { memoChave, memoTempo } from '../tmd/eco/memo'
-import { loteDesde, type RegistroDeRun } from '../euc/tsr/cota-runs'
+import { splitFrontMatter } from '../cdl/index.ts'
+import { allCards } from '../cdl/store.ts'
+import { cardsDir } from '../cdl/ali/config.ts'
+import { archiveDir } from '../cdl/arquivar.ts'
+import { memoChave, memoTempo } from '../tmd/eco/memo.ts'
+import { loteDesde, type RegistroDeRun } from '../euc/tsr/cota-runs.ts'
 
 export const JANELA_HISTORICO_MS = 7 * 24 * 60 * 60 * 1000
 const TTL_MAPA_DE_REPOS_MS = 2000

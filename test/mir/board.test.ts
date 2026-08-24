@@ -1,10 +1,10 @@
 import { test, expect } from 'bun:test'
-import { renderBoard, renderProjetos, resumirProjetos, idadeDe, legendaPassos } from '../../motor/mir/render/board'
-import { passosDoCard, pulados } from '../../motor/mir/progresso'
-import { DEFAULT_STEPS } from '../../motor/nmy/config'
-import type { Fields, StepMap } from '../../motor/cdl'
-import type { Passo } from '../../motor/mir/progresso'
-import type { BoardOptions } from '../../motor/mir/render/board'
+import { renderBoard, renderProjetos, resumirProjetos, idadeDe, legendaPassos } from '../../motor/mir/render/board.ts'
+import { passosDoCard, pulados } from '../../motor/mir/progresso.ts'
+import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
+import type { Fields, StepMap } from '../../motor/cdl/index.ts'
+import type { Passo } from '../../motor/mir/progresso.ts'
+import type { BoardOptions } from '../../motor/mir/render/board.ts'
 
 function card(over: Partial<Fields>): Fields {
   return { id: '1', title: 'tarefa', status: 'READY', repo: 'org/app', ...over }
@@ -146,7 +146,7 @@ test('lista vazia orienta a registrar', () => {
   expect(renderProjetos([])).toContain('hii repo add')
 })
 
-import { renderPassos, renderLegenda, corDoPasso } from '../../motor/mir/render/board'
+import { renderPassos, renderLegenda, corDoPasso } from '../../motor/mir/render/board.ts'
 
 const opcoes: BoardOptions = { color: true, repo: '', daemon: '', now: 0, width: 80, passosDe: (): Passo[] => [], selecionado: '' }
 
@@ -199,7 +199,7 @@ test('board sem passos nao inventa legenda', () => {
   expect(renderBoard([card({ id: '1' })], { repo: 'org/app', ...semPassos })).not.toContain('legenda')
 })
 
-import { ordemDoBoard } from '../../motor/mir/render/board'
+import { ordemDoBoard } from '../../motor/mir/render/board.ts'
 
 test('ordem do board e a mesma que aparece na tela', () => {
   const cards = [
@@ -232,7 +232,7 @@ test('selecao nao muda a largura da linha', () => {
   expect(com.length).toBe(sem.length)
 })
 
-import { linhasDoBoard, janela, renderBoardJanela } from '../../motor/mir/render/board'
+import { linhasDoBoard, janela, renderBoardJanela } from '../../motor/mir/render/board.ts'
 
 function muitos(n: number): Fields[] {
   return Array.from({ length: n }, (_, i) => card({ id: String(i + 1), status: 'READY', title: `tarefa ${i + 1}` }))
@@ -285,7 +285,7 @@ test('renderBoard e renderBoardJanela sem limite dao o mesmo conteudo', () => {
   expect(renderBoardJanela(cards, o, 0).join('\n')).toBe(renderBoard(cards, o))
 })
 
-import { abasDe, renderAbas } from '../../motor/mir/render/board'
+import { abasDe, renderAbas } from '../../motor/mir/render/board.ts'
 
 test('cada projeto vira uma aba com o que importa nele', () => {
   const cards = [

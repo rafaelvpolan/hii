@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../../motor/mir/comandos'
-import { commandsFor } from '../../motor/cdl/bss/sondar'
-import type { Contract, PackageInfo, PackageManager, RepoShape } from '../../motor/cdl/bss/tipos'
+import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../../motor/mir/comandos.ts'
+import { commandsFor } from '../../motor/cdl/bss/sondar.ts'
+import type { Contract, PackageInfo, PackageManager, RepoShape } from '../../motor/cdl/bss/tipos.ts'
 
 function pkg(path: string, name: string, pm: PackageManager, scripts: string[], framework = '', workspaceName = ''): PackageInfo {
   return {

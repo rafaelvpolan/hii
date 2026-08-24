@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { escolherReparador, reparadoresRegistrados } from '../../motor/cic/rpr/reparadores'
+import { escolherReparador, reparadoresRegistrados } from '../../motor/cic/rpr/reparadores/index.ts'
 
 test('diff com .php escolhe o reparador de Laravel/PHP', () => {
   expect(escolherReparador(['app/Http/Controllers/PaymentController.php'])?.id).toBe('laravel-php')
@@ -60,7 +60,7 @@ test('REGRESSAO a instrucao generica de build fala TypeScript — nao pode vazar
   expect(laravel, 'a de dominio nao pode herdar o vocabulario errado').not.toContain('any nem unknown')
 })
 
-const { cercarSaida } = await import('../../motor/cic/rpr/reparadores/tipos')
+const { cercarSaida } = await import('../../motor/cic/rpr/reparadores/tipos.ts')
 
 // A saida de build/teste vai para um agente que roda com Bash e Write no
 // worktree do card. Sem cerca, texto de uma dependencia comprometida entra

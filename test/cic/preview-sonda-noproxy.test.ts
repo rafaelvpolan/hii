@@ -1,7 +1,7 @@
 import { test, expect, afterAll } from 'bun:test'
-import { httpOk, waitHttp, probeArgs } from '../../motor/cic/crv/url-viva'
-import { isLoopbackUrl, noProxyArgs } from '../../motor/qlb/alf/loopback'
-import { probeProviderHealth } from '../../motor/tmd/registro'
+import { httpOk, waitHttp, probeArgs } from '../../motor/cic/crv/url-viva.ts'
+import { isLoopbackUrl, noProxyArgs } from '../../motor/qlb/alf/loopback.ts'
+import { probeProviderHealth } from '../../motor/tmd/registro.ts'
 
 let acessosAoProxy = 0
 

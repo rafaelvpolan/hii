@@ -1,4 +1,4 @@
-import type { Plan, PlanWave } from '../../nmy/luc/plano'
+import type { Plan, PlanWave } from '../../nmy/luc/plano.ts'
 
 const DIM = '\x1b[2m'
 const BOLD = '\x1b[1m'

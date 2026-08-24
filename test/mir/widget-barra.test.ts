@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { barra, barraRotulada, severidadeDe } from '../../motor/mir/render/widget/barra'
-import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout'
+import { barra, barraRotulada, severidadeDe } from '../../motor/mir/render/widget/barra.ts'
+import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 
 const CRU = { color: false, largura: 18 }
 const COLORIDO = { color: true, largura: 18 }

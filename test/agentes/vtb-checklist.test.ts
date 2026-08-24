@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { checklistParaStack, lerChecklist, renderizarChecklist, stacksComChecklist } from '../../motor/agentes/vtb/checklist'
+import { checklistParaStack, lerChecklist, renderizarChecklist, stacksComChecklist } from '../../motor/agentes/vtb/checklist.ts'
 
 test('o repo tem checklist para as stacks que ele de fato atende', () => {
   expect(stacksComChecklist()).toEqual(['laravel', 'typescript'])

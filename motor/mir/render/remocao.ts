@@ -1,6 +1,6 @@
-import { truncVisible, padVisible, visibleLen } from '../tui/layout'
-import { formatProviders, unionProviders } from '../../euc/tsr/lacuna'
-import type { PlanoLote, PlanoRemocao } from '../../cdl/remover'
+import { truncVisible, padVisible, visibleLen } from '../tui/layout.ts'
+import { formatProviders, unionProviders } from '../../euc/tsr/lacuna.ts'
+import type { PlanoLote, PlanoRemocao } from '../../cdl/remover.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

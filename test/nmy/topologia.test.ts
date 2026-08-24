@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { lerTopologia, transicaoPermitida, destinosDe } from '../../motor/nmy/topologia'
-import { STATUSES } from '../../motor/cdl'
-import type { Status } from '../../motor/cdl'
-import { activeSteps } from '../../motor/nmy/config'
-import { waves as ondas } from '../../motor/nmy/luc/ondas'
+import { lerTopologia, transicaoPermitida, destinosDe } from '../../motor/nmy/topologia.ts'
+import { STATUSES } from '../../motor/cdl/index.ts'
+import type { Status } from '../../motor/cdl/index.ts'
+import { activeSteps } from '../../motor/nmy/config.ts'
+import { waves as ondas } from '../../motor/nmy/luc/ondas.ts'
 
 const topo = lerTopologia()
 

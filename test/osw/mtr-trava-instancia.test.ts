@@ -3,8 +3,8 @@ import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { acquireInstanceLock, holdInstanceLock, releaseInstanceLock } from '../../motor/osw/mtr/trava-instancia'
-import { daemonPid } from '../../motor/osw/mtr/daemon'
+import { acquireInstanceLock, holdInstanceLock, releaseInstanceLock } from '../../motor/osw/mtr/trava-instancia.ts'
+import { daemonPid } from '../../motor/osw/mtr/daemon.ts'
 
 const ROOT = join(import.meta.dir, '..', '..')
 const RUNNER = join(ROOT, 'runner.ts')

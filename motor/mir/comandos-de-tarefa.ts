@@ -1,7 +1,7 @@
-import { readCard, listRepos, repoRegistered } from '../cdl/store'
-import * as core from './acoes'
-import type { MotivoDeRecusa } from './acoes'
-import { responder } from './responder'
+import { readCard, listRepos, repoRegistered } from '../cdl/store.ts'
+import * as core from './acoes.ts'
+import type { MotivoDeRecusa } from './acoes.ts'
+import { responder } from './responder.ts'
 
 export type AcaoDeTarefa = 'aprovar-url' | 'aprovar-plano' | 'recusar' | 'parar' | 'responder' | 'criar'
 

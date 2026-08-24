@@ -1,7 +1,7 @@
-import { CANTO } from './paleta'
-import { grafemasDe, larguraDeGrafema, larguraDeTexto } from './largura'
+import { CANTO } from './paleta.ts'
+import { grafemasDe, larguraDeGrafema, larguraDeTexto } from './largura.ts'
 
-export { stripAnsi } from './largura'
+export { stripAnsi } from './largura.ts'
 
 const RESET = '\x1b[0m'
 const ELIPSE = '…'

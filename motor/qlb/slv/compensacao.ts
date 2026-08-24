@@ -1,6 +1,6 @@
-import { anexarEvento, eventosDoCard } from '../../euc/eventos'
-import type { EventoDoCard } from '../../euc/eventos'
-import { efeitoJaProduzido } from './idempotencia'
+import { anexarEvento, eventosDoCard } from '../../euc/eventos.ts'
+import type { EventoDoCard } from '../../euc/eventos.ts'
+import { efeitoJaProduzido } from './idempotencia.ts'
 
 // SLV — compensacao de falha parcial (padrao saga). Nem toda operacao deste
 // motor tem rollback: nao existe "desfazer" um PR aberto do jeito que existe um

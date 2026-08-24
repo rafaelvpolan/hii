@@ -2,11 +2,11 @@ import { test, expect, beforeEach } from 'bun:test'
 import { mkdtempSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { handle, newSession } from '../../motor/mir/sessao'
-import { dispatch } from '../../motor/mir/despacho'
-import { dispatchIOFalso } from '../fixtures/dispatch-io-falso'
-import { allCards } from '../../motor/cdl/store'
-import { providerNameFor } from '../../motor/tmd/registro'
+import { handle, newSession } from '../../motor/mir/sessao.ts'
+import { dispatch } from '../../motor/mir/despacho.ts'
+import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
+import { allCards } from '../../motor/cdl/store.ts'
+import { providerNameFor } from '../../motor/tmd/registro.ts'
 
 let saida: string[] = []
 

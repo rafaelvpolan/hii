@@ -2,7 +2,7 @@ import { test, expect, afterAll } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const R = await import('../../motor/cdl/ali/runtime')
+const R = await import('../../motor/cdl/ali/runtime.ts')
 afterAll(() => { delete process.env.HICODE_RUNTIME })
 
 test('os runtimes suportados sao declarados, nao adivinhados', () => {

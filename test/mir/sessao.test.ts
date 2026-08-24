@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { handle, newSession, planShown, seguir } from '../../motor/mir/sessao'
+import { handle, newSession, planShown, seguir } from '../../motor/mir/sessao.ts'
 
 const base = newSession('org/app')
 
@@ -98,7 +98,7 @@ test('numero longo demais para ser id vira tarefa', () => {
   expect(handle('12345', base).effect.kind).toBe('submit')
 })
 
-import { perguntando, respondido } from '../../motor/mir/sessao'
+import { perguntando, respondido } from '../../motor/mir/sessao.ts'
 
 test('a pergunta da IA e respondida pelo prompt, sem comando dedicado', () => {
   expect(perguntando(base, '022').perguntando).toBe('022')
@@ -137,7 +137,7 @@ test('respondido limpa o estado de pergunta', () => {
   expect(respondido(perguntando(base, '022')).perguntando).toBe('')
 })
 
-import { removendo } from '../../motor/mir/sessao'
+import { removendo } from '../../motor/mir/sessao.ts'
 
 test('/rm exige id e pede confirmacao antes de apagar', () => {
   expect(handle('/rm', base).effect.kind).toBe('error')
@@ -230,7 +230,7 @@ test('numero dentro da tarefa ainda abre o plano', () => {
   expect(handle('20', seguir(base, '022')).effect.kind).toBe('plan')
 })
 
-import { retomando } from '../../motor/mir/sessao'
+import { retomando } from '../../motor/mir/sessao.ts'
 
 test('depois de parar, enter retoma a tarefa', () => {
   const r = handle('', retomando(base, '022'))
@@ -263,7 +263,7 @@ test('/exit sai, como /quit e /q', () => {
 })
 
 test('/exit aparece no catalogo de comandos', async () => {
-  const { COMMANDS } = await import('../../motor/mir/sessao')
+  const { COMMANDS } = await import('../../motor/mir/sessao.ts')
   expect([...COMMANDS]).toContain('/exit')
 })
 
@@ -272,7 +272,7 @@ test('/exit sai mesmo com algo pendente', () => {
   expect(handle('/exit', cheio).effect.kind).toBe('quit')
 })
 
-import { escolhendoRepo } from '../../motor/mir/sessao'
+import { escolhendoRepo } from '../../motor/mir/sessao.ts'
 
 test('/repo e /project levam ao mesmo caminho', () => {
   expect(handle('/repo', base).effect.kind).toBe('reopen-repo')
@@ -307,7 +307,7 @@ test('comando durante a escolha continua sendo comando', () => {
   expect(handle('/historico', escolhendoRepo(base)).effect.kind).toBe('historico')
 })
 
-import { ALIASES, canonico } from '../../motor/mir/sessao'
+import { ALIASES, canonico } from '../../motor/mir/sessao.ts'
 
 test('REGRESSAO todo apelido se comporta igual ao comando principal', () => {
   for (const [principal, apelidos] of Object.entries(ALIASES)) {
@@ -325,7 +325,7 @@ test('canonico resolve apelido e deixa comando desconhecido intacto', () => {
   expect(canonico('/inventado')).toBe('/inventado')
 })
 
-import { sincronizarAprovacao, comentando } from '../../motor/mir/sessao'
+import { sincronizarAprovacao, comentando } from '../../motor/mir/sessao.ts'
 
 test('a ask de aprovacao arma sozinha quando a tarefa que voce segue chega em URL', () => {
   const dentro = seguir(base, '022')
@@ -341,7 +341,7 @@ test('a ask nao se arma por cima de outra pergunta ja na tela', () => {
   expect(sincronizarAprovacao(planShown(dentro, '019'), 'URL').aprovando).toBe('')
 })
 
-import { aprovando, comentando as comentandoEm } from '../../motor/mir/sessao'
+import { aprovando, comentando as comentandoEm } from '../../motor/mir/sessao.ts'
 
 test('sair da tarefa fecha a ask de aprovacao junto — ela nao pode ficar boiando sobre o quadro', () => {
   const armado = aprovando(seguir(base, '022'), '022')

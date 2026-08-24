@@ -1,4 +1,4 @@
-import { ipv4Octets } from './ipv4'
+import { ipv4Octets } from './ipv4.ts'
 
 const HEXTET = /^[0-9a-f]{1,4}$/
 const GROUPS = 8

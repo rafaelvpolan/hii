@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { renderConfig } from '../../motor/mir/render/config'
-import type { EstadoDaConfig, LinhaDeProvedor } from '../../motor/mir/render/config'
-import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout'
-import { provedoresDisponiveis } from '../../motor/tmd/disponibilidade'
+import { renderConfig } from '../../motor/mir/render/config/index.ts'
+import type { EstadoDaConfig, LinhaDeProvedor } from '../../motor/mir/render/config/index.ts'
+import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
+import { provedoresDisponiveis } from '../../motor/tmd/disponibilidade.ts'
 
 const ia = (nome: string, over: Partial<LinhaDeProvedor> = {}): LinhaDeProvedor => ({
   nome, situacao: 'disponivel', habilitado: true, motivo: '', papeis: [], modelo: '', esforco: '',
@@ -234,8 +234,8 @@ test('plano nao descoberto e dito, nao chutado', () => {
 })
 
 test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
-  const { definirEstadoDoOllama } = await import('../../motor/tmd/harness/ollama-estado')
-  const { habilitadoDe } = await import('../../motor/cdl/ali/snapshot')
+  const { definirEstadoDoOllama } = await import('../../motor/tmd/harness/ollama-estado.ts')
+  const { habilitadoDe } = await import('../../motor/cdl/ali/snapshot.ts')
   const conectado = { nome: 'ollama' as const, situacao: 'disponivel' as const, instalado: true, comoObter: '', modelo: '', papeis: [] }
 
   definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })

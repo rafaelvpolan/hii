@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../motor/mir/tui/app'
-import type { Terminal } from '../../motor/mir/tui/screen'
-import type { App } from '../../motor/mir/tui/app'
-import { telaVirtual } from '../fixtures/tela-virtual'
+import { createApp } from '../../motor/mir/tui/app.ts'
+import type { Terminal } from '../../motor/mir/tui/screen.ts'
+import type { App } from '../../motor/mir/tui/app.ts'
+import { telaVirtual } from '../fixtures/tela-virtual.ts'
 
 const PG_UP = '\x1b[5~'
 const PG_DOWN = '\x1b[6~'

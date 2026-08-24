@@ -1,11 +1,11 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { readCard, listRepos, findCardFile, normalizeId } from './store'
-import { cardsDir } from './ali/config'
-import { stopUrl } from '../cic/crv/url-viva'
-import { removeWorktree } from '../qlb/git'
-import { remove } from '../mir/acoes'
-import { floorProviders, formatProviders } from '../euc/tsr/lacuna'
+import { readCard, listRepos, findCardFile, normalizeId } from './store.ts'
+import { cardsDir } from './ali/config.ts'
+import { stopUrl } from '../cic/crv/url-viva.ts'
+import { removeWorktree } from '../qlb/git.ts'
+import { remove } from '../mir/acoes.ts'
+import { floorProviders, formatProviders } from '../euc/tsr/lacuna.ts'
 
 const EM_VOO = ['EXECUTING', 'CORRECTING']
 

@@ -1,13 +1,13 @@
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { GateResult } from '../../motor/cic/crv/gate'
-import type { ImplementResult } from '../../motor/cdl'
-import type { ExecuteDeps } from '../../motor/osw/executar'
-import type { FinishDeps } from '../../motor/qlb/ctr/fechar'
+import type { GateResult } from '../../motor/cic/crv/gate.ts'
+import type { ImplementResult } from '../../motor/cdl/index.ts'
+import type { ExecuteDeps } from '../../motor/osw/executar.ts'
+import type { FinishDeps } from '../../motor/qlb/ctr/fechar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishcost-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -46,9 +46,9 @@ const SUCESSO: ImplementResult = { ok: true, resultText: 'mudou algo', fullText:
 
 const GATE_BLOCKED: GateResult = { ok: true, verdict: 'BLOCKED', reason: 'defeito real encontrado pelo crivo', questions: [], cost: 0.05, costMeasured: true, tokens: 500 }
 
-const { createCard, readCard, patchCard } = await import('../../motor/cdl/store')
-const { handleExecute } = await import('../../motor/osw/executar')
-const { handleFinish } = await import('../../motor/qlb/ctr/fechar')
+const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
+const { handleExecute } = await import('../../motor/osw/executar.ts')
+const { handleFinish } = await import('../../motor/qlb/ctr/fechar.ts')
 
 const agenteExecute: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => {
@@ -108,7 +108,7 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
 }, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO card com PR ja aberto nao tenta criar PR de novo', async () => {
-  const { pularCriacaoDePr } = await import('../../motor/qlb/ctr/pr')
+  const { pularCriacaoDePr } = await import('../../motor/qlb/ctr/pr.ts')
   expect(pularCriacaoDePr('https://github.com/o/r/pull/20')).toBe(true)
   expect(pularCriacaoDePr('')).toBe(false)
   expect(pularCriacaoDePr('   ')).toBe(false)

@@ -1,4 +1,4 @@
-import { quantosEmVoo } from './estado-da-fila'
+import { quantosEmVoo } from './estado-da-fila.ts'
 
 // MTR — encerramento gracioso. Ao receber SIGTERM o motor para de ACEITAR card
 // novo, espera o job em andamento terminar e so entao sai.

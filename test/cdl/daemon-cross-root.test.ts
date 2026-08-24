@@ -3,8 +3,8 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { daemonPid, rootFile } from '../../motor/osw/mtr/daemon'
-import { ROOT } from '../../motor/cdl/ali/config'
+import { daemonPid, rootFile } from '../../motor/osw/mtr/daemon.ts'
+import { ROOT } from '../../motor/cdl/ali/config.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-daemon-cross-root-'))
 const RAIZ_DO_MOTOR = join(BASE, 'raiz-do-motor-em-outro-clone')

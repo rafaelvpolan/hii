@@ -8,9 +8,9 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const APR = await import('../../motor/csd/fre/aprendiz')
-const C = await import('../../motor/csd/fre/candidatos')
-const { anexarEvento, eventosDoCard } = await import('../../motor/euc/eventos')
+const APR = await import('../../motor/csd/fre/aprendiz.ts')
+const C = await import('../../motor/csd/fre/candidatos.ts')
+const { anexarEvento, eventosDoCard } = await import('../../motor/euc/eventos.ts')
 
 function arquivosDoMotor(raiz = 'motor'): string[] {
   const fora: string[] = []

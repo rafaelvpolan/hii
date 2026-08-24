@@ -8,9 +8,9 @@ process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { executarEmBlocos, relatoDosBlocos } = await import('../../motor/nmy/tjl/blocos')
-const { APROVADO, reprovado } = await import('../../motor/cic/reparo')
-const { eventosDoCard } = await import('../../motor/euc/eventos')
+const { executarEmBlocos, relatoDosBlocos } = await import('../../motor/nmy/tjl/blocos.ts')
+const { APROVADO, reprovado } = await import('../../motor/cic/reparo.ts')
+const { eventosDoCard } = await import('../../motor/euc/eventos.ts')
 
 function blocos(falhaEm: string | null): Parameters<typeof executarEmBlocos>[0] {
   return ['schema', 'migration', 'model', 'controller', 'teste'].map(id => ({

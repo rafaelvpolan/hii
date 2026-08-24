@@ -1,6 +1,6 @@
-import { truncVisible, padVisible } from '../tui/layout'
-import { floorProviders, formatProviders } from '../../euc/tsr/lacuna'
-import type { Card } from '../../cdl'
+import { truncVisible, padVisible } from '../tui/layout.ts'
+import { floorProviders, formatProviders } from '../../euc/tsr/lacuna.ts'
+import type { Card } from '../../cdl/index.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

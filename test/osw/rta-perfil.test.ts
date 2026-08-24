@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { planSteps } from '../../motor/osw/rta/perfil'
-import type { TaskInput } from '../../motor/osw/rta/perfil'
-import { DEFAULT_STEPS } from '../../motor/nmy/config'
+import { planSteps } from '../../motor/osw/rta/perfil.ts'
+import type { TaskInput } from '../../motor/osw/rta/perfil.ts'
+import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
 
 function ids(task: TaskInput): string[] {
   return planSteps(task, DEFAULT_STEPS).steps.map(s => s.id)

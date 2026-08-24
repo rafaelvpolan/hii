@@ -1,6 +1,6 @@
-import { anexarEvento } from '../euc/eventos'
-import { TIERS, elevarTier, tierPara } from '../euc/tsr/orcamento'
-import type { EscolhaDeTier, Tier } from '../euc/tsr/orcamento'
+import { anexarEvento } from '../euc/eventos.ts'
+import { TIERS, elevarTier, tierPara } from '../euc/tsr/orcamento.ts'
+import type { EscolhaDeTier, Tier } from '../euc/tsr/orcamento.ts'
 
 // RUI — Rui Barbosa: a camada que decide ANTES de rotear. Quanto vale gastar
 // nesta acao, e por que.

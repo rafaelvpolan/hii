@@ -1,4 +1,4 @@
-import type { Fields } from '../../../cdl'
+import type { Fields } from '../../../cdl/index.ts'
 
 export interface ExternalTask {
   externalId: string

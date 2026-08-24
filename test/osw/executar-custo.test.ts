@@ -1,11 +1,11 @@
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { ImplementResult } from '../../motor/cdl'
-import type { ExecuteDeps } from '../../motor/osw/executar'
+import type { ImplementResult } from '../../motor/cdl/index.ts'
+import type { ExecuteDeps } from '../../motor/osw/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-execcost-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -45,8 +45,8 @@ const IMPLEMENT_RESULT: ImplementResult = {
   usage: { tokens_in: 10, tokens_out: 20, tokens_cache_create: 0, tokens_cache_read: 0 },
 }
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { handleExecute } = await import('../../motor/osw/executar')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { handleExecute } = await import('../../motor/osw/executar.ts')
 
 const agente: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => Promise.resolve(IMPLEMENT_RESULT),

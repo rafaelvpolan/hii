@@ -1,7 +1,7 @@
-import { eventosDoCard } from '../../euc/eventos'
-import { executarComIdempotencia } from '../../qlb/slv/idempotencia'
-import { assinar, causaRaizDe, ehFalha } from './assinatura'
-import { registrarOcorrencia } from './candidatos'
+import { eventosDoCard } from '../../euc/eventos.ts'
+import { executarComIdempotencia } from '../../qlb/slv/idempotencia.ts'
+import { assinar, causaRaizDe, ehFalha } from './assinatura.ts'
+import { registrarOcorrencia } from './candidatos.ts'
 
 // FRE — o aprendiz. Roda UMA vez no fechamento do card.
 //

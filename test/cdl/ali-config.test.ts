@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, cardsDir, reposFile } from '../../motor/cdl/ali/config'
+import { ROOT, cardsDir, reposFile } from '../../motor/cdl/ali/config.ts'
 
 const SUFIXO_SEM_CACHE = 'forced'
 
-function configReavaliada(): Promise<typeof import('../../motor/cdl/ali/config')> {
+function configReavaliada(): Promise<typeof import('../../motor/cdl/ali/config.ts')> {
   return import(`../../motor/cdl/ali/config?${SUFIXO_SEM_CACHE}`)
 }
 
@@ -49,7 +49,7 @@ test('HICODE_ROOT tem precedencia sobre a deteccao', async () => {
 test('listRepos devolve vazio quando o registro nao existe — sem lancar', async () => {
   const prev = process.env.HICODE_REPOS_FILE
   process.env.HICODE_REPOS_FILE = '/tmp/hicode-repos-inexistente.json'
-  const { listRepos, repoRegistered } = await import('../../motor/cdl/store')
+  const { listRepos, repoRegistered } = await import('../../motor/cdl/store.ts')
   expect(listRepos()).toEqual([])
   expect(repoRegistered('owner/x')).toBe(false)
   if (prev === undefined) delete process.env.HICODE_REPOS_FILE
@@ -64,7 +64,7 @@ test('repoRegistered distingue registrado de nao registrado', async () => {
   writeFileSync(f, JSON.stringify([{ name: 'owner/alvo', path: '/tmp/alvo', branch: 'main' }]))
   const prev = process.env.HICODE_REPOS_FILE
   process.env.HICODE_REPOS_FILE = f
-  const { listRepos, repoRegistered } = await import('../../motor/cdl/store')
+  const { listRepos, repoRegistered } = await import('../../motor/cdl/store.ts')
   expect(listRepos().length).toBe(1)
   expect(repoRegistered('owner/alvo')).toBe(true)
   expect(repoRegistered('owner/outro')).toBe(false)

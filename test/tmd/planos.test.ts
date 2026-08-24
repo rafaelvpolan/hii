@@ -1,4 +1,4 @@
-import { harnessPorNome } from '../../motor/tmd/registro'
+import { harnessPorNome } from '../../motor/tmd/registro.ts'
 import { test, expect, afterEach } from 'bun:test'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -6,8 +6,8 @@ import { join } from 'node:path'
 import {
   claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
   modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
-} from '../../motor/euc/tsr/planos'
-import { sondarOllama } from '../../motor/tmd/harness/ollama-estado'
+} from '../../motor/euc/tsr/planos.ts'
+import { sondarOllama } from '../../motor/tmd/harness/ollama-estado.ts'
 
 const dir = mkdtempSync(join(tmpdir(), 'hicode-planos-'))
 

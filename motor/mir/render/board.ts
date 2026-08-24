@@ -1,7 +1,7 @@
-import type { Fields } from '../../cdl'
-import type { Passo } from '../progresso'
-import { fleetFloorProviders, floorProviders, formatProviders } from '../../euc/tsr/lacuna'
-import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman, esperaHumano } from './phases'
+import type { Fields } from '../../cdl/index.ts'
+import type { Passo } from '../progresso.ts'
+import { fleetFloorProviders, floorProviders, formatProviders } from '../../euc/tsr/lacuna.ts'
+import { PHASES, isActive, phaseIndex, phaseLabel, waitsHuman, esperaHumano } from './phases.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'

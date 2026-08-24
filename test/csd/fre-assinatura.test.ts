@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-const A = await import('../../motor/csd/fre/assinatura')
+const A = await import('../../motor/csd/fre/assinatura.ts')
 
 test('mesma causa raiz em cards diferentes da a MESMA assinatura', () => {
   const um = A.assinar({ categoria: 'seguranca', dominio: 'laravel', tipoDeFalha: 'gate_reprovado', causaRaiz: 'PaymentController sem teste de idempotencia' })

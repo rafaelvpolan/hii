@@ -2,8 +2,8 @@ import { test, expect } from 'bun:test'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bloqueia, checarDependencias, checarIa, preflight } from '../../motor/mir/cli/preflight'
-import type { ChecagemDeAmbiente } from '../../motor/mir/cli/preflight'
+import { bloqueia, checarDependencias, checarIa, preflight } from '../../motor/mir/cli/preflight.ts'
+import type { ChecagemDeAmbiente } from '../../motor/mir/cli/preflight.ts'
 
 function checagem(severidade: ChecagemDeAmbiente['severidade']): ChecagemDeAmbiente {
   return { nome: 'x', severidade, detalhe: '', conserto: '' }

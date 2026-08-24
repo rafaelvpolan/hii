@@ -1,14 +1,14 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { memoTempo } from '../eco/memo'
-import { stripAnsi } from '../../mir/tui/layout'
-import type { Rgb } from '../../mir/tui/paleta'
-import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cdl/ali/contrato'
-import { raizDoCodex } from '../../euc/tsr/planos'
-import { providerNameFor } from '../registro'
-import { corDoHarness } from '../registro'
-import type { HarnessId } from '../tipos'
+import { memoTempo } from '../eco/memo.ts'
+import { stripAnsi } from '../../mir/tui/layout.ts'
+import type { Rgb } from '../../mir/tui/paleta.ts'
+import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cdl/ali/contrato.ts'
+import { raizDoCodex } from '../../euc/tsr/planos.ts'
+import { providerNameFor } from '../registro.ts'
+import { corDoHarness } from '../registro.ts'
+import type { HarnessId } from '../tipos.ts'
 
 export interface ComandoDaIa {
   comando: string

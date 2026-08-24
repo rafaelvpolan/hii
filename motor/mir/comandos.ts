@@ -1,6 +1,6 @@
 import { join } from 'node:path'
-import { packageForPath } from '../cdl/bss/sondar'
-import type { Contract, PackageInfo } from '../cdl/bss/tipos'
+import { packageForPath } from '../cdl/bss/sondar.ts'
+import type { Contract, PackageInfo } from '../cdl/bss/tipos.ts'
 
 export type CommandKind = 'build' | 'test' | 'lint' | 'typecheck' | 'dev'
 

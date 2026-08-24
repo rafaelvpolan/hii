@@ -1,14 +1,14 @@
 import { appendFileSync } from 'node:fs'
-import { run } from '../../qlb/git'
-import { emptyUsage } from '../uso'
-import { COST_UNKNOWN } from '../../euc/tsr/custo'
-import { resolverModo } from '../modo-puro'
-import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos'
-import { kimiAutenticado, planoDoKimi } from '../../euc/tsr/planos'
+import { run } from '../../qlb/git.ts'
+import { emptyUsage } from '../uso.ts'
+import { COST_UNKNOWN } from '../../euc/tsr/custo.ts'
+import { resolverModo } from '../modo-puro.ts'
+import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
+import { kimiAutenticado, planoDoKimi } from '../../euc/tsr/planos.ts'
 
 export const KIMI_MODOS: CatalogoDeModo = { modos: ['default', 'yolo', 'auto', 'plan'], padrao: 'auto' }
 
-import { alcancavelPorHttp } from '../sonda'
+import { alcancavelPorHttp } from '../sonda.ts'
 
 interface KimiStreamLine {
   role?: string

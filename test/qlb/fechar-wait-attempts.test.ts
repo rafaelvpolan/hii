@@ -1,11 +1,11 @@
-import { TEMPO_COM_GIT_MS } from '../tempo-de-teste'
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { test, expect, afterAll } from 'bun:test'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { GateResult } from '../../motor/cic/crv/gate'
-import type { FinishDeps } from '../../motor/qlb/ctr/fechar'
+import type { GateResult } from '../../motor/cic/crv/gate.ts'
+import type { FinishDeps } from '../../motor/qlb/ctr/fechar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishwait-'))
 // Rigor estrito muda o comportamento do fechamento de proposito (barra area
@@ -58,10 +58,10 @@ chmodSync(ghFalso, 0o755)
 const pathOriginal = process.env.PATH ?? ''
 process.env.PATH = `${ghBinDir}:${pathOriginal}`
 
-const realGit = await import('../../motor/qlb/git')
+const realGit = await import('../../motor/qlb/git.ts')
 
-const { createCard, readCard } = await import('../../motor/cdl/store')
-const { handleFinish } = await import('../../motor/qlb/ctr/fechar')
+const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { handleFinish } = await import('../../motor/qlb/ctr/fechar.ts')
 
 afterAll(() => {
   process.env.PATH = pathOriginal

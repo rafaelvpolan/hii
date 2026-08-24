@@ -1,7 +1,7 @@
-import { allCards } from '../../cdl/store'
-import { eventosDoCard } from '../eventos'
-import { maxReajuste } from '../../cdl/ali/config'
-import { MAX_CONFLICT } from '../../cdl/ali/config'
+import { allCards } from '../../cdl/store.ts'
+import { eventosDoCard } from '../eventos.ts'
+import { maxReajuste } from '../../cdl/ali/config.ts'
+import { MAX_CONFLICT } from '../../cdl/ali/config.ts'
 
 // TSR — medir antes de automatizar.
 //

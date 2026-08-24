@@ -1,6 +1,6 @@
 import { test, expect, afterAll } from 'bun:test'
 
-const S = await import('../../motor/qlb/cfr/segredos')
+const S = await import('../../motor/qlb/cfr/segredos.ts')
 
 const NOME = 'HICODE_SEGREDO_DE_TESTE'
 afterAll(() => { delete process.env[NOME] })

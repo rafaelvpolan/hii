@@ -1,7 +1,7 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { isoNow } from '../cdl'
-import { cardsDir } from '../cdl/ali/config'
+import { isoNow } from '../cdl/index.ts'
+import { cardsDir } from '../cdl/ali/config.ts'
 
 // EUC — Euclides. Diario append-only de execucao: registra o que aconteceu, em
 // ordem, e NUNCA reescreve. E daqui que a retomada apos crash reconstroi onde

@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import { agentRoles, binarioDoHarness, comandoDeLoginDe, harnessPorNome, modelFor, providerNameFor, providerNames } from './registro'
-import { preferenciaDoPapel } from './preferencias'
-import { janelasDoProvedor } from '../euc/tsr/janelas'
-import type { AgentRole, HarnessId } from './tipos'
+import { agentRoles, binarioDoHarness, comandoDeLoginDe, harnessPorNome, modelFor, providerNameFor, providerNames } from './registro.ts'
+import { preferenciaDoPapel } from './preferencias.ts'
+import { janelasDoProvedor } from '../euc/tsr/janelas.ts'
+import type { AgentRole, HarnessId } from './tipos.ts'
 
 export function comandoDeLoginDoProvedor(nome: HarnessId): readonly string[] {
   return comandoDeLoginDe(nome)

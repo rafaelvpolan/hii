@@ -14,7 +14,7 @@ function dirComCard(id: string): string {
   return d
 }
 
-const { todosOsCards, reposRegistrados } = await import('../../motor/mir/cli/dados')
+const { todosOsCards, reposRegistrados } = await import('../../motor/mir/cli/dados.ts')
 
 // O cache de todosOsCards era memoTempo puro, de 250ms, SEM chave de
 // diretorio. Trocar HICODE_CARDS_DIR dentro dessa janela devolvia a lista do

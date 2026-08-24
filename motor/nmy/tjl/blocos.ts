@@ -1,6 +1,6 @@
-import { anexarEvento } from '../../euc/eventos'
-import { APROVADO } from '../../cic/reparo'
-import type { VeredictoDeGate } from '../../cic/reparo'
+import { anexarEvento } from '../../euc/eventos.ts'
+import { APROVADO } from '../../cic/reparo.ts'
+import type { VeredictoDeGate } from '../../cic/reparo.ts'
 
 // TJL — Tijolo. Tijolo por tijolo, e o pedreiro confere o prumo antes do
 // proximo.

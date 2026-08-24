@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { parseLog, classificar, ehProsa } from '../../motor/mir/atividade'
-import { renderExecucao, linhasDaAtividade, chamadaDe } from '../../motor/mir/render/execucao'
-import { renderFrame } from '../../motor/mir/tui/layout'
+import { parseLog, classificar, ehProsa } from '../../motor/mir/atividade.ts'
+import { renderExecucao, linhasDaAtividade, chamadaDe } from '../../motor/mir/render/execucao.ts'
+import { renderFrame } from '../../motor/mir/tui/layout.ts'
 
 const semCor = { color: false }
 

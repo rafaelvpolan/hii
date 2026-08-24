@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-health-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { reportTickFailure, recordTickSuccess } = await import('../../motor/euc/rdr/tick')
+const { reportTickFailure, recordTickSuccess } = await import('../../motor/euc/rdr/tick.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

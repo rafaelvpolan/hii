@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../../cdl/ali/config'
-import { ENV_CRITERIOS_FILE } from '../../cdl/ali/contrato'
+import { ROOT } from '../../cdl/ali/config.ts'
+import { ENV_CRITERIOS_FILE } from '../../cdl/ali/contrato.ts'
 
 // CRV — o criterio escrito. Antes os padroes viviam numa string dentro do
 // prompt do gate: nao davam para versionar, auditar nem citar numa reprovacao.

@@ -1,5 +1,5 @@
-import { anexarEvento, eventosDoCard } from '../../euc/eventos'
-import type { StepProfile } from '../../osw/rta/perfil'
+import { anexarEvento, eventosDoCard } from '../../euc/eventos.ts'
+import type { StepProfile } from '../../osw/rta/perfil.ts'
 
 // CHG — Carlos Chagas: descreveu vetor, parasita e doenca. Prova de ciclo
 // completo, nao "um teste qualquer que passa".

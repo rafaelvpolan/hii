@@ -1,4 +1,4 @@
-import type { Fields } from './tipos'
+import type { Fields } from './tipos.ts'
 
 export interface ProjetoConhecido {
   name: string
