@@ -1,8 +1,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT } from '../cdl/ali/config'
-import { ENV_SKILLS_DIR } from '../cdl/ali/contrato'
+import { diretorioDeSkills } from '../cdl/ali/config'
 import { casaPadrao } from './lei/guarda'
+import { auditarTexto, relatoDaAuditoria } from '../agentes/vtb/auditoria-harness'
+
+export { diretorioDeSkills }
 
 // CSD — Cascudo. O acervo: conteudo reutilizavel carregado sob demanda.
 //
@@ -38,10 +40,6 @@ export interface Skill {
   readonly gatilho: GatilhoDeSkill
   readonly instrucoes: string
   readonly arquivo: string
-}
-
-export function diretorioDeSkills(): string {
-  return process.env[ENV_SKILLS_DIR] || join(ROOT, 'skills')
 }
 
 interface Frontmatter {
@@ -92,6 +90,8 @@ export function lerSkill(texto: string, arquivo: string, pack: string, origem: s
   if (!gatilho.sempre && !gatilho.arquivos?.length && !gatilho.deps?.length) {
     throw new Error(`${arquivo}: skill "${id}" sem gatilho — declare "sempre: true", "arquivos:" ou "deps:". Skill que nunca carrega e peso morto`)
   }
+  const achados = auditarTexto(corpo, arquivo)
+  if (achados.length) throw new Error(relatoDaAuditoria(achados))
   return { id, pack, origem, papeis: papeis as PapelDeSkill[], gatilho, instrucoes: corpo, arquivo }
 }
 

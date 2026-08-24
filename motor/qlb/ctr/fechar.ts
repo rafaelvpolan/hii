@@ -31,6 +31,7 @@ import { avaliarDiff } from '../../csd/lei/guarda'
 import { rigorEstrito } from '../../cdl/ali/config'
 import { conferirSetup, relatoDoSetup } from '../../cdl/bss/setup-ferramental'
 import { exigirRedAntesDoGreen } from '../../agentes/chg/red-primeiro'
+import { contratoPublicoMudou, relatoDeContrato } from '../../agentes/clr/doc-updater'
 
 export interface FinishDeps {
   runStep: typeof runStep
@@ -103,6 +104,10 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       return
     }
   }
+  const diffTexto = (await runGit(wt, ['diff', `origin/${base}...HEAD`])).stdout
+  const contratoPublico = contratoPublicoMudou({ arquivos: changed, diff: diffTexto })
+  patchCard(id, { contrato_publico: contratoPublico.mudou ? 'mudou' : 'estavel' }, `${isoNow()} CLR: ${relatoDeContrato(contratoPublico)}`)
+
   const all = activeSteps(wt)
   // LEI antes de decidir os passos: a guarda olha o DIFF, nao o que o card
   // declarou. `risk` e escrito no card, e quem escreve o card muitas vezes e a

@@ -1,7 +1,7 @@
 import { join, dirname, resolve } from 'node:path'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT } from './contrato'
+import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT, ENV_SKILLS_DIR } from './contrato'
 
 const MARCADORES = ['runner.ts', 'cards', join('config', 'repos.json')]
 
@@ -22,6 +22,10 @@ function resolveRoot(): string {
 export const ROOT = resolveRoot()
 export function cardsDir(): string {
   return process.env[ENV_CARDS_DIR] || join(ROOT, 'cards')
+}
+
+export function diretorioDeSkills(): string {
+  return process.env[ENV_SKILLS_DIR] || join(ROOT, 'skills')
 }
 
 export function reposFile(): string {
