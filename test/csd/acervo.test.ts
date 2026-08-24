@@ -80,7 +80,7 @@ php`)
 // Lista explicita de proposito: pack novo reprova aqui ate ser declarado, do
 // mesmo jeito que efeito externo novo reprova no registro de idempotencia.
 // Varredura dinamica passaria calada e o teste deixaria de dizer algo.
-const PACKS_DECLARADOS = ['common', 'frontend-web', 'games-multiplatform']
+const PACKS_DECLARADOS = ['backend-web', 'common', 'devops-deploy', 'frontend-web', 'games-multiplatform', 'mobile']
 
 test('o acervo real do repo carrega, tem os packs declarados e nenhum id repetido', () => {
   const a = carregarAcervo()

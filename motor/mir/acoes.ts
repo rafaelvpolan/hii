@@ -16,6 +16,7 @@ export interface NewCardInput {
   pilha?: string
   ai?: string
   effort?: string
+  packs?: string
 }
 
 export interface ClarifyAnswer {
@@ -41,7 +42,7 @@ export function submit(input: NewCardInput): string {
     risk: input.risk === 'high' ? 'high' : 'low',
     repo: input.repo ?? '',
     created: isoNow(),
-    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort }),
+    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs }),
   }, body)
 }
 

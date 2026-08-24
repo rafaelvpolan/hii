@@ -49,7 +49,7 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 | **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
 | **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
 | **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | ✅ feita |
-| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ 20 e 4 feitos · 16 adiado |
+| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ feita |
 | **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | ✅ feita |
 | **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | ✅ feita |
 | **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | ✅ feita |
@@ -462,19 +462,37 @@ Verificado de ponta a ponta com o binário real: com rigor ligado, o card nasce
 em `READY`, o template aparece em `<cards>/matrizes/`, `approve --plan` recusa
 citando a matriz, e depois de respondida a aprovação passa.
 
-**Item 16 — parcialmente destravado.** O pack `frontend-web` existe desde a
-criação do acervo de front (`frontend-patterns`, `accessibility-a11y`,
-`seo-technical`). Com isso `/orquestrador-jogos` e a metade de front de
-`/orquestrador-dev-web` têm onde pousar. Continuam faltando `backend-web`,
-`mobile` e `devops-deploy` — então `/orquestrador-android` e `/orquestrador-devops`
-seguem apontando para vazio.
+**Item 16 — feito.** Os três packs que faltavam existem:
+`backend-web/` (persistência e migração, resiliência, fila, observabilidade),
+`mobile/` (Android/Kotlin, iOS/Swift, multiplataforma, publicação) e
+`devops-deploy/` (pipeline, imagem, estratégia de deploy, SLO e alerta) — quatro
+skills cada, 27 no acervo, zero colisão de id. Com eles,
+`motor/mir/comandos-manuais.ts` liga `/orquestrador-{jogos,dev-web,android,devops}`
+e `/layout`.
 
-**Item 16 — o que falta, com motivo.** Os `skillPacksPadrao` de
-`/orquestrador-{android,dev-web,devops}` apontam para os packs `mobile`,
-`backend-web`, `frontend-web` e `devops-deploy`, que **não existem** hoje: o
-acervo da Onda 6 entregou só `common/` e `games-multiplatform/`. Ligar os
-comandos agora criaria atalho de intake que pré-carrega vazio. Depende da parte
-do item 15 que ficou de fora da Onda 6.
+**O problema que o item resolve, e que só aparece em greenfield.** A escolha de
+skill é por gatilho determinístico em disco: arquivo tocado e dependência
+detectada. Projeto novo não tem nem um nem outro — o card nasce sem arquivo e sem
+contrato, então **só as skills `sempre: true` carregam** e o domínio inteiro fica
+de fora. Declarar o pack é a única informação que existe no intake e ainda não
+existe no disco. O teste prova os dois lados: sem declaração, greenfield só
+alcança `common`; com ela, o domínio entra.
+
+**Pack declarado entra ALÉM do gatilho, nunca no lugar dele.** Substituir faria a
+declaração do intake apagar o que o disco diz — e o disco sabe mais depois que o
+trabalho começa.
+
+**A guarda que manteve o item adiado virou teste.** `validarComandosManuais()`
+lança se um comando apontar para pack fora do acervo, e
+`test/mir/comandos-manuais.test.ts` prova que a guarda reprova de verdade
+removendo `mobile` de um acervo de mentira. Atalho que pré-carrega vazio parece
+que carregou alguma coisa.
+
+**Mesmo pipeline, e isso é estrutural.** `core.submit` tem **uma** chamada em
+`despacho.ts`, e submit livre e atalho passam os dois por ela; um teste lê a
+fonte e reprova se aparecer uma segunda. Outro teste cria o mesmo texto pelos
+dois caminhos e compara os cards: `status`, `risk`, `repo` e `title` batem, e a
+única diferença é o campo `packs`.
 
 ### Pilar 1, traduzido
 
@@ -486,7 +504,7 @@ do item 15 que ficou de fora da Onda 6.
 bun run test
 bun test ./test/luc-matriz.test.ts             # matriz incompleta trava a saída da Fase 4
 bun test ./test/ctr-aprovar-plano.test.ts      # sem aprovação humana o card não entra em EXECUTING
-bun test ./test/mir-comandos-manuais.test.ts   # comando manual só pré-carrega skillPacks; pipeline é o mesmo
+bun test ./test/mir/comandos-manuais.test.ts   # comando manual só pré-carrega packs; pipeline é o mesmo
 ```
 
 **Reprova se:** um comando manual criar caminho de execução paralelo. Ele carrega conteúdo diferente, roda o mesmo pipeline (R5).

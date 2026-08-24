@@ -6,11 +6,11 @@ Quando um item sair, apague a seção — este arquivo é lista de trabalho, nã
 
 ---
 
-## ESTADO — as 13 ondas estão fechadas
+## ESTADO — o roadmap dos 34 itens está fechado
 
-Itens 1 a 34, incluindo os dois novos (33 MCN, 34 MIR). Não há próxima onda
-planejada: o que vier daqui em diante entra como pendência nomeada abaixo ou
-como onda nova em `WORKFLOW-EXECUCAO.md`.
+Itens 1 a 34, incluindo os dois novos (33 MCN, 34 MIR) e o 16, que era o último
+parcial. O que vier daqui em diante entra como pendência nomeada abaixo, ou como
+onda nova em `WORKFLOW-EXECUCAO.md`.
 
 ---
 
