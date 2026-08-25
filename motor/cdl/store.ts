@@ -140,3 +140,23 @@ export function repoBase(repoName: string): string {
   if (r && r.branch) return r.branch
   return 'main'
 }
+
+// Um projeto, um NOME. Quando o mesmo clone e alcancavel por dois nomes — o
+// registrado e um apelido antigo que o atalho de clone irmao ainda resolve — o card
+// nasce preso ao apelido, e a TUI passa a mostrar o mesmo projeto duas vezes.
+//
+// Aconteceu de verdade: `hicode-site/` foi trocado por `rafaelvpolan/hicode-site` no
+// registro, a sessao da TUI aberta continuou com o nome velho, e os dois cards
+// criados depois disso nasceram apontando para um repo que nao esta registrado —
+// `repoRegistered` false, mas `repoPath` resolvendo para a mesma pasta.
+//
+// Canonizar pelo CAMINHO e o que fecha isso: dois nomes que apontam para o mesmo
+// clone sao o mesmo projeto, e o nome que vale e o do registro.
+export function nomeCanonicoDeRepo(nome: string): string {
+  const bruto = String(nome ?? '').trim()
+  if (!bruto || repoRegistered(bruto)) return bruto
+  const alvo = repoPath(bruto)
+  if (!alvo) return bruto
+  const registrado = listRepos().find(r => repoPath(r.name) === alvo)
+  return registrado?.name ?? bruto
+}

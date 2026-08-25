@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { appendLog, isoNow, setObjetivo, slugify, tituloDe } from '../cdl/index.ts'
 import type { Fields } from '../cdl/index.ts'
 import { cardsDir, rigorEstrito } from '../cdl/ali/config.ts'
-import { createCard, findCardFile, patchCard, readCard, updateCard } from '../cdl/store.ts'
+import { createCard, findCardFile, nomeCanonicoDeRepo, patchCard, readCard, updateCard } from '../cdl/store.ts'
 import { readClarify, writeClarify } from '../agentes/clr/clarificar.ts'
 import { conferirParedeDoPlano } from '../qlb/ctr/aprovar-plano.ts'
 
@@ -40,7 +40,9 @@ export function submit(input: NewCardInput): string {
     title: tituloDe(input.title),
     status: 'READY',
     risk: input.risk === 'high' ? 'high' : 'low',
-    repo: input.repo ?? '',
+    // Canoniza pelo CAMINHO: card que nasce com apelido antigo de um projeto ja
+    // registrado com outro nome faz a TUI mostrar o mesmo projeto duas vezes.
+    repo: nomeCanonicoDeRepo(input.repo ?? ''),
     created: isoNow(),
     ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs }),
   }, body)

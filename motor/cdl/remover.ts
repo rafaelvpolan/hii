@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { readCard, listRepos, findCardFile, normalizeId } from './store.ts'
+import { findCardFile, nomeCanonicoDeRepo, normalizeId, readCard, repoPath } from './store.ts'
 import { cardsDir } from './ali/config.ts'
 import { stopUrl } from '../cic/crv/url-viva.ts'
 import { removeWorktree } from '../qlb/git.ts'
@@ -60,8 +60,12 @@ export interface ResultadoRemocao {
   limpou: string[]
 }
 
+// `repoPath` e nao `listRepos().find(name === repo)`: a busca por nome EXATO no
+// registro devolvia vazio para card cujo repo nao esta registrado — apelido antigo,
+// projeto removido do registro — e o worktree ficava no disco para sempre, com a
+// remocao reportando sucesso. `repoPath` canoniza e ainda cai no clone irmao.
 function caminhoDoAlvo(repo: string): string {
-  return listRepos().find(r => r.name === repo)?.path ?? ''
+  return repoPath(nomeCanonicoDeRepo(repo))
 }
 
 export async function remover(id: string, force = false): Promise<ResultadoRemocao> {
@@ -74,9 +78,14 @@ export async function remover(id: string, force = false): Promise<ResultadoRemoc
     limpou.push(`url parado (pid ${plano.urlPid})`)
   }
   const alvo = caminhoDoAlvo(plano.repo)
-  if (plano.worktree && alvo && existsSync(plano.worktree)) {
-    await removeWorktree(alvo, plano.worktree)
-    limpou.push('worktree removido')
+  if (plano.worktree && existsSync(plano.worktree)) {
+    if (alvo) {
+      await removeWorktree(alvo, plano.worktree)
+      limpou.push('worktree removido')
+    } else {
+      // Nao dizer nada seria pior que falhar: o disco cresce e ninguem sabe por que.
+      limpou.push(`ATENCAO worktree NAO removido (repo "${plano.repo}" nao resolve): ${plano.worktree}`)
+    }
   }
   const dirRuns = join(cardsDir(), 'runs')
   for (const f of plano.runs) rmSync(join(dirRuns, f), { force: true })

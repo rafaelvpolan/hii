@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { readCard, repoPath } from '../motor/cdl/store.ts'
+import { nomeCanonicoDeRepo, readCard, repoPath } from '../motor/cdl/store.ts'
 import { dispatch, rotuloDoBloqueio } from '../motor/mir/despacho.ts'
 import type { DispatchIO, SituacaoDeEnvio } from '../motor/mir/despacho.ts'
 import { provedoresDisponiveis } from '../motor/tmd/disponibilidade.ts'
@@ -263,7 +263,10 @@ async function main(): Promise<void> {
     return
   }
   await ensureDaemon(ask)
-  let state = newSession(await escolherProjeto(ask))
+  // Canoniza o nome do projeto ao abrir: sessao que ficou de pe enquanto o registro
+  // mudava continuava com o apelido antigo, e todo card criado depois nascia preso a
+  // ele — dois nomes para o mesmo clone, e o projeto aparecendo duas vezes na tela.
+  let state = newSession(nomeCanonicoDeRepo(await escolherProjeto(ask)))
   repoAtual = state.repo
   avisoRepos(state)
   if (color) {
