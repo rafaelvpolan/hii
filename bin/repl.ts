@@ -4,7 +4,8 @@ import { dispatch, rotuloDoBloqueio } from '../motor/mir/despacho.ts'
 import type { DispatchIO, SituacaoDeEnvio } from '../motor/mir/despacho.ts'
 import { provedoresDisponiveis } from '../motor/tmd/disponibilidade.ts'
 import { providerNameFor } from '../motor/tmd/registro.ts'
-import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao } from '../motor/mir/sessao.ts'
+import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta, respondido } from '../motor/mir/sessao.ts'
+import { perguntasDoCrivo } from '../motor/cic/crv/perguntas-do-crivo.ts'
 import type { SessionState } from '../motor/mir/sessao.ts'
 import { daemonPid, daemonStatus } from '../motor/osw/mtr/daemon.ts'
 import { pendencia } from '../motor/mir/responder.ts'
@@ -25,6 +26,10 @@ import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from
 import { ensureDaemon, fleet } from '../motor/mir/cli/comandos.ts'
 import { bloqueia, preflight } from '../motor/mir/cli/preflight.ts'
 import { definirEstadoDoOllama, sondarOllama } from '../motor/tmd/harness/ollama-estado.ts'
+
+// O painel de aprovacao de URL tem tres opcoes fixas (aprova · refaz · ajusta),
+// as mesmas que `alvoDeEntrada` gera como op:1..op:3.
+const OPCOES_DE_APROVACAO = 3
 import { etiquetaDoProjeto } from '../motor/mir/render/projeto.ts'
 import { cabemQuantasSugestoes, renderSugestoes, prefixoComum } from '../motor/mir/render/sugestoes.ts'
 import type { GrupoDeSugestao } from '../motor/mir/render/sugestoes.ts'
@@ -96,7 +101,16 @@ async function tui(state0: SessionState): Promise<void> {
         const p = pendencia(state.perguntando)
         if (p) return renderOpcoesRodape(p, { color, width: larguraUtil(), selecionado: selecionado() })
       }
-      if (state.seguindo) state = sincronizarAprovacao(state, String(readCard(state.seguindo)?.fm.status ?? ''))
+      if (state.seguindo) {
+        const card = readCard(state.seguindo)
+        // A pergunta vem ANTES da aprovacao: se o crivo perguntou, decidir sobre a
+        // URL sem responder e decidir sem a informacao que o proprio motor pediu.
+        // A chave identifica a PERGUNTA, e nao so "ha pergunta": pergunta nova
+        // (texto diferente) volta a chamar; a mesma, ja dispensada, nao.
+        const aberta = card ? perguntasDoCrivo(card.fm, state.seguindo).find(q => !q.answer) : undefined
+        state = sincronizarPergunta(state, aberta ? `${state.seguindo}:${aberta.q}` : '')
+        state = sincronizarAprovacao(state, String(card?.fm.status ?? ''))
+      }
       if (!state.aprovando) return []
       const cardEmAprovacao = readCard(state.aprovando)
       return renderAprovacao(state.aprovando, {
@@ -169,6 +183,34 @@ async function tui(state0: SessionState): Promise<void> {
       if (!rodando.length) return ''
       const ids = rodando.map(e => `#${e.id}`).join(' ')
       return `${ids} em execucao — a area so limpa quando terminar`
+    },
+    // O numero so responde quando HA painel de opcao aberto — pergunta do crivo, do
+    // CLARIFY, ou aprovacao de URL. Fora disso ele recusa e o caractere vai para a
+    // linha, como sempre: digitar "1" para escrever "1" continua funcionando.
+    // ESC sai do modo de pergunta e devolve a navegacao. O aviso "o crivo perguntou"
+    // continua no cabecalho da tarefa — dispensar tira o modo do caminho, nao
+    // esconde que ha pergunta. Escolher a tarefa de novo no quadro reabre.
+    onDispensar: () => {
+      if (!state.perguntando) return false
+      state = respondido(state)
+      selecionar('')
+      return true
+    },
+    onNumero: (n) => {
+      // Quantas opcoes existem AGORA. Nao basta "ha painel": exigir opcao ja
+      // SELECIONADA obrigaria a navegar com as setas antes de digitar o numero, que e
+      // exatamente o passo a mais que este atalho existe para tirar.
+      //
+      // `comentando` fica de fora de proposito: ali se escreve texto livre, e um "1"
+      // no comeco do comentario e o caractere 1.
+      const quantas = state.comentando ? 0
+        : state.aprovando ? OPCOES_DE_APROVACAO
+        : state.perguntando ? (pendencia(state.perguntando)?.atual.options.length ?? 0)
+        : 0
+      if (Number(n) > quantas) return false
+      selecionar('')
+      void processar(n)
+      return true
     },
     onEntrar: (modo) => {
       const alvo = alvoDeEntrada(modo, state)

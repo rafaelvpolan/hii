@@ -6,6 +6,7 @@ import { buildPlan } from '../../nmy/luc/plano.ts'
 import { renderPlan } from '../render/plan.ts'
 import { renderCabecalhoTarefa } from '../render/tarefa.ts'
 import { renderProcessos } from '../render/processos.ts'
+import { temPerguntaAberta } from '../../cic/crv/perguntas-do-crivo.ts'
 import { renderPendencia } from '../render/pendencia.ts'
 import { idadeDe } from '../render/board.ts'
 import { readRunSteps } from '../../euc/registros.ts'
@@ -52,6 +53,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   })
   const status = String(card.fm.status ?? '')
   const pend = renderPendencia(status, state.seguindo, {
+    temPerguntaDoCrivo: temPerguntaAberta(card.fm, state.seguindo),
     color,
     width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
     detalhe: status === 'PR_OPEN' ? String(card.fm.pr_url ?? '') : '',

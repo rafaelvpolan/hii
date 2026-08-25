@@ -21,7 +21,7 @@ import { escopoDoCard } from '../../cic/agente.ts'
 import { foraDoEscopo } from '../../osw/rta/escopo.ts'
 import { runCodefoxGate, runGatedReview, persistGate, buildPrBody, gateOutcome, gateHaltReason, withGateRetry } from '../../cic/crv/gate.ts'
 import { ensureContract } from '../../cdl/bss/armazenar.ts'
-import { podeAbrirPr } from '../../euc/rdr/doctor.ts'
+import { slugDoGh, podeAbrirPr } from '../../euc/rdr/doctor.ts'
 import { affectedPackage, resolveCommand } from '../../mir/comandos.ts'
 import { packsDoCard } from '../../mir/comandos-manuais.ts'
 import { addMetric, accumulatedTotals, haltForInspection, applyStepFailurePolicy } from '../../euc/metricas-de-fecho.ts'
@@ -369,8 +369,11 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // As duas guardas contra o SEGUNDO PR vivem em abrirPrUmaVez (motor/qlb/ctr/pr.ts),
   // com `executar` injetavel — sem isso a guarda so era verificavel por leitura de
   // texto-fonte.
+  // O slug do GH vem do REMOTO quando o nome do registro nao serve. Sem isto, um
+  // apelido local sem owner ("hicode-site/") chegava ao `gh pr create` e o card
+  // morria depois de todo o gasto — com o push ja feito.
   const abertura = await abrirPrUmaVez({
-    card: id, repoName, base, branch, titulo: msg, corpo: body, worktree: wt, prExistente,
+    card: id, repoName: slugDoGh(target, repoName), base, branch, titulo: msg, corpo: body, worktree: wt, prExistente,
   })
   const erroDoGh = abertura.erro
   const url = abertura.url

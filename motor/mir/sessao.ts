@@ -12,6 +12,9 @@ export interface SessionState {
   pendingPlan: string
   seguindo: string
   perguntando: string
+  // Ultima pergunta ja OFERECIDA automaticamente, para nao re-armar o modo depois de
+  // a pessoa dispensar. Ver `sincronizarPergunta`.
+  perguntaVista: string
   removendo: string
   retomando: string
   escolhendo: boolean
@@ -64,7 +67,7 @@ export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop
   '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout'] as const
 
 export function newSession(repo = ''): SessionState {
-  return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
+  return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', perguntaVista: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
 }
 
 export function perguntando(state: SessionState, id: string): SessionState {
@@ -101,6 +104,26 @@ export function sincronizarAprovacao(state: SessionState, status: string): Sessi
   return aprovando(state, state.seguindo)
 }
 
+// Irmao de `sincronizarAprovacao`, para pergunta: a aprovacao de URL ja era detectada
+// a cada desenho, e a pergunta nao. Uma pergunta que aparece DEPOIS que a pessoa
+// entrou na tarefa (que e sempre o caso do crivo — ele so pergunta no fecho) ficava
+// invisivel: `perguntando` so era ligado ao ESCOLHER o card no quadro.
+//
+// UMA VEZ POR PERGUNTA, e nao a cada quadro. A primeira versao re-armava sempre que
+// havia pergunta aberta, entao sair do modo (esc, ir para outra tarefa) era desfeito
+// no desenho seguinte — a pessoa ficava presa naquele card sem conseguir navegar.
+// `perguntaVista` guarda o que ja foi oferecido: dispensar vale, e uma pergunta NOVA
+// (texto diferente) volta a chamar, que e o comportamento certo nos dois casos.
+//
+// Dispensar nao esconde nada: o aviso "o crivo perguntou" continua no cabecalho da
+// tarefa, e escolher o card no quadro reabre o modo — la o ato e explicito.
+export function sincronizarPergunta(state: SessionState, chaveDaPergunta: string): SessionState {
+  if (!state.seguindo || !chaveDaPergunta) return state
+  if (state.perguntaVista === chaveDaPergunta) return state
+  if (ocupado(state)) return state
+  return { ...perguntando(state, state.seguindo), perguntaVista: chaveDaPergunta }
+}
+
 export function escolhendoRepo(state: SessionState): SessionState {
   return { ...state, escolhendo: true, pendingPlan: '', perguntando: '', removendo: '', retomando: '' }
 }
@@ -114,7 +137,11 @@ export function removendo(state: SessionState, id: string): SessionState {
 }
 
 export function seguir(state: SessionState, id: string): SessionState {
-  return { ...state, seguindo: id }
+  // Ir para OUTRA tarefa deixa a pergunta da anterior para tras. Sem isto,
+  // `perguntando` continuava apontando para o card antigo e a navegacao seguia
+  // presa nele mesmo depois de trocar de tarefa.
+  if (id === state.seguindo) return { ...state, seguindo: id }
+  return { ...state, seguindo: id, perguntando: '', perguntaVista: '' }
 }
 
 export function foraDaTarefa(state: SessionState): SessionState {
