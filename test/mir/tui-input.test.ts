@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { newInput, keypress, aplicarCompletar } from '../../motor/mir/tui/input.ts'
 import type { InputState } from '../../motor/mir/tui/input.ts'
 

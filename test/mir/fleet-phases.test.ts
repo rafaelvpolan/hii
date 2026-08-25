@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderFleet } from '../../motor/mir/render/fleet.ts'
 import { isActive, waitsHuman, phaseLabel } from '../../motor/mir/render/phases.ts'
 import type { Fields } from '../../motor/cdl/index.ts'

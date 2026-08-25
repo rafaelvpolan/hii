@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { modelFor, providerNameFor, providerNames } from '../../motor/tmd/registro.ts'
 
 function comEnv(vars: Record<string, string>, fn: () => void): void {

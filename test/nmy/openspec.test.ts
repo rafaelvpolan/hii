@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { parseValidation } from '../../motor/nmy/luc/openspec.ts'
 
 test('parseValidation: failed=0 -> ok', () => {

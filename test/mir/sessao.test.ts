@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { handle, newSession, planShown, seguir } from '../../motor/mir/sessao.ts'
 
 const base = newSession('org/app')

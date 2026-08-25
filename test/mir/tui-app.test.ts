@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { createApp } from '../../motor/mir/tui/app.ts'
 import type { Terminal } from '../../motor/mir/tui/screen.ts'
 import { telaVirtual } from '../fixtures/tela-virtual.ts'

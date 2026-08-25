@@ -1,5 +1,5 @@
-import { test, expect } from 'bun:test'
-import { readdirSync, statSync } from 'node:fs'
+import { test, expect } from './apoio/runner.ts'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 // hicode:allow-any — o script de rename e .mjs; a fronteira e checada aqui.
 import { caminhosNaoAlcancaveis } from '../scripts/renomear-testes-brazil.mjs'
@@ -22,9 +22,26 @@ test('a raiz de test/ so guarda os testes que nao exercitam motor/', () => {
   expect(testesEm('test').sort()).toEqual([...NA_RAIZ].sort())
 })
 
+// Pastas de APOIO: nao guardam teste de dominio, guardam a infraestrutura da suite.
+// Lista nominal e nao um padrao ("tudo que nao e dominio passa"), para acrescentar
+// uma ser edicao deliberada e visivel na revisao — que e o ponto deste invariante.
+const APOIO = ['fixtures', 'apoio']
+
 test('toda subpasta de test/ espelha um dominio de motor/', () => {
-  const pastas = readdirSync('test').filter(n => statSync(join('test', n)).isDirectory() && n !== 'fixtures')
+  const pastas = readdirSync('test').filter(n => statSync(join('test', n)).isDirectory() && !APOIO.includes(n))
   expect(pastas.sort()).toEqual([...DOMINIOS].sort())
+})
+
+test('pasta de apoio NAO guarda teste de dominio disfarcado', () => {
+  for (const pasta of APOIO) {
+    const dir = join('test', pasta)
+    if (!existsSync(dir)) continue
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith('.test.ts')) continue
+      const fonte = readFileSync(join(dir, f), 'utf8')
+      expect(fonte.includes("from '../../motor/"), `${pasta}/${f} testa motor/ e devia estar no dominio dele`).toBe(false)
+    }
+  }
 })
 
 test('INVARIANTE nenhum teste calcula a raiz do repo com um unico ".."', () => {

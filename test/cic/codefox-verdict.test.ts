@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { extractVerdictJson, gateOutcome, timeoutForDiff, withGateRetry } from '../../motor/cic/crv/gate.ts'
 import type { GateResult } from '../../motor/cic/crv/gate.ts'
 

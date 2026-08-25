@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { larguraDeTexto, larguraDeCaractere, larguraDeGrafema, grafemasDe } from '../../motor/mir/tui/largura.ts'
 import { renderFrame, visibleLen, truncVisible, padVisible, quebrarEmLargura, link } from '../../motor/mir/tui/layout.ts'
 import { caixa } from '../../motor/mir/render/widget/caixa.ts'

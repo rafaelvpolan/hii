@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll } from '../apoio/runner.ts'
 
 const S = await import('../../motor/qlb/cfr/segredos.ts')
 

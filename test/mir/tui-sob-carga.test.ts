@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderFrame, visibleLen, quebrarEmLargura, truncVisible } from '../../motor/mir/tui/layout.ts'
 import { frameToAnsi, pinturaDiferencial } from '../../motor/mir/tui/screen.ts'
 import type { FrameInput } from '../../motor/mir/tui/layout.ts'

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { spawnSync } from 'node:child_process'
 
 function rastreado(caminho: string): boolean {

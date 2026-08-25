@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -57,7 +57,7 @@ test('mergear duas vezes nao duplica candidato nem fechamento', async () => {
 })
 
 test('INVARIANTE checkMerged chama aoMergear no ramo do merge', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/merge.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/merge.ts')
   expect(fonte).toContain('aoMergear(')
   const iMerged = fonte.indexOf("pr.state === 'MERGED'")
   expect(fonte.indexOf('aoMergear(', iMerged)).toBeGreaterThan(iMerged)

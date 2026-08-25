@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { recusaPorLimite } from '../../motor/euc/tsr/confianca.ts'
 import { KimiProvider } from '../../motor/tmd/harness/kimi.ts'
 import { ClaudeProvider } from '../../motor/tmd/harness/claude.ts'

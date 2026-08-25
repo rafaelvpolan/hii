@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { etiquetaDoProjeto, corDoProjeto, nomeCurto, CORES_DE_PROJETO } from '../../motor/mir/render/projeto.ts'
 import { renderFrame, stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 import { CANTO } from '../../motor/mir/tui/paleta.ts'

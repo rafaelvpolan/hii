@@ -1,4 +1,5 @@
-import { test, expect, afterAll } from 'bun:test'
+import type { ServidorDeTeste } from '../apoio/bun.ts'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -12,11 +13,8 @@ const PEDACO = new Uint8Array(256 * 1024).fill(65)
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-function semContentLength(total: number): ReturnType<typeof Bun.serve> {
-  return Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch(): Response {
+function semContentLength(total: number): Promise<ServidorDeTeste> {
+  return servidorDeTeste(function fetch(): Response {
       let enviados = 0
       const corpo = new ReadableStream({
         pull(controller) {
@@ -29,8 +27,7 @@ function semContentLength(total: number): ReturnType<typeof Bun.serve> {
         },
       })
       return new Response(corpo, { status: 200, headers: { 'content-type': 'image/png' } })
-    },
-  })
+    })
 }
 
 test('curl recebe teto de taxa: o pico em disco nao depende do servidor cooperar', () => {
@@ -41,7 +38,7 @@ test('curl recebe teto de taxa: o pico em disco nao depende do servidor cooperar
 })
 
 test('REGRESSAO: resposta chunked acima do teto e recusada e o destino NAO existe', async () => {
-  const servidor = semContentLength(40 * 1024 * 1024)
+  const servidor = await semContentLength(40 * 1024 * 1024)
   const dest = join(BASE, 'ref-chunked.png')
   try {
     const hop = await curlHopFetcher(dest)(`http://127.0.0.1:${servidor.port}/grande.png`, null)
@@ -56,11 +53,7 @@ test('REGRESSAO: resposta chunked acima do teto e recusada e o destino NAO exist
 }, 60000)
 
 test('REGRESSAO: Content-Length acima do teto e recusado com o mesmo motivo tipado, sem gravar nada', async () => {
-  const servidor = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => new Response('A'.repeat(MAX_FILESIZE_BYTES + 1024)),
-  })
+  const servidor = await servidorDeTeste((): Response => new Response('A'.repeat(MAX_FILESIZE_BYTES + 1024)))
   const dest = join(BASE, 'ref-anunciado.png')
   try {
     const hop = await curlHopFetcher(dest)(`http://127.0.0.1:${servidor.port}/grande.png`, null)
@@ -74,7 +67,7 @@ test('REGRESSAO: Content-Length acima do teto e recusado com o mesmo motivo tipa
 }, 60000)
 
 test('resposta chunked dentro do teto continua chegando inteira ao destino', async () => {
-  const servidor = semContentLength(512 * 1024)
+  const servidor = await semContentLength(512 * 1024)
   const dest = join(BASE, 'ref-pequeno.png')
   try {
     const hop = await curlHopFetcher(dest)(`http://127.0.0.1:${servidor.port}/logo.png`, null)

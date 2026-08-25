@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 
 const C = await import('../../motor/agentes/clr/doc-updater.ts')
 
@@ -34,7 +34,7 @@ test('quando afeta, sugere QUAIS docs — apontar "atualize a doc" sem dizer ond
 })
 
 test('a decisao e deterministica e nao chama modelo', async () => {
-  const fonte = await Bun.file('motor/agentes/clr/doc-updater.ts').text()
+  const fonte = await lerArquivo('motor/agentes/clr/doc-updater.ts')
   expect(fonte).not.toContain('runProvider')
 })
 
@@ -46,7 +46,7 @@ test('relato diz o que mudou e onde mexer', () => {
 })
 
 test('INVARIANTE o fechamento consulta o contrato publico e registra no card', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fonte).toContain('contratoPublicoMudou(')
   expect(fonte, 'o veredicto tem de ficar no card para o humano ver antes do merge').toContain('contrato_publico')
 })

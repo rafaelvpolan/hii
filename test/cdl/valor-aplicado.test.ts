@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 
 // PADRAO SISTEMICO 3 da auditoria: valor computado, documentado e nunca aplicado.
 // Cada teste aqui prende UM desses valores no ponto onde ele passou a ser usado.

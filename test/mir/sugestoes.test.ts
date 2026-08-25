@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderSugestoes, prefixoComum, AJUDA_DO_COMANDO } from '../../motor/mir/render/sugestoes.ts'
 import { renderFrame, visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
 

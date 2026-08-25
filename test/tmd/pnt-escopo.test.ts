@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { lerEscopo } from '../../motor/tmd/pnt/estado.ts'
 
 test('escopo dinamico e reconhecido', () => {

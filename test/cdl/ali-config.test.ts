@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, cardsDir, reposFile } from '../../motor/cdl/ali/config.ts'

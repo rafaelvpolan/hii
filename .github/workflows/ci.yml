@@ -26,6 +26,13 @@ jobs:
       - run: bun run lint:types
       - run: bun run lint:clone
       - run: bun run test:unit
-      # Fumaca sob node puro. A suite roda sob bun e por construcao nao enxerga
-      # o que so quebra no node — este passo enxerga.
+      # A MESMA suite sob node puro, e obrigatoria. Ate aqui o node so via um
+      # `--help`: a suite rodava so sob bun e, por construcao, nao enxergava o que
+      # quebra no outro runtime — foi assim que a Onda 11 mergeou verde com uma
+      # imagem que morria no arranque. Agora os dois runtimes executam os mesmos
+      # 2540 testes, e `test/apoio/migracao-node-test.test.ts` impede que um
+      # arquivo volte a depender de `bun:` sem reprovar.
+      - run: bun run test:node
+      # Fumaca sob node puro no binario de verdade, que exercita o caminho de
+      # arranque (resolucao de import, shebang, argv) que a suite nao cobre.
       - run: node bin/hii.ts --help

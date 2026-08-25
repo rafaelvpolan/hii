@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -110,7 +110,7 @@ test('a recusa diz POR QUE recusou — o chamador nao deduz a causa por heuristi
 })
 
 test('INVARIANTE o CLI usa o motivo estruturado, nao infere a causa de duas condicoes soltas', async () => {
-  const fonte = await Bun.file('bin/hii.ts').text()
+  const fonte = await lerArquivo('bin/hii.ts')
   expect(fonte).toContain("=== 'parede'")
   expect(fonte, 'deduzir a causa por !ok + id preenchido quebra quando surgir outra pre-condicao').not.toContain("!r.ok && r.id !== ''")
 })
@@ -142,7 +142,7 @@ test('prepararMatriz duas vezes nao sobrescreve o que o humano respondeu', async
 })
 
 async function corpoDeApprovePlan(): Promise<string> {
-  const fonte = await Bun.file('motor/mir/acoes.ts').text()
+  const fonte = await lerArquivo('motor/mir/acoes.ts')
   const inicio = fonte.indexOf('export function approvePlan')
   expect(inicio, 'approvePlan sumiu de acoes.ts').toBeGreaterThan(-1)
   const fim = fonte.indexOf('\n}', inicio)
@@ -163,7 +163,7 @@ test('INVARIANTE a recusa acontece dentro de approvePlan, nao em outro caminho',
 })
 
 test('INVARIANTE a barreira so fecha com rigorEstrito — a politica das ondas 5 e 7 e a mesma', async () => {
-  const fonte = await Bun.file('motor/mir/acoes.ts').text()
+  const fonte = await lerArquivo('motor/mir/acoes.ts')
   expect(fonte).toContain('rigorEstrito()')
   expect(fonte, 'o veredicto tem de ir para o card mesmo quando nao barra').toContain('matriz_entendimento')
 })

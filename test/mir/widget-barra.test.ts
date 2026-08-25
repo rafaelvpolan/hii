@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { barra, barraRotulada, severidadeDe } from '../../motor/mir/render/widget/barra.ts'
 import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 

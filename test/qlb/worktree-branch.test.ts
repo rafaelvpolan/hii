@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { worktreePathsForBranch } from '../../motor/qlb/git.ts'
 
 const PORCELAIN = `worktree /home/u/projects/hicode-site

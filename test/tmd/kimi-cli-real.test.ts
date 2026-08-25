@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { execFileSync } from 'node:child_process'
 import { kimiArgv, KIMI_MODOS } from '../../motor/tmd/harness/kimi.ts'
 import type { AgentRequest } from '../../motor/tmd/tipos.ts'

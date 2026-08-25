@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderRemocao, renderResultado } from '../../motor/mir/render/remocao.ts'
 import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
 import type { PlanoLote, PlanoRemocao } from '../../motor/cdl/remover.ts'

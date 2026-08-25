@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { isPrivateNetworkHost } from '../../motor/qlb/alf/rede-privada.ts'
 import { isLoopbackHost } from '../../motor/qlb/alf/loopback.ts'
 import { isBlockedHost, validateHttpUrl } from '../../motor/qlb/alf/url-guard.ts'

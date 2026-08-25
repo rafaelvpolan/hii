@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -93,7 +93,7 @@ test('card sem evento final conta como em andamento; com card_fechado, nao', () 
 })
 
 test('INVARIANTE toda saida de passoComCrivo fecha a fase — senao falha limpa parece crash', async () => {
-  const fonte = await Bun.file('motor/cic/passo-com-gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/passo-com-gate.ts')
   const saidas = (fonte.match(/return \{ metric:/g) ?? []).length
   // Conta so linha de CODIGO: um comentario contendo o literal inflaria o
   // numero e mascararia uma saida de verdade sem fechamento.

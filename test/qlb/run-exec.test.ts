@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { run } from '../../motor/qlb/git.ts'
 
 test('run mata o processo no timeout (err.killed) e retorna rapido', async () => {

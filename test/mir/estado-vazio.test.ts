@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { avisoDeEstadoVazio } from '../../motor/mir/estado-vazio.ts'
 
 test('estado com cards nao gera aviso nenhum', () => {

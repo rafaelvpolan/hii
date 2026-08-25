@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { FORCA_INSTRUCAO, lerLinhaNaTarefa } from '../../motor/mir/pergunta.ts'
 import { handle, newSession, seguir } from '../../motor/mir/sessao.ts'
 

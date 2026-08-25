@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from './apoio/runner.ts'
 // hicode:allow-any — o script de rename e .mjs sem tipos; a fronteira e checada aqui.
 import {
   lerMapaDoDoc,

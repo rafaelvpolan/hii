@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -133,7 +133,7 @@ test('COMPORTAMENTO a LEI eleva o rigor quando o diff pede, e nao quando nao ped
 })
 
 test('INVARIANTE o motor consulta a LEI no fechamento e USA o resultado — nao descarta', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   const iAvaliar = fonte.indexOf('avaliarDiff(changed)')
   const iAplicar = fonte.indexOf('aplicarLei(')
   const iPassos = fonte.indexOf('const steps = plan.steps')

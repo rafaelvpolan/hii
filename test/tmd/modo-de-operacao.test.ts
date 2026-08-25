@@ -1,5 +1,5 @@
 import type { AgentRequest } from '../../motor/tmd/tipos.ts'
-import { test, expect, beforeEach } from 'bun:test'
+import { test, expect, beforeEach } from '../apoio/runner.ts'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

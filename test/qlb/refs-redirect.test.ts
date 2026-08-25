@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -203,13 +203,9 @@ test('REGRESSAO: redirect para metadados com ponto final no host e recusado sem 
 })
 
 test('REGRESSAO ponta a ponta: baixar de servico interno por IPv6 mapeado nao grava arquivo nenhum', async () => {
-  const server = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch(): Response {
+  const server = await servidorDeTeste(function fetch(): Response {
       return new Response('SEGREDO INTERNO', { status: 200 })
-    },
-  })
+    })
   const dest = join(CARDS, 'ref-mapeado.png')
   try {
     const r = await downloadToFile(`http://[::ffff:127.0.0.1]:${server.port}/segredo`, dest)
@@ -222,15 +218,12 @@ test('REGRESSAO ponta a ponta: baixar de servico interno por IPv6 mapeado nao gr
 })
 
 test('contra curl de verdade: 302 vira salto legivel e 200 grava o arquivo no destino', async () => {
-  const server = Bun.serve({
-    port: 0,
-    fetch(req): Response {
+  const server = await servidorDeTeste(function fetch(req): Response {
       if (new URL(req.url).pathname === '/logo.png') {
         return new Response('', { status: 302, headers: { Location: '/final.png' } })
       }
       return new Response('PNGDATA', { status: 200 })
-    },
-  })
+    })
   const base = `http://127.0.0.1:${server.port}`
   const dest = join(CARDS, 'ref-real.png')
   try {

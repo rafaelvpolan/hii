@@ -1,4 +1,4 @@
-import { test, expect, beforeEach } from 'bun:test'
+import { test, expect, beforeEach, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -112,7 +112,7 @@ test('REGRESSAO um construtor de argv so — o caminho de live-log e o de json n
 })
 
 test('o pedido do provedor carrega o campo de esforco', async () => {
-  const tipos = await Bun.file('motor/tmd/tipos.ts').text()
+  const tipos = await lerArquivo('motor/tmd/tipos.ts')
   expect(tipos).toContain('effort?: string')
 })
 
@@ -166,7 +166,7 @@ test('REGRESSAO rodape e motor leem a MESMA fonte de esforco', async () => {
 })
 
 test('REGRESSAO o rodape nao pode chutar um esforco fixo', async () => {
-  const fonte = await Bun.file('motor/mir/cli/rodape-tui.ts').text()
+  const fonte = await lerArquivo('motor/mir/cli/rodape-tui.ts')
   expect(fonte).toContain("effortFor('implement', doCard)")
   expect(fonte).not.toContain("|| 'medium'")
 })

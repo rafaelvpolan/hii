@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { STATUSES } from '../../motor/cdl/tipos.ts'
 import { phaseLabel } from '../../motor/mir/render/phases.ts'
 

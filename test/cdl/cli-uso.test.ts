@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 

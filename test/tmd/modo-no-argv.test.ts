@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { argv } from '../../motor/tmd/harness/codex.ts'
 import { claudeArgv } from '../../motor/tmd/harness/claude-argv.ts'
 import { kimiArgv } from '../../motor/tmd/harness/kimi.ts'

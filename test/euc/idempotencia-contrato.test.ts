@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -189,7 +189,7 @@ test('REGISTRO as excecoes a chave de idempotencia sao declaradas com o motivo, 
 })
 
 test('REGISTRO push segue fora da chave, e o motivo continua valendo no codigo', async () => {
-  const fonte = await Bun.file('motor/qlb/git.ts').text()
+  const fonte = await lerArquivo('motor/qlb/git.ts')
   expect(fonte, 'o motivo da excecao e --force-with-lease; se ele sair, a excecao cai').toContain('--force-with-lease')
 })
 

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { instrucaoDeAjuste, relatoDoAjuste, subirUrlComAjuste, TENTATIVAS_DE_AJUSTE } from '../../motor/cic/rpr/url-ajuste.ts'
 
 function deps(sobeNaTentativa: number) {

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { projetosConhecidos } from '../../motor/cdl/projetos-conhecidos.ts'
 import type { Fields } from '../../motor/cdl/tipos.ts'
 

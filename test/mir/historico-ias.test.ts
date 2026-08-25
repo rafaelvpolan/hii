@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderHistorico, linhasDasIas } from '../../motor/mir/render/historico.ts'
 import { chaveDaSessao, idDaSessao } from '../../motor/mir/historico.ts'
 import { idCurto } from '../../motor/euc/ias-da-sessao.ts'

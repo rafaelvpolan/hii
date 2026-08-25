@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { arquivosDaBranch, caminhosDoStatus, lerArgumentos } from '../../scripts/auditar.ts'
 
 // `apenas` (recorte por lista exata de caminhos) existia sem NENHUM chamador de

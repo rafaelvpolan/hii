@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { readFileSync } from 'node:fs'
 import {
   propostasNumeradas, promptDoCritico, parseVoto, convergir, lentesDeCriterio, idsDosCriticos,

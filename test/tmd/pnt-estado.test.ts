@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import {
   lerLinhaDeServidor, lerListaDeServidores, lerEscopo, combinam, disponibilidadeExterna,
 } from '../../motor/tmd/pnt/estado.ts'
@@ -140,7 +140,7 @@ test('disponibilidadeExterna NAO estoura quando o closure de servidores resolve 
 })
 
 test('INVARIANTE conectorExterno resolve a lista ANTES de limpar o cache', async () => {
-  const fonte = await Bun.file('motor/tmd/pnt/mcp.ts').text()
+  const fonte = await lerArquivo('motor/tmd/pnt/mcp.ts')
   // `() => estadoCache` le a variavel de modulo no momento da chamada; depois de
   // `estadoCache = undefined` isso e undefined e o consumidor estoura.
   expect(fonte, 'o closure tem de devolver o valor resolvido, nao a variavel de modulo').toContain('servidores: () => Promise.resolve(lista)')

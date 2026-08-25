@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -14,18 +14,18 @@ const APR = await import('../../motor/csd/fre/aprendiz.ts')
 const C = await import('../../motor/csd/fre/candidatos.ts')
 
 test('INVARIANTE cada tentativa de resolucao emite repair_attempt no diario', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/sync.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/sync.ts')
   expect(fonte).toContain("evento: 'repair_attempt', fase: FASE_DO_CONFLITO")
 })
 
 test('INVARIANTE o fim do laco emite veredicto, tanto no sucesso quanto no teto esgotado', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/sync.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/sync.ts')
   const veredictos = fonte.split('\n').filter(l => l.includes("evento: 'gate_verdict'") && l.includes('FASE_DO_CONFLITO'))
   expect(veredictos.length, 'sucesso, commit falhado e teto esgotado — tres saidas, tres veredictos').toBe(3)
 })
 
 test('INVARIANTE o laco NAO migrou para repararAteOTeto — a abstracao nao serve para conflito', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/sync.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/sync.ts')
   expect(fonte, 'GateReparavel modela verificacao re-executavel, e conflito nao tem').not.toContain('repararAteOTeto(')
 })
 

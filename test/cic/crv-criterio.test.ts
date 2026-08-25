@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -67,7 +67,7 @@ test('o texto renderizado leva id, versao e a ordem de citar o id ao reprovar', 
 })
 
 test('INVARIANTE o gate usa o criterio versionado — nao os padroes hardcoded de antes', async () => {
-  const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
   expect(fonte).toContain('renderizarCriterios()')
   expect(fonte, 'a string de padroes voltou para dentro do prompt').not.toContain('PADROES: tudo tipado strict')
 })

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { resolverResposta, cardsPerguntando } from '../../motor/mir/responder.ts'
 import { renderPergunta, quebrar } from '../../motor/mir/render/clarify.ts'
 import type { ClarifyQuestion, Fields } from '../../motor/cdl/tipos.ts'

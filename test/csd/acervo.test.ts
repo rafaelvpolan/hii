@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -117,7 +117,7 @@ test('renderizarSkills devolve vazio sem skill, e bloco identificado com skill',
 })
 
 test('INVARIANTE o motor injeta o acervo no prompt — senao o conteudo nunca chega ao agente', async () => {
-  const fonte = await Bun.file('motor/cic/agente.ts').text()
+  const fonte = await lerArquivo('motor/cic/agente.ts')
   expect(fonte).toContain("skillsPara('implementador'")
   expect(fonte, 'os passos de polimento tambem carregam skill').toContain('skillsDoAgente(agent, wt, repo')
   expect(fonte, 'o contexto do gatilho tem de vir do disco').toContain('contextoDeSkill(')
@@ -141,9 +141,9 @@ test('COMPORTAMENTO o pack do card alcanca tambem os passos de polimento', async
 })
 
 test('INVARIANTE os passos de polimento repassam os packs do card', async () => {
-  const fechar = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fechar = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fechar, 'sem isto o pack do atalho de intake nao chega ao revisor').toContain('packsDoCard(card.fm.packs)')
-  const gated = await Bun.file('motor/cic/passo-com-gate.ts').text()
+  const gated = await lerArquivo('motor/cic/passo-com-gate.ts')
   expect(gated).toContain('montar(prompt), id, alvo, packs')
 })
 

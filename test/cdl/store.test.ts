@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, rodar, dormir } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -88,11 +88,11 @@ async function racePatchers(id: string, fields: string[], times: number): Promis
   const script = join(import.meta.dir, '..', 'fixtures', 'patch-loop.ts')
   const barrier = join(CARDS, `.go-${id}`)
   const procs = fields.map(f =>
-    Bun.spawn(['bun', script, CARDS, id, f, String(times), barrier], { stdout: 'ignore', stderr: 'ignore' }),
+    rodar(['bun', script, CARDS, id, f, String(times), barrier], { stdout: 'ignore', stderr: 'ignore' }),
   )
-  await Bun.sleep(600)
+  await dormir(600)
   writeFileSync(barrier, 'go')
-  await Promise.all(procs.map(p => p.exited))
+  await Promise.all(procs.map(p => p.encerrou))
 }
 
 test('REGRESSAO corrida entre processos: card sobrevive parseavel a escritores concorrentes', async () => {
@@ -119,11 +119,11 @@ test('REGRESSAO corrida entre processos: nenhuma linha de log se perde', async (
 async function raceIncrementers(script: string, id: string, procs: number, times: number): Promise<void> {
   const barrier = join(CARDS, `.go-inc-${id}`)
   const filhos = Array.from({ length: procs }, () =>
-    Bun.spawn(['bun', script, CARDS, id, 'wait_attempts', String(times), barrier], { stdout: 'ignore', stderr: 'ignore' }),
+    rodar(['bun', script, CARDS, id, 'wait_attempts', String(times), barrier], { stdout: 'ignore', stderr: 'ignore' }),
   )
-  await Bun.sleep(600)
+  await dormir(600)
   writeFileSync(barrier, 'go')
-  await Promise.all(filhos.map(p => p.exited))
+  await Promise.all(filhos.map(p => p.encerrou))
 }
 
 test('REGRESSAO corrida entre processos: patchCardWith incrementa wait_attempts sem perder contagem (leitura+escrita atomicas dentro do lock)', async () => {

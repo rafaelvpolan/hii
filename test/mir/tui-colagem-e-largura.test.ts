@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { keypress, newInput, colar, expandir, LIMITE_COLA } from '../../motor/mir/tui/input.ts'
 import { renderFrame, janelaHorizontal, visibleLen } from '../../motor/mir/tui/layout.ts'
 

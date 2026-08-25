@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderFrame, stripAnsi, visibleLen, truncVisible, padVisible } from '../../motor/mir/tui/layout.ts'
 
 const quadro = (over: Partial<Parameters<typeof renderFrame>[0]> = {}): ReturnType<typeof renderFrame> =>

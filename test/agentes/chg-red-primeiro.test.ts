@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -42,7 +42,7 @@ test('o RED e um evento do diario, na fase propria — nao um campo que o modelo
 })
 
 test('INVARIANTE o portao de teste registra o RED quando a primeira rodada reprova', async () => {
-  const fonte = await Bun.file('motor/cic/crv/portoes-de-fecho.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/portoes-de-fecho.ts')
   expect(fonte).toContain('registrarRed(o.id')
   expect(fonte, 'so o portao de TESTE produz RED; o de build nao').toContain("portao.id === 'testes'")
 })
@@ -58,7 +58,7 @@ test('INVARIANTE o portao de teste registra o RED quando a primeira rodada repro
 // testes acima, que exercitam registrarRed -> exigirRedAntesDoGreen nessa ordem —
 // agora a mesma ordem da producao.
 test('INVARIANTE o fechamento consulta o CHG DEPOIS do gate que produz a evidencia', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   const iChg = fonte.indexOf('exigirRedAntesDoGreen(id, plan.profile)')
   const iGate = fonte.indexOf('await testGate(')
   // Guarda contra o -1: sem isto, apagar qualquer um dos dois faria a comparacao
@@ -69,7 +69,7 @@ test('INVARIANTE o fechamento consulta o CHG DEPOIS do gate que produz a evidenc
 })
 
 test('a exigencia e registrada no card mesmo quando nao barra — quem passou sem provar fica visivel', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fonte).toContain('red_antes_do_green')
   expect(fonte, 'barrar so quando o operador ligar').toContain('rigorEstrito()')
 })

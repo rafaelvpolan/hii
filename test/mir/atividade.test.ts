@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { parseLinha, parseLog, classificar, formatar, agentesUsados, ultimoAgente, resumo } from '../../motor/mir/atividade.ts'
 
 test('Task vira agente com o subagent_type', () => {
