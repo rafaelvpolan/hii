@@ -1,10 +1,10 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { handle, newSession, COMMANDS, ALIASES, canonico } from '../../motor/mir/sessao.ts'
 import type { EffectKind } from '../../motor/mir/sessao.ts'
 
-const raiz = join(import.meta.dir, '..', '..')
+const raiz = join(import.meta.dirname, '..', '..')
 const fonteDispatch = readFileSync(join(raiz, 'motor/mir/despacho.ts'), 'utf8')
 const fonteSession = readFileSync(join(raiz, 'motor/mir/sessao.ts'), 'utf8')
 

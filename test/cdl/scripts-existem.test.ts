@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -116,4 +116,26 @@ test('o script de inspecao de url existe e sabe tirar screenshot — o gauntlet 
   const corpo = readFileSync(script, 'utf8')
   expect(corpo, 'sem screenshot nao ha tela do card, e sem tela o gauntlet nunca liga').toContain('screenshot')
   expect(corpo, 'o contrato de saida e o JSON que inspectUrl parseia').toContain('conclusive')
+})
+
+// A versao do bun tem de estar PINADA e o CI tem de usar o pino. Sem isto, o CI
+// instala a mais recente e a maquina de quem desenvolve fica onde parou — divergem
+// em silencio ate um teste reprovar so num lado. Aconteceu:
+// `expect([NaN]).toContain(NaN)` passa no 1.3.14 (SameValueZero) e falha no 1.4.0
+// (===), e o comparador diferencial do shim so reprovou no CI.
+test('INVARIANTE a versao do bun e pinada, e o CI usa o pino', () => {
+  const pino = readFileSync('.bun-version', 'utf8').trim()
+  expect(pino, '.bun-version tem de conter uma versao completa').toMatch(/^\d+\.\d+\.\d+$/)
+  const ci = readFileSync('.github/workflows/ci.yml', 'utf8')
+  expect(ci, 'o CI tem de ler .bun-version em vez de instalar a mais recente').toContain('bun-version-file: .bun-version')
+})
+
+// O pino so serve se acompanhar a maquina: um pino que ninguem usa localmente e
+// documentacao, nao garantia. Este teste roda NA versao instalada, entao ele mesmo e
+// a prova.
+test('a versao do bun em uso e a pinada — senao o pino nao esta valendo aqui', () => {
+  const pino = readFileSync('.bun-version', 'utf8').trim()
+  const emUso = (process.versions as { bun?: string }).bun
+  if (!emUso) return // sob `node --test` nao ha bun para comparar
+  expect(emUso, `rodando bun ${emUso} com .bun-version em ${pino} — rode \`bun upgrade --to ${pino}\``).toBe(pino)
 })

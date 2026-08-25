@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { parseIssues } from '../../motor/tmd/pnt/tarefas/github-issues.ts'
 import { taskSync, taskSyncName, taskSyncNames } from '../../motor/tmd/pnt/tarefas/registro.ts'
 

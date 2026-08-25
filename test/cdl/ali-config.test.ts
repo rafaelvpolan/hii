@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, cardsDir, reposFile } from '../../motor/cdl/ali/config.ts'
@@ -6,7 +6,10 @@ import { ROOT, cardsDir, reposFile } from '../../motor/cdl/ali/config.ts'
 const SUFIXO_SEM_CACHE = 'forced'
 
 function configReavaliada(): Promise<typeof import('../../motor/cdl/ali/config.ts')> {
-  return import(`../../motor/cdl/ali/config?${SUFIXO_SEM_CACHE}`)
+  // A extensao `.ts` fica ANTES da query: sem ela o node nao resolve o modulo
+  // (`ERR_MODULE_NOT_FOUND`), enquanto o bun resolve — e a query e o que fura o
+  // cache de modulo para reavaliar a config com o ambiente novo.
+  return import(`../../motor/cdl/ali/config.ts?${SUFIXO_SEM_CACHE}`)
 }
 
 test('ROOT aponta para a raiz DESTE repo — serve ao motor e ao painel', () => {

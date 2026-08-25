@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { openScreen, pinturaDiferencial, frameToAnsi } from '../../motor/mir/tui/screen.ts'
 import { renderFrame } from '../../motor/mir/tui/layout.ts'
 import type { Terminal } from '../../motor/mir/tui/screen.ts'

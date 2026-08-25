@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { caminhosCitados, foraDoEscopo, lerEscopo, SEM_ESCOPO } from '../../motor/osw/rta/escopo.ts'
 
 // O incidente: o pedido citou dois caminhos — um como padrão a seguir, outro como
@@ -76,8 +76,8 @@ test('sem referencia declarada, nada fica fora do escopo', () => {
 // O plano e a execucao NAO podem ler o escopo de textos diferentes: o plano e o
 // que o humano aprova, e um escopo que muda depois da aprovacao e promessa quebrada.
 test('INVARIANTE plano e motor leem o escopo do MESMO texto', async () => {
-  const plano = await Bun.file('motor/nmy/luc/plano.ts').text()
-  const agente = await Bun.file('motor/cic/agente.ts').text()
+  const plano = await lerArquivo('motor/nmy/luc/plano.ts')
+  const agente = await lerArquivo('motor/cic/agente.ts')
   for (const fonte of [plano, agente]) {
     expect(fonte, 'instrucao anexada depois do plano tem de entrar nos dois lados').toContain('objetivoComInstrucoes(card.body')
   }
@@ -86,7 +86,7 @@ test('INVARIANTE plano e motor leem o escopo do MESMO texto', async () => {
 })
 
 test('INVARIANTE a tela do plano passa a checagem de existencia — senao mostra prosa como arquivo', async () => {
-  const tela = await Bun.file('motor/mir/cli/tela-tarefa.ts').text()
+  const tela = await lerArquivo('motor/mir/cli/tela-tarefa.ts')
   expect(tela, 'sem existeNoAlvo, "feito/executado" apareceria como caminho no plano').toContain('existeNoAlvo:')
 })
 
@@ -156,8 +156,8 @@ test('REGRESSAO: pontuacao final nao entra no caminho', () => {
 // todos AFIRMAVA que o motor confere. O segundo ponto e no fecho, contra
 // origin/<base>, entao cobre tudo o que entrou no branch, de qualquer origem.
 test('INVARIANTE o escopo e cumprido em DOIS pontos, nao so depois do implement', async () => {
-  const executar = await Bun.file('motor/osw/executar.ts').text()
-  const fechar = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const executar = await lerArquivo('motor/osw/executar.ts')
+  const fechar = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(executar, 'primeiro ponto: logo depois do implement').toContain('foraDoEscopo(escopo,')
   expect(fechar, 'segundo ponto: contra o diff do branch inteiro').toContain('foraDoEscopo(escopoDoCard(card, wt), changed)')
 })
@@ -166,7 +166,7 @@ test('INVARIANTE o escopo e cumprido em DOIS pontos, nao so depois do implement'
 // DENTRO de referencia declarada, e nao trata todo caminho nao citado como proibido.
 // Anunciar o que nao acontece calibra o modelo errado.
 test('INVARIANTE a promessa do prompt cobre so o que o motor cumpre', async () => {
-  const agente = await Bun.file('motor/cic/agente.ts').text()
+  const agente = await lerArquivo('motor/cic/agente.ts')
   const bloco = agente.slice(agente.indexOf('function blocoDeEscopo'), agente.indexOf('function blocoDeEscopo') + 1800)
   const linhaDaPromessa = bloco.split('\n').find(l => l.includes('CONFERE isto no diff'))
   expect(linhaDaPromessa, 'a promessa tem de existir').toBeDefined()

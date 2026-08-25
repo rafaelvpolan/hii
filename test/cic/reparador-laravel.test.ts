@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { escolherReparador, reparadoresRegistrados } from '../../motor/cic/rpr/reparadores/index.ts'
 
 test('diff com .php escolhe o reparador de Laravel/PHP', () => {
@@ -47,13 +47,13 @@ test('arquivo .phpstorm.meta.php nao confunde: qualquer .php e do dominio mesmo'
 })
 
 test('INVARIANTE o portao de build consulta o reparador de dominio — senao isto e codigo morto', async () => {
-  const fonte = await Bun.file('motor/cic/crv/portoes-de-fecho.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/portoes-de-fecho.ts')
   expect(fonte, 'reparadores registrados e nunca consultados sao pior que nao existir').toContain('escolherReparador(o.ctx.arquivos)')
   expect(fonte).toContain("portao.comando === 'build'")
 })
 
 test('REGRESSAO a instrucao generica de build fala TypeScript — nao pode vazar para projeto PHP', async () => {
-  const fonte = await Bun.file('motor/cic/crv/portoes-de-fecho.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/portoes-de-fecho.ts')
   const generica = fonte.slice(fonte.indexOf('PORTAO_DE_BUILD'), fonte.indexOf('PORTAO_DE_TESTE'))
   expect(generica, 'a generica menciona any/unknown, que nao existem em PHP').toContain('any nem unknown')
   const laravel = escolherReparador(['app/Models/X.php'])?.instrucao('erro') ?? ''
@@ -80,7 +80,7 @@ test('REGRESSAO a saida nao consegue fechar a propria cerca', () => {
 })
 
 test('os dois construtores de instrucao usam a cerca — o generico e o de dominio', async () => {
-  const generico = await Bun.file('motor/cic/crv/portoes-de-fecho.ts').text()
+  const generico = await lerArquivo('motor/cic/crv/portoes-de-fecho.ts')
   expect(generico).toContain('cercarSaida(saida)')
   expect((generico.match(/cercarSaida\(saida\)/g) ?? []).length, 'build e teste, os dois').toBe(2)
   const laravel = escolherReparador(['app/X.php'])?.instrucao('ERRO') ?? ''

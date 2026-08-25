@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 
 const D = await import('../../motor/osw/despacho-de-agentes.ts')
 
@@ -8,7 +8,7 @@ test('as especs vem de FUNCAO PURA sobre o diff — mesma entrada, mesma saida',
 })
 
 test('nunca e a IA que decide chamar outro agente — sem invocacao de provedor no modulo', async () => {
-  const fonte = await Bun.file('motor/osw/despacho-de-agentes.ts').text()
+  const fonte = await lerArquivo('motor/osw/despacho-de-agentes.ts')
   for (const proibido of ['runProvider', 'implement(', 'runStep(']) {
     expect(fonte, `despacho nao pode chamar ${proibido} — quem decide specs e codigo`).not.toContain(proibido)
   }
@@ -71,7 +71,7 @@ test('sem sinal nenhum devolve vazio — e vazio significa NAO delegar, nao "a I
 })
 
 test('INVARIANTE o prompt de implementacao nao entrega o menu para a IA rotear', async () => {
-  const fonte = await Bun.file('motor/cic/agente.ts').text()
+  const fonte = await lerArquivo('motor/cic/agente.ts')
   expect(fonte, 'o roteamento tem de vir de decidirEspecs, nao de um menu no prompt').toContain('decidirEspecs(')
   expect(fonte).not.toContain('function roteamentoImplement')
 })

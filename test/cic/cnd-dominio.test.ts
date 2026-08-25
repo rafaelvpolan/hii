@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 
 const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
@@ -18,6 +18,6 @@ test('sem pack nenhum nao habilita — na duvida, o criterio escrito resolve mai
 })
 
 test('o dominio decide pelo pack ativo, nunca por pergunta a uma IA', async () => {
-  const fonte = await Bun.file('motor/cic/cnd/gauntlet.ts').text()
+  const fonte = await lerArquivo('motor/cic/cnd/gauntlet.ts')
   expect(fonte, 'gatilho de dominio tem de ser deterministico').not.toContain('runProvider')
 })

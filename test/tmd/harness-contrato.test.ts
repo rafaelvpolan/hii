@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { harnessPorNome, providerNames } from '../../motor/tmd/registro.ts'
@@ -49,7 +49,7 @@ test('REGRESSAO nenhum harness declara mcp sem declarar restricao de ferramenta'
 })
 
 test('REGRESSAO cic/ nao conhece nome de harness — senao harness novo obriga a mexer em cic/', async () => {
-  const fonte = await Bun.file('motor/cic/rpr/classe-de-falha.ts').text()
+  const fonte = await lerArquivo('motor/cic/rpr/classe-de-falha.ts')
   for (const nome of providerNames()) {
     expect(fonte.includes(`'${nome}'`), `classe-de-falha.ts cita '${nome}'`).toBe(false)
   }
@@ -98,7 +98,7 @@ test('o descritor de cada harness diz a verdade sobre ele', () => {
 })
 
 test('registrar um harness e so somar uma linha: o registro nao guarda nada alem da lista', async () => {
-  const fonte = await Bun.file('motor/tmd/registro.ts').text()
+  const fonte = await lerArquivo('motor/tmd/registro.ts')
   const tabelas = fonte.match(/Record<HarnessId,/g) ?? []
   expect(tabelas, 'voltou tabela indexada por nome de harness no registro').toEqual([])
 })

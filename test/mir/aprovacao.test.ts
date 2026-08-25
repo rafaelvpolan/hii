@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderAprovacao, OPCOES_APROVACAO } from '../../motor/mir/render/aprovacao.ts'
 import { renderPendencia, pendenciaDoStatus } from '../../motor/mir/render/pendencia.ts'
 import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'

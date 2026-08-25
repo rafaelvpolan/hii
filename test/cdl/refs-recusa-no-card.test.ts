@@ -1,11 +1,12 @@
-import { test, expect, afterAll } from 'bun:test'
+import type { ServidorDeTeste } from '../apoio/bun.ts'
+import { test, expect, afterAll, servidorDeTeste, rodar, qualBinario } from '../apoio/runner.ts'
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Card } from '../../motor/cdl/index.ts'
 import { createCard, readCard } from '../../motor/cdl/store.ts'
 
-const REPO = join(import.meta.dir, '..', '..')
+const REPO = join(import.meta.dirname, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-ref-recusada-'))
 const CARDS = join(BASE, 'cards')
 const REPOS = join(BASE, 'repos.json')
@@ -18,7 +19,7 @@ const SUMIDO = 'https://nao-existe-mesmo.invalid/ref.png'
 const SEM_ESQUEMA = 'www.figma.com/mockup.png'
 const MAIUSCULA = 'HTTPS://CDN.NAO-EXISTE-MESMO.INVALID/logo.png'
 const IP_DE_TESTE = '192.0.2.7'
-const CURL_REAL = Bun.which('curl') ?? '/usr/bin/curl'
+const CURL_REAL = qualBinario('curl') ?? '/usr/bin/curl'
 
 mkdirSync(join(CARDS, 'refs'), { recursive: true })
 mkdirSync(WT, { recursive: true })
@@ -99,25 +100,19 @@ interface SaidaImplement {
 }
 
 async function implementar(id: string): Promise<SaidaImplement> {
-  const p = Bun.spawn(['bun', IMPLEMENTA, id, WT], {
+  const p = rodar(['bun', IMPLEMENTA, id, WT], {
     cwd: REPO,
     env: { ...process.env, PATH: `${BIN}:${process.env.PATH ?? ''}`, ...AMBIENTE },
-    stdout: 'pipe',
-    stderr: 'pipe',
-    timeout: 60000,
   })
-  const [saida, erro] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()])
-  await p.exited
-  if (p.exitCode !== 0) throw new Error(`implement falhou (${p.exitCode}): ${erro}`)
+  // A ponte acumula a saida desde o spawn e `saida()` espera o fim: nao ha stream
+  // para drenar nem corrida entre ler e o processo terminar.
+  const { code, stdout: saida, stderr: erro } = await p.saida()
+  if (code !== 0) throw new Error(`implement falhou (${code}): ${erro}`)
   return JSON.parse(saida.trim()) as SaidaImplement
 }
 
-function servidorLocal(status: number, corpo: string | null): ReturnType<typeof Bun.serve> {
-  return Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => new Response(corpo, { status, headers: { 'content-type': 'image/png' } }),
-  })
+function servidorLocal(status: number, corpo: string | null): Promise<ServidorDeTeste> {
+  return servidorDeTeste((): Response => new Response(corpo, { status, headers: { 'content-type': 'image/png' } }))
 }
 
 test('REGRESSAO: SSRF bloqueado nao some na fronteira — o card diz qual referencia foi recusada e por que', async () => {
@@ -191,7 +186,7 @@ test('card sem fonte recusada nao ganha linha nenhuma (sem alarme falso)', async
 }, 90000)
 
 test('REGRESSAO: 404 do servidor da referencia chega ao card como resposta-de-erro, nao vira imagem', async () => {
-  const s = servidorLocal(404, '<html>404 Not Found — nginx</html>')
+  const s = await servidorLocal(404, '<html>404 Not Found — nginx</html>')
   try {
     const fonte = `http://${IP_DE_TESTE}:${s.port}/ref.png`
     const id = cardComRefs('trocar a arte do hero', [fonte])
@@ -210,7 +205,7 @@ test('REGRESSAO: 404 do servidor da referencia chega ao card como resposta-de-er
 }, 90000)
 
 test('REGRESSAO: 200 com corpo de 0 bytes chega ao card como resposta-vazia, com motivo proprio', async () => {
-  const s = servidorLocal(200, null)
+  const s = await servidorLocal(200, null)
   try {
     const fonte = `http://${IP_DE_TESTE}:${s.port}/ref.png`
     const id = cardComRefs('trocar o mockup do menu', [fonte])

@@ -1,4 +1,4 @@
-import { test, expect, beforeEach, afterAll } from 'bun:test'
+import { test, expect, beforeEach, afterAll } from '../apoio/runner.ts'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { lerAcaoExterna, instrucaoDe } from '../../motor/osw/rta/externo.ts'
 import { planSteps } from '../../motor/osw/rta/perfil.ts'
 import { classifySurface } from '../../motor/osw/rta/superficie.ts'

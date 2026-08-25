@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { aplicarLei, planSteps, valeDivergir } from '../../motor/osw/rta/perfil.ts'
 import type { TaskInput } from '../../motor/osw/rta/perfil.ts'
 import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
@@ -124,10 +124,10 @@ test('a LEI ainda pode SUBIR o rigor de uma tarefa visual — o enunciado nao te
 })
 
 test('INVARIANTE o motor CONFERE o escopo no diff, nao so pede no prompt', async () => {
-  const executar = await Bun.file('motor/osw/executar.ts').text()
+  const executar = await lerArquivo('motor/osw/executar.ts')
   expect(executar, 'sem a checagem, escopo e mais uma instrucao em texto que o modelo pode ignorar').toContain('foraDoEscopo(')
   expect(executar).toContain('escreveu FORA do escopo')
-  const agente = await Bun.file('motor/cic/agente.ts').text()
+  const agente = await lerArquivo('motor/cic/agente.ts')
   expect(agente, 'e o agente tem de saber a regra ANTES de trabalhar').toContain('ESCOPO DE ESCRITA')
 })
 

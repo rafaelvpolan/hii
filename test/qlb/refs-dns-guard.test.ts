@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -99,14 +99,10 @@ test('host literal ja validado nao passa pelo resolvedor e nao e fixado', async 
 
 test('REGRESSAO ponta a ponta: nome publico que resolve para loopback nao chega a bater no servidor interno', async () => {
   let pedidos = 0
-  const server = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch(): Response {
+  const server = await servidorDeTeste(function fetch(): Response {
       pedidos++
       return new Response('AWS_SECRET_ACCESS_KEY=abc123', { status: 200 })
-    },
-  })
+    })
   const dest = join(CARDS, 'ref-rebind.png')
   try {
     const r = await downloadToFile(`http://espelho.exemplo:${server.port}/latest/meta-data/`, dest, undefined, DNS)
@@ -136,13 +132,9 @@ test('downloadToFile aceita o buscador injetado e grava o destino quando o host 
 })
 
 test('contra curl de verdade: o --resolve gerado leva o fetch ao endereco aprovado', async () => {
-  const server = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch(): Response {
+  const server = await servidorDeTeste(function fetch(): Response {
       return new Response('PNGDATA', { status: 200 })
-    },
-  })
+    })
   const dest = join(CARDS, 'ref-fixado.png')
   const pin: AddressPin = { host: 'cdn.exemplo.com', port: String(server.port), addresses: ['127.0.0.1'] }
   try {

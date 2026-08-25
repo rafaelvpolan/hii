@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 
 const L = await import('../../motor/qlb/limites.ts')
 

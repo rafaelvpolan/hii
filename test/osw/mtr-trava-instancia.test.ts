@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll } from '../apoio/runner.ts'
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { acquireInstanceLock, holdInstanceLock, releaseInstanceLock } from '../../motor/osw/mtr/trava-instancia.ts'
 import { daemonPid } from '../../motor/osw/mtr/daemon.ts'
 
-const ROOT = join(import.meta.dir, '..', '..')
+const ROOT = join(import.meta.dirname, '..', '..')
 const RUNNER = join(ROOT, 'runner.ts')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-instance-lock-'))
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-instance-lock-cards-'))

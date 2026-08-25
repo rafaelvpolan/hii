@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderSituacao } from '../../motor/mir/render/situacao.ts'
 import { visibleLen } from '../../motor/mir/tui/layout.ts'
 import type { Situacao } from '../../motor/mir/render/situacao.ts'

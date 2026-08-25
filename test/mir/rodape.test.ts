@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { linhaPropriedades, linhasExecucao, emExecucao, quadroDoGiro, GIRO } from '../../motor/mir/render/rodape.ts'
 import type { Fields } from '../../motor/cdl/index.ts'
 

@@ -16,6 +16,7 @@
     "lint:types": "bun scripts/check-no-any.mjs",
     "lint:clone": "bun scripts/check-clone-limpo.mjs",
     "test:unit": "bun test ./test",
+    "test:node": "node --test --test-timeout=60000 $(ls test/*.test.ts test/*/*.test.ts | grep -v apoio/expect-diferencial)",
     "test": "bun run typecheck && bun run lint:types && bun run lint:clone && bun run test:unit"
   },
   "devDependencies": {

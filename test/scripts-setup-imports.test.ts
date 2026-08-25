@@ -1,9 +1,9 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from './apoio/runner.ts'
 import { spawnSync } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const SETUP_DIR = join(import.meta.dir, '..', 'scripts', 'setup')
+const SETUP_DIR = join(import.meta.dirname, '..', 'scripts', 'setup')
 
 function scriptsDeSetup(): string[] {
   return readdirSync(SETUP_DIR).filter(f => f.endsWith('.mjs')).sort()

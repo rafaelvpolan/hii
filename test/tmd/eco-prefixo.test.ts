@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { abrirPrompt, anexarInstrucao, montar, prefixoEstavel, conferirPrefixo } from '../../motor/tmd/eco/prefixo.ts'
 
 const PREFIXO = 'SISTEMA: voce edita o worktree.\nSKILLS: laravel-patterns\nTAREFA: corrigir o calculo de comissao'
@@ -51,7 +51,7 @@ test('a estrutura e imutavel: anexar devolve outro prompt, nao muda o antigo', (
 })
 
 test('INVARIANTE passoComCrivo usa o prefixo estavel — senao o item 17 e codigo morto', async () => {
-  const fonte = await Bun.file('motor/cic/passo-com-gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/passo-com-gate.ts')
   expect(fonte).toContain('abrirPrompt(instruction)')
   expect(fonte).toContain('anexarInstrucao(prompt')
   expect(fonte, 'voltou a concatenar sufixo solto, que substitui em vez de anexar').not.toContain('instruction + suffix')

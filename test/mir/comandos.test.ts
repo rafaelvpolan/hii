@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { splitCommand, affectedPackage, resolveCommand, devCommand, devCwd, hasCommand } from '../../motor/mir/comandos.ts'
 import { commandsFor } from '../../motor/cdl/bss/sondar.ts'
 import type { Contract, PackageInfo, PackageManager, RepoShape } from '../../motor/cdl/bss/tipos.ts'

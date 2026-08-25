@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { classifyFailure } from '../../motor/cic/rpr/classe-de-falha.ts'
 import { harnessPorNome } from '../../motor/tmd/registro.ts'
 

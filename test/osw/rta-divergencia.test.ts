@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { valeDivergir } from '../../motor/osw/rta/perfil.ts'
 
 test('pergunta aberta de desenho ENTRA — ha mais de uma forma certa', () => {

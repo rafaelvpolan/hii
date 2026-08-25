@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -42,13 +42,9 @@ test('-q vem antes de tudo: fora da primeira posicao o curl le o .curlrc assim m
 })
 
 test('REGRESSAO: .curlrc do operador com "location" nao faz o curl seguir o redirect por fora da guarda', async () => {
-  const interno = Bun.serve({ port: 0, hostname: '127.0.0.1', fetch: (): Response => new Response(SEGREDO) })
+  const interno = await servidorDeTeste((): Response => new Response(SEGREDO))
   const alvo = `http://127.0.0.1:${interno.port}/latest/meta-data/`
-  const cdn = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => new Response('', { status: 302, headers: { Location: alvo } }),
-  })
+  const cdn = await servidorDeTeste((): Response => new Response('', { status: 302, headers: { Location: alvo } }))
   const dest = join(BASE, 'ref-curlrc.png')
   try {
     const hop = await busca(`http://127.0.0.1:${cdn.port}/logo.png`, dest, null, { ...process.env, HOME: homeCom('home-hostil', 'location\n') })
@@ -64,13 +60,9 @@ test('REGRESSAO: .curlrc do operador com "location" nao faz o curl seguir o redi
 
 test('REGRESSAO: .curlrc com proxy do operador nao rouba o fetch do endereco fixado por --resolve', async () => {
   let pedidosProxy = 0
-  const proxy = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => { pedidosProxy++; return new Response(SEGREDO) },
-  })
+  const proxy = await servidorDeTeste((): Response => { pedidosProxy++; return new Response(SEGREDO) })
   const dest = join(BASE, 'ref-curlrc-proxy.png')
-  const direto = Bun.serve({ port: 0, hostname: '127.0.0.1', fetch: (): Response => new Response('PNGDATA') })
+  const direto = await servidorDeTeste((): Response => new Response('PNGDATA'))
   const pin: AddressPin = { host: 'cdn.exemplo.com', port: String(direto.port), addresses: ['127.0.0.1'] }
   try {
     const home = homeCom('home-proxy', `proxy = http://127.0.0.1:${proxy.port}\n`)
@@ -87,12 +79,8 @@ test('REGRESSAO: .curlrc com proxy do operador nao rouba o fetch do endereco fix
 
 test('REGRESSAO: http_proxy no ambiente nao anula o --resolve — o fetch vai ao endereco que o motor aprovou', async () => {
   let pedidosProxy = 0
-  const proxy = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => { pedidosProxy++; return new Response(SEGREDO) },
-  })
-  const direto = Bun.serve({ port: 0, hostname: '127.0.0.1', fetch: (): Response => new Response('PNGDATA') })
+  const proxy = await servidorDeTeste((): Response => { pedidosProxy++; return new Response(SEGREDO) })
+  const direto = await servidorDeTeste((): Response => new Response('PNGDATA'))
   const dest = join(BASE, 'ref-proxy.png')
   const pin: AddressPin = { host: 'cdn.exemplo.com', port: String(direto.port), addresses: ['127.0.0.1'] }
   try {
@@ -110,12 +98,8 @@ test('REGRESSAO: http_proxy no ambiente nao anula o --resolve — o fetch vai ao
 
 test('REGRESSAO: com proxy no ambiente e endereco aprovado inalcancavel, o download falha em vez de vazar pelo proxy', async () => {
   let pedidosProxy = 0
-  const proxy = Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => { pedidosProxy++; return new Response(SEGREDO) },
-  })
-  const morto = Bun.serve({ port: 0, hostname: '127.0.0.1', fetch: (): Response => new Response('') })
+  const proxy = await servidorDeTeste((): Response => { pedidosProxy++; return new Response(SEGREDO) })
+  const morto = await servidorDeTeste((): Response => new Response(''))
   const portaMorta = morto.port
   morto.stop(true)
   const dest = join(BASE, 'ref-proxy-morto.png')

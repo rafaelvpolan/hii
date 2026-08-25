@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir, networkInterfaces } from 'node:os'
@@ -132,7 +132,7 @@ test('com HICODE_HEALTH_BIND=0.0.0.0 (o que o Dockerfile define) o /health respo
 })
 
 test('INVARIANTE o runner anuncia a porta DEPOIS de o listen resolver', async () => {
-  const fonte = await Bun.file('runner.ts').text()
+  const fonte = await lerArquivo('runner.ts')
   expect(fonte, 'anunciar antes do listen promete porta que pode nunca ter aberto').toContain('saude.pronto.then(')
   expect(fonte, 'e o caso de falha tem de ser dito, nao omitido').toContain('/health NAO subiu')
 })

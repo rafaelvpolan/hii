@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { classifySurface, isNonVisual } from '../../motor/osw/rta/superficie.ts'
 
 test('conflito de PR -> nao-visual', () => {

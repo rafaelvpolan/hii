@@ -190,6 +190,22 @@ instável.
 `truncVisible` e `janelaHorizontal`, um teste de razão. Não toca a semântica de
 nada.
 
+R: pode fazer.
+
+**FEITO** — razão medida caiu de **417×** para **0,98×** (Unicode) e de 140× para
+0,97× (ASCII). Duas armadilhas que a recomendação não previa: um laço por code unit
+até achar o próximo ESC devolvia o O(n) pela porta dos fundos, e o `Intl.Segmenter`
+tem custo de **preparo** proporcional a |s| — iterar preguiçosamente não basta, a
+string entregue a ele tem de ser pequena. Daí a segmentação em **janelas**, com o
+último grafema adiado para a janela seguinte porque ele pode continuar depois do
+corte. Verificado que o resultado é idêntico ao de segmentar tudo de uma vez,
+inclusive com grafema atravessando a borda.
+
+O teste de carga que existia media a razão por **colunas pedidas** e passava com
+folga — justamente porque tudo era O(n) e o número de colunas não mudava nada. Ele
+certificava o defeito. Trocado pela razão por **tamanho da entrada**, nas duas
+famílias.
+
 ---
 
 ## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
@@ -288,6 +304,43 @@ duas linhas que casam são prosa em comentário e em prompt).
 `test/cdl/import-com-extensao.test.ts` já guarda a extensão nos imports, que era o
 outro requisito do Node.
 
+R: pode fazer.
+
+**FEITO** — os sete passos. A suíte roda nos dois runtimes: **2566 testes sob bun**
+e **2561 sob `node --test`, em 32s**, e `bun run test:node` entrou no CI ao lado de
+`test:unit`.
+
+O que o node encontrou na primeira execução, e que nenhum teste podia ver antes:
+`import.meta.dir` é extensão do bun (11 arquivos), `require()` não existe em ESM
+(5 arquivos), import dinâmico precisa da extensão **antes** da query de cache, e
+JSON por `import()` exige atributo de tipo. Nenhuma delas aparece como teste
+vermelho — elas derrubam o arquivo no **carregamento**, e o arquivo some da
+contagem, que é pior de notar. Cada uma virou invariante em
+`test/apoio/migracao-node-test.test.ts`.
+
+Duas armadilhas da troca mecânica: `Bun.spawn` em
+`test/euc/idempotencia-contrato.test.ts` só existe **dentro de string** (é o dado do
+teste), e o sed reescreveu como se fosse chamada. E o próprio
+`expect-diferencial.test.ts` teve o import reescrito para a fachada — passou a
+comparar o shim **consigo mesmo**, quatro testes verdes provando nada. Ele agora
+reprova se apontarem os dois lados para o mesmo motor.
+
+E duas coisas que só apareceram rodando a suíte inteira no node até o fim:
+
+**A suíte não era lenta — ela travava.** Seis arquivos que criam a TUI prendiam o
+processo por causa do `setInterval` de repintura, que o bun ignora ao sair e o node
+respeita. Travamento é pior que falha: o processo fica vivo sem reprovar e sem
+terminar, e no CI isso vira "job demorou demais" em vez de "teste X quebrou".
+`--test-timeout` **não** pega esse caso — ele mata teste lento, não processo com
+handle aberto. Com `unref()` no timer (que é o certo: repintura não pode ser a razão
+de o processo viver), a suíte passou de "não termina em 20 minutos" para **32
+segundos**.
+
+**A ponte de servidor não punha `Content-Length`**, que o `Bun.serve` põe sozinho.
+O node respondia em chunked, e um teste de teto de download — que depende do tamanho
+**anunciado** — deixou de testar o que testava. Fidelidade da ponte é o que separa
+migrar de reescrever o teste sem perceber.
+
 ## DECISÃO PENDENTE — a evidência de RED premia o card que chega quebrado
 
 Achado da auditoria desta rodada, e é **material para a decisão de ligar o
@@ -327,6 +380,34 @@ As saídas que enxergo:
 
 Enquanto não houver decisão, ligar o rigor estrito vai parar todo card `completo`
 com suíte verde. Isso é diferente do que a seção abaixo dizia antes desta rodada.
+
+R: pode fazer 2.
+
+**FEITO** — opção 2 implementada, com a fraqueza dela tratada, não escondida.
+
+O passo de testes, **só no perfil `completo`**, recebe a exigência: escrever o teste
+antes, rodar o comando de teste do alvo, e **colar a saída real** entre
+`<<<RED>>>` e `<<<FIM RED>>>`. A instrução e o leitor moram no mesmo módulo
+(`motor/agentes/chg/red-primeiro.ts`) para o formato exigido e o formato lido não
+poderem divergir.
+
+O que o motor **consegue** conferir naquele texto, ele confere: que o bloco existe,
+que tem corpo (duas linhas ou 40 caracteres — o sumário do `node --test` é legítimo
+e curto), que tem sinal de falha, e que **não é uma suíte verde**. Essa última é a
+que faria a exigência virar carimbo: relatório verde **contém** a palavra "fail",
+em "0 fail". Se a busca por sinal de falha viesse antes da checagem de verde, a
+suíte inteira passando seria aceita como evidência de RED. As três ordens de
+contagem estão cobertas — `0 fail` (bun), `failed: 0` (jest/vitest) e `fail 0`
+(node:test).
+
+O que o motor **não** consegue é saber se o comando rodou mesmo. Por isso a
+evidência é **marcada na origem**: `[motor observou]` quando o comando reprovou na
+primeira rodada do fecho, `[agente anexou saída]` quando veio do relato. As duas
+valem, não valem o mesmo, e quem audita o card vê a diferença sem ir ao código.
+
+Isso desfaz o incentivo invertido: o produtor do motor só vê a suíte já com o código
+escrito, então **TDD bem-feito chega verde e não deixa rastro** — era por isso que o
+card bem-feito parava e o que chegava quebrado passava.
 
 ---
 

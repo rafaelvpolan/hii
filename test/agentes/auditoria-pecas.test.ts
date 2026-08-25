@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { coberturaDeTeste, coberturaFecha, selecionarAuditoria } from '../../motor/agentes/ass/auditoria.ts'
 // Importa os MODULOS, e nao so a fachada. A cobertura do proprio auditor e medida
 // por import (`coberturaDeTeste`), entao um teste que le apenas o reexport deixa
@@ -147,10 +147,10 @@ test('apenas e escopo compoem: o recorte por lista vale DENTRO do prefixo', asyn
 // sobre DOCUMENTACAO, e nao conseguia detectar que `apenas` continuava sem
 // chamador de CODIGO. Agora exige o chamador de verdade.
 test('INVARIANTE `apenas` tem chamador de CODIGO, nao so prosa num documento', async () => {
-  const script = await Bun.file('scripts/auditar.ts').text()
+  const script = await lerArquivo('scripts/auditar.ts')
   expect(script, 'o recorte por lista exata precisa de um consumidor executavel').toContain('apenas:')
   expect(script).toContain('arquivosDaBranch(')
-  const skill = await Bun.file('.claude/skills/verificar/SKILL.md').text()
+  const skill = await lerArquivo('.claude/skills/verificar/SKILL.md')
   expect(skill, 'o skill tem de CHAMAR o script, nao reimplementar a selecao inline').toContain('scripts/auditar.ts')
   expect(skill).toContain('--branch')
   expect(skill, 'o recorte tem de avisar que a cobertura vale so para ele').toContain('superficie DESTA branch')

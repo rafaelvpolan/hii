@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import {
   promptDoRamo, montarRamos, despacharDivergencia, orcamentoDaDivergencia,
   parsePropostas, enquadramentosParaCard,

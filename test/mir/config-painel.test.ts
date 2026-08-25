@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 import { renderConfig } from '../../motor/mir/render/config/index.ts'
 import type { EstadoDaConfig, LinhaDeProvedor } from '../../motor/mir/render/config/index.ts'
 import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
@@ -246,7 +246,7 @@ test('ollama no ar aparece ligado assim que a sonda e aquecida', async () => {
 })
 
 test('REGRESSAO: a TUI aquece a sonda do ollama antes de desenhar, senao o 1o quadro mente', async () => {
-  const fonte = await Bun.file('bin/repl.ts').text()
+  const fonte = await lerArquivo('bin/repl.ts')
   const sonda = fonte.indexOf('await sondarOllama()')
   const desenho = fonte.indexOf('await tui(state)')
   expect(sonda).toBeGreaterThan(-1)

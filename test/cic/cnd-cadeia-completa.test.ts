@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -93,7 +93,7 @@ test('CADEIA QUEBRA no elo certo: card SEM referencia nao entra em gauntlet mesm
 })
 
 test('INVARIANTE o gate exige tela E provedor com visao antes de entrar em gauntlet', async () => {
-  const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
   expect(fonte).toContain('provider.supportsVision && existsSync(tela)')
   expect(fonte, 'faltando qualquer elo, o motivo tem de ir para o card em vez de cair calado').toContain('crivo_modo')
 })
@@ -106,7 +106,7 @@ test('ELO 0 o interruptor: a cadeia inteira montada, mas o gauntlet desligado, c
 })
 
 test('INVARIANTE o gate LE o interruptor e o gasto do card — nao decide o modo por heuristica sozinho', async () => {
-  const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
   expect(fonte).toContain('ativado: gauntletLigado()')
   expect(fonte, 'sem gasto o teto de podeIniciar() volta a ser decorativo').toContain('gastoUsd:')
 })

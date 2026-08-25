@@ -1,24 +1,18 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { httpOk, waitHttp, probeArgs } from '../../motor/cic/crv/url-viva.ts'
 import { isLoopbackUrl, noProxyArgs } from '../../motor/qlb/alf/loopback.ts'
 import { probeProviderHealth } from '../../motor/tmd/registro.ts'
 
 let acessosAoProxy = 0
 
-const app = Bun.serve({
-  port: 0,
-  fetch(): Response {
+const app = await servidorDeTeste(function fetch(): Response {
     return new Response('url vivo', { status: 200 })
-  },
-})
+  })
 
-const proxy = Bun.serve({
-  port: 0,
-  fetch(): Response {
+const proxy = await servidorDeTeste(function fetch(): Response {
     acessosAoProxy++
     return new Response('este proxy nao serve o app', { status: 502 })
-  },
-})
+  })
 
 const URL_LOCAL = `http://localhost:${app.port}`
 const ENDERECO_PROXY = `http://127.0.0.1:${proxy.port}`

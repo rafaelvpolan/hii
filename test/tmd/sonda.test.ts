@@ -1,13 +1,10 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { probeProviderHealth } from '../../motor/tmd/registro.ts'
 
 let statusCode = 200
-const server = Bun.serve({
-  port: 0,
-  fetch(): Response {
+const server = await servidorDeTeste(function fetch(): Response {
     return new Response('', { status: statusCode })
-  },
-})
+  })
 const baseUrl = `http://localhost:${server.port}`
 
 afterAll(() => server.stop(true))

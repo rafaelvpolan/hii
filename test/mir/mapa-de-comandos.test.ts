@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { COMMANDS, ALIASES, canonico, handle, newSession } from '../../motor/mir/sessao.ts'

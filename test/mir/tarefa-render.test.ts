@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderCabecalhoTarefa } from '../../motor/mir/render/tarefa.ts'
 import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'
 import type { Card } from '../../motor/cdl/index.ts'

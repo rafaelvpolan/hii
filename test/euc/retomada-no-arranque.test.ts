@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -17,7 +17,7 @@ const { retomarAoIniciar, faseInterrompida } = await import('../../motor/euc/rec
 // enquanto encerramento.ts e passo-com-gate.ts ja comentavam como se ela
 // estivesse ativa.
 test('INVARIANTE runner.ts chama retomarAoIniciar no arranque — senao o modulo e orfao', async () => {
-  const fonte = await Bun.file('runner.ts').text()
+  const fonte = await lerArquivo('runner.ts')
   expect(fonte).toContain("from './motor/euc/recuperar.ts'")
   expect(fonte).toContain('retomarAoIniciar(')
   // Sem a guarda do -1, apagar `reconcileStranded()` do runner fazia a comparacao

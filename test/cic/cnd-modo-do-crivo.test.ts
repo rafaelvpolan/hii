@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, lerArquivo } from '../apoio/runner.ts'
 
 const CND = await import('../../motor/cic/cnd/gauntlet.ts')
 
@@ -43,7 +43,7 @@ test('o motivo sempre explica a escolha — modo sem porque nao se audita', () =
 })
 
 test('INVARIANTE o crivo escolhe o modo e registra no card', async () => {
-  const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
   expect(fonte).toContain('modoDoCrivo(')
   expect(fonte, 'o gauntlet compara imagem contra imagem, nao diff contra imagem').toContain('renderizarComparacao(')
 })
@@ -86,7 +86,7 @@ test('TETO gasto CORROMPIDO barra o gauntlet, nao vira "gasto desconhecido"', as
 })
 
 test('INVARIANTE o gate converte cost_usd corrompido em barreira, nao em undefined', async () => {
-  const fonte = await Bun.file('motor/cic/crv/gate.ts').text()
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
   expect(fonte, 'gastoDoCard(...) ?? undefined apaga a distincao entre corrompido e desconhecido')
     .not.toContain('gastoDoCard(card.fm.cost_usd) ?? undefined')
   expect(fonte).toContain('Number.POSITIVE_INFINITY')

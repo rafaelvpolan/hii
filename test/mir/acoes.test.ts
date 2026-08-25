@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -69,12 +69,12 @@ test('requestCorrection exige worktree valido', () => {
   expect(A.requestCorrection(id, 'src/a.vue', 'ajuste')).toBeNull()
 })
 
-test('requestCorrection grava ancora e instrucao quando o worktree existe', () => {
+test('requestCorrection grava ancora e instrucao quando o worktree existe', async () => {
   const wt = join(CARDS, 'wt-fake')
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store.ts')
+  const { patchCard } = await import('../../motor/cdl/store.ts')
   patchCard(id, { worktree: wt })
   const r = A.requestCorrection(id, 'src/a.vue', 'tirar o negrito', '42', 'texto\nquebrado')
   expect(r?.status).toBe('CORRECTING')
@@ -83,7 +83,7 @@ test('requestCorrection grava ancora e instrucao quando o worktree existe', () =
   expect(readCard(id)?.body).toContain('src/a.vue:42')
 })
 
-test('answerClarify grava resposta, marca clarified e volta a EXECUTING', () => {
+test('answerClarify grava resposta, marca clarified e volta a EXECUTING', async () => {
   const id = novo()
   const dir = join(CARDS, 'runs')
   mkdirSync(dir, { recursive: true })
@@ -92,7 +92,7 @@ test('answerClarify grava resposta, marca clarified e volta a EXECUTING', () => 
   const r = A.answerClarify(id, [{ q: 'um por vez?', answer: 'nao' }])
   expect(r?.status).toBe('EXECUTING')
   expect(r?.clarified).toBe('true')
-  const { readClarify } = require('../../motor/agentes/clr/clarificar') as typeof import('../../motor/agentes/clr/clarificar.ts')
+  const { readClarify } = await import('../../motor/agentes/clr/clarificar.ts')
   expect(readClarify(id)[0]?.answer).toBe('nao')
 })
 
@@ -175,12 +175,12 @@ test('rejectUrl sem worktree reexecuta em vez de corrigir', () => {
   expect(r.card?.status).toBe('EXECUTING')
 })
 
-test('rejectUrl com motivo e worktree valido pede correcao', () => {
+test('rejectUrl com motivo e worktree valido pede correcao', async () => {
   const wt = join(CARDS, 'wt-reject')
   mkdirSync(join(wt, '.git'), { recursive: true })
   const id = novo()
   A.transition(id, 'URL')
-  const { patchCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store.ts')
+  const { patchCard } = await import('../../motor/cdl/store.ts')
   patchCard(id, { worktree: wt })
   const r = A.rejectUrl(id, 'o selo ficou torto')
   expect(r.card?.status).toBe('CORRECTING')

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { profundidadeDeCor, pintar, tom, rampa, interpolar, corDoCubo, rgbDoTom, CANTO } from '../../motor/mir/tui/paleta.ts'
 import { barraGradiente, ondaDeEspera, pulso, quadroDoPulso } from '../../motor/mir/tui/carregando.ts'
 import { visibleLen, stripAnsi } from '../../motor/mir/tui/layout.ts'

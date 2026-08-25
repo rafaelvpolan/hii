@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { parseLog, classificar, ehProsa } from '../../motor/mir/atividade.ts'
 import { renderExecucao, linhasDaAtividade, chamadaDe } from '../../motor/mir/render/execucao.ts'
 import { renderFrame } from '../../motor/mir/tui/layout.ts'

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 
 const VTO = await import('../../motor/cic/vto.ts')
 const RDA = await import('../../motor/cic/rda.ts')

@@ -1,4 +1,4 @@
-import { test, expect, beforeEach, afterEach } from 'bun:test'
+import { test, expect, beforeEach, afterEach, lerArquivo } from '../apoio/runner.ts'
 import { readFileSync } from 'node:fs'
 import { mkdtempSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -188,7 +188,7 @@ test('comandoManual devolve undefined para nome que nao e atalho', () => {
 // O comentario da funcao afirmava "chamada no arranque e no teste" e SO o teste
 // chamava. Guarda contra a afirmacao voltar a ser falsa.
 test('INVARIANTE o arranque do daemon chama validarComandosManuais de verdade', async () => {
-  const fonte = await Bun.file('runner.ts').text()
+  const fonte = await lerArquivo('runner.ts')
   expect(fonte).toContain("from './motor/mir/comandos-manuais.ts'")
   const iChamada = fonte.indexOf('validarComandosManuais()')
   expect(iChamada, 'a chamada nao esta no runner: o comentario da funcao volta a mentir').toBeGreaterThan(-1)

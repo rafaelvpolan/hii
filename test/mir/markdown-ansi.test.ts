@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { markdownParaAnsi } from '../../motor/mir/render/markdown.ts'
 import { stripAnsi, visibleLen } from '../../motor/mir/tui/layout.ts'
 

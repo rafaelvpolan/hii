@@ -1,12 +1,11 @@
 import { CANTO } from './paleta.ts'
-import { grafemasDe, larguraDeGrafema, larguraDeTexto } from './largura.ts'
+import { larguraAte, larguraDeGrafema, larguraDeTexto, pedacosDe } from './largura.ts'
 
 export { stripAnsi } from './largura.ts'
 
 const RESET = '\x1b[0m'
 const ELIPSE = '…'
 const OSC_SPLIT = /(\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)[^\x1b]*\x1b\][^\x07\x1b]*(?:\x07|\x1b\\))/
-const ESCAPE_SPLIT = /(\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\))/
 
 const RE_URL = /https?:\/\/[^\s<>"')\]\x1b]+/g
 
@@ -38,29 +37,37 @@ export function visibleLen(s: string): number {
   return larguraDeTexto(s)
 }
 
+// UMA passada, que para no corte. A versao anterior fazia tres travessias completas
+// antes de olhar o teto — `visibleLen(s)` so para decidir se ia cortar, `split` para
+// materializar as partes, e `grafemasDe` para materializar os grafemas de cada uma —
+// entao cortar 80 colunas de uma linha de 100k custava proporcional aos 100k.
+// Medido: 140x em ASCII e 417x em Unicode com a entrada 500x maior (34ms por
+// chamada, dentro do desenho da TUI).
+//
+// O laco acumula ate `max` e nao alem: se chegar ao fim do texto sem passar de
+// `max`, devolve `s` intacto (era o que o early-return fazia); se passar, devolve o
+// prefixo guardado em `teto`. `ansiAteTeto`, e nao "algum ANSI visto", porque a
+// versao anterior retornava DE DENTRO do laco no primeiro grafema que passava de
+// `teto` — nunca via o que vinha depois.
 export function truncVisible(s: string, max: number): string {
   if (max <= 0) return ''
-  if (visibleLen(s) <= max) return s
   const teto = max - larguraDeGrafema(ELIPSE)
-  const partes = s.split(ESCAPE_SPLIT)
   let colunas = 0
-  let out = ''
-  let temAnsi = false
-  for (let i = 0; i < partes.length; i++) {
-    const parte = partes[i] ?? ''
-    if (i % 2 === 1) {
-      out += parte
-      temAnsi = true
+  let ateTeto = ''
+  let passouDoTeto = false
+  let ansiAteTeto = false
+  for (const pedaco of pedacosDe(s)) {
+    if (pedaco.ansi) {
+      if (!passouDoTeto) { ateTeto += pedaco.texto; ansiAteTeto = true }
       continue
     }
-    for (const grafema of grafemasDe(parte)) {
-      const largura = larguraDeGrafema(grafema)
-      if (colunas + largura > teto) return out + ELIPSE + (temAnsi ? RESET : '')
-      out += grafema
-      colunas += largura
-    }
+    const largura = larguraDeGrafema(pedaco.texto)
+    if (!passouDoTeto && colunas + largura > teto) passouDoTeto = true
+    if (!passouDoTeto) ateTeto += pedaco.texto
+    colunas += largura
+    if (colunas > max) return ateTeto + ELIPSE + (ansiAteTeto ? RESET : '')
   }
-  return out + ELIPSE + (temAnsi ? RESET : '')
+  return s
 }
 
 export function padVisible(s: string, largura: number): string {
@@ -168,12 +175,24 @@ export function janelaHorizontal(linha: string, coluna: number, largura: number,
   // `< alvo`, nao `<= alvo`: com o cursor na coluna `alvo` a posicao visual cai
   // uma coluna DEPOIS do fim da janela, e no caminho sem moldura isso punha
   // cursorCol em cols+1 — fora da tela.
-  if (desloque === undefined && visibleLen(linha) <= alvo && coluna < alvo) return { texto: linha, colunaDoCursor: coluna, deslocamento: 0 }
-  const grafemas = grafemasDe(linha)
-  const larguras = grafemas.map(larguraDeGrafema)
-  // Coluna acumulada ANTES de cada grafema, mais a coluna final.
+  // `larguraAte(linha, alvo)` responde "cabe?" em O(min(n, alvo)); `visibleLen`
+  // percorria a linha inteira so para descobrir isso. A entrada e curta na pratica,
+  // mas colar aqui um O(n) que ninguem precisa e como o defeito do `truncVisible`
+  // comecou.
+  if (desloque === undefined && coluna < alvo && !larguraAte(linha, alvo).excedeu) {
+    return { texto: linha, colunaDoCursor: coluna, deslocamento: 0 }
+  }
+  // Aqui a linha inteira e mesmo necessaria: o deslocamento depende da coluna FINAL
+  // (`cabeNoPasso` compara com o fim). O que da para evitar e materializar tres
+  // arrays paralelos — grafemas, larguras e acumulado — quando dois bastam.
+  const grafemas: string[] = []
   const colunaEm: number[] = [0]
-  for (const w of larguras) colunaEm.push((colunaEm[colunaEm.length - 1] ?? 0) + w)
+  for (const pedaco of pedacosDe(linha)) {
+    if (pedaco.ansi) continue
+    grafemas.push(pedaco.texto)
+    colunaEm.push((colunaEm[colunaEm.length - 1] ?? 0) + larguraDeGrafema(pedaco.texto))
+  }
+  const larguraNo = (i: number): number => (colunaEm[i + 1] ?? 0) - (colunaEm[i] ?? 0)
   const cursorColuna = Math.max(0, Math.min(coluna, colunaEm[colunaEm.length - 1] ?? 0))
   // Menor deslocamento que ainda deixa o cursor dentro da janela. Calculado por
   // busca no acumulado, nao por passos as cegas: o passo cego podia pular o fim da
@@ -203,7 +222,7 @@ export function janelaHorizontal(linha: string, coluna: number, largura: number,
   let texto = ''
   let colunas = 0
   for (let i = inicio; i < grafemas.length; i++) {
-    const w = larguras[i] ?? 0
+    const w = larguraNo(i)
     if (colunas + w > alvo) break
     texto += grafemas[i] ?? ''
     colunas += w

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { recusaPorLimite } from '../../motor/euc/tsr/confianca.ts'
 import { KimiProvider } from '../../motor/tmd/harness/kimi.ts'
 import { ClaudeProvider } from '../../motor/tmd/harness/claude.ts'
@@ -23,10 +23,14 @@ test('claude passa nos dois modos', () => {
   expect(recusaPorLimite(new ClaudeProvider(), pedido('edit'))).toBe('')
 })
 
-test('kimi em modo de edicao passa --auto — sem isso ele trava esperando aprovacao', async () => {
+// Medido contra o CLI real (0.38.0): `-p --auto` aborta com "Cannot combine
+// --prompt with --auto" antes de tocar em arquivo. A afirmacao anterior deste teste
+// era o oposto da realidade e passava porque nunca executou o binario.
+test('kimi em modo de edicao NAO passa flag de modo — o CLI recusa junto com -p', async () => {
   const { kimiArgv } = await import('../../motor/tmd/harness/kimi.ts')
-  expect(kimiArgv(pedido('edit'))).toContain('--auto')
-  expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
+  for (const flag of ['--auto', '--yolo', '--plan']) {
+    expect(kimiArgv(pedido('edit')), flag).not.toContain(flag)
+  }
 })
 
 test('kimi nunca recebe flag que o CLI dele nao tem', async () => {

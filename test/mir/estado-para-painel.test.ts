@@ -1,4 +1,4 @@
-import { test, expect, afterEach, beforeEach } from 'bun:test'
+import { test, expect, afterEach, beforeEach, lerArquivo } from '../apoio/runner.ts'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -156,7 +156,7 @@ test('RESPONDER a pergunta pela porta de maquina retoma a tarefa', async () => {
 })
 
 test('REGRESSAO: approve/reject/halt nao podem cair no runner (subiam um daemon)', async () => {
-  const fonte = await Bun.file('bin/hii.ts').text()
+  const fonte = await lerArquivo('bin/hii.ts')
   const trecho = fonte.slice(fonte.indexOf("case 'approve'"), fonte.indexOf("case 'contract'"))
   expect(trecho).toContain('tarefa(')
   expect(trecho).not.toContain('runnerBun')

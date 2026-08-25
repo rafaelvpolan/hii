@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -36,13 +36,13 @@ test('REGRESSAO: card sem NENHUM passo ainda mostra o painel do motor', () => {
 // painel deixaria o card rapido sem nenhuma das duas — e no ambiente de teste os
 // campos vazios somem por regra, entao o que se confere aqui e a DECISAO no codigo.
 test('INVARIANTE sem passos, agente e ultima acao NAO sao omitidas do painel', async () => {
-  const fonte = await Bun.file('motor/mir/cli/tela-tarefa.ts').text()
+  const fonte = await lerArquivo('motor/mir/cli/tela-tarefa.ts')
   expect(fonte, 'omitir condicional ao numero de passos').toContain("passos.length ? ['agentes', 'ultima acao'] : []")
 })
 
 // renderFrame corta o pinado pelo FIM: o que tem de sobreviver num terminal baixo e
 // a decisao do motor, nao a lista de passos.
 test('INVARIANTE o painel do motor vem ANTES da lista de passos no pinado', async () => {
-  const fonte = await Bun.file('motor/mir/cli/tela-tarefa.ts').text()
+  const fonte = await lerArquivo('motor/mir/cli/tela-tarefa.ts')
   expect(fonte).toContain('...doMotor, ...processos')
 })

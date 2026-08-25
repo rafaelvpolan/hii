@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 
 const A = await import('../../motor/csd/acervo.ts')
 const CND = await import('../../motor/cic/cnd/gauntlet.ts')
@@ -61,10 +61,8 @@ test('o pack respeita o c-vue do crivo: Vue e o default, React so quando o alvo 
   expect(i.indexOf('Vue 3'), 'React antes de Vue inverteria o default do repo').toBeLessThan(i.indexOf('React'))
 })
 
-test('a auditoria do harness aprova o pack novo — skill que nao passa nao carrega', () => {
-  const achados = DO_PACK.flatMap(s => {
-    const { auditarTexto } = require('../../motor/agentes/vtb/auditoria-harness')
-    return auditarTexto(s.instrucoes, s.arquivo)
-  })
+test('a auditoria do harness aprova o pack novo — skill que nao passa nao carrega', async () => {
+  const { auditarTexto } = await import('../../motor/agentes/vtb/auditoria-harness.ts')
+  const achados = DO_PACK.flatMap(s => auditarTexto(s.instrucoes, s.arquivo))
   expect(achados).toEqual([])
 })

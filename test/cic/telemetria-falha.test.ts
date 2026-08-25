@@ -1,5 +1,5 @@
 import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
-import { beforeEach, test, expect, afterAll } from 'bun:test'
+import { beforeEach, test, expect, afterAll } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'

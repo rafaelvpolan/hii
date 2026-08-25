@@ -1,5 +1,5 @@
 import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
@@ -120,7 +120,7 @@ test('REGRESSAO card com PR ja aberto nao tenta criar PR de novo', async () => {
   // O guard de verdade mora em abrirPrUmaVez, e e exercitado por COMPORTAMENTO nos
   // tres testes abaixo. Aqui fica so o elo: o fecho tem de USAR aquela funcao, e
   // nao reabrir o gh por conta propria.
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fonte, 'o fecho tem de delegar a abertura').toContain('abrirPrUmaVez(')
   expect(fonte, 'gh pr create fora de abrirPrUmaVez e um segundo caminho sem guarda').not.toContain("'pr', 'create'")
 }, TEMPO_COM_GIT_MS)

@@ -1,5 +1,5 @@
-import { test, expect, afterAll } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { test, expect, afterAll } from '../apoio/runner.ts'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -58,6 +58,6 @@ test('o candidato guarda EVIDENCIA do diario, nao opiniao — sem evidencia LANC
 test('arquivo de candidato ilegivel LANCA em vez de virar "nenhum candidato"', () => {
   const a = alvo()
   C.registrarOcorrencia(a, { assinatura: ASSIN, categoria: 'seguranca', card: '041', evidencia: 'x' })
-  require('node:fs').writeFileSync(join(a, '.hii', 'candidatos-regras', `${ASSIN}.json`), '{{{')
+  writeFileSync(join(a, '.hii', 'candidatos-regras', `${ASSIN}.json`), '{{{')
   expect(() => C.candidatos(a)).toThrow('ilegivel')
 })

@@ -1,4 +1,5 @@
-import { test, expect, afterAll } from 'bun:test'
+import type { ServidorDeTeste } from '../apoio/bun.ts'
+import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -14,12 +15,8 @@ const HOST = 'cdn.exemplo.com'
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-function servidor(status: number, corpo: string | null): ReturnType<typeof Bun.serve> {
-  return Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (): Response => new Response(corpo, { status, headers: { 'content-type': 'image/png' } }),
-  })
+function servidor(status: number, corpo: string | null): Promise<ServidorDeTeste> {
+  return servidorDeTeste((): Response => new Response(corpo, { status, headers: { 'content-type': 'image/png' } }))
 }
 
 function curlFixadoEm(dest: string, porta: number): HopFetcher {
@@ -28,16 +25,12 @@ function curlFixadoEm(dest: string, porta: number): HopFetcher {
   return (url: string): Promise<HopResponse> => real(url, pin)
 }
 
-function servidorDeCadeia(corpoDoSalto: string): ReturnType<typeof Bun.serve> {
-  return Bun.serve({
-    port: 0,
-    hostname: '127.0.0.1',
-    fetch: (req): Response => {
-      if (new URL(req.url).pathname === '/ref.png') {
-        return new Response(corpoDoSalto, { status: 302, headers: { Location: '/final.png' } })
-      }
-      return new Response(null, { status: 304 })
-    },
+function servidorDeCadeia(corpoDoSalto: string): Promise<ServidorDeTeste> {
+  return servidorDeTeste((req): Response => {
+    if (new URL(req.url).pathname === '/ref.png') {
+      return new Response(corpoDoSalto, { status: 302, headers: { Location: '/final.png' } })
+    }
+    return new Response(null, { status: 304 })
   })
 }
 
@@ -47,7 +40,7 @@ interface Baixado {
 }
 
 async function baixaDe(nome: string, status: number, corpo: string | null): Promise<Baixado> {
-  const s = servidor(status, corpo)
+  const s = await servidor(status, corpo)
   const dest = join(BASE, nome)
   try {
     const porta = portaDe(s)
@@ -121,7 +114,7 @@ test('REGRESSAO: 302 sem Location e resposta final e o corpo do redirect quebrad
 }, 30000)
 
 test('REGRESSAO: 304 no fim da cadeia nao deixa o corpo do salto 302 sobreviver em disco como imagem', async () => {
-  const s = servidorDeCadeia('<html>redirect quebrado</html>')
+  const s = await servidorDeCadeia('<html>redirect quebrado</html>')
   const dest = join(BASE, 'ref-304-em-cadeia.png')
   try {
     const porta = portaDe(s)

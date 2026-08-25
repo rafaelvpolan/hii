@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import {
   LENTES, preflight, escolherLentes, promptDivergir, promptConvergir,
   parseIdeias, parseConvergencia, ordenar, pontuacao, comoOpcoes,

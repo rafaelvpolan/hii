@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { caixa, lado, grade, larguraDoBloco } from '../../motor/mir/render/widget/caixa.ts'
 import { visibleLen } from '../../motor/mir/tui/layout.ts'
 import { CANTO } from '../../motor/mir/tui/paleta.ts'

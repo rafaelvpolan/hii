@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -144,7 +144,7 @@ const QUEM_LE_O_TETO: readonly string[] = [
 
 test('INVARIANTE quem barra por orcamento chama tetoDoCard', async () => {
   for (const arquivo of QUEM_LE_O_TETO) {
-    const fonte = semComentarios(await Bun.file(arquivo).text())
+    const fonte = semComentarios(await lerArquivo(arquivo))
     expect(fonte.includes('tetoDoCard('), `${arquivo} tem de ler o teto governado`).toBe(true)
   }
 })

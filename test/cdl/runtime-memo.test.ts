@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { escolhaDeRuntime, esquecerRuntime, runtimeDeScript } from '../../motor/cdl/ali/runtime.ts'
 import { ENV_RUNTIME } from '../../motor/cdl/ali/contrato.ts'
 

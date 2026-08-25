@@ -1,0 +1,5 @@
+{
+  "provider": "claude",
+  "base": "main",
+  "taskSource": "cards"
+}

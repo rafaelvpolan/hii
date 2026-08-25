@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { renderBoard, renderProjetos, resumirProjetos, idadeDe, legendaPassos } from '../../motor/mir/render/board.ts'
 import { passosDoCard, pulados } from '../../motor/mir/progresso.ts'
 import { phaseLabel } from '../../motor/mir/render/phases.ts'

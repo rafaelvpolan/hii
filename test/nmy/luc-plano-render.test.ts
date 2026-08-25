@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { waves } from '../../motor/nmy/luc/ondas.ts'
 import { DEFAULT_STEPS } from '../../motor/nmy/config.ts'
 import { buildPlan } from '../../motor/nmy/luc/plano.ts'

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { emptyUsage, sumTokens } from '../../motor/tmd/uso.ts'
 
 test('emptyUsage zera tudo', () => {

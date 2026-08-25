@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from '../apoio/runner.ts'
 import { splitFrontMatter, serializeCard, extractObjetivo } from '../../motor/cdl/index.ts'
 
 test('splitFrontMatter le frontmatter e corpo', () => {

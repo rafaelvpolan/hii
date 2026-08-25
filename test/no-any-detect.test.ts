@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from './apoio/runner.ts'
 import { findViolations, stripNonCode } from '../scripts/no-any-detect.mjs'
 
 test('flagra : any e as any em codigo', () => {

@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from 'bun:test'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -64,14 +64,14 @@ test('COMPORTAMENTO area nova e todo arquivo do diff ter sido CRIADO', () => {
 })
 
 test('INVARIANTE o fechamento so cobra setup em area NOVA — repo legado nao trava', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fonte, 'sem --diff-filter=A nao ha como saber o que foi criado').toContain('--diff-filter=A')
   expect(fonte, 'a cobranca tem de passar pela regra nomeada').toContain('ehAreaNova(changed, criados)')
   expect(fonte).toContain('conferirSetup(wt, contract)')
 })
 
 test('INVARIANTE so a falta de COMANDO DE TESTE barra, e so com rigor estrito', async () => {
-  const fonte = await Bun.file('motor/qlb/ctr/fechar.ts').text()
+  const fonte = await lerArquivo('motor/qlb/ctr/fechar.ts')
   expect(fonte).toContain('setup.semTeste && rigorEstrito()')
   expect(fonte, 'o veredicto tem de ficar no card mesmo quando nao barra').toContain('setup_ferramental')
 })
