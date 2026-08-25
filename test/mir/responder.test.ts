@@ -47,7 +47,7 @@ test('so lista cards em CLARIFY, e so do repo atual', () => {
 })
 
 test('render numera as opcoes e marca a sugerida', () => {
-  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta }).join('\n')
+  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta, origem: 'clarify' as const }).join('\n')
   expect(t).toContain('1  Só o do header')
   expect(t).toContain('2  Só o do hero')
   expect(t).toContain('← sugerido')
@@ -55,12 +55,12 @@ test('render numera as opcoes e marca a sugerida', () => {
 })
 
 test('render mostra o passo quando ha mais de uma pergunta', () => {
-  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta, pergunta], indice: 1, atual: pergunta }).join('\n')
+  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta, pergunta], indice: 1, atual: pergunta, origem: 'clarify' as const }).join('\n')
   expect(t).toContain('(2/2)')
 })
 
 test('render sem cor nao emite escape ANSI', () => {
-  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta }).join('\n')
+  const t = renderPergunta({ id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta, origem: 'clarify' as const }).join('\n')
   expect(t).not.toContain('\x1b[')
 })
 
@@ -88,7 +88,7 @@ test('card sem pergunta nem resposta diz isso', () => {
 
 import { renderOpcoesRodape } from '../../motor/mir/render/clarify.ts'
 
-const pend = { id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta }
+const pend = { id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta, origem: 'clarify' as const }
 
 test('rodape numera as opcoes e marca a escolhida pela seta', () => {
   const linhas = renderOpcoesRodape(pend, { selecionado: 'op:2', width: 78 })

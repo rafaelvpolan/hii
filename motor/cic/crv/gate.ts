@@ -2,6 +2,7 @@ import { isoNow } from '../../cdl/index.ts'
 import type { FailureClass } from '../../cdl/index.ts'
 import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cdl/ali/config.ts'
 import { runGit, stageAll } from '../../qlb/git.ts'
+import { linhasParaOPr } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cdl/store.ts'
 import { modelFor, providerFor, effortFor } from '../../tmd/registro.ts'
 import { runProvider } from '../../euc/tsr/confianca.ts'
@@ -311,8 +312,11 @@ export function persistGate(id: string, gate: GateResult): void {
 }
 
 export function buildPrBody(id: string, desc: string, gate: GateResult): string {
+  // Pergunta ja respondida na TUI entra RESPONDIDA, e nao como caixa vazia: o
+  // revisor humano nao pode ser obrigado a reperguntar o que o operador ja
+  // respondeu. Sem isto, responder na TUI nao chegaria a lugar nenhum.
   const questions = gate.questions.length
-    ? '\n\n**Perguntas ao revisor — responda antes do merge:**\n' + gate.questions.map(q => `- [ ] ${oneLine(q)}`).join('\n')
+    ? '\n\n**Perguntas ao revisor — responda antes do merge:**\n' + linhasParaOPr(id, gate.questions.map(q => oneLine(q))).join('\n')
     : ''
   return [
     `Gerado pelo motor hicode (agentes Nexus). Card #${id}.`,

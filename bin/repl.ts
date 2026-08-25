@@ -4,7 +4,8 @@ import { dispatch, rotuloDoBloqueio } from '../motor/mir/despacho.ts'
 import type { DispatchIO, SituacaoDeEnvio } from '../motor/mir/despacho.ts'
 import { provedoresDisponiveis } from '../motor/tmd/disponibilidade.ts'
 import { providerNameFor } from '../motor/tmd/registro.ts'
-import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao } from '../motor/mir/sessao.ts'
+import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta } from '../motor/mir/sessao.ts'
+import { temPerguntaAberta } from '../motor/cic/crv/perguntas-do-crivo.ts'
 import type { SessionState } from '../motor/mir/sessao.ts'
 import { daemonPid, daemonStatus } from '../motor/osw/mtr/daemon.ts'
 import { pendencia } from '../motor/mir/responder.ts'
@@ -96,7 +97,13 @@ async function tui(state0: SessionState): Promise<void> {
         const p = pendencia(state.perguntando)
         if (p) return renderOpcoesRodape(p, { color, width: larguraUtil(), selecionado: selecionado() })
       }
-      if (state.seguindo) state = sincronizarAprovacao(state, String(readCard(state.seguindo)?.fm.status ?? ''))
+      if (state.seguindo) {
+        const card = readCard(state.seguindo)
+        // A pergunta vem ANTES da aprovacao: se o crivo perguntou, decidir sobre a
+        // URL sem responder e decidir sem a informacao que o proprio motor pediu.
+        state = sincronizarPergunta(state, !!card && temPerguntaAberta(card.fm, state.seguindo))
+        state = sincronizarAprovacao(state, String(card?.fm.status ?? ''))
+      }
       if (!state.aprovando) return []
       const cardEmAprovacao = readCard(state.aprovando)
       return renderAprovacao(state.aprovando, {

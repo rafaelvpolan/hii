@@ -101,6 +101,15 @@ export function sincronizarAprovacao(state: SessionState, status: string): Sessi
   return aprovando(state, state.seguindo)
 }
 
+// Irmao de `sincronizarAprovacao`, para pergunta: a aprovacao de URL ja era detectada
+// a cada desenho, e a pergunta nao. Uma pergunta que aparece DEPOIS que a pessoa
+// entrou na tarefa (que e sempre o caso do crivo — ele so pergunta no fecho) ficava
+// invisivel: `perguntando` so era ligado ao ESCOLHER o card no quadro.
+export function sincronizarPergunta(state: SessionState, temPergunta: boolean): SessionState {
+  if (!state.seguindo || !temPergunta || ocupado(state)) return state
+  return perguntando(state, state.seguindo)
+}
+
 export function escolhendoRepo(state: SessionState): SessionState {
   return { ...state, escolhendo: true, pendingPlan: '', perguntando: '', removendo: '', retomando: '' }
 }

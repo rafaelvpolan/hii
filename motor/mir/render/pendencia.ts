@@ -18,8 +18,23 @@ export interface PendenciaDaTarefa {
   urgente: boolean
 }
 
-export function pendenciaDoStatus(status: string, id: string): PendenciaDaTarefa | null {
+// Pergunta do CRIVO vence o status. Ela existe em card parado, em card com PR
+// aberto, em card esperando aprovacao — e em todos eles a frase do status ("a tarefa
+// parou", "resultado pronto") era a UNICA coisa na tela. Quem operava nao tinha como
+// saber que havia pergunta, muito menos como responder: o texto nem mencionava.
+export function pendenciaDoStatus(status: string, id: string, temPerguntaDoCrivo = false): PendenciaDaTarefa | null {
   const n = Number(id)
+  if (temPerguntaDoCrivo) {
+    return {
+      titulo: 'o crivo perguntou — responda antes de decidir',
+      urgente: true,
+      acoes: [
+        { tecla: '↑/↓', texto: 'escolhe a opcao abaixo' },
+        { tecla: 'numero', texto: 'responde direto (ou escreva a resposta)' },
+        { tecla: 'esc', texto: 'deixa para depois — a pergunta continua no card' },
+      ],
+    }
+  }
   switch (status) {
     case 'CLARIFY':
       return {
@@ -76,9 +91,10 @@ export interface PendenciaOptions {
   color: boolean
   width: number
   detalhe: string
+  temPerguntaDoCrivo: boolean
 }
 
-const PADRAO: PendenciaOptions = { color: false, width: 78, detalhe: '' }
+const PADRAO: PendenciaOptions = { color: false, width: 78, detalhe: '', temPerguntaDoCrivo: false }
 
 function paint(s: string, cor: string, o: PendenciaOptions): string {
   return o.color ? `${cor}${s}${RESET}` : s
@@ -86,7 +102,7 @@ function paint(s: string, cor: string, o: PendenciaOptions): string {
 
 export function renderPendencia(status: string, id: string, opts: Partial<PendenciaOptions> = {}): string[] {
   const o = { ...PADRAO, ...opts }
-  const p = pendenciaDoStatus(status, id)
+  const p = pendenciaDoStatus(status, id, o.temPerguntaDoCrivo)
   if (!p) {
     return ['', `  ${paint('▸', GREEN, o)} ${paint('rodando — nada a fazer agora', DIM, o)}`, '']
   }
