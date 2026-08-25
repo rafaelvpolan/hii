@@ -1,3 +1,8 @@
+// hicode:allow-any — `normalizarPergunta` recebe JSON que veio do MODELO, e o tipo
+// dele e desconhecido por definicao: pode ser string (contrato antigo), objeto
+// (novo), ou lixo. Declarar `unknown` na entrada e o que forca a checagem em
+// execucao logo abaixo; tipar de outro jeito seria afirmar uma forma que ninguem
+// garantiu. Este e o unico `unknown` do arquivo, e esta na fronteira.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cardsDir } from '../../cdl/ali/config.ts'
@@ -39,14 +44,39 @@ export function gravarPerguntasDoCrivo(id: string, perguntas: readonly ClarifyQu
   writeFileSync(arquivoDeRevisao(id), JSON.stringify(perguntas, null, 2))
 }
 
-// Opcoes fixas: a pergunta do crivo e sempre sobre EVIDENCIA — "isto foi feito, ou
-// so parece ter sido?". "sim"/"nao" cobrem o caso comum com uma tecla, e o texto
-// livre continua valendo para o que nao cabe neles. Sem opcao alguma, responder
-// exigiria digitar frase inteira tres vezes.
-const OPCOES = ['sim', 'nao', 'nao sei — investigue antes de seguir'] as const
+// Opcoes de RESERVA. Quem propoe as respostas e a IA que fez a pergunta — ela sabe o
+// que perguntou e quais respostas fazem sentido. Estas so entram quando a pergunta
+// veio sem opcao: card gravado antes deste contrato, ou modelo que devolveu so o
+// texto. Generico ("sim/nao/nao sei") responde qualquer pergunta e por isso nao ajuda
+// em nenhuma; e melhor que campo vazio, e pior que a resposta que a IA propos.
+const RESERVA = ['sim', 'nao', 'nao sei — investigue antes de seguir'] as const
 
-function comoPergunta(texto: string): ClarifyQuestion {
-  return { q: texto, options: [...OPCOES], recommended: '' }
+export interface PerguntaDoCrivo {
+  readonly q: string
+  readonly opcoes: readonly string[]
+}
+
+function comoPergunta(p: PerguntaDoCrivo): ClarifyQuestion {
+  const opcoes = p.opcoes.filter(Boolean)
+  return { q: p.q, options: opcoes.length ? [...opcoes] : [...RESERVA], recommended: '' }
+}
+
+// Aceita as DUAS formas: texto solto (contrato antigo, e o que esta nos cards ja
+// gravados) e objeto com opcoes (contrato novo). Card existente nao pode virar
+// ilegivel porque o formato evoluiu.
+export function normalizarPergunta(bruta: unknown): PerguntaDoCrivo | null {
+  if (typeof bruta === 'string') {
+    const q = bruta.trim()
+    return q ? { q, opcoes: [] } : null
+  }
+  if (bruta && typeof bruta === 'object') {
+    const o = bruta as { q?: unknown; opcoes?: unknown; options?: unknown }
+    const q = String(o.q ?? '').trim()
+    if (!q) return null
+    const lista = Array.isArray(o.opcoes) ? o.opcoes : Array.isArray(o.options) ? o.options : []
+    return { q, opcoes: lista.map(x => String(x).trim()).filter(Boolean).slice(0, 5) }
+  }
+  return null
 }
 
 // O card e a fonte da VERDADE sobre quais perguntas existem (o crivo as escreveu
@@ -56,21 +86,19 @@ function comoPergunta(texto: string): ClarifyQuestion {
 export function perguntasDoCrivo(fm: Fields, id: string): ClarifyQuestion[] {
   const bruto = String(fm.review_questions ?? '')
   if (!bruto) return []
-  let textos: string[]
+  let brutas: PerguntaDoCrivo[]
   try {
-    // `string[]` e nao `unknown`: o `Array.isArray` abaixo e a checagem de verdade,
-    // e o `String(q)` sobrevive a elemento que nao seja string. Um `as unknown` aqui
-    // seria so ruido — o formato ja e conferido em execucao.
-    const parsed = JSON.parse(bruto) as string[]
-    textos = Array.isArray(parsed) ? parsed.map(q => String(q)).filter(Boolean) : []
+    const parsed = JSON.parse(bruto) as PerguntaDoCrivo[]
+    brutas = Array.isArray(parsed) ? parsed.map(normalizarPergunta).filter((x): x is PerguntaDoCrivo => x !== null) : []
   } catch {
     return []
   }
-  if (!textos.length) return []
+  if (!brutas.length) return []
   const respondidas = new Map(lerPerguntasDoCrivo(id).map(q => [q.q, q.answer ?? '']))
-  return textos.map(t => {
-    const anterior = respondidas.get(t)
-    return anterior ? { ...comoPergunta(t), answer: anterior } : comoPergunta(t)
+  return brutas.map(b => {
+    const base = comoPergunta(b)
+    const anterior = respondidas.get(b.q)
+    return anterior ? { ...base, answer: anterior } : base
   })
 }
 

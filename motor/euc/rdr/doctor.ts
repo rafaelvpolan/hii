@@ -50,7 +50,24 @@ export function checkGh(): Check {
   return check('gh', 'ok', `autenticado (${nome})`)
 }
 
+// `gh` exige "OWNER/REPO" ou "HOST/OWNER/REPO" — dois ou tres segmentos, nenhum
+// vazio. O card 001 estava registrado como "hicode-site/": rodou o pipeline inteiro,
+// fez push, e morreu no `gh pr create` com "expected the [HOST/]OWNER/REPO format".
+// Cada ENTER de retomada refazia tudo e morria no mesmo ponto — laco que so gasta.
+//
+// A checagem e local e deterministica: nao depende de rede, de `gh` instalado nem de
+// permissao. Um nome mal formado nunca vai funcionar, e descobrir isso ANTES de
+// gastar e a diferenca entre um aviso e US$0,75 por tentativa.
+export function nomeDeRepoValido(nome: string): boolean {
+  const partes = String(nome ?? '').split('/')
+  if (partes.length < 2 || partes.length > 3) return false
+  return partes.every(p => p.trim().length > 0)
+}
+
 export function checkGitPush(repoPath: string, repoName: string): Check {
+  if (!nomeDeRepoValido(repoName)) {
+    return check('git push', 'erro', `nome de repo invalido para o gh: "${repoName}" — falta o owner`, `hii repo rm ${repoName} && hii repo add <owner>/<nome>`)
+  }
   if (!existsSync(join(repoPath, '.git'))) return check('git push', 'erro', 'clone ausente', `hii repo add ${repoName} --path <dir>`)
   const probe = exec('git', ['push', '--dry-run', 'origin', 'HEAD:refs/heads/__hicode_probe__'], repoPath)
   if (!probe.ok) {
@@ -63,7 +80,14 @@ export function checkGitPush(repoPath: string, repoName: string): Check {
     )
   }
   const perm = exec('gh', ['repo', 'view', repoName, '--json', 'viewerPermission', '-q', '.viewerPermission'])
-  return check('git push', 'ok', perm.ok ? `autentica e escreve (${perm.out})` : 'autentica sem prompt')
+  // Falha de FORMATO aqui e determinista e vale erro; o resto (gh ausente, offline,
+  // repo privado que o token nao ve) e degradacao e nao pode barrar trabalho que
+  // ainda assim funcionaria. Antes os dois caiam no mesmo `: 'autentica sem prompt'`
+  // — o preflight rodava o comando que mataria o card, via a falha, e dizia ok.
+  if (!perm.ok && /expected the .*OWNER\/REPO. format|argument error/i.test(perm.out)) {
+    return check('git push', 'erro', `o gh recusa o nome "${repoName}": ${perm.out.split('\n')[0]?.slice(0, 90)}`, `hii repo rm ${repoName} && hii repo add <owner>/<nome>`)
+  }
+  return check('git push', 'ok', perm.ok ? `autentica e escreve (${perm.out})` : 'autentica sem prompt (gh nao confirmou a permissao)')
 }
 
 export function checkProvider(): Check {
@@ -179,5 +203,31 @@ export function runDoctor(): Report {
 }
 
 export function podeAbrirPr(repoPath: string, repoName: string): Check {
-  return checkGitPush(repoPath, repoName)
+  // Confere o slug que o `gh` vai receber de fato — o derivado do remoto quando o
+  // apelido local nao serve. Conferir o apelido reprovaria um caso que funciona.
+  return checkGitPush(repoPath, slugDoGh(repoPath, repoName) || repoName)
+}
+
+// O NOME no registro e identificador LOCAL; o que o `gh` precisa e o slug do remoto.
+// As duas coisas foram confundidas, e o card 001 mostrou o custo: registrado como
+// "hicode-site/", ele rodava o pipeline inteiro e morria no `gh pr create`.
+//
+// O `origin` do clone sabe a resposta — `git@github.com:rafaelvpolan/hicode-site.git`
+// tem owner e repo. Derivar dali conserta o card existente sem migrar dado, e e mais
+// correto em geral: o slug do GitHub vem do remoto, nao de como a pessoa apelidou o
+// projeto na maquina dela.
+export function slugDoRemoto(repoPath: string): string {
+  const r = exec('git', ['remote', 'get-url', 'origin'], repoPath)
+  if (!r.ok) return ''
+  const url = r.out.trim()
+  const m = url.match(/[:/]([\w.-]+)\/([\w.-]+?)(?:\.git)?$/)
+  return m ? `${m[1]}/${m[2]}` : ''
+}
+
+// O slug que o `gh` aceita: o nome, quando ja e valido; senao o do remoto. Vazio
+// significa "nao da para saber", e quem chama trata como erro em vez de mandar um
+// argumento que o gh vai recusar.
+export function slugDoGh(repoPath: string, repoName: string): string {
+  if (nomeDeRepoValido(repoName)) return repoName
+  return slugDoRemoto(repoPath)
 }

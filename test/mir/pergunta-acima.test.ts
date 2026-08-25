@@ -33,7 +33,13 @@ test('o renderizador da pergunta continua marcando a opcao escolhida pela seta',
   expect(texto).toContain('vem de onde')
   expect(texto).toContain('do card')
   expect(texto).toContain('sugerido')
-  expect(texto.split('\n')[2]).toContain('›')
+  // Por CONTEUDO, e nao por indice: entre o cabecalho e as opcoes vem a pergunta
+  // quebrada em linhas, e quantas depende do tamanho dela. Ancorar em `[2]` amarrava
+  // o teste ao layout — e o layout mudou de proposito, para a pergunta parar de ser
+  // cortada num "…".
+  const marcadas = texto.split('\n').filter(l => l.startsWith('›'))
+  expect(marcadas.length, 'uma marcada, e so uma').toBe(1)
+  expect(marcadas[0]).toContain('2')
 })
 
 test('o que vai ACIMA do prompt e desenhado acima da linha de entrada', async () => {

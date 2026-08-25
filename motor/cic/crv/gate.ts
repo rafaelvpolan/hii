@@ -2,7 +2,8 @@ import { isoNow } from '../../cdl/index.ts'
 import type { FailureClass } from '../../cdl/index.ts'
 import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cdl/ali/config.ts'
 import { runGit, stageAll } from '../../qlb/git.ts'
-import { linhasParaOPr } from './perguntas-do-crivo.ts'
+import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
+import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cdl/store.ts'
 import { modelFor, providerFor, effortFor } from '../../tmd/registro.ts'
 import { runProvider } from '../../euc/tsr/confianca.ts'
@@ -28,7 +29,7 @@ export interface GateResult {
   verdict: GateVerdict
   reason: string
   criterio: string
-  questions: string[]
+  questions: PerguntaDoCrivo[]
   cost: number
   costMeasured: boolean
   tokens: number
@@ -59,7 +60,7 @@ interface ParsedGate {
   verdict: GateVerdict
   reason: string
   criterio: string
-  questions: string[]
+  questions: PerguntaDoCrivo[]
   cost: number
   tokens: number
 }
@@ -153,8 +154,10 @@ function buildPromptGauntlet(desc: string, tela: string, referencias: readonly s
     `TAREFA (objetivo do card): "${desc}"`,
     '',
     'Emita 1-3 PERGUNTAS que forcem o revisor humano a OLHAR as telas antes do merge.',
+    'QUEM RESPONDE NAO PRODUZIU as telas: pergunte sobre o que se VE nelas, nunca "voce rodou/testou/conferiu X?".',
+    'Cada pergunta vem com 2 a 4 OPCOES de resposta CONCRETAS — as respostas plausiveis para AQUELA pergunta, escritas por voce. "sim/nao" nao serve: quem responde escolhe por numero, e opcao generica nao informa nada a quem le depois.',
     'Responda APENAS um JSON em uma unica linha, sem prosa antes ou depois:',
-    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","questions":["p1","p2"]}',
+    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","questions":[{"q":"pergunta","opcoes":["resposta possivel A","resposta possivel B"]}]}',
     'BLOCKED apenas quando o resultado fica claramente abaixo do outro candidato. Em duvida, CONDITIONAL.',
   ].join('\n')
 }
@@ -170,8 +173,11 @@ function buildPrompt(desc: string, diff: DiffParts): string {
     `DIFF:\n${diff.patch}`,
     '',
     'Emita 1-3 PERGUNTAS que forcem o revisor humano a LER o diff antes do merge (anti-rendicao-cognitiva) — coisas que so quem leu o diff sabe responder.',
+    'QUEM RESPONDE NAO ESCREVEU O CODIGO e nao executou nada: e um revisor que so tem o diff e o resultado na frente. Nunca pergunte "voce rodou X?", "voce testou Y?" nem "voce conferiu Z?" — ele nao rodou, e responder seria avalizar o relato do agente, que e justamente o que este gate existe para nao aceitar.',
+    'Pergunte sobre o que esta NO DIFF ou no resultado visivel: uma escolha que pode estar errada, uma duplicacao, uma dependencia que o codigo usa e o diff nao adiciona, um efeito colateral que o objetivo do card nao pediu.',
+    'Cada pergunta vem com 2 a 4 OPCOES de resposta CONCRETAS — as respostas plausiveis para AQUELA pergunta, escritas por voce a partir do que voce viu no diff. "sim/nao" nao serve: quem responde escolhe por numero, e a opcao escolhida vai para o corpo do PR, entao ela precisa dizer algo por si.',
     'Responda APENAS um JSON em uma unica linha, sem prosa antes ou depois:',
-    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","criterio":"id do criterio violado, ou vazio","questions":["p1","p2"]}',
+    '{"verdict":"APPROVED|CONDITIONAL|BLOCKED","reason":"motivo curto","criterio":"id do criterio violado, ou vazio","questions":[{"q":"pergunta","opcoes":["resposta possivel A","resposta possivel B"]}]}',
     'BLOCKED apenas para defeito real/regressao/violacao de alta confianca. Em duvida, CONDITIONAL.',
   ].join('\n')
 }
@@ -179,8 +185,16 @@ function buildPrompt(desc: string, diff: DiffParts): string {
 export function buildParsed(text: string, cost: number, tokens: number): ParsedGate {
   const v = extractVerdictJson(text)
   if (v) {
+    // Aceita as duas formas: texto solto (contrato anterior, e o que modelo antigo
+    // devolve) e objeto com opcoes. Exigir so a nova faria uma resposta valida do
+    // modelo virar "sem pergunta" em silencio.
     const questions = Array.isArray(v.questions)
-      ? v.questions.map(q => oneLine(String(q)).slice(0, 240)).filter(Boolean).slice(0, 3)
+      ? v.questions
+          .map(q => normalizarPergunta(q))
+          .filter((q): q is PerguntaDoCrivo => q !== null)
+          .map(q => ({ q: oneLine(q.q).slice(0, 240), opcoes: q.opcoes.map(o => oneLine(o).slice(0, 120)) }))
+          .filter(q => q.q.length > 0)
+          .slice(0, 3)
       : []
     return { found: true, verdict: normalizeVerdict(String(v.verdict || 'CONDITIONAL')), reason: oneLine(String(v.reason || '')).slice(0, 240), criterio: oneLine(String(v.criterio || '')).slice(0, 60), questions, cost, tokens }
   }
@@ -316,7 +330,7 @@ export function buildPrBody(id: string, desc: string, gate: GateResult): string 
   // revisor humano nao pode ser obrigado a reperguntar o que o operador ja
   // respondeu. Sem isto, responder na TUI nao chegaria a lugar nenhum.
   const questions = gate.questions.length
-    ? '\n\n**Perguntas ao revisor — responda antes do merge:**\n' + linhasParaOPr(id, gate.questions.map(q => oneLine(q))).join('\n')
+    ? '\n\n**Perguntas ao revisor — responda antes do merge:**\n' + linhasParaOPr(id, gate.questions.map(q => oneLine(q.q))).join('\n')
     : ''
   return [
     `Gerado pelo motor hicode (agentes Nexus). Card #${id}.`,

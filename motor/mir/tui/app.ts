@@ -41,6 +41,9 @@ export interface AppHooks {
   onInterrupt: () => boolean
   onNav?: (dir: -1 | 1, modo: ModoNavegacao) => boolean
   onEntrar?: (modo: ModoNavegacao) => void
+  // Devolve true quando o numero foi CONSUMIDO como resposta. False deixa o
+  // caractere seguir para a linha de entrada, que e o comportamento de sempre.
+  onNumero?: (n: string) => boolean
   onAba?: (dir: -1 | 1) => void
   onCiclarModo?: (dir: -1 | 1) => void
   podeLimpar?: () => string
@@ -71,6 +74,7 @@ const PADRAO = {
   acima: (): string[] => [],
   onNav: (): boolean => false,
   onEntrar: (): void => {},
+  onNumero: (): boolean => false,
   onAba: (): void => {},
   onCiclarModo: (): void => {},
 }
@@ -253,6 +257,17 @@ export function createApp(term: Terminal, dados: AppHooks): App {
         sugIdx = -1
         return true
       }
+    }
+    // NUMERO SOZINHO responde, sem enter — e o que a interacao com IA faz, e o que a
+    // propria tela ja promete ("numero responde direto"). Fica ANTES de `keypress`
+    // porque depois o caractere ja entrou na linha.
+    //
+    // So com a linha VAZIA: digitar "1" no meio de uma frase continua sendo o
+    // caractere 1. E so quando o hook ACEITA — sem painel de opcao aberto ele recusa,
+    // e o numero segue para a entrada como sempre.
+    if (input.buffer.length === 0 && /^[1-9]$/.test(key) && hooks.onNumero(key)) {
+      sujo = true
+      return true
     }
     const exibido = input.buffer
     const r = keypress(input, key)

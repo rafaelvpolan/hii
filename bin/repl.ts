@@ -26,6 +26,10 @@ import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from
 import { ensureDaemon, fleet } from '../motor/mir/cli/comandos.ts'
 import { bloqueia, preflight } from '../motor/mir/cli/preflight.ts'
 import { definirEstadoDoOllama, sondarOllama } from '../motor/tmd/harness/ollama-estado.ts'
+
+// O painel de aprovacao de URL tem tres opcoes fixas (aprova · refaz · ajusta),
+// as mesmas que `alvoDeEntrada` gera como op:1..op:3.
+const OPCOES_DE_APROVACAO = 3
 import { etiquetaDoProjeto } from '../motor/mir/render/projeto.ts'
 import { cabemQuantasSugestoes, renderSugestoes, prefixoComum } from '../motor/mir/render/sugestoes.ts'
 import type { GrupoDeSugestao } from '../motor/mir/render/sugestoes.ts'
@@ -176,6 +180,25 @@ async function tui(state0: SessionState): Promise<void> {
       if (!rodando.length) return ''
       const ids = rodando.map(e => `#${e.id}`).join(' ')
       return `${ids} em execucao — a area so limpa quando terminar`
+    },
+    // O numero so responde quando HA painel de opcao aberto — pergunta do crivo, do
+    // CLARIFY, ou aprovacao de URL. Fora disso ele recusa e o caractere vai para a
+    // linha, como sempre: digitar "1" para escrever "1" continua funcionando.
+    onNumero: (n) => {
+      // Quantas opcoes existem AGORA. Nao basta "ha painel": exigir opcao ja
+      // SELECIONADA obrigaria a navegar com as setas antes de digitar o numero, que e
+      // exatamente o passo a mais que este atalho existe para tirar.
+      //
+      // `comentando` fica de fora de proposito: ali se escreve texto livre, e um "1"
+      // no comeco do comentario e o caractere 1.
+      const quantas = state.comentando ? 0
+        : state.aprovando ? OPCOES_DE_APROVACAO
+        : state.perguntando ? (pendencia(state.perguntando)?.atual.options.length ?? 0)
+        : 0
+      if (Number(n) > quantas) return false
+      selecionar('')
+      void processar(n)
+      return true
     },
     onEntrar: (modo) => {
       const alvo = alvoDeEntrada(modo, state)

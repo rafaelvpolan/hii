@@ -1,4 +1,4 @@
-import { test, expect, afterAll } from '../apoio/runner.ts'
+import { test, expect, afterAll, lerArquivo } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -122,4 +122,84 @@ test('review_questions corrompido nao derruba a TUI', () => {
   patchCard(id, { review_questions: '{{{nao e json' })
   expect(() => perguntasDoCrivo(readCard(id)?.fm ?? {}, id)).not.toThrow()
   expect(perguntasDoCrivo(readCard(id)?.fm ?? {}, id)).toEqual([])
+})
+
+const { renderOpcoesRodape } = await import('../../motor/mir/render/clarify.ts')
+
+// A pergunta era pintada com DIM — o mesmo cinza das dicas de tecla. A coisa que
+// exige decisao ficava menos visivel que a legenda ao lado dela.
+test('REGRESSAO: a pergunta NAO e o texto mais apagado da tela', () => {
+  const id = cardComPerguntas()
+  const p = pendencia(id)
+  expect(p).not.toBeNull()
+  const linhas = renderOpcoesRodape(p!, { color: true, width: 100, selecionado: '' })
+  const daPergunta = linhas.find(l => l.includes('package.json'))
+  expect(daPergunta, 'a pergunta tem de aparecer').toBeDefined()
+  expect(daPergunta, 'DIM e o cinza das dicas — a pergunta nao pode usar o mesmo').not.toContain('\x1b[2m')
+  expect(daPergunta, 'destaque, no mesmo tom de "precisa de voce"').toContain('\x1b[1;33m')
+})
+
+// Cortar em uma linha escondia o essencial: as perguntas do crivo chegam a 240
+// caracteres, e sobrava o comeco de uma frase sem o que ela pergunta.
+test('REGRESSAO: pergunta longa e QUEBRADA em linhas, e nao cortada', () => {
+  const id = createCard({ title: 'longa', status: 'HALTED', repo: 'org/site' }, '## Objetivo\nx\n')
+  const longa = 'vite.config.ts ganhou plugin novo (faqStructuredData) que roda no build inteiro — isso foi validado com um build real confirmando que o script type=application/ld+json aparece no HTML final, ou so a funcao foi lida?'
+  patchCard(id, { review_questions: JSON.stringify([longa]) })
+  const p = pendencia(id)
+  const linhas = renderOpcoesRodape(p!, { color: false, width: 100, selecionado: '' })
+  const texto = linhas.join(' ')
+  expect(texto, 'o fim da pergunta e o que ela de fato pergunta').toContain('ou so a funcao foi lida?')
+  expect(linhas.filter(l => l.trim() && !/^\s*[›\s]\s*\d/.test(l)).length, 'tem de ocupar mais de uma linha').toBeGreaterThan(2)
+})
+
+// O que o usuario pediu: as respostas vem da IA, e nao de uma lista generica.
+test('as opcoes vem da IA quando ela as propoe', () => {
+  const id = createCard({ title: 'com opcoes', status: 'HALTED', repo: 'org/site' }, '## Objetivo\nx\n')
+  patchCard(id, { review_questions: JSON.stringify([
+    { q: 'o vitest foi instalado nesta branch?', opcoes: ['sim, package.json e bun.lock mudaram', 'nao, ja existia antes', 'o teste importa vitest mas o pacote nunca entrou'] },
+  ]) })
+  const p = pendencia(id)
+  expect(p?.atual.options).toEqual(['sim, package.json e bun.lock mudaram', 'nao, ja existia antes', 'o teste importa vitest mas o pacote nunca entrou'])
+  const r = responder(id, '3')
+  expect(r.resposta, 'a resposta gravada e a da IA, com o teor inteiro').toBe('o teste importa vitest mas o pacote nunca entrou')
+})
+
+// Card gravado antes deste contrato nao pode virar ilegivel.
+test('pergunta sem opcao cai na reserva, e nao em campo vazio', () => {
+  const id = cardComPerguntas()
+  const p = pendencia(id)
+  expect(p?.atual.options.length, 'sem opcao, responder exigiria digitar frase inteira').toBe(3)
+  expect(p?.atual.options[0]).toBe('sim')
+})
+
+test('o parser do crivo aceita as duas formas de pergunta', async () => {
+  const { buildParsed } = await import('../../motor/cic/crv/gate.ts')
+  const antigo = buildParsed('{"verdict":"CONDITIONAL","reason":"r","questions":["so texto"]}', 0, 0)
+  expect(antigo.questions[0]?.q).toBe('so texto')
+  expect(antigo.questions[0]?.opcoes).toEqual([])
+
+  const novo = buildParsed('{"verdict":"CONDITIONAL","reason":"r","questions":[{"q":"com opcoes","opcoes":["a","b"]}]}', 0, 0)
+  expect(novo.questions[0]?.q).toBe('com opcoes')
+  expect(novo.questions[0]?.opcoes).toEqual(['a', 'b'])
+})
+
+// O prompt tem de PEDIR o que o parser sabe ler, senao a IA nunca manda opcao.
+test('INVARIANTE o prompt do crivo pede opcoes concretas, e nao sim/nao', async () => {
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
+  const pedidos = fonte.split('\n').filter(l => l.includes('OPCOES de resposta'))
+  expect(pedidos.length, 'os dois modos do crivo — criterio escrito e gauntlet').toBe(2)
+  for (const l of pedidos) expect(l, 'generico nao informa nada a quem le depois').toContain('sim/nao')
+  expect(fonte, 'o formato pedido tem de casar com o que o parser le').toContain('"q":"pergunta","opcoes"')
+})
+
+// As perguntas dos cards 001 e 003 sairam enderecadas a pessoa errada: "Voce rodou
+// `npx vitest run`?", "Voce rodou `npm run dev`?". Quem rodou (ou nao) foi o AGENTE.
+// O humano e revisor — responder isso seria avalizar o relato do agente, que e o que
+// este gate existe para nao aceitar. Mesmo erro do RED, um nivel acima.
+test('INVARIANTE o prompt PROIBE perguntar ao humano o que o agente executou', async () => {
+  const fonte = await lerArquivo('motor/cic/crv/gate.ts')
+  const proibicoes = fonte.split('\n').filter(l => l.includes('NAO ESCREVEU O CODIGO') || l.includes('NAO PRODUZIU'))
+  expect(proibicoes.length, 'os dois modos do crivo').toBe(2)
+  expect(fonte, 'a forma exata que os cards reais produziram').toContain('voce rodou')
+  expect(fonte, 'e o que perguntar no lugar').toContain('esta NO DIFF')
 })

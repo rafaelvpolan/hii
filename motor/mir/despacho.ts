@@ -251,8 +251,12 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         io.log(`#${id} esta em ${status} — nao ha o que retomar`)
         return state
       }
-      const r = core.transition(id, 'EXECUTING', 'retomado pelo humano')
-      io.log(r ? `#${id} retomado — segue de onde parou` : `nao consegui retomar #${id}`)
+      // "segue de onde parou" era literalmente falso: ia sempre para EXECUTING, que
+      // refaz worktree, implement e pipeline. Card que parou no FECHO volta ao fecho.
+      const alvo = String(card.fm.retomar_em ?? '') || 'EXECUTING'
+      const r = core.transition(id, alvo, 'retomado pelo humano')
+      if (r) patchCard(id, { retomar_em: '' })
+      io.log(r ? `#${id} retomado em ${alvo}${alvo === 'URL_OK' ? ' — o trabalho ja feito e aproveitado' : ''}` : `nao consegui retomar #${id}`)
       return state
     }
     case 'submit':

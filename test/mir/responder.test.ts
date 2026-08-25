@@ -90,12 +90,16 @@ import { renderOpcoesRodape } from '../../motor/mir/render/clarify.ts'
 
 const pend = { id: '022', titulo: 'x', perguntas: [pergunta], indice: 0, atual: pergunta, origem: 'clarify' as const }
 
+// Por CONTEUDO, e nao por indice: entre o cabecalho e as opcoes agora vem a pergunta
+// quebrada em linhas, e o numero delas depende do tamanho da pergunta e da largura.
+// Ancorar em `linhas[2]` amarrava o teste a um layout, nao ao comportamento.
 test('rodape numera as opcoes e marca a escolhida pela seta', () => {
   const linhas = renderOpcoesRodape(pend, { selecionado: 'op:2', width: 78 })
   expect(linhas[0]).toContain('#022 pergunta')
-  expect(linhas[1]?.startsWith('›')).toBe(false)
-  expect(linhas[2]?.startsWith('›')).toBe(true)
-  expect(linhas[2]).toContain('2')
+  const marcadas = linhas.filter(l => l.startsWith('›'))
+  expect(marcadas.length, 'uma opcao marcada, e so uma').toBe(1)
+  expect(marcadas[0]).toContain('2')
+  expect(marcadas[0]).toContain('Só o do hero')
 })
 
 test('rodape aponta a opcao sugerida', () => {
@@ -107,10 +111,22 @@ test('rodape mostra o passo quando ha mais de uma pergunta', () => {
   expect(renderOpcoesRodape(dois, { selecionado: '', width: 78 })[0]).toContain('(2/2)')
 })
 
-test('pergunta longa e recortada para caber no rodape', () => {
+// A pergunta longa e QUEBRADA, e nao mais recortada: recortar escondia justamente o
+// que a pergunta pergunta. O que continua valendo e a linha caber no quadro — e a
+// palavra sem espaco (caminho, URL, identificador) tem de ser partida na forca,
+// senao quebrar por espaco nao resolve nada.
+test('pergunta longa cabe no rodape sem ser truncada', () => {
   const longa = { ...pergunta, q: 'q'.repeat(300) }
   const linhas = renderOpcoesRodape({ ...pend, atual: longa }, { selecionado: '', width: 60 })
-  for (const l of linhas) expect(l.length).toBeLessThanOrEqual(70)
+  for (const l of linhas) expect(l.length, `linha estourou: ${l.length}`).toBeLessThanOrEqual(70)
+  const comTexto = linhas.filter(l => l.includes('qqq'))
+  expect(comTexto.length, 'a pergunta ocupa varias linhas em vez de sumir num "…"').toBeGreaterThan(1)
+})
+
+test('pergunta com espacos e quebrada por palavra, e o FIM dela aparece', () => {
+  const longa = { ...pergunta, q: 'o helper jsonLd em seo.test.ts tipa data como any implicito via JSON.parse — isso foi conferido no build real, ou so lido?' }
+  const linhas = renderOpcoesRodape({ ...pend, atual: longa }, { selecionado: '', width: 80 })
+  expect(linhas.join(' '), 'o fim e onde mora a pergunta de verdade').toContain('ou so lido?')
 })
 
 test('sem cor nao emite escape ANSI', () => {
