@@ -181,10 +181,18 @@ function construir(atual: unknown, msg: string | undefined, negado: boolean): Ma
     toBe: (e) => julgar(Object.is(atual, e), 'toBe', `fosse ${ver(e)}`, e),
     toEqual: (e) => julgar(iguais(atual, e), 'toEqual', `fosse igual a ${ver(e)}`, e),
     toStrictEqual: (e) => julgar(iguais(atual, e) && Object.getPrototypeOf(atual as object) === Object.getPrototypeOf(e as object), 'toStrictEqual', `fosse estritamente igual a ${ver(e)}`, e),
-    // `includes` e SameValueZero, que e o que jest/bun usam: NaN acha NaN, e +0 acha
-    // -0. `Object.is` distinguiria os zeros e reprovaria caso que hoje passa.
+    // Igualdade ESTRITA (`===`) para array, que e a do jest e a do bun >= 1.4.0.
+    //
+    // Isto foi MEDIDO, e nao lido: `expect([NaN]).toContain(NaN)` PASSA no bun
+    // 1.3.14 (SameValueZero, via `includes`) e FALHA no 1.4.0 (`===`, via
+    // `indexOf`). O bun mudou de semantica entre minors, e a suite nao depende do
+    // caso (nenhum teste usa NaN nem zero com sinal em `toContain`).
+    //
+    // Entre as duas, o shim segue a ESTRITA: e a do jest, e a direcao para onde o
+    // bun andou. Um shim que erra para o lado permissivo e o defeito que este
+    // modulo inteiro existe para nao ter.
     toContain: (e) => julgar(
-      typeof atual === 'string' ? atual.includes(String(e)) : Array.isArray(atual) ? atual.includes(e) : false,
+      typeof atual === 'string' ? atual.includes(String(e)) : Array.isArray(atual) ? atual.some(v => v === e) : false,
       'toContain', `contivesse ${ver(e)}`, e),
     toContainEqual: (e) => julgar(Array.isArray(atual) && atual.some(v => iguais(v, e)), 'toContainEqual', `contivesse item igual a ${ver(e)}`, e),
     toMatch: (e) => julgar(typeof atual === 'string' && (typeof e === 'string' ? atual.includes(e) : e.test(atual)), 'toMatch', `casasse ${ver(e)}`, e),

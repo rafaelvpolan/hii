@@ -34,6 +34,18 @@ test('os dois expect sao motores DIFERENTES — senao a comparacao nao compara n
   expect(typeof marca, 'o lado "bun" nao parece ser o bun:test').toBe('function')
 })
 
+// DIVERGENCIAS CONHECIDAS — casos em que o proprio `bun:test` mudou de comportamento
+// entre versoes, entao ele nao serve de oraculo estavel. Nao e lista de perdao: cada
+// entrada carrega a MEDICAO e a escolha, e o teto abaixo impede que ela vire deposito.
+//
+// Apagar o caso seria mais facil e pior: a divergencia existe, e some da vista.
+const DIVERGENCIAS_CONHECIDAS: ReadonlyMap<string, string> = new Map([
+  ['toContain NaN em array',
+    'bun 1.3.14 passa (SameValueZero) e 1.4.0 falha (===). O shim segue a estrita, que e a do jest. Nenhum teste da suite usa NaN em toContain.'],
+])
+
+const TETO_DE_DIVERGENCIAS = 2
+
 function veredicto(f: () => void): 'passa' | 'falha' {
   try { f(); return 'passa' } catch { return 'falha' }
 }
@@ -169,7 +181,9 @@ for (const negado of [false, true]) {
       // contrario) compararia dois formatos diferentes e daria falso positivo.
       const argsDoShim = args.map(a => trocarCriterio(a))
       const doShim = veredicto(() => aplicar(expectDoShim(atual), matcher, argsDoShim, negado))
-      if (doBun !== doShim) divergentes.push(`${nome}: bun=${doBun} shim=${doShim}`)
+      if (doBun !== doShim && !DIVERGENCIAS_CONHECIDAS.has(nome)) {
+        divergentes.push(`${nome}: bun=${doBun} shim=${doShim}`)
+      }
     }
     expect(divergentes, `divergencia entre o shim e o bun:test`).toEqual([])
   })
@@ -192,5 +206,15 @@ test('a suite de casos cobre todos os matchers que a suite de verdade usa', () =
   const usados = new Set([...CASOS, ...LANCADORES].map(c => c[2]))
   for (const m of ['toBe', 'toEqual', 'toContain', 'toMatch', 'toMatchObject', 'toBeTruthy', 'toBeFalsy', 'toBeNull', 'toBeUndefined', 'toBeDefined', 'toBeNaN', 'toBeGreaterThan', 'toBeGreaterThanOrEqual', 'toBeLessThan', 'toBeLessThanOrEqual', 'toBeCloseTo', 'toBeInstanceOf', 'toThrow', 'toHaveLength', 'toHaveProperty', 'toStartWith', 'toEndWith']) {
     expect(usados.has(m), `matcher "${m}" sem caso diferencial`).toBe(true)
+  }
+})
+
+// A lista de divergencias conhecidas nao pode rotar nem crescer sem que alguem veja.
+test('a lista de divergencias conhecidas e pequena e aponta para casos que existem', () => {
+  expect(DIVERGENCIAS_CONHECIDAS.size, 'divergencia demais deixa de ser excecao e vira desculpa').toBeLessThanOrEqual(TETO_DE_DIVERGENCIAS)
+  const nomes = new Set([...CASOS, ...LANCADORES].map(c => c[0]))
+  for (const [nome, motivo] of DIVERGENCIAS_CONHECIDAS) {
+    expect(nomes.has(nome), `"${nome}" nao existe mais na lista de casos — a entrada envelheceu`).toBe(true)
+    expect(motivo.length, `"${nome}" sem motivo escrito`).toBeGreaterThan(40)
   }
 })

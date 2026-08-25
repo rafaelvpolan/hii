@@ -11,7 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Versao PINADA em .bun-version. Sem isto, o CI instala a mais recente e a
+      # maquina de quem desenvolve fica onde parou: as duas divergem em silencio ate
+      # um teste reprovar so num lado. Aconteceu — `expect([NaN]).toContain(NaN)`
+      # passa no bun 1.3.14 (SameValueZero) e falha no 1.4.0 (===), e o comparador
+      # diferencial do shim reprovou so no CI. Mesma cegueira que rodar a suite num
+      # runtime so, um nivel abaixo.
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       # O node NAO e detalhe do ambiente de teste: e o runtime da imagem de
       # producao (node:24-slim no Dockerfile). O CI so tinha bun, e foi por isso
       # que a Onda 11 mergeou verde com uma imagem que morria no arranque —
