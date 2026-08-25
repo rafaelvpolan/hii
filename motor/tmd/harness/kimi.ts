@@ -2,11 +2,27 @@ import { appendFileSync } from 'node:fs'
 import { run } from '../../qlb/git.ts'
 import { emptyUsage } from '../uso.ts'
 import { COST_UNKNOWN } from '../../euc/tsr/custo.ts'
-import { resolverModo } from '../modo-puro.ts'
 import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
 import { kimiAutenticado, planoDoKimi } from '../../euc/tsr/planos.ts'
 
-export const KIMI_MODOS: CatalogoDeModo = { modos: ['default', 'yolo', 'auto', 'plan'], padrao: 'auto' }
+// UM modo so, e nao quatro. Medido contra o CLI real (kimi 0.38.0 no WSL): com `-p`
+// — que este adaptador SEMPRE usa, porque o motor chama nao-interativo — o binario
+// recusa os tres flags de modo, cada um com a sua mensagem:
+//
+//   error: Cannot combine --prompt with --auto.
+//   error: Cannot combine --prompt with --yolo.
+//   error: Cannot combine --prompt with --plan.
+//
+// Eles sao flags de SESSAO interativa ("Start in auto permission mode"), nao de
+// execucao unica. O adaptador mandava `--auto` por padrao, entao TODO passo de
+// implementacao no kimi falhava em ~1s com "Command failed", sem tocar em arquivo.
+// Quatro testes de unidade asseguravam esse argv sem nunca executar o binario.
+//
+// Sem flag nenhum, `-p` ja aprova as chamadas de ferramenta sozinho — medido: o
+// arquivo foi escrito ("Replaced 1 occurrence in tema.css"). Por isso o catalogo
+// anuncia um modo so: oferecer escolha que nao vira flag seria valor calculado e
+// nunca aplicado.
+export const KIMI_MODOS: CatalogoDeModo = { modos: ['default'], padrao: 'default' }
 
 import { alcancavelPorHttp } from '../sonda.ts'
 
@@ -49,17 +65,10 @@ export const KIMI_SINAIS: SinaisDoHarness = {
   transient: [],
 }
 
-function modoArgv(modo: string | undefined): string[] {
-  const escolhido = resolverModo(KIMI_MODOS, modo)
-  if (escolhido === 'yolo') return ['--yolo']
-  if (escolhido === 'plan') return ['--plan']
-  if (escolhido === 'default') return []
-  return ['--auto']
-}
-
 export function kimiArgv(req: AgentRequest): string[] {
+  // Nenhum flag de modo: ver o comentario de KIMI_MODOS. `-p` sozinho ja executa e
+  // aprova as ferramentas; qualquer flag de modo aqui faz o CLI abortar.
   const a = ['-p', req.prompt, '--output-format', OUTPUT_FORMAT]
-  if (req.mode === 'edit') a.push(...modoArgv(req.modo))
   if (req.model) a.push('-m', req.model)
   for (const d of req.dirs) a.push('--add-dir', d)
   return a

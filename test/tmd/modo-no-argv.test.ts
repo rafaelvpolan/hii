@@ -42,10 +42,15 @@ test('claude: readonly nao ganha --permission-mode nem com modo escolhido', () =
   expect(claudeArgv(pedido('readonly', { modo: 'plan' }))).not.toContain('--permission-mode')
 })
 
-test('kimi: o modo escolhido troca a flag, e o padrao segue --auto', () => {
-  expect(kimiArgv(pedido())).toContain('--auto')
-  expect(kimiArgv(pedido('edit', { modo: 'plan' }))).toContain('--plan')
-  expect(kimiArgv(pedido('edit', { modo: 'plan' }))).not.toContain('--auto')
+// O kimi e a excecao entre os provedores: em execucao unica (`-p`) ele nao aceita
+// NENHUM flag de modo — medido contra o CLI 0.38.0, que aborta com "Cannot combine
+// --prompt with --auto/--yolo/--plan". O catalogo dele tem um modo so por isso.
+test('kimi: modo escolhido nao vira flag, porque o CLI recusa junto com -p', () => {
+  for (const modo of [undefined, 'auto', 'plan', 'yolo']) {
+    const a = kimiArgv(pedido('edit', modo ? { modo } : {}))
+    for (const flag of ['--auto', '--plan', '--yolo']) expect(a, `${modo ?? 'sem modo'} / ${flag}`).not.toContain(flag)
+  }
+  expect(modosDoProvedor('kimi')).toEqual(['default'])
 })
 
 test('REGRESSAO nenhum catalogo oferece modo que dispensa aprovacao no claude', () => {

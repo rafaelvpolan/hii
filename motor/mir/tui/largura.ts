@@ -121,3 +121,132 @@ export function larguraDeTexto(s: string): number {
   for (const grafema of grafemasDe(visivel)) total += larguraDeGrafema(grafema)
   return total
 }
+
+// ---------------------------------------------------------------------------
+// Primitivas de UMA PASSADA, para quem precisa de no maximo `teto` colunas.
+//
+// O problema que elas resolvem: `truncVisible(s, 80)` custava proporcional a |s|,
+// nao a 80. Medido antes de mexer, com `s` 500x maior: 140x o tempo em ASCII e
+// 417x em texto Unicode (34ms por chamada numa linha de 100k, dentro do desenho da
+// TUI). A causa nao era o laco — era materializar tudo antes de olhar: `visibleLen`
+// percorria a string inteira so para decidir se ia cortar, `split` criava o array
+// de partes, e `grafemasDe` criava o array de grafemas de cada parte.
+
+// Generator: nao materializa. `grafemasDe` continua existindo para quem precisa da
+// lista (a tabela de test/mir/largura.test.ts vale sobre ela).
+export function* grafemasEm(texto: string): Generator<string> {
+  if (SO_ASCII_IMPRIMIVEL.test(texto)) {
+    for (const c of texto) yield c
+    return
+  }
+  for (const parte of SEGMENTADOR.segment(texto)) yield parte.segment
+}
+
+// Regex STICKY: reconhece a sequencia ANSI na posicao corrente e devolve o tamanho
+// dela, sem `split` e sem quebrar a string. `lastIndex` e reposicionado a cada
+// tentativa, entao a regex e reutilizavel e nao guarda estado entre chamadas.
+const ANSI_AQUI = /\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/y
+
+export function ansiNaPosicao(texto: string, i: number): string {
+  if (texto.charCodeAt(i) !== 0x1b) return ''
+  ANSI_AQUI.lastIndex = i
+  return ANSI_AQUI.exec(texto)?.[0] ?? ''
+}
+
+export interface PedacoDoTexto {
+  readonly texto: string
+  readonly ansi: boolean
+}
+
+// Varre em pedacos alternados (visivel / sequencia ANSI) sem materializar a lista e
+// sem pre-varrer. Duas armadilhas medidas antes de chegar nesta forma:
+//
+// 1. Um laco por code unit ate achar o proximo ESC devolvia a travessia completa
+//    pela porta dos fundos (razao 15x em vez de ~1x).
+// 2. `Intl.Segmenter.segment(s)` e preguicoso para ITERAR, mas tem custo de PREPARO
+//    proporcional a |s|: consumir 90 grafemas de uma string de 100k custou 143us,
+//    contra 11us na mesma string curta. Iterar preguicosamente nao basta — a string
+//    entregue ao segmentador tem de ser pequena.
+//
+// Dai a JANELA. O ultimo grafema de cada janela e adiado para a janela seguinte,
+// porque ele pode continuar depois do corte (marca combinante, ZWJ, surrogate): so
+// se segmenta com o contexto inteiro a direita. Assim o resultado e identico ao de
+// segmentar a string toda, e o custo e proporcional ao que foi consumido.
+const JANELA = 512
+
+export function* pedacosDe(texto: string): Generator<PedacoDoTexto> {
+  let base = 0
+  while (base < texto.length) {
+    const fim = Math.min(texto.length, base + JANELA)
+    const ultimaJanela = fim >= texto.length
+    const janela = texto.slice(base, fim)
+    let consumido = 0
+    for (const parte of grafemasDaJanela(janela)) {
+      // Adia o ULTIMO grafema quando ainda ha texto: ele pode continuar depois do
+      // corte, e segmentado sozinho sairia diferente.
+      if (!ultimaJanela && parte.indice + parte.grafema.length >= janela.length) break
+      if (parte.indice < consumido) continue
+      const emTexto = base + parte.indice
+      if (texto.charCodeAt(emTexto) === 0x1b) {
+        const seq = ansiNaPosicao(texto, emTexto)
+        if (seq) {
+          yield { texto: seq, ansi: true }
+          consumido = parte.indice + seq.length
+          continue
+        }
+      }
+      yield { texto: parte.grafema, ansi: false }
+      consumido = parte.indice + parte.grafema.length
+    }
+    if (consumido === 0) {
+      // Janela inteira ocupada por um grafema so (ou por uma sequencia ANSI maior
+      // que a janela): sem isto o laco nao andaria. Cresce ate caber.
+      const maior = texto.slice(base, Math.min(texto.length, base + JANELA * 8))
+      const primeiro = grafemasDaJanela(maior).next().value
+      const pedaco = primeiro?.grafema ?? texto.slice(base, base + 1)
+      yield { texto: pedaco, ansi: false }
+      consumido = pedaco.length
+    }
+    base += consumido
+  }
+}
+
+interface GrafemaNaJanela {
+  readonly grafema: string
+  readonly indice: number
+}
+
+function* grafemasDaJanela(janela: string): Generator<GrafemaNaJanela> {
+  // ASCII imprimivel nao precisa do segmentador — e a janela e curta, entao o teste
+  // e barato e nao volta a ser O(|s|).
+  if (SO_ASCII_IMPRIMIVEL.test(janela)) {
+    for (let i = 0; i < janela.length; i++) yield { grafema: janela[i] ?? '', indice: i }
+    return
+  }
+  for (const parte of SEGMENTADOR.segment(janela)) yield { grafema: parte.segment, indice: parte.index }
+}
+
+export interface LarguraAte {
+  // Colunas consumidas ate parar.
+  readonly colunas: number
+  // Indice em code units do primeiro grafema NAO consumido.
+  readonly indice: number
+  // true se a varredura parou por ter passado do teto (e nao por fim de texto).
+  readonly excedeu: boolean
+}
+
+// Acumula largura e PARA no primeiro grafema que passaria de `teto`. Custo
+// O(min(n, teto)) — e a resposta do early-return e o ponto de corte no mesmo passo.
+// Ignora ANSI (largura zero) mas conta os code units dele em `indice`.
+export function larguraAte(texto: string, teto: number): LarguraAte {
+  let colunas = 0
+  let indice = 0
+  for (const pedaco of pedacosDe(texto)) {
+    if (pedaco.ansi) { indice += pedaco.texto.length; continue }
+    const largura = larguraDeGrafema(pedaco.texto)
+    if (colunas + largura > teto) return { colunas, indice, excedeu: true }
+    colunas += largura
+    indice += pedaco.texto.length
+  }
+  return { colunas, indice, excedeu: false }
+}

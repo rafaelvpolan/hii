@@ -157,21 +157,18 @@ test('claudeArgv readonly nunca manda --permission-mode, mesmo com modo escolhid
   expect(claudeArgv(req)).not.toContain('--permission-mode')
 })
 
-test('kimiArgv sem modo escolhido preserva o comportamento de hoje: --auto', async () => {
-  const { kimiArgv } = await import('../../motor/tmd/harness/kimi.ts')
-  const req = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1 }
-  expect(kimiArgv(req)).toContain('--auto')
-})
-
-test('kimiArgv troca de flag conforme o modo escolhido', async () => {
+// O kimi nao entra no esquema de "modo vira flag" dos outros provedores: em
+// execucao unica (`-p`, que e como o motor sempre chama) o CLI 0.38.0 recusa
+// --auto, --yolo e --plan, abortando em ~1s sem tocar em arquivo. Sem flag nenhum
+// ele ja executa e aprova as ferramentas sozinho.
+test('REGRESSAO kimiArgv nao carrega flag de modo, escolhido ou padrao', async () => {
   const { kimiArgv } = await import('../../motor/tmd/harness/kimi.ts')
   const base = { prompt: 'x', cwd: '/tmp', dirs: [], mode: 'edit' as const, useAgents: false, timeoutMs: 1 }
-  expect(kimiArgv({ ...base, modo: 'yolo' })).toContain('--yolo')
-  expect(kimiArgv({ ...base, modo: 'plan' })).toContain('--plan')
-  const semFlag = kimiArgv({ ...base, modo: 'default' })
-  expect(semFlag).not.toContain('--auto')
-  expect(semFlag).not.toContain('--yolo')
-  expect(semFlag).not.toContain('--plan')
+  const semModo = kimiArgv(base)
+  for (const flag of ['--auto', '--yolo', '--plan']) expect(semModo, flag).not.toContain(flag)
+  for (const modo of ['auto', 'yolo', 'plan', 'default']) {
+    expect(kimiArgv({ ...base, modo }), `modo "${modo}" nao pode virar flag`).toEqual(semModo)
+  }
 })
 
 test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita o modo, com "never" como padrao de hoje', async () => {

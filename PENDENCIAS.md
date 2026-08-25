@@ -190,6 +190,8 @@ instável.
 `truncVisible` e `janelaHorizontal`, um teste de razão. Não toca a semântica de
 nada.
 
+R: pode fazer.
+
 ---
 
 ## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
@@ -288,6 +290,8 @@ duas linhas que casam são prosa em comentário e em prompt).
 `test/cdl/import-com-extensao.test.ts` já guarda a extensão nos imports, que era o
 outro requisito do Node.
 
+R: pode fazer.
+
 ## DECISÃO PENDENTE — a evidência de RED premia o card que chega quebrado
 
 Achado da auditoria desta rodada, e é **material para a decisão de ligar o
@@ -327,6 +331,8 @@ As saídas que enxergo:
 
 Enquanto não houver decisão, ligar o rigor estrito vai parar todo card `completo`
 com suíte verde. Isso é diferente do que a seção abaixo dizia antes desta rodada.
+
+R: pode fazer 2.
 
 ---
 

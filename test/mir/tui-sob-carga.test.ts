@@ -92,25 +92,41 @@ test('CARGA quebrarEmLargura de texto enorme termina sob o teto', () => {
 // stripAnsi e o split percorrem a string inteira antes de cortar 80 colunas.
 // Medido: ~189x mais caro num texto 500x maior.
 //
-// NAO e travamento — em absoluto sao ~0,5ms para meio milhao de caracteres, e
-// por isso o teto aqui e de TEMPO e nao de razao. Consertar exige reestruturar
-// uma funcao com semantica delicada de grafema e ANSI (cortar um prefixo em
-// indice arbitrario parte cluster), e a ineficiencia esta registrada em
-// PENDENCIAS.md em vez de escondida atras de um limite frouxo.
+// O custo de cortar 80 colunas passou a depender das 80 COLUNAS, e nao do tamanho da
+// entrada. Antes dependia da entrada: `truncVisible` fazia tres travessias completas
+// (visibleLen para decidir se cortava, split para as partes ANSI, grafemasDe para os
+// grafemas de cada parte) antes de olhar o teto. Medido na entrada 500x maior: 140x
+// o tempo em ASCII e 417x em Unicode — 34ms por chamada, dentro do desenho da TUI.
 //
-// O que este teste guarda: o custo absoluto do corte, que e o que separa
-// ineficiencia de travamento.
+// O teste que existia aqui media a razao por COLUNAS PEDIDAS e passava com folga —
+// justamente PORQUE tudo era O(n) e o numero de colunas nao mudava nada. Ele
+// certificava o defeito. A razao que separa as duas coisas e a do TAMANHO DA
+// ENTRADA, com as colunas fixas: e ela que fica abaixo.
 test('CARGA truncVisible de meio milhao de caracteres termina em tempo de quadro', () => {
   const t = ms(() => { truncVisible('x'.repeat(500_000), 80) })
   expect(t, `levou ${t.toFixed(3)}ms para cortar 80 colunas de 500k`).toBeLessThan(TETO_MS)
 })
 
-test('CARGA o corte de texto enorme nao piora com MAIS colunas pedidas', () => {
-  const texto = 'x'.repeat(500_000)
-  const estreito = ms(() => { truncVisible(texto, 20) })
-  const largo = ms(() => { truncVisible(texto, 400) })
-  const razao = largo / Math.max(estreito, 0.0001)
-  expect(razao, `20x mais colunas custou ${razao.toFixed(1)}x`).toBeLessThan(4)
+function razaoPorTamanho(curto: string, longo: string): number {
+  // Aquece: a primeira chamada paga JIT e a construcao do Intl.Segmenter.
+  for (let i = 0; i < 200; i++) { truncVisible(curto, 80); truncVisible(longo, 80) }
+  const a = ms(() => { for (let i = 0; i < 300; i++) truncVisible(curto, 80) })
+  const b = ms(() => { for (let i = 0; i < 300; i++) truncVisible(longo, 80) })
+  return b / Math.max(a, 0.0001)
+}
+
+test('REGRESSAO cortar 80 colunas custa o mesmo numa entrada 500x maior', () => {
+  const r = razaoPorTamanho('x'.repeat(200), 'x'.repeat(100_000))
+  expect(r, `entrada 500x maior custou ${r.toFixed(1)}x (era 140x antes da reescrita)`).toBeLessThan(5)
+})
+
+// Unicode era o caso pior (417x): o segmentador tem custo de PREPARO proporcional a
+// |s|, entao "iterar preguicosamente" nao bastava — a string entregue a ele tem de
+// ser pequena. Sem esta linha, uma reescrita que volte a segmentar a string toda
+// passa no teste de ASCII e reintroduz o travamento so em texto acentuado.
+test('REGRESSAO e o mesmo vale para texto Unicode, que era o caso pior', () => {
+  const r = razaoPorTamanho('á😀'.repeat(100), 'á😀'.repeat(50_000))
+  expect(r, `entrada 500x maior custou ${r.toFixed(1)}x (era 417x antes da reescrita)`).toBeLessThan(5)
 })
 
 test('CARGA estado gigante em TODO tamanho de terminal, sem excecao e sem quadro torto', () => {

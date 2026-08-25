@@ -47,7 +47,10 @@ afterAll(() => {
 })
 
 const FLAGS_INEXISTENTES = ['--allowedTools', '--allowed-tools', '--effort', '--permission-mode', '--sandbox', '--json', '-C']
-const FLAGS_REAIS_QUE_NAO_USAMOS = ['-y', '--yolo', '--plan', '--agent', '--agent-file', '--skills-dir', '-S', '--session', '-c', '--continue']
+// `--auto`, `--yolo` e `--plan` entram aqui por MEDICAO contra o CLI real (0.38.0):
+// combinados com `-p` o binario aborta em ~1s ("Cannot combine --prompt with --X"),
+// sem tocar em arquivo. Sao flags de sessao interativa.
+const FLAGS_REAIS_QUE_NAO_USAMOS = ['-y', '--yolo', '--auto', '--plan', '--agent', '--agent-file', '--skills-dir', '-S', '--session', '-c', '--continue']
 
 function pedido(mode: AgentMode, extra?: Partial<AgentRequest>): AgentRequest {
   return { prompt: 'faca algo', cwd: BASE, dirs: [], mode, useAgents: false, timeoutMs: 20000, ...extra }
@@ -60,7 +63,7 @@ function argvDoDisco(): string[] {
 
 test('argv do modo edit nao carrega nenhuma flag que o CLI do kimi nao tem', () => {
   const a = kimiArgv(pedido('edit'))
-  expect(a).toEqual(['-p', 'faca algo', '--output-format', 'stream-json', '--auto'])
+  expect(a).toEqual(['-p', 'faca algo', '--output-format', 'stream-json'])
   for (const flag of FLAGS_INEXISTENTES) expect(a).not.toContain(flag)
 })
 
@@ -69,16 +72,34 @@ test('flags que o CLI TEM mas o motor nao usa ficam de fora de proposito', () =>
   for (const flag of FLAGS_REAIS_QUE_NAO_USAMOS) expect(a).not.toContain(flag)
 })
 
-test('modo readonly NAO ganha --auto, e o motor recusa o kimi nesse modo em vez de deixar editar', async () => {
+// `-p` aprova as ferramentas sozinho: medido, o kimi ESCREVEU o arquivo sem flag
+// nenhum. Entao "readonly" nao restringe nada nele — o que protege e o motor recusar
+// o papel, nao um argumento de linha de comando.
+test('modo readonly nao protege nada no kimi, e o motor recusa o papel em vez de fingir', async () => {
   const { recusaPorLimite } = await import('../../motor/euc/tsr/confianca.ts')
-  expect(kimiArgv(pedido('readonly'))).not.toContain('--auto')
+  expect(kimiArgv(pedido('readonly'))).toEqual(kimiArgv(pedido('edit')))
   expect(KIMI_CAPACIDADES.isolatesReadonly).toBe(false)
   expect(KIMI_CAPACIDADES.restrictsTools).toBe(false)
   expect(recusaPorLimite(new KimiProvider(), pedido('readonly'))).toContain('somente-leitura')
 })
 
-test('modo edit ganha --auto — sem ele o CLI trava esperando aprovacao que ninguem pode dar', () => {
-  expect(kimiArgv(pedido('edit'))).toContain('--auto')
+// REGRESSAO medida contra o CLI real. A versao anterior deste teste afirmava o
+// CONTRARIO — "sem --auto o CLI trava esperando aprovacao que ninguem pode dar" — e
+// passava, porque nunca executou o binario. O que acontece de verdade com `-p
+// --auto` e abortar em ~1s: todo passo de implementacao no kimi falhava.
+test('REGRESSAO: modo edit NAO ganha --auto — com ele o CLI aborta', () => {
+  expect(kimiArgv(pedido('edit'))).not.toContain('--auto')
+})
+
+// Catalogo de um modo so: oferecer escolha que nunca vira flag seria valor calculado
+// e nunca aplicado.
+test('o catalogo de modos anuncia so o que o CLI aceita em execucao unica', async () => {
+  const { KIMI_MODOS } = await import('../../motor/tmd/harness/kimi.ts')
+  expect(KIMI_MODOS.modos).toEqual(['default'])
+  expect(KIMI_MODOS.padrao).toBe('default')
+  for (const modo of ['auto', 'yolo', 'plan']) {
+    expect(kimiArgv(pedido('edit', { modo })), `modo "${modo}" nao pode virar flag`).toEqual(kimiArgv(pedido('edit')))
+  }
 })
 
 test('--output-format usa stream-json (o CLI so aceita text|stream-json, "json" nao existe)', () => {
@@ -105,7 +126,7 @@ test('effort e ignorado: nao existe --effort no kimi, e o argv nao muda por caus
 
 test('useAgents e extraTools nao viram flag — sem --allowedTools nao ha o que restringir', () => {
   const a = kimiArgv(pedido('edit', { useAgents: true, extraTools: ['WebFetch', 'Task'] }))
-  expect(a).toEqual(['-p', 'faca algo', '--output-format', 'stream-json', '--auto'])
+  expect(a).toEqual(['-p', 'faca algo', '--output-format', 'stream-json'])
   expect(a).not.toContain('WebFetch')
   expect(a).not.toContain('Task')
 })
@@ -157,7 +178,7 @@ test('custo NAO MEDIDO: o stream-json do kimi nao traz custo nem token, e o adap
 test('o argv que chega no CLI de verdade nao tem flag inventada e leva o prompt como um unico argumento', async () => {
   await new KimiProvider().run(pedido('edit', { prompt: 'conserte o botao azul', dirs: [BASE, join(BASE, 'bin')], model: 'kimi-k2' }))
   const a = argvDoDisco()
-  expect(a).toEqual(['-p', 'conserte o botao azul', '--output-format', 'stream-json', '--auto', '-m', 'kimi-k2', '--add-dir', BASE, '--add-dir', join(BASE, 'bin')])
+  expect(a).toEqual(['-p', 'conserte o botao azul', '--output-format', 'stream-json', '-m', 'kimi-k2', '--add-dir', BASE, '--add-dir', join(BASE, 'bin')])
   for (const flag of FLAGS_INEXISTENTES) expect(a).not.toContain(flag)
 })
 
