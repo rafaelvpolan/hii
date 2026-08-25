@@ -1,3 +1,4 @@
+import { relatoDeTempo } from './tempo-do-card.ts'
 import type { Fields } from '../../cdl/index.ts'
 import type { EventoDoCard } from '../../euc/eventos.ts'
 import type { Atividade } from '../atividade.ts'
@@ -110,6 +111,7 @@ export function renderSituacao(s: Situacao, opts: Partial<OpcoesDaSituacao> = {}
     ['gate', gate(s.eventos)],
     ['crivo', String(fm.crivo_modo ?? '')],
     ['gasto', fm.cost_usd ? `US$${fm.cost_usd} · ${fm.tokens_total ?? '0'} tokens` : ''],
+    ['tempo', relatoDeTempo(fm, Date.now())],
     ['espera', fm.wait_reason ? `${fm.wait_reason} (tentativa ${fm.wait_attempts ?? '?'})` : ''],
   ]
   for (const [nome, valor] of pares) {

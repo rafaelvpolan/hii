@@ -49,6 +49,7 @@ const GATE_BLOCKED: GateResult = { ok: true, verdict: 'BLOCKED', reason: 'defeit
 const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
 const { handleExecute } = await import('../../motor/osw/executar.ts')
 const { handleFinish } = await import('../../motor/qlb/ctr/fechar.ts')
+const core = await import('../../motor/mir/acoes.ts')
 
 const agenteExecute: ExecuteDeps = {
   implement: (): Promise<ImplementResult> => {
@@ -97,6 +98,19 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
   expect(apos2aExecucao?.fm.cost_usd).toBe('0.3500')
   expect(apos2aExecucao?.fm.tokens_total).toBe('300')
   expect(parseFloat(apos2aExecucao?.fm.cost_usd ?? '0')).toBeGreaterThanOrEqual(parseFloat(apos1aFalha?.fm.cost_usd ?? '0'))
+
+  // O fecho de tarefa NAO-VISUAL agora para e PERGUNTA antes de empurrar o PR
+  // ("resolveu o problema? posso encerrar?"): o humano nunca viu isto rodando. A
+  // parada nao pode custar nada nem perder o que ja foi gasto.
+  await handleFinish(id, agenteFinish)
+  const noPedidoDeConfirmacao = readCard(id)
+  expect(noPedidoDeConfirmacao?.fm.status).toBe('CONFIRM')
+  expect(noPedidoDeConfirmacao?.fm.cost_usd).toBe('0.3500')
+  expect(noPedidoDeConfirmacao?.fm.tokens_total).toBe('300')
+
+  const confirmado = core.confirmarFecho(id)
+  expect(confirmado.ok, confirmado.reason).toBe(true)
+  expect(readCard(id)?.fm.status).toBe('URL_OK')
 
   await handleFinish(id, agenteFinish)
   const apos3oGateBloqueado = readCard(id)

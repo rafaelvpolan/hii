@@ -15,6 +15,7 @@ import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../cic/cr
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './rta/superficie.ts'
 import { instrucaoDeAjuste, instrucaoDeConserto, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from '../cic/rpr/url-ajuste.ts'
 import { escopoDoCard, implement, verifyVisual } from '../cic/agente.ts'
+import { sumStepTime } from '../euc/metricas-de-fecho.ts'
 import { foraDoEscopo } from './rta/escopo.ts'
 import { resolvedFailure, writeRun } from '../euc/registros.ts'
 import { abrirSessao } from '../euc/ias-da-sessao.ts'
@@ -173,6 +174,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   }
   const baseCost = gastoLido
   const baseTokens = Number(card.fm.tokens_total || '0') || 0
+  const baseTempo = Number(card.fm.tempo_s || '0') || 0
+  const tempoAcumulado = (): string => String(baseTempo + sumStepTime(asStepMap(steps)))
   const teto = tetoDoCard()
   if (teto > 0 && baseCost > teto) {
     patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`)
@@ -302,7 +305,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     const rec = writeRun(id, { ...res, failureClass, failureReason }, elapsed, asStepMap(steps))
     const totalCost = baseCost + auxCost + (parseFloat(res.cost || '0') || 0)
     const totalTokens = baseTokens + auxTokens + rec.tokens_total
-    const totals: Fields = { cost_usd: totalCost.toFixed(4), tokens_total: String(totalTokens) }
+    const totals: Fields = { cost_usd: totalCost.toFixed(4), tokens_total: String(totalTokens), tempo_s: tempoAcumulado() }
     if (failureClass === 'quota' && quotaFallbackLigado()) {
       const fallback = quotaFallbackProviderFor('implement')
       if (fallback && fallback !== res.provider) {
@@ -360,6 +363,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       escopo_violado: violou.slice(0, 20).join(',') + (violou.length > 20 ? ` +${violou.length - 20}` : ''),
       cost_usd: (baseCost + auxCost + steps.Executando.cost).toFixed(4),
       tokens_total: String(baseTokens + auxTokens + rec.tokens_total),
+      tempo_s: tempoAcumulado(),
     },
       `${isoNow()} EXECUTING->HALTED o agente escreveu FORA do escopo: ${violou.join(', ')} — o pedido marcou esses caminhos como referencia (${escopo.motivo}). O worktree fica para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`)
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
@@ -374,6 +378,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       verify: 'sem-url',
       cost_usd: (baseCost + costSum + auxCost).toFixed(4),
       tokens_total: String(baseTokens + tokensTotal + auxTokens),
+      tempo_s: tempoAcumulado(),
     }, `${isoNow()} EXECUTING->URL sem url — tarefa nao-visual (${surface.reason}); aprovacao de funcionalidade e sua`)
     process.stdout.write(`[runner] #${id}: aguardando aprovacao de funcionalidade (nao-visual)\n`)
     return
@@ -418,6 +423,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     verify: initState,
     cost_usd: (baseCost + costSum + auxCost).toFixed(4),
     tokens_total: String(baseTokens + tokensTotal + auxTokens),
+    tempo_s: tempoAcumulado(),
   }, `${isoNow()} EXECUTING->URL ${url || (temDevServer ? '(dev server NAO subiu)' : '(sem dev server)')} (${initReason})`)
   process.stdout.write(`[runner] #${id}: URL ${url} (${initReason})\n`)
   if (up) {
@@ -457,6 +463,6 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   }
   if (auxCost !== auxAtUrl) {
     const total = baseCost + costSum + auxCost
-    patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens) }, `${isoNow()} custo atualizado (verificacao/eval): $${total.toFixed(4)}`)
+    patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens), tempo_s: tempoAcumulado() }, `${isoNow()} custo atualizado (verificacao/eval): $${total.toFixed(4)}`)
   }
 }

@@ -33,6 +33,9 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/orquestrador-android': 'tarefa mobile — Android, iOS e publicacao em loja',
   '/orquestrador-devops': 'tarefa de infra — pipeline, imagem, deploy, SLO',
   '/layout': 'tarefa visual — entrada padrao da fase de plano',
+  '/hii-design': 'design/visual — sem passo de polimento, so o crivo do fecho',
+  '/hii-dev-web': 'web front+back — roda Arquitetura e Testes',
+  '/hii-backend': 'backend — roda Testes e Seguranca',
 }
 
 export interface GrupoDeSugestao {

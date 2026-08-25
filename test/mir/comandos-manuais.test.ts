@@ -196,3 +196,22 @@ test('INVARIANTE o arranque do daemon chama validarComandosManuais de verdade', 
   const trecho = fonte.slice(Math.max(0, iChamada - 200), iChamada + 200)
   expect(trecho, 'sem try/catch, acervo incompleto derruba o daemon').toContain('catch')
 })
+
+test('os orquestradores /hii-design, /hii-dev-web e /hii-backend sao reconhecidos', () => {
+  for (const cmd of ['/hii-design', '/hii-dev-web', '/hii-backend']) {
+    expect(COMMANDS.includes(cmd as (typeof COMMANDS)[number]), cmd).toBe(true)
+    const r = handle(`${cmd} tarefa qualquer`, newSession('org/repo'))
+    expect(r.effect.kind, cmd).toBe('intake')
+    expect(comandoManual(cmd), cmd).toBeDefined()
+  }
+})
+
+test('cada /hii-* declara a stack de execucao que o card vai usar', () => {
+  expect(camposDoIntake(interpretarIntake('/hii-design refaz o hero')!).steps).toBe('nada')
+  expect(camposDoIntake(interpretarIntake('/hii-dev-web filtro na listagem')!).steps).toBe('arquitetura,testes')
+  expect(camposDoIntake(interpretarIntake('/hii-backend endpoint de export')!).steps).toBe('testes,seguranca')
+})
+
+test('/hii-design tambem liga o modo layout, como a entrada visual de sempre', () => {
+  expect(camposDoIntake(interpretarIntake('/hii-design refaz o hero')!).layout).toBe('on')
+})

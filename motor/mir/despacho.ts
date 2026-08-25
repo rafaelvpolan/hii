@@ -1,4 +1,5 @@
 import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
+import { perguntaDeFecho } from '../qlb/ctr/confirmar-fecho.ts'
 import { readCard, allCards, normalizeId, listRepos, repoPath, patchCard } from '../cdl/store.ts'
 import { isoNow } from '../cdl/util.ts'
 import { umaLinha } from './instruir.ts'
@@ -143,6 +144,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return state
     }
     case 'reject-url': {
+      if (readCard(id)?.fm.status === 'CONFIRM') return aplicar({ kind: 'reject-close', id, text: texto }, state, io)
       const r = core.rejectUrl(id, texto)
       io.log(r.ok ? `#${id} ${texto ? 'vai corrigir' : 'vai refazer'}` : r.reason)
       return state
@@ -240,16 +242,36 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return { ...foraDaTarefa(state), repo: alvo, perguntando: '', removendo: '', retomando: '' }
     }
     case 'aprovacao': {
+      const emConfirmacao = readCard(id)?.fm.status === 'CONFIRM'
+      if (texto === '1' && emConfirmacao) return aplicar({ kind: 'confirm-close', id }, semAprovacao(state), io)
       if (texto === '1') return aplicar({ kind: 'approve-url', id }, semAprovacao(state), io)
+      if (emConfirmacao) {
+        io.log('diga o que ainda falta — o worktree esta vivo e a correcao e barata')
+        return comentando(state, id)
+      }
       if (texto === '2') return aplicar({ kind: 'reject-url', id, text: '' }, semAprovacao(state), io)
       io.log('escreva o que precisa ajustar')
       return comentando(state, id)
+    }
+    case 'confirm-close': {
+      const r = core.confirmarFecho(id)
+      io.log(r.ok ? `#${id} encerrado — abrindo o PR sem repetir passo` : r.reason)
+      return state
+    }
+    case 'reject-close': {
+      const r = core.recusarFecho(id, texto)
+      io.log(r.ok ? `#${id} volta a trabalhar: ${texto}` : r.reason)
+      return state
     }
     case 'acao-tarefa': {
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
       const status = card.fm.status ?? ''
       if (status === 'URL') return aplicar({ kind: 'approve-url', id }, semAprovacao(state), io)
+      if (status === 'CONFIRM') {
+        io.log(`#${id} — ${perguntaDeFecho(card.fm)}`)
+        return aprovando(seguir(state, id), id)
+      }
       if (status === 'HALTED' || status === 'PAUSED') return aplicar({ kind: 'resume', id }, state, io)
       if (core.canApprovePlan(status)) return aplicar({ kind: 'approve-plan', id }, state, io)
       // ENTER com a tarefa em andamento respondia so "nada para aprovar agora" —
@@ -283,7 +305,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       // um bloco separado, sao dois motores com gates diferentes.
       const c = comandoManual(effect.raw ?? '')
       if (!c) { io.log(`atalho desconhecido: ${String(effect.raw)}`); return state }
-      const extras = camposDoIntake({ comando: c.nome, packs: c.packs, texto, layout: c.ligaLayout === true })
+      const extras = camposDoIntake({ comando: c.nome, packs: c.packs, texto, layout: c.ligaLayout === true, steps: c.steps ?? '' })
       const novo = await criarCardEEnfileirar(texto, state, io, extras)
       if (novo !== state) io.log(`  conhecimento pre-carregado: ${c.packs.join(', ')}`)
       return novo

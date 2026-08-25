@@ -24,11 +24,12 @@ import { ensureContract } from '../../cdl/bss/armazenar.ts'
 import { slugDoGh, podeAbrirPr } from '../../euc/rdr/doctor.ts'
 import { affectedPackage, resolveCommand } from '../../mir/comandos.ts'
 import { packsDoCard } from '../../mir/comandos-manuais.ts'
-import { addMetric, accumulatedTotals, haltForInspection, applyStepFailurePolicy } from '../../euc/metricas-de-fecho.ts'
+import { addMetric, accumulatedTotals, haltForInspection, pauseForConfirmation, applyStepFailurePolicy } from '../../euc/metricas-de-fecho.ts'
 import { buildWithReajuste, testGate } from '../../cic/crv/portoes-de-fecho.ts'
 import type { RunCtx } from '../../cic/crv/portoes-de-fecho.ts'
 import { syncWithBase, revalidate } from './sync.ts'
 import { resumeStart, RESUME_POST_STEPS } from './retomar.ts'
+import { precisaConfirmarFecho, perguntaDeFecho } from './confirmar-fecho.ts'
 import { runStep } from '../../cic/agente.ts'
 import { avaliarDiff } from '../../csd/lei/guarda.ts'
 import { rigorEstrito } from '../../cdl/ali/config.ts'
@@ -297,6 +298,12 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     return
   }
   await commitAll(wt, `chore: qualidade Nexus (#${id})`)
+  const cardAgora = readCard(id)
+  if (cardAgora && precisaConfirmarFecho(cardAgora.fm)) {
+    pauseForConfirmation(id, card, fsteps, `${isoNow()} ${statusAtual}->CONFIRM ${perguntaDeFecho(cardAgora.fm, vaoRodar.map(s => s.label))}`, RESUME_POST_STEPS)
+    process.stdout.write(`[runner] #${id}: aguardando sua confirmacao — resolveu o problema?\n`)
+    return
+  }
   const sync = await syncWithBase(id, wt, base, ctx.target, desc ?? '', fsteps, deps.runStep)
   if (!sync.ok) {
     // `sync.detail` era dado morto: o HALT dizia sempre "conflito com <base> nao
