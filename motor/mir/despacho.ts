@@ -164,11 +164,27 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       if (texto !== 'sim') { io.log('cancelado — nada foi apagado'); return state }
       const r = await removerLote(id.split(/\s+/), true)
       for (const l of renderResultado(r.apagados, r.falhas, { color: io.color, width: io.largura() })) io.log(l)
-      if (state.seguindo && r.apagados.includes(normalizeId(state.seguindo))) {
-        io.log(`#${state.seguindo} era a tarefa aberta — voltando ao board`)
-        return { ...state, seguindo: '', perguntando: '' }
+      // Card apagado nao pode continuar sendo o SUJEITO de nada. Antes so `seguindo`
+      // era limpo, e so quando o removido era justamente ele: a pergunta aberta, a
+      // aprovacao pendente e o plano de um card que sumiu ficavam na tela apontando
+      // para um arquivo que nao existe mais.
+      const apagados = new Set(r.apagados)
+      const some = (v: string): boolean => !!v && apagados.has(normalizeId(v))
+      const limpo = {
+        ...state,
+        seguindo: some(state.seguindo) ? '' : state.seguindo,
+        perguntando: some(state.perguntando) ? '' : state.perguntando,
+        perguntaVista: some(state.perguntando) ? '' : state.perguntaVista,
+        aprovando: some(state.aprovando) ? '' : state.aprovando,
+        comentando: some(state.comentando) ? '' : state.comentando,
+        retomando: some(state.retomando) ? '' : state.retomando,
+        pendingPlan: some(state.pendingPlan) ? '' : state.pendingPlan,
+        // `removendo` guarda o que estava para ser apagado, e o apagamento acabou.
+        // Nao limpar deixava a sessao "ocupada" para sempre.
+        removendo: '',
       }
-      return state
+      if (some(state.seguindo)) io.log(`#${state.seguindo} era a tarefa aberta — voltando ao board`)
+      return limpo
     }
     case 'instruct': {
       if (!readCard(id)) {
