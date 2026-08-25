@@ -50,8 +50,13 @@ export function runGit(dir: string, args: string[]): Promise<RunResult> {
   return run('git', args, { cwd: dir, timeout: 120000 })
 }
 
-export function stageAll(wt: string): Promise<RunResult> {
-  return runGit(wt, ['add', '-A', '--', '.', ':!node_modules'])
+async function gitJaIgnoraNodeModules(wt: string): Promise<boolean> {
+  return (await runGit(wt, ['check-ignore', '-q', '--', 'node_modules'])).err === null
+}
+
+export async function stageAll(wt: string): Promise<RunResult> {
+  const excludeQueSoOSymlinkNaoIgnoradoPrecisa = await gitJaIgnoraNodeModules(wt) ? [] : [':!node_modules']
+  return runGit(wt, ['add', '-A', '--', '.', ...excludeQueSoOSymlinkNaoIgnoradoPrecisa])
 }
 
 export function worktreePath(target: string, id: string, slug: string): string {
