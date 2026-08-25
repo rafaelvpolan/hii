@@ -1,5 +1,6 @@
+import { tmpdir } from 'node:os'
 import { test, expect } from './apoio/runner.ts'
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const DIR = join(import.meta.dirname)
@@ -46,19 +47,27 @@ test('REGRESSAO nenhum teste aponta para o config real do repo', () => {
   expect(culpados, 'mexem no config local do usuario').toEqual([])
 })
 
+// A prova roda numa raiz TEMPORARIA, e nao dentro de `test/`.
+//
+// Plantar o diretorio no `test/` de verdade e mutacao de estado COMPARTILHADO — a
+// mesma coisa que este arquivo inteiro existe para proibir. Sob `bun test` passava
+// porque os arquivos nao corriam ao mesmo tempo; sob `node --test`, que roda em
+// processos paralelos, o teste que varre `test/` via o diretorio no ar e reprovava.
+// O defeito era deste teste, e so o runner paralelo o mostrou.
 test('REGRESSAO o guarda enxerga subpasta — mover teste para test/hii/ nao pode desarma-lo', () => {
-  const sub = join(DIR, '__prova_subpasta__')
+  const raiz = mkdtempSync(join(tmpdir(), 'hii-prova-subpasta-'))
+  const sub = join(raiz, 'subpasta')
   const arquivo = join(sub, 'plantado.test.ts')
   mkdirSync(sub, { recursive: true })
   writeFileSync(arquivo, "import { createCard } from '../../motor/cdl/store'\ncreateCard({}, '')\n")
   try {
-    const achados = arquivosDeTeste()
+    const achados = arquivosDeTeste(raiz)
     expect(achados.some(f => f.endsWith('plantado.test.ts')), 'o guarda nao enxergou a subpasta').toBe(true)
     const culpados = achados
       .filter(f => ESCREVEM.test(readFileSync(f, 'utf8')) && !ISOLAM.test(readFileSync(f, 'utf8')))
-      .map(f => relative(DIR, f))
-    expect(culpados).toContain(join('__prova_subpasta__', 'plantado.test.ts'))
+      .map(f => relative(raiz, f))
+    expect(culpados).toContain(join('subpasta', 'plantado.test.ts'))
   } finally {
-    rmSync(sub, { recursive: true, force: true })
+    rmSync(raiz, { recursive: true, force: true })
   }
 })

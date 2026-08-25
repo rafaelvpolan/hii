@@ -92,6 +92,13 @@ export function rejectUrl(id: string, motivo: string): GuardedResult {
   const wt = card.fm.worktree ?? ''
   const temWorktree = !!wt && existsSync(join(wt, '.git'))
   const razao = motivo.trim()
+  // Sem motivo = REFAZER DO ZERO, e agora isso e dito explicitamente. Antes o
+  // "do zero" vinha de efeito colateral: `ensureWorktree` apagava o worktree em
+  // TODA execucao. Quando o reuso virou padrao (para a retomada parar de refazer o
+  // que ja estava feito), o pedido de refazer precisou de marca propria.
+  if (!razao || !temWorktree) {
+    patchCard(id, { refazer: 'true' }, `${isoNow()} url rejeitado sem ajuste pedido — o worktree sera recriado do zero`)
+  }
   const r = razao && temWorktree
     ? requestCorrection(id, '', razao)
     : transition(id, 'EXECUTING', razao ? `url rejeitado: ${razao} — reexecutando` : 'url rejeitado — reexecutando')
