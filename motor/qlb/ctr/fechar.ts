@@ -228,7 +228,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         // A frase nao pode atribuir ao CRIVO uma reprovacao que ele nao emitiu:
         // esgotar tentativas por falha do agente chega aqui tambem, e agora vem
         // classificado (o bloco acima trata) — este caminho e o BLOCKED de verdade.
-        haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED o crivo reprovou apos ${maxReajuste()} reajuste(s): ${g.reason}`)
+        haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED o crivo reprovou apos ${maxReajuste()} reajuste(s): ${g.reason}`, step.label)
         return
       }
     } else {
@@ -263,7 +263,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       patchCard(id, {}, `${isoNow()} CHG: evidencia de RED do passo de testes — ${relato.aceito ? 'ACEITA' : 'RECUSADA'}: ${relato.motivo}`)
     }
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
-      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`)
+      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`, step.label)
       return
     }
     if (step.gate === 'test') {
@@ -281,7 +281,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       if (red.exigido) {
         patchCard(id, { red_antes_do_green: red.satisfeito ? 'sim' : 'nao' }, `${isoNow()} CHG: ${red.motivo}`)
         if (!red.satisfeito && rigorEstrito()) {
-          patchCard(id, { status: 'HALTED' }, `${isoNow()} ${step.label}->HALTED ${red.motivo}`)
+          haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED ${red.motivo}`, step.label)
           process.stdout.write(`[runner] #${id}: HALTED — sem RED antes do GREEN\n`)
           return
         }
@@ -293,7 +293,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     process.stdout.write(`[runner] #${id}: ${step.label} (${step.agent}) $${r.cost.toFixed(4)}\n`)
   }
   if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Testes', 'Reajuste', deps.runStep))) {
-    haltForInspection(id, card, fsteps, `${isoNow()} build->HALTED build falhou apos reajuste(s)`)
+    haltForInspection(id, card, fsteps, `${isoNow()} build->HALTED build falhou apos reajuste(s)`, RESUME_POST_STEPS)
     return
   }
   await commitAll(wt, `chore: qualidade Nexus (#${id})`)
@@ -303,19 +303,19 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     // resolvido apos Nx", entao fetch quebrado ou merge que NAO e conflito viravam
     // diagnostico falso de conflito E contagem falsa de tentativas que nunca
     // aconteceram. Quem classifica e o syncWithBase; aqui so se relata.
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED nao integrei ${base}: ${sync.detail || `conflito nao resolvido apos ${MAX_CONFLICT}x`} (precisa de voce)`)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED nao integrei ${base}: ${sync.detail || `conflito nao resolvido apos ${MAX_CONFLICT}x`} (precisa de voce)`, RESUME_POST_STEPS)
     process.stdout.write(`[runner] #${id}: HALTED nao integrei ${base} — ${sync.detail || 'conflito'}\n`)
     return
   }
   if (sync.changed) {
     if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Conflito', 'Conflito', deps.runStep))) {
-      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED build falhou apos merge com ${base}`)
+      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED build falhou apos merge com ${base}`, RESUME_POST_STEPS)
       return
     }
     await commitAll(wt, `chore: integra ${base} (#${id})`)
   }
   if (!(await revalidate(id, card, wt, target, fsteps))) {
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + url mantidos p/ inspecao)`)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + url mantidos p/ inspecao)`, RESUME_POST_STEPS)
     process.stdout.write(`[runner] #${id}: HALTED revalidacao (pos-merge)\n`)
     return
   }
@@ -345,7 +345,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       process.stdout.write(`[runner] #${id}: codefox gate final nao concluiu (classificado)\n`)
       return
     }
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED ${gateHaltReason(gate)} (worktree mantido p/ inspecao)`)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED ${gateHaltReason(gate)} (worktree mantido p/ inspecao)`, RESUME_POST_STEPS)
     process.stdout.write(`[runner] #${id}: HALTED ${gate.ok ? 'codefox gate BLOCKED' : 'codefox gate nao concluiu'}\n`)
     return
   }
