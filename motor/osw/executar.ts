@@ -231,12 +231,28 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const wt = card.fm.worktree || worktreePath(target, id, slug)
   patchCard(id, { branch, worktree: wt }, `${isoNow()} EXECUTING: preparando worktree ${branch}`)
   try {
-    const reuse = card.fm.spec_done === 'true' && await worktreeOnBranch(wt, branch)
+    // REAPROVEITAR e o padrao, e nao a excecao. Antes o reuso exigia
+    // `spec_done === 'true'`: toda retomada humana de card parado caia no `else`,
+    // que APAGA o worktree e recria a branch de origin/base. O trabalho ja feito
+    // (commitado) ia junto, e o motor pagava de novo por cada passo para chegar ao
+    // mesmo lugar — foi o que fez a retomada do card 001 custar US$0,75 por ENTER.
+    //
+    // Um worktree e barato: compartilha o object store do clone, nao e um clone
+    // novo e nao custa token nenhum. O que custava era JOGAR FORA o que havia nele.
+    //
+    // `refazer` distingue as duas intencoes que estavam coladas: "retomar" (segue de
+    // onde parou) e "refaz do zero" (rejeitar a url sem dizer o que ajustar). A
+    // segunda dependia justamente da destruicao, entao ela pede explicitamente.
+    const refazerDoZero = card.fm.refazer === 'true'
+    const reuse = !refazerDoZero && await worktreeOnBranch(wt, branch)
     if (card.fm.spec_done === 'true' && !reuse) {
       patchCard(id, { status: 'SPECCED', spec_done: '' }, `${isoNow()} EXECUTING->SPECCED worktree do spec ausente — regerando spec`)
       return
     }
     if (reuse) {
+      // `reset --hard` + `clean` descartam so o NAO COMMITADO — sobra do passo que
+      // falhou. Os commits do card sobrevivem, que e o que "segue de onde parou"
+      // tem de significar.
       await runGit(wt, ['reset', '--hard', 'HEAD'])
       await runGit(wt, ['clean', '-fd', '-e', 'node_modules'])
       const up = await refreshFromBase(wt, base)
@@ -244,10 +260,10 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
         patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED nao consegui partir de ${base} atualizado: ${up.detail}`)
         return
       }
-      patchCard(id, {}, `${isoNow()} base: ${up.detail} (worktree do spec reaproveitado)`)
+      patchCard(id, {}, `${isoNow()} base: ${up.detail} (worktree reaproveitado — o trabalho ja commitado foi mantido)`)
     } else {
       const info = await ensureWorktree(target, wt, branch, base)
-      patchCard(id, { base_commit: info.baseCommit }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}`)
+      patchCard(id, { base_commit: info.baseCommit, refazer: '' }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}${refazerDoZero ? ' (refazendo do zero, a pedido)' : ''}`)
     }
   } catch (e) {
     patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
