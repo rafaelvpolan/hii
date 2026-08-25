@@ -28,18 +28,12 @@ export function accumulatedTotals(card: Card, fsteps: StepMap): { cost_usd: stri
   return { cost_usd: cost.toFixed(4), tokens_total: String(tokens) }
 }
 
-export function haltForInspection(id: string, card: Card, fsteps: StepMap, message: string): void {
+export function haltForInspection(id: string, card: Card, fsteps: StepMap, message: string, resumeStep: string): void {
   updateRunSteps(id, fsteps)
   patchCard(id, {
     status: 'HALTED',
-    // ONDE retomar. Sem este campo, "retomar" mandava todo card parado de volta para
-    // EXECUTING — inclusive o que parou no FECHO, com o trabalho ja feito e commitado.
-    // O card 001 parou ao abrir o PR e cada retomada refazia worktree, implement e
-    // pipeline inteiros para morrer no mesmo ponto: laco que so gasta.
-    //
-    // `URL_OK` e a entrada do fecho, e a rota HALTED->URL_OK esta declarada em
-    // transicoesDeRecuperacao. Os passos ja concluidos sao pulados por `resume_from`.
     retomar_em: 'URL_OK',
+    resume_from: resumeStep,
     ...accumulatedTotals(card, fsteps),
   }, message)
 }

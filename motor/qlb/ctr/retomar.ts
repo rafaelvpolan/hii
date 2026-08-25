@@ -6,6 +6,7 @@ export const RESUME_POST_STEPS = '__apos_passos__'
 
 export function resumeStart(steps: PipelineStep[], all: PipelineStep[], resumeFrom: string, id: string, profile: string): number {
   if (!resumeFrom) return 0
+  if (resumeFrom === RESUME_POST_STEPS) return steps.length
   const exact = steps.findIndex(s => s.label === resumeFrom)
   if (exact >= 0) return exact
   const wantPos = all.findIndex(s => s.label === resumeFrom)
