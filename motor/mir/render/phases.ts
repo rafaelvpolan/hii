@@ -13,7 +13,7 @@ export const PHASES: Phase[] = [
   { label: 'PR', states: ['PR_OPEN', 'MERGED', 'DEPLOYED'], color: '\x1b[32m' },
 ]
 
-export const WAITING_HUMAN = ['CLARIFY', 'URL', 'HALTED']
+export const WAITING_HUMAN = ['CLARIFY', 'URL', 'CONFIRM', 'HALTED']
 
 export function phaseIndex(status: string): number {
   return PHASES.findIndex(p => p.states.includes(status))
@@ -24,6 +24,7 @@ const ROTULO_FORA_DE_FASE: Record<string, string> = {
   WAITING: 'Esperando',
   PAUSED: 'Pausado',
   HALTED: 'Parado',
+  CONFIRM: 'Confirmar',
 }
 
 export function phaseLabel(status: string): string {
@@ -50,6 +51,7 @@ const ESPERAS: Record<string, EsperaHumano> = {
   INBOX: { motivo: 'plano nao aprovado', comando: '' },
   SPECCED: { motivo: 'plano nao aprovado', comando: '' },
   HALTED: { motivo: 'parou no meio', comando: '' },
+  CONFIRM: { motivo: 'resolveu o problema? posso encerrar?', comando: '' },
   PR_OPEN: { motivo: 'PR aberto para voce revisar', comando: '' },
 }
 

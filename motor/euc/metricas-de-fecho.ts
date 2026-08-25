@@ -22,16 +22,37 @@ function sumStepTokens(fsteps: StepMap): number {
   return Object.values(fsteps).reduce((acc, s) => acc + (Number(s.tokens) || 0), 0)
 }
 
-export function accumulatedTotals(card: Card, fsteps: StepMap): { cost_usd: string; tokens_total: string } {
+export function sumStepTime(fsteps: StepMap): number {
+  return Object.values(fsteps).reduce((acc, s) => acc + (Number(s.time) || 0), 0)
+}
+
+export type TotaisDoCard = {
+  cost_usd: string
+  tokens_total: string
+  tempo_s: string
+}
+
+export function accumulatedTotals(card: Card, fsteps: StepMap): TotaisDoCard {
   const cost = (parseFloat(card.fm.cost_usd || '0') || 0) + sumStepCost(fsteps)
   const tokens = (Number(card.fm.tokens_total || '0') || 0) + sumStepTokens(fsteps)
-  return { cost_usd: cost.toFixed(4), tokens_total: String(tokens) }
+  const tempo = (Number(card.fm.tempo_s || '0') || 0) + sumStepTime(fsteps)
+  return { cost_usd: cost.toFixed(4), tokens_total: String(tokens), tempo_s: String(tempo) }
 }
 
 export function haltForInspection(id: string, card: Card, fsteps: StepMap, message: string, resumeStep: string): void {
   updateRunSteps(id, fsteps)
   patchCard(id, {
     status: 'HALTED',
+    retomar_em: 'URL_OK',
+    resume_from: resumeStep,
+    ...accumulatedTotals(card, fsteps),
+  }, message)
+}
+
+export function pauseForConfirmation(id: string, card: Card, fsteps: StepMap, message: string, resumeStep: string): void {
+  updateRunSteps(id, fsteps)
+  patchCard(id, {
+    status: 'CONFIRM',
     retomar_em: 'URL_OK',
     resume_from: resumeStep,
     ...accumulatedTotals(card, fsteps),

@@ -6,6 +6,8 @@ import { cardsDir, rigorEstrito } from '../cdl/ali/config.ts'
 import { createCard, findCardFile, patchCard, readCard, updateCard } from '../cdl/store.ts'
 import { readClarify, writeClarify } from '../agentes/clr/clarificar.ts'
 import { conferirParedeDoPlano } from '../qlb/ctr/aprovar-plano.ts'
+import { CONFIRMADO } from '../qlb/ctr/confirmar-fecho.ts'
+import { RESUME_POST_STEPS } from '../qlb/ctr/retomar.ts'
 
 export interface NewCardInput {
   title: string
@@ -17,6 +19,7 @@ export interface NewCardInput {
   ai?: string
   effort?: string
   packs?: string
+  steps?: string
 }
 
 export interface ClarifyAnswer {
@@ -42,7 +45,7 @@ export function submit(input: NewCardInput): string {
     risk: input.risk === 'high' ? 'high' : 'low',
     repo: input.repo ?? '',
     created: isoNow(),
-    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs }),
+    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs, steps: input.steps }),
   }, body)
 }
 
@@ -103,6 +106,47 @@ export function rejectUrl(id: string, motivo: string): GuardedResult {
     ? requestCorrection(id, '', razao)
     : transition(id, 'EXECUTING', razao ? `url rejeitado: ${razao} — reexecutando` : 'url rejeitado — reexecutando')
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `nao foi possivel rejeitar #${id}` }
+}
+
+export function confirmarFecho(id: string): GuardedResult {
+  const card = readCard(id)
+  if (!card) return { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
+  const status = card.fm.status ?? 'INBOX'
+  if (status !== 'CONFIRM') {
+    return { ok: false, reason: `#${id} esta em ${status} — so da para encerrar card que pediu confirmacao`, motivo: 'estado' }
+  }
+  const r = updateCard(id, {
+    fields: { fecho_confirmado: CONFIRMADO, status: 'URL_OK', resume_from: RESUME_POST_STEPS },
+    log: () => `${isoNow()} CONFIRM->URL_OK voce confirmou que resolveu — encerrando e abrindo o PR (nenhum passo repetido)`,
+  })
+  return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
+}
+
+export function recusarFecho(id: string, motivo: string): GuardedResult {
+  const card = readCard(id)
+  if (!card) return { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
+  const status = card.fm.status ?? 'INBOX'
+  if (status !== 'CONFIRM') {
+    return { ok: false, reason: `#${id} esta em ${status} — so da para recusar o fecho de card que pediu confirmacao`, motivo: 'estado' }
+  }
+  const razao = motivo.trim()
+  const wt = card.fm.worktree ?? ''
+  const temWorktree = !!wt && existsSync(join(wt, '.git'))
+  if (!razao) {
+    return { ok: false, reason: `#${id}: diga o que ainda falta — sem isso o motor repetiria o mesmo trabalho`, motivo: 'estado' }
+  }
+  if (!temWorktree) {
+    const r = updateCard(id, {
+      fields: { correction: razao, status: 'EXECUTING', refazer: 'true' },
+      log: () => `${isoNow()} CONFIRM->EXECUTING nao resolveu (${razao}) — worktree ja nao existe, refazendo do zero`,
+    })
+    return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
+  }
+  const r = updateCard(id, {
+    fields: { correction: razao, correction_file: '', correction_line: '', correction_line_text: '', status: 'CORRECTING' },
+    log: () => `${isoNow()} CONFIRM->CORRECTING nao resolveu: ${razao}`,
+  })
+  return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
 }
 
 export function canApprovePlan(status: string): boolean {

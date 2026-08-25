@@ -4,7 +4,7 @@
   "nos": [
     "INBOX", "READY", "CLARIFY", "SPECCED", "PLAN_APPROVED", "EXECUTING", "PAUSED",
     "WAITING", "EXECUTED", "URL", "CORRECTING", "URL_OK", "REFINED", "TESTS_GREEN",
-    "SEC_CLEARED", "REVIEWED", "CLEANED", "PR_OPEN", "MERGED", "DEPLOYED", "HALTED"
+    "SEC_CLEARED", "REVIEWED", "CLEANED", "CONFIRM", "PR_OPEN", "MERGED", "DEPLOYED", "HALTED"
   ],
   "transicoes": [
     ["INBOX", "READY"],
@@ -35,6 +35,12 @@
     ["SEC_CLEARED", "CLEANED"],
     ["CLEANED", "PR_OPEN"],
     ["URL_OK", "PR_OPEN"],
+    ["REFINED", "CONFIRM"],
+    ["TESTS_GREEN", "CONFIRM"],
+    ["SEC_CLEARED", "CONFIRM"],
+    ["CLEANED", "CONFIRM"],
+    ["URL_OK", "CONFIRM"],
+    ["CONFIRM", "URL_OK"],
     ["PR_OPEN", "MERGED"],
     ["MERGED", "DEPLOYED"]
   ],
@@ -51,6 +57,8 @@
     ["SEC_CLEARED", "PR_OPEN"],
     ["REVIEWED", "PR_OPEN"],
     ["HALTED", "EXECUTING"],
+    ["CONFIRM", "EXECUTING"],
+    ["CONFIRM", "CORRECTING"],
     ["EXECUTED", "CORRECTING"],
     ["EXECUTING", "CORRECTING"],
     ["URL_OK", "WAITING"],
@@ -63,7 +71,7 @@
   ],
   "sobreRecuperacao": "Rotas que NAO fazem parte do caminho de um card feliz — elas existem porque o processo morre, o provedor falha e o humano manda refazer. Ficam num array proprio para o caminho normal acima continuar legivel, e VALEM como transicao permitida. Quem as produz: reconcileStranded (motor/osw/mtr/estado-da-fila.ts:35,39) devolve card de polimento para URL_OK apos reinicio, ou adota PR orfao; resumeFrom (motor/mir/acoes.ts:57) rebobina para URL_OK de qualquer estado; aplicarPolitica (motor/cic/rpr/politica.ts:89) manda para WAITING quando a falha e transitoria; instruir/acoes mandam para CORRECTING. Esta lista saiu de EXECUCAO observada, nao de leitura de codigo: o observador de deriva (motor/nmy/deriva-de-transicao.ts) grita no par que ninguem declarou.",
   "sempreAlcancavel": ["HALTED", "PAUSED"],
-  "checkpointsHumanos": ["URL", "PR_OPEN"],
+  "checkpointsHumanos": ["URL", "CONFIRM", "PR_OPEN"],
   "semEscritaNoMotor": {
     "sobre": "Estados declarados em STATUSES que nenhum arquivo de motor/ escreve hoje. Ficam listados de proposito: deriva declarada e deriva visivel.",
     "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED", "REVIEWED"],

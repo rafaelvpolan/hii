@@ -4,6 +4,7 @@ export type EffectKind =
   | 'none' | 'submit' | 'approve-plan' | 'historico'
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
+  | 'confirm-close' | 'reject-close'
   | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake'
 
 export interface SessionState {
@@ -64,7 +65,8 @@ export function canonico(comando: string): string {
 export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
   // Item 16 — atalhos de intake. Entram na MESMA lista porque sao comandos como
   // qualquer outro: o que muda e o conteudo pre-carregado, nunca o pipeline.
-  '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout'] as const
+  '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout',
+  '/hii-design', '/hii-dev-web', '/hii-backend'] as const
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', perguntaVista: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }

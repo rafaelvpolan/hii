@@ -25,6 +25,7 @@ export interface ComandoManual {
   readonly descricao: string
   // `/layout` nao pre-carrega pack: ele liga o modo de entrada da Fase 3.
   readonly ligaLayout?: boolean
+  readonly steps?: string
 }
 
 export const COMANDOS_MANUAIS: readonly ComandoManual[] = [
@@ -47,6 +48,25 @@ export const COMANDOS_MANUAIS: readonly ComandoManual[] = [
     nome: '/orquestrador-devops',
     packs: ['common', 'devops-deploy'],
     descricao: 'infra — pipeline, imagem de conteiner, estrategia de deploy, SLO e alerta',
+  },
+  {
+    nome: '/hii-design',
+    packs: ['common', 'frontend-web'],
+    descricao: 'design/visual — nenhum passo de polimento: o crivo do fecho le o diff (1 chamada, nao 4)',
+    ligaLayout: true,
+    steps: 'nada',
+  },
+  {
+    nome: '/hii-dev-web',
+    packs: ['common', 'frontend-web', 'backend-web'],
+    descricao: 'feature web front+back — roda Arquitetura e Testes; a LEI ainda sobe o rigor pelo diff',
+    steps: 'arquitetura,testes',
+  },
+  {
+    nome: '/hii-backend',
+    packs: ['common', 'backend-web'],
+    descricao: 'backend — roda Testes e Seguranca; pula arquitetura e limpeza',
+    steps: 'testes,seguranca',
   },
   {
     nome: '/layout',
@@ -90,6 +110,7 @@ export interface IntakeManual {
   readonly packs: readonly string[]
   readonly texto: string
   readonly layout: boolean
+  readonly steps: string
 }
 
 // Devolve null para qualquer coisa que nao seja comando manual — quem chama
@@ -106,6 +127,7 @@ export function interpretarIntake(linha: string): IntakeManual | null {
     packs: c.packs,
     texto: resto.join(' ').trim(),
     layout: c.ligaLayout === true,
+    steps: c.steps ?? '',
   }
 }
 
@@ -114,6 +136,7 @@ export function interpretarIntake(linha: string): IntakeManual | null {
 export function camposDoIntake(i: IntakeManual): Record<string, string> {
   const campos: Record<string, string> = { packs: i.packs.join(',') }
   if (i.layout) campos.layout = 'on'
+  if (i.steps) campos.steps = i.steps
   return campos
 }
 

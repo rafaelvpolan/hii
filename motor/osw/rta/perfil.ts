@@ -2,7 +2,7 @@ import type { PipelineStep } from '../../nmy/tipos.ts'
 import { lerAcaoExterna } from './externo.ts'
 import type { VeredictoDaLei } from '../../csd/lei/guarda.ts'
 
-export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'visual' | 'externo'
+export type StepProfile = 'completo' | 'padrao' | 'deps' | 'enxuto' | 'visual' | 'externo' | 'repo'
 
 export interface TaskInput {
   title?: string
@@ -23,7 +23,7 @@ export interface StepPlan {
 const SECURITY = ['auth\\w*', 'autentic\\w*', 'login', 'logout', 'senha\\w*', 'password\\w*', 'token\\w*', 'secret\\w*', 'segredo\\w*', 'jwt', 'oauth', 'sso', 'permiss\\w*', 'autoriz\\w*', 'rbac', 'acl', 'cors', 'csrf', 'xss', 'inje\\w*', 'cripto\\w*', 'hash\\w*', 'cookie\\w*', 'sess\\w*', 'credencial\\w*', 'vulnerab\\w*', 'cve', 'sanitiz\\w*', 'upload\\w*', 'webhook\\w*', 'pagamento\\w*', 'payment\\w*', 'checkout', 'cartao\\w*', 'pix', 'boleto\\w*', 'cobranca\\w*', 'fatura\\w*', 'billing', 'stripe', 'paypal']
 const BACKEND = ['endpoint\\w*', 'api', 'rota\\w*', 'route\\w*', 'servidor\\w*', 'server', 'backend', 'handler\\w*', 'middleware\\w*', 'servic\\w*', 'service\\w*', 'controller\\w*']
 const DATA = ['migration\\w*', 'migracao', 'migracoes', 'schema\\w*', 'query\\w*', 'sql', 'banco', 'database', 'indice\\w*', 'tabela\\w*', 'coluna\\w*', 'orm', 'prisma', 'supabase']
-const DEPS = ['dependenc\\w*', 'pacote\\w*', 'package\\w*', 'lockfile', 'bump', 'upgrade\\w*', 'downgrade\\w*', 'vers\\w*']
+const DEPS = ['dependenc\\w*', 'pacote\\w*', 'package\\w*', 'lockfile', 'bump', 'upgrade\\w*', 'downgrade\\w*', 'versionamento', 'semver']
 const LOGIC = ['fix', 'bug', 'refator\\w*', 'refatora\\w*', 'refactor\\w*', 'feature', 'funcionalidade\\w*', 'funcao\\w*', 'function\\w*', 'logic\\w*', 'calcul\\w*', 'algoritmo\\w*', 'estado', 'store', 'hook\\w*', 'valida\\w*', 'integr\\w*', 'fluxo\\w*', 'regra\\w*', 'comportamento\\w*', 'component\\w*', 'componente\\w*']
 const COSMETIC = ['texto\\w*', 'text', 'copy', 'copie', 'redac\\w*', 'palavra\\w*', 'frase\\w*', 'typo', 'ortograf\\w*', 'gramatic\\w*', 'label\\w*', 'rotulo\\w*', 'wording', 'mensagem\\w*', 'conteudo\\w*', 'readme', 'documentac\\w*', 'docs', 'comentario\\w*', 'tradu\\w*', 'idioma', 'renomear']
 
@@ -81,6 +81,8 @@ const ESTILO_FORTE = [
 
 // MCN — vocabulario de pergunta ABERTA: onde existe mais de uma forma certa e a
 // escolha e de desenho. So aqui divergir se paga.
+const REPO = ['conflito\\w*', 'conflict\\w*', 'merge', 'mergear', 'rebase', 'cherry-pick', 'cherrypick', 'gitignore', 'changelog', 'revert\\w*', 'reverter', 'submodul\\w*', 'pull request', 'worktree\\w*']
+
 const ABERTO = ['arquitet\\w*', 'desenh\\w*', 'design', 'estrateg\\w*', 'abordagem\\w*', 'alternativ\\w*', 'reestrutur\\w*', 'repens\\w*', 'escalab\\w*', 'modelag\\w*', 'nomenclatura\\w*', 'naming', 'nomear', 'contrato\\w*', 'protocolo\\w*', 'tradeoff\\w*', 'padr\\w*']
 // Vocabulario de RESPOSTA UNICA: calculo de comissao nao tem "varias formas
 // certas". Abrir N ramos sobre aritmetica gasta N vezes para reencontrar a
@@ -97,6 +99,7 @@ const DEPS_RE = buildRe(DEPS)
 const LOGIC_RE = buildRe(LOGIC)
 const COSMETIC_RE = buildRe(COSMETIC)
 const ESTILO_FORTE_RE = buildRe(ESTILO_FORTE)
+const REPO_RE = buildRe(REPO)
 const ABERTO_RE = buildRe(ABERTO)
 const FECHADO_RE = buildRe(FECHADO)
 
@@ -116,10 +119,12 @@ interface Signals {
   cosmetic: boolean
   visual: boolean
   estilo: boolean
+  repo: boolean
   codey: boolean
   cosmeticOnly: boolean
   visualOnly: boolean
   estiloOnly: boolean
+  repoOnly: boolean
   lean: boolean
   ambiguous: boolean
 }
@@ -134,6 +139,7 @@ function signalsOf(task: TaskInput): Signals {
   const cosmetic = COSMETIC_RE.test(t)
   const visual = task.surface === 'visual'
   const estilo = ESTILO_FORTE_RE.test(t)
+  const repo = REPO_RE.test(t)
   const codey = logic || backend || data || deps
   const cosmeticOnly = cosmetic && !codey && !sec
   const visualOnly = visual && !backend && !data && !deps && !sec && !logic
@@ -146,15 +152,16 @@ function signalsOf(task: TaskInput): Signals {
   // de errar para baixo e alto — e a LEI, que olha o diff, ainda pode SUBIR o
   // rigor depois, independentemente do que o enunciado disse.
   const estiloOnly = estilo && !sec && !backend && !data && !deps 
+  const repoOnly = repo && !sec && !backend && !data && !deps
   const externa = lerAcaoExterna(task.title ?? '', task.objetivo ?? '')
   return {
     riskHigh: task.risk === 'high',
     externo: externa.externo,
     motivoExterno: externa.motivo,
-    sec, backend, data, deps, logic, cosmetic, visual, estilo, codey,
-    cosmeticOnly, visualOnly, estiloOnly,
+    sec, backend, data, deps, logic, cosmetic, visual, estilo, repo, codey,
+    cosmeticOnly, visualOnly, estiloOnly, repoOnly,
     lean: cosmeticOnly || visualOnly || estiloOnly,
-    ambiguous: !cosmetic && !visual && !estilo && !codey && !sec,
+    ambiguous: !cosmetic && !visual && !estilo && !repo && !codey && !sec,
   }
 }
 
@@ -166,6 +173,7 @@ function keepStep(step: PipelineStep, s: Signals): boolean {
   // nada de um passo de arquitetura, e o pedagio afastava o uso do motor para o que
   // ele deveria ser mais rapido.
   if (s.estiloOnly) return false
+  if (s.repoOnly) return step.id === 'testes'
   if (step.kind === 'security') return s.sec || s.backend || s.data || s.deps || s.ambiguous
   // `kind: 'review'` continua valido em pipeline CUSTOMIZADO (.hii/pipeline.json do
   // alvo), por isso a regra fica. O pipeline deste repo nao tem mais step assim: o
@@ -183,6 +191,7 @@ function profileOf(s: Signals): StepProfile {
   if (s.riskHigh) return 'completo'
   if (s.externo) return 'externo'
   if (s.estiloOnly) return 'visual'
+  if (s.repoOnly) return 'repo'
   if (s.lean) return 'enxuto'
   if (s.deps && !s.logic && !s.backend && !s.data) return 'deps'
   return 'padrao'
@@ -193,6 +202,7 @@ function reasonOf(s: Signals): string {
   if (s.externo) return s.motivoExterno
   if (s.sec) return 'sinal de seguranca — inclui escudo'
   if (s.estiloOnly) return 'mudanca de aparencia (cor/css/layout) — vai direto ao crivo do fecho, que le o diff'
+  if (s.repoOnly) return 'trabalho de repositorio (conflito/merge/rebase) — so Testes: o que corre risco e a suite depois da costura, nao a arquitetura'
   if (s.cosmeticOnly) return 'mudanca cosmetica/texto — pula qualidade e seguranca'
   if (s.visualOnly) return 'mudanca so visual — pula seguranca/arquitetura/testes'
   if (s.deps && !s.logic && !s.backend && !s.data) return 'dependencias — testes + seguranca(CVE), pula arquitetura'
