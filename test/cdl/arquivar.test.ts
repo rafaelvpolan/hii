@@ -8,7 +8,7 @@ process.env.HICODE_CARDS_DIR = CARDS
 
 const A = await import('../../motor/cdl/arquivar.ts')
 const { submit, transition } = await import('../../motor/mir/acoes.ts')
-const { allCards } = await import('../../motor/cdl/store.ts')
+const { allCards, updateCard } = await import('../../motor/cdl/store.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -23,7 +23,6 @@ function card(repo: string, status: string, updated?: string): string {
   const id = submit({ title: `${repo} ${status}`, repo })
   transition(id, status)
   if (updated) {
-    const { updateCard } = require('../../motor/cdl/store') as typeof import('../../motor/cdl/store.ts')
     updateCard(id, { fields: { updated } })
   }
   return id

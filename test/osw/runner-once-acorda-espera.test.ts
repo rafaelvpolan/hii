@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const ROOT = join(import.meta.dir, '..', '..')
+const ROOT = join(import.meta.dirname, '..', '..')
 const RUNNER = join(ROOT, 'runner.ts')
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-once-'))

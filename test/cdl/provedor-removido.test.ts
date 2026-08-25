@@ -7,7 +7,7 @@ import type { Card } from '../../motor/cdl/index.ts'
 import { warnProviderConfig } from '../../motor/tmd/config.ts'
 import { createCard, readCard } from '../../motor/cdl/store.ts'
 
-const REPO = join(import.meta.dir, '..', '..')
+const REPO = join(import.meta.dirname, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-provedor-removido-'))
 const CARDS = join(BASE, 'cards')
 const CARDS_VAZIO = join(BASE, 'cards-vazio')

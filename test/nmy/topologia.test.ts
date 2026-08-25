@@ -1,5 +1,6 @@
 import { test, expect } from '../apoio/runner.ts'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { lerTopologia, transicaoPermitida, destinosDe, todasAsTransicoes } from '../../motor/nmy/topologia.ts'
 import { conferirTransicao, esquecerTopologia, observarDeriva } from '../../motor/nmy/deriva-de-transicao.ts'
@@ -151,8 +152,6 @@ test('nenhum checkpoint humano fica sem saida declarada', () => {
 // vez de JSON solto — e nao tinha teste nenhum. Este e justamente o caminho de
 // erro que motivou declarar a topologia como dado: alguem editar o JSON errado.
 function comTopologia<T>(conteudo: string, corpo: () => T): T {
-  const { mkdtempSync, writeFileSync, rmSync } = require('node:fs') as typeof import('node:fs')
-  const { tmpdir } = require('node:os') as typeof import('node:os')
   const dir = mkdtempSync(join(tmpdir(), 'hii-topo-'))
   const arquivo = join(dir, 'topologia.json')
   writeFileSync(arquivo, conteudo)

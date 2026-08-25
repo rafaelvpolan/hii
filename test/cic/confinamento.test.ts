@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, existsS
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const REPO = dirname(dirname(import.meta.dir))
+const REPO = dirname(dirname(import.meta.dirname))
 const BASE = realpathSync(mkdtempSync(join(tmpdir(), 'hicode-confina-')))
 const WT = join(BASE, 'worktree')
 const BIN = join(BASE, 'bin')

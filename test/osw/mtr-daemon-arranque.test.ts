@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpath
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const REPO = join(import.meta.dir, '..', '..')
+const REPO = join(import.meta.dirname, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-daemon-arranque-'))
 const SCRIPT = join(BASE, 'scripts', 'runner-daemon.sh')
 const SEM_PROC = join(BASE, 'scripts', 'sem-proc.sh')

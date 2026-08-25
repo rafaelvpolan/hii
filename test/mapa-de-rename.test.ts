@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from './apoio/runner.ts'
 // hicode:allow-any — o script de rename e .mjs sem tipos; a fronteira e checada aqui.
 import {
@@ -84,7 +85,9 @@ test('os dez dominios da Onda 1 continuam todos la, e nenhum encolheu', () => {
 // Arquivo NOVO pos-migracao nao entra aqui (e por isso e subconjunto, nao
 // igualdade): o fixture e a foto do que a migracao moveu, nao do repo de hoje.
 test('nenhum arquivo migrado desapareceu — conferencia por NOME, nao por contagem', async () => {
-  const congelado = (await import('./fixtures/mapa-rename-destinos.json')).default as string[]
+  // `readFileSync` e nao `import(...json)`: o node exige `with { type: 'json' }` no
+  // import de JSON e o bun nao, entao o import atravessaria so um dos runtimes.
+  const congelado = JSON.parse(readFileSync('test/fixtures/mapa-rename-destinos.json', 'utf8')) as string[]
   const hoje = new Set(todos.map(([, d]) => d))
   const sumiram = congelado.filter(d => !hoje.has(d))
   expect(sumiram, 'destino que a migracao criou e que nao existe mais no mapa').toEqual([])

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import type { Card } from '../../motor/cdl/index.ts'
 import { createCard, readCard } from '../../motor/cdl/store.ts'
 
-const REPO = join(import.meta.dir, '..', '..')
+const REPO = join(import.meta.dirname, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-ref-recusada-'))
 const CARDS = join(BASE, 'cards')
 const REPOS = join(BASE, 'repos.json')

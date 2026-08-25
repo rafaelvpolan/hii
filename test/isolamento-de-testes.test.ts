@@ -2,7 +2,7 @@ import { test, expect } from './apoio/runner.ts'
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-const DIR = join(import.meta.dir)
+const DIR = join(import.meta.dirname)
 
 export function arquivosDeTeste(raiz: string = DIR): string[] {
   const achados: string[] = []

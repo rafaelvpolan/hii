@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 
-const REPO = join(import.meta.dir, '..', '..')
+const REPO = join(import.meta.dirname, '..', '..')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-shutproc-'))
 mkdirSync(join(BASE, 'cards', 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))

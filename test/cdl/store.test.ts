@@ -85,7 +85,7 @@ function cardPath(id: string): string {
 }
 
 async function racePatchers(id: string, fields: string[], times: number): Promise<void> {
-  const script = join(import.meta.dir, '..', 'fixtures', 'patch-loop.ts')
+  const script = join(import.meta.dirname, '..', 'fixtures', 'patch-loop.ts')
   const barrier = join(CARDS, `.go-${id}`)
   const procs = fields.map(f =>
     rodar(['bun', script, CARDS, id, f, String(times), barrier], { stdout: 'ignore', stderr: 'ignore' }),
@@ -130,7 +130,7 @@ test('REGRESSAO corrida entre processos: patchCardWith incrementa wait_attempts 
   const id = fresh({ title: 'incremento atomico', status: 'WAITING', wait_attempts: '0' })
   const procs = 4
   const times = 100
-  await raceIncrementers(join(import.meta.dir, '..', 'fixtures', 'increment-loop.ts'), id, procs, times)
+  await raceIncrementers(join(import.meta.dirname, '..', 'fixtures', 'increment-loop.ts'), id, procs, times)
   expect(Number(readCard(id)?.fm.wait_attempts)).toBe(procs * times)
 }, 30000)
 
@@ -138,6 +138,6 @@ test('CONTROLE NEGATIVO: ler-fora-do-lock-e-so-depois-escrever perde incrementos
   const id = fresh({ title: 'incremento sem lock', status: 'WAITING', wait_attempts: '0' })
   const procs = 4
   const times = 100
-  await raceIncrementers(join(import.meta.dir, '..', 'fixtures', 'increment-loop-broken.ts'), id, procs, times)
+  await raceIncrementers(join(import.meta.dirname, '..', 'fixtures', 'increment-loop-broken.ts'), id, procs, times)
   expect(Number(readCard(id)?.fm.wait_attempts)).toBeLessThan(procs * times)
 }, 30000)

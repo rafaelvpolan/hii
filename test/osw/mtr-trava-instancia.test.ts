@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { acquireInstanceLock, holdInstanceLock, releaseInstanceLock } from '../../motor/osw/mtr/trava-instancia.ts'
 import { daemonPid } from '../../motor/osw/mtr/daemon.ts'
 
-const ROOT = join(import.meta.dir, '..', '..')
+const ROOT = join(import.meta.dirname, '..', '..')
 const RUNNER = join(ROOT, 'runner.ts')
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-instance-lock-'))
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-instance-lock-cards-'))

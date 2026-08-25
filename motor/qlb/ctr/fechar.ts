@@ -4,6 +4,7 @@ import { isoNow } from '../../cdl/index.ts'
 import type { StepMap, StepMetric } from '../../cdl/index.ts'
 import { MAX_CONFLICT, maxReajuste, PROJECT_MEMORY } from '../../cdl/ali/config.ts'
 import { gastoDoCard, tetoDoCard } from '../../euc/tsr/orcamento.ts'
+import { instrucaoDeRed, lerRelatoDeRed, registrarRed } from '../../agentes/chg/red-primeiro.ts'
 import { registrarTier, tierDoCard } from '../../osw/rui.ts'
 import { appendProjectMemory } from '../../csd/memoria.ts'
 import { readCard, patchCard, repoPath, repoBase } from '../../cdl/store.ts'
@@ -21,7 +22,7 @@ import { foraDoEscopo } from '../../osw/rta/escopo.ts'
 import { runCodefoxGate, runGatedReview, persistGate, buildPrBody, gateOutcome, gateHaltReason, withGateRetry } from '../../cic/crv/gate.ts'
 import { ensureContract } from '../../cdl/bss/armazenar.ts'
 import { podeAbrirPr } from '../../euc/rdr/doctor.ts'
-import { affectedPackage } from '../../mir/comandos.ts'
+import { affectedPackage, resolveCommand } from '../../mir/comandos.ts'
 import { packsDoCard } from '../../mir/comandos-manuais.ts'
 import { addMetric, accumulatedTotals, haltForInspection, applyStepFailurePolicy } from '../../euc/metricas-de-fecho.ts'
 import { buildWithReajuste, testGate } from '../../cic/crv/portoes-de-fecho.ts'
@@ -53,6 +54,13 @@ function pushFailureDiagnostico(push: PushResult): string {
     return `push recusado mesmo com --force-with-lease ancorado no ultimo push que este card conhece — a branch remota mudou desde entao (fixup humano ou outro processo); reexecutar sozinho NAO resolve, decida manualmente: ${push.detail}`
   }
   return `push falhou por um motivo que nao e non-fast-forward — reexecutar sozinho tende a repetir esta falha; confira autenticacao/permissao: ${push.detail}`
+}
+
+// Primeira linha que parece saida e nao cabecalho vazio: e o que vai para o diario
+// do card, para quem le saber DE QUE falha se trata sem abrir o log inteiro.
+function primeiraLinhaUtil(saida: string): string {
+  const linha = saida.split('\n').map(l => l.trim()).find(l => l.length > 3) ?? ''
+  return linha.slice(0, 160)
 }
 
 export async function handleFinish(id: string, deps: FinishDeps = { runStep, runCodefoxGate }): Promise<void> {
@@ -190,7 +198,12 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const fsteps: StepMap = {}
   for (const step of steps.slice(startIdx)) {
     registrarTier(id, step.id, tierDoCard(step.id, { leiForcou: lei.forca === 'completo', pedidoDoCard: card.fm.tier }))
+    // No perfil `completo` o passo de testes precisa PROVAR o RED, e nao so
+    // escrever teste. A instrucao e o leitor moram no mesmo modulo, para o formato
+    // exigido e o formato lido nao poderem divergir.
+    const exigeRed = step.id === 'testes' && plan.profile === 'completo'
     const instruction = step.instruction.replace('%s', desc ?? '')
+      + (exigeRed ? instrucaoDeRed(resolveCommand(contract, 'test', wt, pkg)?.label ?? '') : '')
     let r: { time: number; cost: number; costMeasured?: boolean; tokens: number; text: string }
     let gateDoPasso: StepMetric | null = null
     if (step.gated) {
@@ -237,6 +250,18 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     }
     fsteps[step.label] = { time: r.time, cost: r.cost, tokens: r.tokens, costMeasured: r.costMeasured }
     if (gateDoPasso && (gateDoPasso.cost || gateDoPasso.tokens)) fsteps[step.label + SUFIXO_DO_GATE] = gateDoPasso
+    // Le a evidencia de RED anexada pelo passo de testes ANTES de testGate rodar.
+    // O produtor do motor (`registrarRed` dentro de testGate) so ve a suite ja com o
+    // codigo escrito: quando o TDD foi feito de verdade, a suite chega VERDE e o
+    // motor nao tem o que observar. Era esse o incentivo invertido — o card
+    // bem-feito parava e o que chegava quebrado passava.
+    if (exigeRed) {
+      const relato = lerRelatoDeRed(r.text)
+      if (relato.aceito) {
+        registrarRed(id, `${step.label}: ${primeiraLinhaUtil(relato.saida)}`, 'agente')
+      }
+      patchCard(id, {}, `${isoNow()} CHG: evidencia de RED do passo de testes — ${relato.aceito ? 'ACEITA' : 'RECUSADA'}: ${relato.motivo}`)
+    }
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
       haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`)
       return
