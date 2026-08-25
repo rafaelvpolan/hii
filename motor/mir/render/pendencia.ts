@@ -31,7 +31,7 @@ export function pendenciaDoStatus(status: string, id: string, temPerguntaDoCrivo
       acoes: [
         { tecla: '↑/↓', texto: 'escolhe a opcao abaixo' },
         { tecla: 'numero', texto: 'responde direto (ou escreva a resposta)' },
-        { tecla: 'esc', texto: 'deixa para depois — a pergunta continua no card' },
+        { tecla: 'esc', texto: 'deixa para depois e libera a navegacao — escolher a tarefa de novo reabre' },
       ],
     }
   }

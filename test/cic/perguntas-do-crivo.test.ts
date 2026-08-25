@@ -203,3 +203,79 @@ test('INVARIANTE o prompt PROIBE perguntar ao humano o que o agente executou', a
   expect(fonte, 'a forma exata que os cards reais produziram').toContain('voce rodou')
   expect(fonte, 'e o que perguntar no lugar').toContain('esta NO DIFF')
 })
+
+const { newSession, seguir, sincronizarPergunta, respondido } = await import('../../motor/mir/sessao.ts')
+
+// A primeira versao re-armava o modo de pergunta a CADA desenho enquanto houvesse
+// pergunta aberta. Dispensar (esc, ir para outra tarefa) era desfeito no quadro
+// seguinte: a pessoa ficava presa naquele card sem conseguir navegar.
+test('REGRESSAO: dispensar a pergunta LIBERA a navegacao, e nao e desfeito no proximo quadro', () => {
+  const id = cardComPerguntas()
+  const chave = `${id}:primeira`
+  const dentro = seguir(newSession('org/app'), id)
+
+  const armado = sincronizarPergunta(dentro, chave)
+  expect(armado.perguntando, 'a pergunta tem de chamar uma vez').toBe(id)
+
+  const dispensado = respondido(armado)
+  expect(dispensado.perguntando).toBe('')
+
+  const depois = sincronizarPergunta(dispensado, chave)
+  expect(depois.perguntando, 're-armar aqui e o que prendia a pessoa no card').toBe('')
+})
+
+test('pergunta NOVA volta a chamar — dispensar vale para aquela pergunta, nao para sempre', () => {
+  const id = cardComPerguntas()
+  const dentro = seguir(newSession('org/app'), id)
+  const dispensado = respondido(sincronizarPergunta(dentro, `${id}:primeira`))
+  const comOutra = sincronizarPergunta(dispensado, `${id}:segunda`)
+  expect(comOutra.perguntando, 'texto diferente e outra pergunta').toBe(id)
+})
+
+test('sem pergunta aberta, nada e armado', () => {
+  const dentro = seguir(newSession('org/app'), '001')
+  expect(sincronizarPergunta(dentro, '').perguntando).toBe('')
+})
+
+// Dispensar nao pode ESCONDER que ha pergunta — so tirar o modo do caminho.
+test('o aviso continua no cabecalho depois de dispensar', () => {
+  const id = cardComPerguntas()
+  const card = readCard(id)
+  expect(temPerguntaAberta(card?.fm ?? {}, id), 'o aviso le o CARD, nao o estado da sessao').toBe(true)
+  const p = pendenciaDoStatus('HALTED', id, true)
+  expect(p?.acoes.some(a => a.texto.includes('reabre')), 'e tem de dizer como voltar').toBe(true)
+})
+
+const { ordemDoRodape } = await import('../../motor/mir/cli/board-tui.ts')
+
+// A lista de navegacao trazia SO as opcoes quando havia pergunta, e `navegar` limita
+// no ultimo item: descer nao levava a lugar nenhum. Com pergunta aberta nao havia
+// como ir para outra tarefa — a pessoa ficava presa naquele card.
+test('REGRESSAO: descer alem da ultima opcao entra nas TAREFAS, e nao trava', () => {
+  const id = cardComPerguntas()
+  const dentro = { ...seguir(newSession('org/site'), id), perguntando: id }
+  const ordem = ordemDoRodape(dentro, 'rodape')
+  const opcoes = ordem.filter(x => x.startsWith('op:'))
+  expect(opcoes.length, 'as opcoes vem primeiro').toBeGreaterThan(0)
+  expect(ordem.length, 'e a lista CONTINUA nas tarefas').toBeGreaterThan(opcoes.length)
+  expect(ordem.slice(0, opcoes.length), 'a ordem e opcoes e depois tarefas').toEqual(opcoes)
+})
+
+test('o mesmo vale para o painel de aprovacao', () => {
+  const id = cardComPerguntas('URL')
+  const dentro = { ...seguir(newSession('org/site'), id), aprovando: id }
+  const ordem = ordemDoRodape(dentro, 'rodape')
+  expect(ordem.slice(0, 3)).toEqual(['op:1', 'op:2', 'op:3'])
+  expect(ordem.length, 'aprovar tambem nao pode ser um poco').toBeGreaterThan(3)
+})
+
+// Trocar de tarefa deixa a pergunta da anterior para tras.
+test('REGRESSAO: ir para outra tarefa solta o modo de pergunta da anterior', () => {
+  const a = cardComPerguntas()
+  const b = createCard({ title: 'outra', status: 'READY', repo: 'org/site' }, '## Objetivo\nx\n')
+  const dentro = { ...seguir(newSession('org/site'), a), perguntando: a, perguntaVista: `${a}:x` }
+  const trocou = seguir(dentro, b)
+  expect(trocou.perguntando, 'ficaria presa no card antigo').toBe('')
+  expect(trocou.perguntaVista).toBe('')
+  expect(seguir(dentro, a).perguntando, 'voltar para a MESMA tarefa nao derruba o modo').toBe(a)
+})

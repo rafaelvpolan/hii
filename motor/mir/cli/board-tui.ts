@@ -40,15 +40,21 @@ export function cardDaSessao(chave: string): string {
 
 export function ordemDoRodape(state: SessionState, modo: ModoNavegacao = 'rodape'): string[] {
   if (modo === 'board') return ordemDasSessoes(state.repo)
-  if (state.aprovando) return ['op:1', 'op:2', 'op:3']
-  if (state.perguntando) {
-    const p = pendencia(state.perguntando)
-    if (p) return p.atual.options.map((_, i) => `op:${i + 1}`)
-  }
   const cards = todosOsCards()
   const rodando = emExecucao(cards, state.repo, Date.now(), () => '').map(e => e.id)
   const espera = esperandoVoce(cards, state.repo).map(e => e.id)
-  return [...rodando, ...espera.filter(id => !rodando.includes(id))]
+  const tarefas = [...rodando, ...espera.filter(id => !rodando.includes(id))]
+  // As opcoes vem ANTES das tarefas, na MESMA lista, e nao no lugar delas. Devolver
+  // so as opcoes fazia a navegacao travar no fim (`navegar` limita no ultimo item):
+  // com pergunta aberta nao havia como descer para outra tarefa — a pessoa ficava
+  // presa naquele card. Descer alem da ultima opcao agora entra nas tarefas, e subir
+  // acima da primeira volta para o prompt, como em qualquer lista daqui.
+  if (state.aprovando) return ['op:1', 'op:2', 'op:3', ...tarefas]
+  if (state.perguntando) {
+    const p = pendencia(state.perguntando)
+    if (p) return [...p.atual.options.map((_, i) => `op:${i + 1}`), ...tarefas]
+  }
+  return tarefas
 }
 
 export function navegar(state: SessionState, dir: -1 | 1, modo: ModoNavegacao): boolean {

@@ -44,6 +44,9 @@ export interface AppHooks {
   // Devolve true quando o numero foi CONSUMIDO como resposta. False deixa o
   // caractere seguir para a linha de entrada, que e o comportamento de sempre.
   onNumero?: (n: string) => boolean
+  // Devolve true quando havia algo aberto para dispensar. False deixa o ESC seguir
+  // o caminho de sempre.
+  onDispensar?: () => boolean
   onAba?: (dir: -1 | 1) => void
   onCiclarModo?: (dir: -1 | 1) => void
   podeLimpar?: () => string
@@ -75,6 +78,7 @@ const PADRAO = {
   onNav: (): boolean => false,
   onEntrar: (): void => {},
   onNumero: (): boolean => false,
+  onDispensar: (): boolean => false,
   onAba: (): void => {},
   onCiclarModo: (): void => {},
 }
@@ -257,6 +261,15 @@ export function createApp(term: Terminal, dados: AppHooks): App {
         sugIdx = -1
         return true
       }
+    }
+    // ESC com a linha vazia DISPENSA o que estiver aberto (pergunta, aprovacao).
+    // Antes o escape so limpava o cursor de navegacao: o modo de pergunta continuava
+    // ligado, o quadro seguia listando OPCOES no lugar das tarefas, e nao havia como
+    // sair daquele card — a tela prometia "esc deixa para depois" e nao cumpria.
+    if (input.buffer.length === 0 && ehEscape(key) && hooks.onDispensar()) {
+      sujo = true
+      input = pararNavegacao(input)
+      return true
     }
     // NUMERO SOZINHO responde, sem enter — e o que a interacao com IA faz, e o que a
     // propria tela ja promete ("numero responde direto"). Fica ANTES de `keypress`

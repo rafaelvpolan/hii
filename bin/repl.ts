@@ -4,8 +4,8 @@ import { dispatch, rotuloDoBloqueio } from '../motor/mir/despacho.ts'
 import type { DispatchIO, SituacaoDeEnvio } from '../motor/mir/despacho.ts'
 import { provedoresDisponiveis } from '../motor/tmd/disponibilidade.ts'
 import { providerNameFor } from '../motor/tmd/registro.ts'
-import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta } from '../motor/mir/sessao.ts'
-import { temPerguntaAberta } from '../motor/cic/crv/perguntas-do-crivo.ts'
+import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta, respondido } from '../motor/mir/sessao.ts'
+import { perguntasDoCrivo } from '../motor/cic/crv/perguntas-do-crivo.ts'
 import type { SessionState } from '../motor/mir/sessao.ts'
 import { daemonPid, daemonStatus } from '../motor/osw/mtr/daemon.ts'
 import { pendencia } from '../motor/mir/responder.ts'
@@ -105,7 +105,10 @@ async function tui(state0: SessionState): Promise<void> {
         const card = readCard(state.seguindo)
         // A pergunta vem ANTES da aprovacao: se o crivo perguntou, decidir sobre a
         // URL sem responder e decidir sem a informacao que o proprio motor pediu.
-        state = sincronizarPergunta(state, !!card && temPerguntaAberta(card.fm, state.seguindo))
+        // A chave identifica a PERGUNTA, e nao so "ha pergunta": pergunta nova
+        // (texto diferente) volta a chamar; a mesma, ja dispensada, nao.
+        const aberta = card ? perguntasDoCrivo(card.fm, state.seguindo).find(q => !q.answer) : undefined
+        state = sincronizarPergunta(state, aberta ? `${state.seguindo}:${aberta.q}` : '')
         state = sincronizarAprovacao(state, String(card?.fm.status ?? ''))
       }
       if (!state.aprovando) return []
@@ -184,6 +187,15 @@ async function tui(state0: SessionState): Promise<void> {
     // O numero so responde quando HA painel de opcao aberto — pergunta do crivo, do
     // CLARIFY, ou aprovacao de URL. Fora disso ele recusa e o caractere vai para a
     // linha, como sempre: digitar "1" para escrever "1" continua funcionando.
+    // ESC sai do modo de pergunta e devolve a navegacao. O aviso "o crivo perguntou"
+    // continua no cabecalho da tarefa — dispensar tira o modo do caminho, nao
+    // esconde que ha pergunta. Escolher a tarefa de novo no quadro reabre.
+    onDispensar: () => {
+      if (!state.perguntando) return false
+      state = respondido(state)
+      selecionar('')
+      return true
+    },
     onNumero: (n) => {
       // Quantas opcoes existem AGORA. Nao basta "ha painel": exigir opcao ja
       // SELECIONADA obrigaria a navegar com as setas antes de digitar o numero, que e
