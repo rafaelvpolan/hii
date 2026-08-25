@@ -1,4 +1,4 @@
-import { test, expect } from './runner.ts'
+import { test, expect, lerArquivo } from './runner.ts'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -141,4 +141,20 @@ test('os quatro invariantes de portabilidade conseguem acusar', () => {
   expect(/(?:^|[^.\w])require\s*\(/.test("const x = require('node:fs')")).toBe(true)
   expect(/(?:^|[^.\w])require\s*\(/.test('obj.require(1)'), 'metodo chamado require nao conta').toBe(false)
   expect(/import\(\s*[`'"][^`'"]+\.json[`'"]\s*\)/.test("await import('./a.json')")).toBe(true)
+})
+
+// Travamento nao e falha: e pior. O processo fica vivo sem reprovar e sem terminar,
+// e no CI isso vira "job demorou demais" em vez de "teste X quebrou". Foi o que
+// aconteceu: seis arquivos que criam a TUI prendiam a suite inteira no node por causa
+// do `setInterval` de repintura, que o bun ignora ao sair e o node respeita.
+//
+// `--test-timeout` NAO pega esse caso: o timeout mata teste lento, nao processo com
+// handle aberto. A guarda tem de ser o `unref`.
+test('INVARIANTE o timer de repintura da TUI nao segura o processo vivo', async () => {
+  const fonte = await lerArquivo('motor/mir/tui/app.ts')
+  const linhas = fonte.split('\n')
+  const iTimer = linhas.findIndex(l => l.includes('setInterval(') && l.includes('desenhar()'))
+  expect(iTimer, 'o timer de repintura tem de existir').toBeGreaterThan(-1)
+  const seguintes = linhas.slice(iTimer + 1, iTimer + 3).join('\n')
+  expect(seguintes, 'timer de repintura sem unref prende o processo').toContain('unref')
 })

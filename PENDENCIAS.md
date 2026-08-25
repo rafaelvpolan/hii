@@ -306,8 +306,9 @@ outro requisito do Node.
 
 R: pode fazer.
 
-**FEITO** — os sete passos. A suíte roda nos dois runtimes e `bun run test:node`
-entrou no CI ao lado de `test:unit`.
+**FEITO** — os sete passos. A suíte roda nos dois runtimes: **2566 testes sob bun**
+e **2561 sob `node --test`, em 32s**, e `bun run test:node` entrou no CI ao lado de
+`test:unit`.
 
 O que o node encontrou na primeira execução, e que nenhum teste podia ver antes:
 `import.meta.dir` é extensão do bun (11 arquivos), `require()` não existe em ESM
@@ -323,6 +324,22 @@ teste), e o sed reescreveu como se fosse chamada. E o próprio
 `expect-diferencial.test.ts` teve o import reescrito para a fachada — passou a
 comparar o shim **consigo mesmo**, quatro testes verdes provando nada. Ele agora
 reprova se apontarem os dois lados para o mesmo motor.
+
+E duas coisas que só apareceram rodando a suíte inteira no node até o fim:
+
+**A suíte não era lenta — ela travava.** Seis arquivos que criam a TUI prendiam o
+processo por causa do `setInterval` de repintura, que o bun ignora ao sair e o node
+respeita. Travamento é pior que falha: o processo fica vivo sem reprovar e sem
+terminar, e no CI isso vira "job demorou demais" em vez de "teste X quebrou".
+`--test-timeout` **não** pega esse caso — ele mata teste lento, não processo com
+handle aberto. Com `unref()` no timer (que é o certo: repintura não pode ser a razão
+de o processo viver), a suíte passou de "não termina em 20 minutos" para **32
+segundos**.
+
+**A ponte de servidor não punha `Content-Length`**, que o `Bun.serve` põe sozinho.
+O node respondia em chunked, e um teste de teto de download — que depende do tamanho
+**anunciado** — deixou de testar o que testava. Fidelidade da ponte é o que separa
+migrar de reescrever o teste sem perceber.
 
 ## DECISÃO PENDENTE — a evidência de RED premia o card que chega quebrado
 

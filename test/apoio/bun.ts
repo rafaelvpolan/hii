@@ -110,6 +110,14 @@ export async function servidorDeTeste(fetch: (req: Request) => Response | Promis
           const corpo = Buffer.from(await r.arrayBuffer())
           const cabecalhos: Record<string, string> = {}
           r.headers.forEach((v, k) => { cabecalhos[k] = v })
+          // `Content-Length` explicito, como o `Bun.serve` faz sozinho. Sem ele o
+          // node responde em chunked, e um teste que depende do TAMANHO ANUNCIADO
+          // (teto de download recusado antes de baixar) deixa de testar o que
+          // testava — passa por outro caminho, ou nao passa. Fidelidade da ponte e
+          // o que separa migrar de reescrever o teste sem perceber.
+          if (cabecalhos['content-length'] === undefined && !('transfer-encoding' in cabecalhos)) {
+            cabecalhos['content-length'] = String(corpo.byteLength)
+          }
           res.writeHead(r.status, cabecalhos)
           res.end(corpo)
         })

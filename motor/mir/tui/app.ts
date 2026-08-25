@@ -331,7 +331,14 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     return a.kind === 'redraw'
   }
 
+  // `unref`: o timer de REPINTURA nao pode ser a razao de o processo continuar vivo.
+  // Quem segura a TUI e a promessa de `run()` (resolvida so em `finalizar`) e o stdin
+  // em modo bruto — o timer so redesenha o que ja esta na tela. Sem isto, qualquer
+  // codigo que crie um app e nao chame `encerrar()` prende o processo por 100s a cada
+  // ciclo: no node a suite inteira ficava pendurada em seis arquivos de teste, sem
+  // falhar e sem terminar, que e o pior dos dois mundos para diagnosticar.
   const timer = setInterval(() => { sujo = true; desenhar() }, hooks.intervalMs)
+  timer.unref?.()
 
   return {
     log,
