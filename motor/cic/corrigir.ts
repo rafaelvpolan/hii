@@ -123,6 +123,13 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
     return
   }
   await commit(wt, redo ? `feat: refaz url apos rejeicao (#${id})` : `fix: correção humana (#${id})`)
+  // O custo da correcao entrava SO no texto da mensagem abaixo e nunca no
+  // frontmatter — o card 001 prova: cost_usd ficou em 2.2684 enquanto o diario
+  // registrava "custo $1.5380 · 92122 tokens" de uma correcao que ja tinha rodado.
+  // Como cinco portoes de orcamento leem `cost_usd`, todos decidiam sobre um numero
+  // 41% menor que o real. `gasto` e o valor conferido na entrada deste handler
+  // (linha 88), ja garantido numerico; somar sobre ele e o mesmo que o fecho faz.
+  const tokensAntes = Number(card.fm.tokens_total || '0') || 0
   patchCard(id, {
     status: 'URL',
     correction: '',
@@ -131,6 +138,8 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
     correction_line_text: '',
     verify: 'inconclusivo',
     wait_attempts: '',
+    cost_usd: (gasto + r.cost).toFixed(4),
+    tokens_total: String(tokensAntes + r.tokens),
   }, `${isoNow()} CORRECTING->URL ${redo ? 'url refeito' : 'correção aplicada'}: ${r.text || 'ok'} (verificando…) (custo $${r.cost.toFixed(4)} · ${r.tokens} tokens)`)
   process.stdout.write(`[runner] #${id}: URL apos ${redo ? 'refação' : 'correção'} (verificando)\n`)
   const reval = await revalidate(id, wt, target)

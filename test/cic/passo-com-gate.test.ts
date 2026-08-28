@@ -75,7 +75,26 @@ test('crivo BLOCKED reexecuta o agente com o motivo da reprovacao no prompt', as
   expect(stepCalls[1]?.instrucao).toContain('acoplou demais')
 })
 
+// Motivos DISTINTOS a cada volta: o crivo achou coisa nova toda vez, entao houve
+// progresso e o laco tem mesmo de ir ate o teto. Enquanto o roteiro repetia
+// 'segue quebrado' nas tres, este teste media a parada por nao-progresso
+// acreditando medir o teto, e as duas guardas ficavam presas na mesma assercao.
 test('BLOCKED persistente esgota as tentativas e devolve o motivo', async () => {
+  const id = reset(
+    [step({}), step({}), step({})],
+    [
+      gate({ verdict: 'BLOCKED', reason: 'segue quebrado: acoplamento' }),
+      gate({ verdict: 'BLOCKED', reason: 'segue quebrado: nome ruim' }),
+      gate({ verdict: 'BLOCKED', reason: 'segue quebrado: falta teste' }),
+    ],
+  )
+  const r = await run(id)
+  expect(r.ok).toBe(false)
+  expect(r.reason).toContain('segue quebrado')
+  expect(stepCalls.length).toBe(3)
+})
+
+test('o passo para quando o crivo REPETE a reprovacao — a volta seguinte pagaria para ouvir o mesmo', async () => {
   const bloqueado = gate({ verdict: 'BLOCKED', reason: 'segue quebrado' })
   const id = reset(
     [step({}), step({}), step({})],
@@ -83,8 +102,9 @@ test('BLOCKED persistente esgota as tentativas e devolve o motivo', async () => 
   )
   const r = await run(id)
   expect(r.ok).toBe(false)
+  expect(r.reason, 'o motivo tem de dizer que foi repeticao, senao parece teto esgotado').toContain('sem progresso')
   expect(r.reason).toContain('segue quebrado')
-  expect(stepCalls.length).toBe(3)
+  expect(stepCalls.length, 'a terceira volta nao devia ter sido paga').toBe(2)
 })
 
 test('agente que falha consome tentativa e nao chama o crivo', async () => {
