@@ -198,6 +198,19 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${steps.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}\n`)
   const fsteps: StepMap = {}
   for (const step of steps.slice(startIdx)) {
+    // O teto era conferido SO na entrada do handler (linha 71), nunca aqui. Uma
+    // passagem inteira de passos — cada passo gated custando ate tres voltas de
+    // agente mais duas de crivo — rodava entre duas conferencias, e o card
+    // atravessava o teto sem nada disparar. Conferir por passo custa uma soma em
+    // memoria e para ANTES de pagar o proximo, que e o unico momento em que parar
+    // ainda economiza. `card.fm` e a foto da entrada; `fsteps` traz o que ja se
+    // gastou nesta passagem — a soma dos dois e o gasto real ate aqui.
+    const gastoAteAqui = Number(accumulatedTotals(card, fsteps).cost_usd)
+    if (teto > 0 && gastoAteAqui > teto) {
+      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED orcamento excedido (US$${gastoAteAqui.toFixed(4)} > US$${teto}) dentro do laco de passos — parou antes de pagar ${step.label}`, step.label)
+      process.stdout.write(`[runner] #${id}: HALTED — orcamento estourou dentro do laco (US$${gastoAteAqui.toFixed(4)} > US$${teto})\n`)
+      return
+    }
     registrarTier(id, step.id, tierDoCard(step.id, { leiForcou: lei.forca === 'completo', pedidoDoCard: card.fm.tier }))
     // No perfil `completo` o passo de testes precisa PROVAR o RED, e nao so
     // escrever teste. A instrucao e o leitor moram no mesmo modulo, para o formato
@@ -290,7 +303,13 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     }
     const custoDoGate = gateDoPasso?.cost ?? 0
     const detalheDoGate = gateDoPasso ? ` + crivo $${custoDoGate.toFixed(4)}` : ''
-    patchCard(id, { status: step.state, wait_attempts: '' }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (agente $${r.cost.toFixed(4)}${detalheDoGate} · ${r.tokens + (gateDoPasso?.tokens ?? 0)} tokens)`)
+    // O custo do passo ia SO para o texto da mensagem, nunca para o frontmatter: o
+    // card fechava um passo caro e `cost_usd` continuava com o numero da entrada do
+    // handler. Todo portao de orcamento le esse campo (executar.ts, corrigir.ts,
+    // fechar.ts, fase-spec.ts, gate.ts), entao todos decidiam sobre numero velho.
+    // `accumulatedTotals` usa a foto `card.fm` como base e soma `fsteps`, entao
+    // chamar a cada passo NAO acumula em dobro — sempre recalcula do mesmo ponto.
+    patchCard(id, { status: step.state, wait_attempts: '', ...accumulatedTotals(card, fsteps) }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (agente $${r.cost.toFixed(4)}${detalheDoGate} · ${r.tokens + (gateDoPasso?.tokens ?? 0)} tokens)`)
     process.stdout.write(`[runner] #${id}: ${step.label} (${step.agent}) $${r.cost.toFixed(4)}\n`)
   }
   if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Testes', 'Reajuste', deps.runStep))) {

@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { GateResult } from '../../motor/cic/crv/gate.ts'
 import type { ImplementResult } from '../../motor/cdl/index.ts'
+import type { StepResult } from '../../motor/cic/agente.ts'
 import type { ExecuteDeps } from '../../motor/osw/executar.ts'
 import type { FinishDeps } from '../../motor/qlb/ctr/fechar.ts'
 
@@ -119,6 +120,74 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
   expect(apos3oGateBloqueado?.fm.tokens_total).toBe('800')
   expect(parseFloat(apos3oGateBloqueado?.fm.cost_usd ?? '0')).toBeGreaterThanOrEqual(parseFloat(apos2aExecucao?.fm.cost_usd ?? '0'))
   expect(existsSync(wt)).toBe(true)
+}, TEMPO_COM_GIT_MS)
+
+// Dois passos NAO-gated, para o laco rodar sem chamar o crivo de verdade:
+// runGatedReview nao entra em FinishDeps, entao passo gated aqui bateria na rede.
+// loadPipeline le <worktree>/.hii/pipeline.json antes do config/ do repo, que e o
+// gancho previsto para o alvo mandar no proprio pipeline.
+const PIPELINE_DE_DOIS_PASSOS = {
+  version: 1,
+  steps: [
+    { id: 'passo_um', label: 'PassoUm', kind: 'quality', agent: 'pura', state: 'REFINED', gate: 'none', enabled: true, needs: [], instruction: 'primeiro passo de: "%s"' },
+    { id: 'passo_dois', label: 'PassoDois', kind: 'cleanup', agent: 'pura', state: 'CLEANED', gate: 'none', enabled: true, needs: [], instruction: 'segundo passo de: "%s"' },
+  ],
+}
+
+test('REGRESSAO o teto de orcamento e conferido DENTRO do laco de passos, e o custo do passo vai para o frontmatter', async () => {
+  const wt = worktreeParaTeste()
+  const id = createCard({
+    title: 'dois passos caros',
+    status: 'EXECUTING',
+    repo: 'org/repo',
+    surface: 'none',
+    clarified: 'true',
+    steps: 'passo_um,passo_dois',
+    worktree: wt,
+  }, '## Objetivo\ndois passos\n')
+
+  // Uma execucao so, bem-sucedida: deixa o card em 0.2500 e cria o worktree.
+  implementCalls = 1
+  await handleExecute(id, agenteExecute)
+  expect(readCard(id)?.fm.status).toBe('URL')
+  expect(readCard(id)?.fm.cost_usd).toBe('0.2500')
+
+  mkdirSync(join(wt, '.hii'), { recursive: true })
+  writeFileSync(join(wt, '.hii', 'pipeline.json'), JSON.stringify(PIPELINE_DE_DOIS_PASSOS))
+
+  let passosRodados = 0
+  const agenteDeDoisPassos: FinishDeps = {
+    runStep: (): Promise<StepResult> => {
+      passosRodados++
+      return Promise.resolve({ time: 1, cost: 0.1, costMeasured: true, tokens: 100, text: 'passo feito', ok: true })
+    },
+    runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_BLOCKED),
+  }
+
+  // Teto acima do gasto de entrada (0.2500) e abaixo do gasto DEPOIS do primeiro
+  // passo (0.3500). Assim a guarda da entrada do handler passa, e so a guarda de
+  // dentro do laco pode barrar — que e exatamente o que este teste existe para provar.
+  const tetoAnterior = process.env.HICODE_CARD_BUDGET_USD
+  process.env.HICODE_CARD_BUDGET_USD = '0.30'
+  try {
+    patchCard(id, { status: 'URL_OK' }, 'aprovado pelo humano (teste)')
+    await handleFinish(id, agenteDeDoisPassos)
+    if (readCard(id)?.fm.status === 'CONFIRM') {
+      expect(core.confirmarFecho(id).ok).toBe(true)
+      await handleFinish(id, agenteDeDoisPassos)
+    }
+  } finally {
+    if (tetoAnterior === undefined) delete process.env.HICODE_CARD_BUDGET_USD
+    else process.env.HICODE_CARD_BUDGET_USD = tetoAnterior
+  }
+
+  const fim = readCard(id)
+  expect(passosRodados, 'o segundo passo nao podia ter sido pago: o teto ja tinha estourado').toBe(1)
+  expect(fim?.fm.status).toBe('HALTED')
+  // Sem accumulatedTotals no patch de sucesso do passo, isto seguiria em 0.2500 —
+  // e a guarda acima nunca teria como enxergar o gasto do primeiro passo.
+  expect(fim?.fm.cost_usd, 'o custo do passo tem de chegar ao frontmatter, nao so ao texto do diario').toBe('0.3500')
+  expect(fim?.body, 'o diario tem de dizer que a parada foi DENTRO do laco — senao parece o guard da entrada').toContain('dentro do laco de passos')
 }, TEMPO_COM_GIT_MS)
 
 // O predicado puro decide apenas UMA LINHA DE LOG. Quem de fato impede o segundo
