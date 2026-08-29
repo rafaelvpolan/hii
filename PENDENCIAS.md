@@ -4,7 +4,7 @@ O que ficou em aberto, com o porquê e onde mexer. Ordem = o que dói primeiro.
 
 Quando um item sair, apague a seção — este arquivo é lista de trabalho, não histórico.
 
-**Podado em 29/08/2026.** Saiu daqui tudo o que foi conferido no código como feito:
+**Podado em 29/08/2026, e podado de novo no mesmo dia** conforme as ondas saíram. Saiu daqui tudo o que foi conferido no código como feito:
 as ondas D–H e as três rodadas de crivo, o roadmap dos 34 itens, `truncVisible`
 (razão 417× → 0,98×, com teste de razão por tamanho de entrada em
 `test/mirante/tui-sob-carga.test.ts:110-130`), a migração da suíte para `node:test`, a
@@ -13,63 +13,40 @@ restou abaixo foi reconferido arquivo por arquivo — cada seção diz onde est�
 
 ---
 
-## PENDÊNCIA — o motor desfaz a parada humana, e a sonda cura o que não diagnosticou
+## PENDÊNCIA — a sonda ainda mede a coisa errada, e o backoff não escala com a falha
 
-Três mecanismos independentes que produzem o mesmo sintoma — "a tarefa ficou travada
-em loop" — e que a rodada do PR #28 **não** corrigiu. Ficam aqui com âncora porque
-cada um é trabalho próprio, e o primeiro é o mais grave do repositório hoje.
+Dos três mecanismos que produziam "a tarefa ficou travada em loop", dois saíram: a
+escrita sem compare-and-set (`motor/cordel/store.ts` agora recusa tirar da parada quem
+não é a pessoa) e o `resume_from` que atravessava a correção. Resta o terceiro, e o que
+sobrou dele **exige decisão**, não é conserto mecânico.
 
-**1. `updateCard` grava sem compare-and-set.** `motor/cordel/store.ts:43-65` é o único
-ponto de escrita de card, e ele conhece o par (estado anterior, estado novo) — a
-linha 54 chama `conferirTransicao(before.status, resolvedFields.status, id)`. Só que
-o retorno é **ignorado**: `conferirTransicao` observa, registra a deriva e devolve;
-o laço logo abaixo escreve `fm[k] = v` de qualquer jeito. Há `withFileLock`, então
-não é corrida de escrita — é ausência de política. Ninguém pergunta "esta transição
-é permitida a partir do estado que eu li?" nem "o card ainda está onde eu esperava?".
+**O que já foi feito:** `alcancavelPorHttp` (`motor/tomada/sonda.ts`) parou de aceitar
+403, 408 e 429 como saudável — cota estourada é exatamente "indisponível agora", e o card
+era acordado para falhar de novo. E `wake` (`motor/ciclo/reprise/espera.ts`) parou de
+escrever "sonda de saude ok" quando não havia sonda para o provedor:
+`sabeSondarProvedor` separa "sondei e está de pé" de "não tenho como sondar", que antes
+eram o mesmo `true`.
 
-Consequência medida, no card 001 em disco: `17:17:08 CORRECTING->HALTED parado pelo
-humano`, e às `17:20:30` o mesmo card volta para `URL` pela mão de
-`motor/ciclo/corrigir.ts:126-134` — o job que já estava em voo terminou e escreveu por
-cima. **Toda parada humana durante um job em voo é silenciosamente desfeita.** Para
-quem está olhando a TUI, isso é exatamente "eu mandei parar e ele continuou".
+**O que continua errado, e por quê é decisão.** A sonda mede uma **URL** enquanto o que
+falhou foi o **binário**. Card 002: entrou em `WAITING` às 13:20:03 por timeout de 900 s
+do CLI, e às 13:20:33 foi acordado — um GET de cinco segundos declarando curado um
+processo que não respondeu em quinze minutos. Mesmo com 429 fora, um 200 da API não prova
+que a CLI volta a responder.
 
-O conserto não é barrar transição não declarada em produção — isso trocaria deriva
-silenciosa por card travado, e o comentário de `motor/niemeyer/deriva-de-transicao.ts`
-já diz isso. O conserto é o job em voo **reler o estado antes de escrever** e desistir
-quando o card saiu de baixo dele, que é o que `HALTED` e `PAUSED` significam.
+Duas saídas, e as duas mudam política:
 
-**2. A sonda de saúde não tem relação causal com a falha que ela libera.**
-`motor/ciclo/reprise/espera.ts:69` chama `probeProviderHealth(provider)`, que cai em
-`motor/tomada/registro.ts:112-115` — e ali harness desconhecido devolve `true`
-incondicionalmente. Quando o harness é conhecido, a sonda é
-`alcancavelPorHttp` (`motor/tomada/sonda.ts:8-16`), que faz `curl` numa URL e aceita
-`code > 0 && code < 500`: **429 e 403 contam como saudável.**
+1. **Sondar o que falhou.** Trocar `alcancavelPorHttp` por uma sonda do binário
+   (`<cli> --version` com teto curto) no `healthCheck()` de cada harness. Mede o que
+   quebrou, custa um spawn por card devido, e exige uma costura por harness — os quatro
+   hoje chamam `alcancavelPorHttp` (`claude.ts:70`, `codex.ts:92`, `ollama.ts:74`,
+   `kimi.ts:145`).
+2. **Escalar o backoff pela classe da falha.** Um timeout de 900 s ser retentado 30 s
+   depois é a parte cara, e independe da sonda. `politica.ts` já tem `failureClass` na
+   mão ao gravar `WAITING`; falta gravá-la (`wait_class`) e fazer `backoffMsFor` lê-la.
 
-Card 002 é a prova: entrou em `WAITING` às 13:20:03 por *timeout de 900s do CLI*, e
-às 13:20:33 foi acordado com "sonda de saude ok". Um GET de cinco segundos numa URL
-declarou curado um binário que não respondeu em quinze minutos. O que falhou e o que
-foi medido não têm relação nenhuma — e o card volta para a fila para falhar de novo,
-que é a forma mais cara possível de loop.
-
-**3. `resume_from` atravessa a correção e faz o fecho pular todos os passos.**
-`motor/euclides/metricas-de-fecho.ts:57` grava `resume_from: RESUME_POST_STEPS` ao pausar
-para confirmação. Se o humano responde "não resolveu", `motor/mirante/acoes.ts:145-149`
-manda o card para `CORRECTING` **sem limpar o campo**, e o fluxo de sucesso de
-`motor/ciclo/corrigir.ts` também não limpa. Quando o card volta a `URL_OK`,
-`motor/quilombo/cartorio/fechar.ts:92-93` lê `resume_from` e o repassa a `resumeStart`
-(`motor/quilombo/cartorio/retomar.ts:9`), que devolve `steps.length` — e o `for` de
-`fechar.ts:200` **itera zero vezes**. O card sai "polido" sem ter rodado passo nenhum.
-
-Precisão importante: `fechar.ts:93` limpa o campo ao lê-lo, então o pulo acontece uma
-vez só, não para sempre. Uma vez basta — é justamente o card que voltou da correção,
-o que mais precisa dos passos, que os perde.
-
-**Onde mexer, em ordem:** o item 1 primeiro, porque enquanto ele existir qualquer
-parada é ilusória e os outros dois são difíceis de observar. Depois o 2, trocando a
-sonda por uma que meça o que falhou (o binário, não uma URL) e que trate 429 como
-indisponível. O 3 é uma linha em cada handler do meio.
-
----
+A segunda é a que corta dinheiro primeiro e é mais barata. As duas juntas fecham o caso.
+Nenhuma é óbvia o bastante para sair sem sua palavra: a primeira pode transformar
+provedor lento em provedor "morto", e a segunda muda quanto tempo um card fica parado.
 
 ## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
 
@@ -95,9 +72,8 @@ não estão na lista.
 `handleExecute` (`motor/oswaldo/executar.ts:309-314`) em falha de cota de provedor devolve sem
 mudar status — o card fica em `EXECUTING`. Redespachado em ≤5 s porque `fila.ts` não tem
 cooldown por card (`:97-100` só filtra `emVoo`, `:31` só reveza na chamada). `provider_override_implement`
-(`executar.ts:312`) é gravado mas **nunca apagado** — grep mostra escritor único em `:312`,
-zero leitores de limpeza. Card cravado no fallback para sempre. Se a cota original reset,
-o override continua ativo.
+(`executar.ts:312`) era gravado e nunca apagado — **consertado em 29/08**: o implement
+bem-sucedido limpa o campo, então a cota que voltou deixa de ser ignorada.
 
 Em outro caminho, `quotaFallbackProviderFor` (`motor/tomada/registro.ts:134-137`) é chamado em
 `executar.ts:309`, devolvendo um provedor. Mas o código devolve sem troca de estado:
@@ -160,8 +136,8 @@ não-progresso — **já foi feito** e saiu da lista: `motor/ciclo/reparo.ts:48-
 `motor/ciclo/passo-com-gate.ts:60,136-141` fazem o mesmo antes do teto de `maxReajuste()`.
 O que continua aberto nesta seção é o resto: `status_since` (zero ocorrências no
 repositório), `halt_class` (2 escritores contra ~26 escritas de `HALTED`),
-`provider_override_implement` sem limpador, os 6 pares de transição fora de
-`topologia.json`, e a ausência de cooldown por card em `motor/oswaldo/mutirao/fila.ts`.
+os 6 pares de transição fora de `topologia.json`, e a ausência de cooldown por card em
+`motor/oswaldo/mutirao/fila.ts`.
 
 ---
 
@@ -395,48 +371,23 @@ e o que hoje está fora do lugar.
 | Suíte de testes | `node --test` roda **2.704 testes em 32 s**, um processo por arquivo, em paralelo | **node é a trilha primária** |
 | Scripts `.mjs` de lint e manutenção | ESM puro, `node:fs`/`node:path`; o prefixo `bun` em `package.json:15-17` é convenção, não necessidade | **node** |
 
-### O que está no lugar errado hoje
+### O que estava no lugar errado, e saiu em 29/08
 
-1. **`scripts/runner-daemon.sh` exige `bun` e a imagem de produção não tem.** Ele
-   hardcoda `bun` em três pontos — `:47` (reconhece o daemon só se a linha de comando
-   for `bun runner.ts`), `:54` (`pgrep -x bun`) e `:101` (`nohup bun runner.ts`) — e é
-   chamado por `bin/hii.ts:31` sem passar runtime. Com `COM_BUN=0`, que é o padrão do
-   `Dockerfile:23`, **o container não tem `bun` e o daemon não sobe**. `runtimeDeScript()`
-   existe exatamente para isso e não é usado aqui. É o defeito de runtime mais grave do
-   repositório, e é de produção.
+| O que era | Estado |
+|---|---|
+| `scripts/runner-daemon.sh` hardcodava `bun` em três pontos e o daemon **não subia** na imagem de produção (`node:24-slim`, `COM_BUN=0`) | **feito** — resolve por `HICODE_RUNTIME`, e o teste sobe o daemon com um PATH sem bun, conferindo a cmdline do processo |
+| A trilha bun era 2,5× mais lenta que a node por causa de um `for` com `spawnSync` | **feito** — piscina do tamanho da máquina: 1m22s → 32s |
+| `bun run test` não incluía a trilha node: verde local mais fraco que o do CI | **feito** |
+| `import.meta.main` (extensão do bun) fazia o bloco de CLI de dois scripts sumir em silêncio sob node | **feito** — checagem portável |
+| `require()` dentro de um `.mjs` | **feito** — virou import |
+| `scripts-setup-imports` reprovava por ausência de `bun`, não por defeito | **feito** — sem bun cai numa resolução própria, conferida contra import quebrado de verdade |
+| `tsconfig.json` apontava `#shared/*` para `./panel/*`, que não existe | **feito** — removido |
 
-2. **A trilha bun é 2,5× mais lenta que a node, e a culpa não é do bun.**
-   `scripts/test-bun.mjs:39-52` é um `for` com `spawnSync` — um arquivo por vez, sem
-   concorrência nenhuma —, daí 1m22s contra os 32 s do `node --test`. Paralelizar esse
-   laço pelo número de núcleos é a correção; o processo por arquivo tem de ficar, porque
-   é o que dá o isolamento que a suíte precisa.
-
-3. **`bun run test` não roda a trilha node.** `package.json:19` encadeia typecheck +
-   `lint:types` + `lint:clone` + `test:unit` e para aí. O critério de verde local é
-   mais fraco que o do CI (`ci.yml:43`), e essa diferença já custou uma imagem que
-   morria no arranque com o CI verde.
-
-4. **A trilha node depende de `bun` para passar.** `test/scripts-setup-imports.test.ts:18`
-   spawna `bun build` para conferir resolução de import, e `package.json:18` só exclui
-   `apoio/expect-diferencial` da lista. Rodar `bun run test:node` numa máquina sem bun
-   reprova por ausência de binário, não por defeito.
-
-5. **Dois scripts têm bloco de CLI que nunca executa sob node.**
-   `scripts/renomear-brazil.mjs:244` e `scripts/renomear-testes-brazil.mjs:163` usam
-   `if (import.meta.main)`, que é extensão do bun — sob node é `undefined`, e o bloco
-   some em silêncio. É a forma de falha que este repositório mais persegue: o recurso
-   morto que ninguém vê. `scripts/auditar.ts:126-128` documenta o mesmo comportamento
-   sabendo dele.
-
-6. **`require()` dentro de um `.mjs`.** `scripts/renomear-testes-brazil.mjs:207` faz
-   `const { writeFileSync } = require('node:fs')` — `ReferenceError` em qualquer runtime
-   se a linha for atingida. O invariante que proíbe isso
-   (`test/apoio/migracao-node-test.test.ts:112-115`) varre só `test/`, nunca `scripts/`.
-
-7. **Duas incoerências menores de configuração.** O `Dockerfile:27` copia `bun.lock` e
-   o `:31` roda `npm install --omit=dev`, que o ignora — funciona só porque não há
-   dependência de runtime. E `tsconfig.json:9` mapeia `#shared/*` para `./panel/*`, um
-   diretório que não existe no repositório.
+**O que sobrou, e é pequeno:** o `Dockerfile:27` copia `bun.lock` e o `:31` roda
+`npm install --omit=dev`, que o ignora. Funciona só porque não há dependência de runtime —
+no dia em que houver, o npm fica sem lockfile. Não mexi porque provar exige um
+`docker build`, e mudar imagem sem rodar a construção é o defeito que a Onda 11 já cobrou
+uma vez.
 
 ### O que NÃO fazer
 
