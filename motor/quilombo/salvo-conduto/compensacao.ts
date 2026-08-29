@@ -1,8 +1,8 @@
 import { anexarEvento, eventosDoCard } from '../../euclides/eventos.ts'
 import type { EventoDoCard } from '../../euclides/eventos.ts'
-import { efeitoJaProduzido } from './idempotencia.ts'
+import { efeitoJaProduzido, FASE_DO_CARTORIO } from './idempotencia.ts'
 
-// SLV — compensacao de falha parcial (padrao saga). Nem toda operacao deste
+// Salvo-conduto — compensacao de falha parcial (padrao saga). Nem toda operacao deste
 // motor tem rollback: nao existe "desfazer" um PR aberto do jeito que existe um
 // ROLLBACK de banco. Onde nao ha rollback, o estado precisa ficar MARCADO como
 // orfao para revisao humana — nunca silenciosamente ignorado, e nunca
@@ -45,7 +45,7 @@ export function ehUrlDePr(url: string): boolean {
 // diario: o efeito consta, mas o card nao sabe dele.
 export function prOrfaoDe(card: string, prUrlNoCard: string): PrOrfao | null {
   if (String(prUrlNoCard ?? '').trim()) return null
-  const url = efeitoJaProduzido(card, 'ctr', 'pr_create')
+  const url = efeitoJaProduzido(card, FASE_DO_CARTORIO, 'pr_create')
   if (!url) return null
   if (!ehUrlDePr(url)) {
     // Registra e recusa. Sumir em silencio esconderia adulteracao do diario.

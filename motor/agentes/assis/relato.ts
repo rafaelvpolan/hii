@@ -1,7 +1,7 @@
 import { LABEL_FORA, RANK_GRAVIDADE } from './tipos.ts'
 import type { AchadoAuditoria, GrupoFora, LoteAuditoria, MotivoFora, PlanoAuditoria } from './tipos.ts'
 
-// ASS — o RELATO. Tudo aqui e leitura de um plano ja montado: nenhuma funcao
+// Assis — o RELATO. Tudo aqui e leitura de um plano ja montado: nenhuma funcao
 // deste arquivo decide o que auditar, so como contar o que foi decidido.
 
 export function coberturaFecha(plano: PlanoAuditoria): boolean {

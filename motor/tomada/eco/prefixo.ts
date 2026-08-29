@@ -1,6 +1,6 @@
 // ECO — reuso. Prefixo estavel de prompt dentro do mesmo card.
 //
-// Preocupacao de CUSTO, nao de qualidade — nao confundir com TJL
+// Preocupacao de CUSTO, nao de qualidade — nao confundir com Tijolo
 // (motor/niemeyer/tijolo/blocos.ts), que existe para nao pagar por geracao
 // desperdicada. Aqui o ganho vem do cache de prefixo do provedor: quando o
 // inicio do prompt bate BYTE A BYTE com a chamada anterior, a entrada cacheada
@@ -22,7 +22,7 @@ export function abrirPrompt(prefixo: string): PromptDeCard {
 }
 
 // Anexa, nunca reescreve. Uma correcao vira linha nova dizendo que a anterior
-// estava errada — mesma disciplina do diario append-only (EUC).
+// estava errada — mesma disciplina do diario append-only (Euclides).
 export function anexarInstrucao(p: PromptDeCard, instrucao: string): PromptDeCard {
   return { prefixo: p.prefixo, sufixos: [...p.sufixos, instrucao] }
 }

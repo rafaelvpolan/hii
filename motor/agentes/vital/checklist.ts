@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from '../../cordel/alicerce/config.ts'
 
-// VTB — Vital Brazil: soro especifico contra veneno especifico. Um checklist
+// Vital — Vital Brazil: soro especifico contra veneno especifico. Um checklist
 // generico de seguranca nao pega mass assignment de Eloquent nem SSRF de fetch;
 // cada stack tem o seu, versionado em disco, rodando DEPOIS do baseline.
 

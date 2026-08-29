@@ -3,13 +3,13 @@ import { join } from 'node:path'
 import { ROOT } from '../../cordel/alicerce/config.ts'
 import { ENV_ENQUADRAMENTOS_FILE } from '../../cordel/alicerce/contrato.ts'
 
-// MCN — Macunaima. O heroi de muitas faces atravessa o pais mudando de forma:
+// Macunaima — Macunaima. O heroi de muitas faces atravessa o pais mudando de forma:
 // um problema visto por N personagens, sem que nenhum seja "o" certo.
 //
 // Este modulo so carrega os enquadramentos. Eles sao DADO versionado porque
 // lente hardcoded nao se audita: ninguem revisa um array no meio de um .ts, e
 // mudar o comportamento da divergencia deixaria de aparecer no diff como
-// mudanca de comportamento. Mesma disciplina do CRV com review-criteria.json.
+// mudanca de comportamento. Mesma disciplina do Crivo com review-criteria.json.
 
 export interface Enquadramento {
   readonly id: string
@@ -39,7 +39,7 @@ export function lerEnquadramentos(): Enquadramentos {
   // problema que este arquivo existe para resolver — a divergencia rodaria com
   // lentes que ninguem versionou, e o operador nao saberia com quais rodou.
   if (!existsSync(caminho)) {
-    throw new Error(`enquadramentos.json nao encontrado em ${caminho} — o MCN nao diverge sem lente escrita`)
+    throw new Error(`enquadramentos.json nao encontrado em ${caminho} — o Macunaima nao diverge sem lente escrita`)
   }
   let cru: Cru
   try {
@@ -54,10 +54,10 @@ export function lerEnquadramentos(): Enquadramentos {
     if (!e.id?.trim() || !e.lente?.trim()) {
       throw new Error(`enquadramento sem id ou sem "lente": ${JSON.stringify(e).slice(0, 120)}`)
     }
-    // Id repetido faria dois ramos votarem sob o mesmo nome, e o VTO recusa
+    // Id repetido faria dois ramos votarem sob o mesmo nome, e o Voto recusa
     // lente duplicada na apuracao. Barrar aqui aponta o arquivo; barrar la
     // apontaria a apuracao, longe da causa.
-    if (vistos.has(e.id)) throw new Error(`enquadramento "${e.id}" repetido — dois ramos com o mesmo id falseariam o placar do VTO`)
+    if (vistos.has(e.id)) throw new Error(`enquadramento "${e.id}" repetido — dois ramos com o mesmo id falseariam o placar do Voto`)
     vistos.add(e.id)
   }
   const minimo = Number(cru.minimoDeRamos ?? 3)

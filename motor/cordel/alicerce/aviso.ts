@@ -1,4 +1,4 @@
-// ALI — o aviso de arquivo ILEGIVEL, num lugar so.
+// Alicerce — o aviso de arquivo ILEGIVEL, num lugar so.
 //
 // O padrao que este modulo existe para matar: `catch { return null }` num leitor
 // de configuracao. Ele faz "o arquivo nao existe" e "o arquivo esta corrompido"

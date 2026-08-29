@@ -57,13 +57,13 @@ test('INVARIANTE o portao de teste registra o RED quando a primeira rodada repro
 // A ordem no texto-fonte e sentinela, nao prova: quem prova o comportamento sao os
 // testes acima, que exercitam registrarRed -> exigirRedAntesDoGreen nessa ordem —
 // agora a mesma ordem da producao.
-test('INVARIANTE o fechamento consulta o CHG DEPOIS do gate que produz a evidencia', async () => {
+test('INVARIANTE o fechamento consulta o Chagas DEPOIS do gate que produz a evidencia', async () => {
   const fonte = await lerArquivo('motor/quilombo/cartorio/fechar.ts')
   const iChg = fonte.indexOf('exigirRedAntesDoGreen(id, plan.profile)')
   const iGate = fonte.indexOf('await testGate(')
   // Guarda contra o -1: sem isto, apagar qualquer um dos dois faria a comparacao
   // passar por acidente — o defeito que a versao anterior tinha.
-  expect(iChg, 'a consulta ao CHG sumiu de fechar.ts').toBeGreaterThan(-1)
+  expect(iChg, 'a consulta ao Chagas sumiu de fechar.ts').toBeGreaterThan(-1)
   expect(iGate, 'a chamada a testGate sumiu de fechar.ts').toBeGreaterThan(-1)
   expect(iChg > iGate, 'registrarRed vive dentro de testGate: consultar antes le sempre o diario vazio').toBe(true)
 })

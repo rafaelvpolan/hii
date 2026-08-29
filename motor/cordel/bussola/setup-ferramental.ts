@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Contract } from './tipos.ts'
 
-// BSS — Pilar 3: ferramenta de teste e de debug existem no momento em que a
+// Bussola — Pilar 3: ferramenta de teste e de debug existem no momento em que a
 // area nasce, nao depois. Checavel em disco, como todo gate deste motor:
 // existe comando de teste no contrato? existe ponto de entrada de debug?
 //

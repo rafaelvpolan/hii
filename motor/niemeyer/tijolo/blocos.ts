@@ -2,7 +2,7 @@ import { anexarEvento } from '../../euclides/eventos.ts'
 import { APROVADO } from '../../ciclo/reparo.ts'
 import type { VeredictoDeGate } from '../../ciclo/reparo.ts'
 
-// TJL — Tijolo. Tijolo por tijolo, e o pedreiro confere o prumo antes do
+// Tijolo — Tijolo. Tijolo por tijolo, e o pedreiro confere o prumo antes do
 // proximo.
 //
 // Preocupacao de QUALIDADE, nao de custo — nao confundir com ECO

@@ -130,32 +130,32 @@ test('o plano nao ensina comando que nao existe mais', () => {
   for (const morto of ['/url', '/ok', '/plan', '/watch', '/cards']) expect(t).not.toContain(morto)
 })
 
-// MCN — a divergencia entra na Fase 3 como FLAG VISIVEL. Ela multiplica o custo
+// Macunaima — a divergencia entra na Fase 3 como FLAG VISIVEL. Ela multiplica o custo
 // por N, entao nao pode acontecer sem aparecer no plano que o humano aprova.
-test('MCN o plano carrega a flag de divergencia, com motivo', () => {
+test('Macunaima o plano carrega a flag de divergencia, com motivo', () => {
   const p = buildPlan({ card: card({ title: 'repensar a arquitetura do cache' }, 'repensar a arquitetura do cache'), hasDevServer: false })
   expect(p.divergencia.on).toBe(true)
   expect(p.divergencia.reason.length).toBeGreaterThan(15)
 })
 
-test('MCN card de resposta unica chega ao plano com divergencia desligada', () => {
+test('Macunaima card de resposta unica chega ao plano com divergencia desligada', () => {
   const p = buildPlan({ card: card({ title: 'corrigir o calculo de comissao' }, 'corrigir o calculo de comissao'), hasDevServer: false })
   expect(p.divergencia.on).toBe(false)
   expect(p.divergencia.reason).toContain('resposta unica')
 })
 
-test('MCN o card manda no plano — divergir: off desliga pergunta aberta', () => {
+test('Macunaima o card manda no plano — divergir: off desliga pergunta aberta', () => {
   const p = buildPlan({ card: card({ title: 'repensar a arquitetura', divergir: 'off' }, 'repensar a arquitetura'), hasDevServer: false })
   expect(p.divergencia.on).toBe(false)
   expect(p.divergencia.reason).toContain('desligado no card')
 })
 
-test('MCN o padrao no plano e nao divergir — custo multiplicado precisa de motivo', () => {
+test('Macunaima o padrao no plano e nao divergir — custo multiplicado precisa de motivo', () => {
   const p = buildPlan({ card: card({ title: 'mexer numa coisa' }, 'fazer o que foi pedido'), hasDevServer: false })
   expect(p.divergencia.on).toBe(false)
 })
 
-// Os testes de MCN acima afirmam "flag VISIVEL no plano que o humano aprova" e so
+// Os testes de Macunaima acima afirmam "flag VISIVEL no plano que o humano aprova" e so
 // olham o OBJETO de buildPlan. Apagar a linha do render deixava a suite verde: o
 // comportamento anunciado nao tinha cobertura nenhuma.
 test('RENDER a flag Divergir aparece no texto do plano, com o motivo', () => {

@@ -5,7 +5,7 @@ import type { ArquivoAuditavel, ForaDaAuditoria, LoteAuditoria, OpcoesAuditoria,
 import { coberturaDeTeste } from './cobertura.ts'
 import { lerTexto, metricasDe, rejeitarPorCaminho } from './metricas.ts'
 
-// ASS — a SELECAO: o que entra na auditoria, em que ordem, e em quantos lotes.
+// Assis — a SELECAO: o que entra na auditoria, em que ordem, e em quantos lotes.
 // O que fica de fora sai NOMEADO com motivo, porque cobertura declarada sem a
 // lista do que ficou de fora e a mesma impressao de completude que a auditoria
 // existe para desmontar.

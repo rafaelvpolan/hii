@@ -1,7 +1,7 @@
 import { anexarEvento, eventosDoCard } from '../../euclides/eventos.ts'
 import type { StepProfile } from '../../oswaldo/rota/perfil.ts'
 
-// CHG — Carlos Chagas: descreveu vetor, parasita e doenca. Prova de ciclo
+// Chagas — Carlos Chagas: descreveu vetor, parasita e doenca. Prova de ciclo
 // completo, nao "um teste qualquer que passa".
 //
 // Item 5: no perfil `completo`, o teste tem de ter FALHADO antes de passar. Um

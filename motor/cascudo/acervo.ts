@@ -6,7 +6,7 @@ import { auditarTexto, relatoDaAuditoria } from '../agentes/vital/auditoria-harn
 
 export { diretorioDeSkills }
 
-// CSD — Cascudo. O acervo: conteudo reutilizavel carregado sob demanda.
+// Cascudo — Cascudo. O acervo: conteudo reutilizavel carregado sob demanda.
 //
 // Skill e CONTEUDO; papel e quem age. Uma skill nunca age sozinha — ela e
 // injetada no prompt do papel quando o gatilho bate.

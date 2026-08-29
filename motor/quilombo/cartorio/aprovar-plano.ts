@@ -1,7 +1,7 @@
 import { readCard } from '../../cordel/store.ts'
 import { conferirMatriz, criarMatriz, relatoDaMatriz } from '../../niemeyer/lucio/matriz-entendimento.ts'
 
-// CTR — a parede humana da Fase 4.
+// Cartorio — a parede humana da Fase 4.
 //
 // A parede ja existia em forma: a fila so despacha EXECUTING, entao um card em
 // READY espera alguem aprovar. O que faltava era CONTEUDO — o humano carimbava

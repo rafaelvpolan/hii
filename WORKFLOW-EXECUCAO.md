@@ -43,20 +43,20 @@ Ondas de feature acrescentam gates próprios, listados em cada seção.
 |---|---|---|---|---|---|
 | **0** | Rede de segurança | — | — | Não | ✅ feita |
 | **1** | Rename estrutural BRAZIL | — | todos | Não (mecânico) | ✅ feita |
-| **2** | Fundação plugável | 1 (parcial), 24, §3.7 | TMD, NMY | Pouco | ✅ feita |
-| **2b** | Descritor completo do harness | 1 (resto) | TMD | Pouco | ✅ feita |
-| **3** | Sobrevivência | 25, 26, 27, 30 | SLV, EUC, RDR | Sim | ✅ feita |
-| **4** | Autoresolução | 6, 17, 18, §3.2 | CIC, RPR, ECO, TJL | Sim | ✅ feita |
-| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, CRV, CHG, BSS | Sim | ✅ feita |
-| **6** | Acervo de skills | 3, 7, 10, 15 | CSD, RND, VTB | Sim | ✅ feita |
-| **7** | Parede humana ampliada | 4, 16, 20 | CTR, LUC, MIR | Sim | ✅ feita |
-| **8** | Julgamento subjetivo | 23 | CND, RDA, VTO | Sim | ✅ feita |
-| **9** | Governança | 19, 14 | TSR, RUI, VTB | Sim | ✅ feita |
-| **10** | Papéis novos | 9, 11, 12 | CLR, OSW, FRE | Sim | ✅ feita |
-| **10c** | Ligação — mecanismo ocioso vira motor | 9, 12, 14 + defeito | FRE, VTB, CLR, CTR | Sim | ✅ feita |
-| **11** | Produção | 28, 29, 31, 32 | EMB, CFR, QLB | Sim (runtime) | ✅ feita |
-| **12** | Divergência antes de convergir | 33 (novo) | MCN | Sim | ✅ feita |
-| **13** | Superfície humana sem travamento | 34 (novo) | MIR | Não (qualidade) | ✅ feita |
+| **2** | Fundação plugável | 1 (parcial), 24, §3.7 | Tomada, Niemeyer | Pouco | ✅ feita |
+| **2b** | Descritor completo do harness | 1 (resto) | Tomada | Pouco | ✅ feita |
+| **3** | Sobrevivência | 25, 26, 27, 30 | Salvo-conduto, Euclides, Radar | Sim | ✅ feita |
+| **4** | Autoresolução | 6, 17, 18, §3.2 | Ciclo, Reprise, ECO, Tijolo | Sim | ✅ feita |
+| **5** | Rigor determinístico | 2, 5, 8, 13, 21, 22 | LEI, Crivo, Chagas, Bússola | Sim | ✅ feita |
+| **6** | Acervo de skills | 3, 7, 10, 15 | Cascudo, Rondon, Vital | Sim | ✅ feita |
+| **7** | Parede humana ampliada | 4, 16, 20 | Cartório, Lúcio, Mirante | Sim | ✅ feita |
+| **8** | Julgamento subjetivo | 23 | Canudos, Roda, Voto | Sim | ✅ feita |
+| **9** | Governança | 19, 14 | Tesouro, RUI, Vital | Sim | ✅ feita |
+| **10** | Papéis novos | 9, 11, 12 | Clarice, Oswaldo, Freire | Sim | ✅ feita |
+| **10c** | Ligação — mecanismo ocioso vira motor | 9, 12, 14 + defeito | Freire, Vital, Clarice, Cartório | Sim | ✅ feita |
+| **11** | Produção | 28, 29, 31, 32 | Embarque, Cofre, Quilombo | Sim (runtime) | ✅ feita |
+| **12** | Divergência antes de convergir | 33 (novo) | Macunaíma | Sim | ✅ feita |
+| **13** | Superfície humana sem travamento | 34 (novo) | Mirante | Não (qualidade) | ✅ feita |
 
 **Caminho crítico:** 0 → 1 → 2 → 3 → 4 → 5. As ondas 6 a 11 têm folga de ordem entre si depois da 5, com duas exceções travadas: **8 depende de 9** (o modo gauntlet não liga sem `orcamentoPorCard`) e **10 depende de 3** (o `aprendiz` lê o diário por evento).
 
@@ -113,15 +113,15 @@ bun test ./test/mapa-de-rename.test.ts        # mapa é total e injetivo
 
 | # | Commit | Arquivos | Fonte |
 |---|---|---|---|
-| 1.1 | `refactor(cdl): card, contrato e ambiente` | 20 | §5.2 (card+contract) + ALI de §5.3-5.4 + CDL de §5.3-5.4 |
-| 1.2 | `refactor(tmd): harness, MCP, tools, cache` | 25 | §5.1 (TMD/PNT/MAP) + tasks de §5.2 + `provider-trust` + `cache` |
-| 1.3 | `refactor(euc): diário, telemetria e custo` | 18 | EUC/RDR/TSR de §5.1, §5.3, §5.4 |
-| 1.4 | `refactor(qlb): isolamento e fronteiras` | 17 | QLB/CTR/ALF de §5.3 |
-| 1.5 | `refactor(cic): loops, gate e retry` | 12 | CIC/CRV/RPR de §5.1, §5.3 |
-| 1.6 | `refactor(nmy): grafo e planejamento` | 7 | NMY/LUC de §5.2, §5.3, §5.4 |
-| 1.7 | `refactor(osw): orquestração, router e fila` | 9 | OSW/RTA/MTR de §5.3, §5.4 |
-| 1.8 | `refactor(agentes): papéis` | 6 | ASS/CLR/TSL de §5.1, §5.3, §5.4 |
-| 1.9 | `refactor(mir): interface humana` | 57 | MIR de §5.3, §5.4 (inclui render 24 + tui 8), §5.5 |
+| 1.1 | `refactor(cdl): card, contrato e ambiente` | 20 | §5.2 (card+contract) + Alicerce de §5.3-5.4 + Cordel de §5.3-5.4 |
+| 1.2 | `refactor(tmd): harness, MCP, tools, cache` | 25 | §5.1 (Tomada/Ponte/Mapa) + tasks de §5.2 + `provider-trust` + `cache` |
+| 1.3 | `refactor(euc): diário, telemetria e custo` | 18 | Euclides/Radar/Tesouro de §5.1, §5.3, §5.4 |
+| 1.4 | `refactor(qlb): isolamento e fronteiras` | 17 | Quilombo/Cartório/Alfândega de §5.3 |
+| 1.5 | `refactor(cic): loops, gate e retry` | 12 | Ciclo/Crivo/Reprise de §5.1, §5.3 |
+| 1.6 | `refactor(nmy): grafo e planejamento` | 7 | Niemeyer/Lúcio de §5.2, §5.3, §5.4 |
+| 1.7 | `refactor(osw): orquestração, router e fila` | 9 | Oswaldo/Rota/Mutirão de §5.3, §5.4 |
+| 1.8 | `refactor(agentes): papéis` | 6 | Assis/Clarice/Tarsila de §5.1, §5.3, §5.4 |
+| 1.9 | `refactor(mir): interface humana` | 57 | Mirante de §5.3, §5.4 (inclui render 24 + tui 8), §5.5 |
 | 1.10 | `refactor(csd): conhecimento` + varredura fora de `.ts` | 1 + docs | §5.6 |
 
 **Soma: 172 arquivos.** O script da Onda 0 valida essa soma contra `find lib bin/lib -name '*.ts' | wc -l` antes de mover qualquer coisa.
@@ -151,7 +151,7 @@ grep -rn "lib/" README.md tsconfig.json scripts/setup/*.mjs .claude/skills/*/SKI
 
 ---
 
-## ONDA 2 — Fundação plugável (TMD + NMY)
+## ONDA 2 — Fundação plugável (Tomada + Niemeyer)
 
 **Objetivo:** adicionar uma IA nova passa a ser um arquivo + uma linha de registro. E a topologia vira dado inspecionável.
 
@@ -165,7 +165,7 @@ grep -rn "lib/" README.md tsconfig.json scripts/setup/*.mjs .claude/skills/*/SKI
 | 1 | `recusaPorLimite` consulta `capabilities()`, não nome de provedor | `motor/tomada/registro.ts` |
 | §3.7 | Probe real do `kimi` — hoje cai em `return true` | `motor/tomada/sonda.ts` |
 | 24 | `config/topologia.json` — nós, transições permitidas, checkpoints humanos | `config/topologia.json` |
-| 24 | Validador de transição, chamado no `OSW` | `motor/niemeyer/topologia.ts` |
+| 24 | Validador de transição, chamado no `Oswaldo` | `motor/niemeyer/topologia.ts` |
 
 ### Prova de que o item 1 fechou
 
@@ -187,11 +187,11 @@ bun test ./test/kimi-adapter.test.ts        # probe do kimi falha quando a API e
 bun test ./test/topologia.test.ts           # transição fora da topologia é rejeitada
 ```
 
-**Reprova se:** `topologia.json` divergir das transições que o `OSW` realmente executa. O teste compara os dois — o arquivo é a foto do motor, não uma intenção.
+**Reprova se:** `topologia.json` divergir das transições que o `Oswaldo` realmente executa. O teste compara os dois — o arquivo é a foto do motor, não uma intenção.
 
 ---
 
-## ONDA 2b — Descritor completo do harness (TMD)
+## ONDA 2b — Descritor completo do harness (Tomada)
 
 **Por que existe.** A Onda 2 estourou o escopo e virou duas, aplicando a R7. A
 terceira bala do item 1 — *`HarnessId` como string registrável* — não é uma
@@ -234,7 +234,7 @@ grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v
 
 ---
 
-## ONDA 3 — Sobrevivência (SLV + EUC + RDR)
+## ONDA 3 — Sobrevivência (Salvo-conduto + Euclides + Radar)
 
 **Objetivo:** um crash no meio de um card vira "retoma de onde parou", não "abre PR duplicado e ninguém percebe".
 
@@ -246,7 +246,7 @@ grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v
 |---|---|---|
 | §3.8 | Evento por fase em JSONL append-only: `gate_start`, `repair_attempt`, `gate_verdict`, `human_checkpoint`, `orfao` | `motor/euclides/eventos.ts` |
 | 25 | `executarComIdempotencia` — `hash(card + fase + tipo_operacao)`, grava **antes** de considerar concluída | `motor/quilombo/salvo-conduto/idempotencia.ts` |
-| 25 | Toda operação com efeito externo passa por SLV: `git commit`, abrir PR, webhook, notificar, gravar custo | `motor/quilombo/cartorio/*.ts`, `motor/quilombo/git.ts` |
+| 25 | Toda operação com efeito externo passa por Salvo-conduto: `git commit`, abrir PR, webhook, notificar, gravar custo | `motor/quilombo/cartorio/*.ts`, `motor/quilombo/git.ts` |
 | 26 | `retomarAoIniciar()` — reconstrói a fase de cada card sem evento final | `motor/euclides/recuperar.ts` |
 | 27 | Compensação por tipo: worktree órfão descarta, commit sem PR retoma, **PR órfão nunca abre um segundo** | `motor/quilombo/salvo-conduto/compensacao.ts` |
 | 30 | `GET /health` + shutdown gracioso em `SIGTERM` | `motor/euclides/radar/servidor.ts`, `motor/oswaldo/mutirao/daemon.ts` |
@@ -284,7 +284,7 @@ curl -sf localhost:$PORTA/health            # exit 0
 
 ---
 
-## ONDA 4 — Autoresolução (CIC + RPR + ECO + TJL)
+## ONDA 4 — Autoresolução (Ciclo + Reprise + ECO + Tijolo)
 
 **Objetivo:** o "autoresolutivo" do pedido original. Falha de teste, build ou lint tenta se consertar com instrução estreita antes de acordar o humano.
 
@@ -304,7 +304,7 @@ curl -sf localhost:$PORTA/health            # exit 0
 | Mecanismo | Preocupação | Ganho |
 |---|---|---|
 | `ECO` prefixo byte-idêntico | **custo** | Cache de prefixo do provedor (DeepSeek documenta até 30x em input cacheado) |
-| `TJL` `Bloco.validar` | **qualidade** | Não pagar pela tarefa inteira pra descobrir no fim que a base estava errada |
+| `Tijolo` `Bloco.validar` | **qualidade** | Não pagar pela tarefa inteira pra descobrir no fim que a base estava errada |
 
 ### Gate de saída
 
@@ -326,13 +326,13 @@ O `MODERNIZATION.md` (Parte I, §3.2) diz que o repair loop *"só está aplicado
 
 Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/ciclo/reparo.ts` é a versão única; `buildWithReajuste` e `testGate` passaram a chamá-la e viraram um portão só, parametrizado.
 
-### TJL ainda não tem chamador — e isso é dependência real, não esquecimento
+### Tijolo ainda não tem chamador — e isso é dependência real, não esquecimento
 
-`motor/niemeyer/tijolo/blocos.ts` está pronto e testado, mas nada o invoca ainda: **quem fatia uma tarefa em blocos é o `core/agent-executor.ts` do item 11**, que é Onda 10. Ligar TJL antes disso exigiria inventar aqui um critério de fatiamento que o item 11 vai definir — e aí seriam dois critérios brigando.
+`motor/niemeyer/tijolo/blocos.ts` está pronto e testado, mas nada o invoca ainda: **quem fatia uma tarefa em blocos é o `core/agent-executor.ts` do item 11**, que é Onda 10. Ligar Tijolo antes disso exigiria inventar aqui um critério de fatiamento que o item 11 vai definir — e aí seriam dois critérios brigando.
 
 ---
 
-## ONDA 5 — Rigor determinístico (LEI + CRV + CHG + BSS)
+## ONDA 5 — Rigor determinístico (LEI + Crivo + Chagas + Bússola)
 
 **Objetivo:** fechar o vetor de bypass onde a própria IA subdeclara risco pra pular gate, e dar critério escrito ao juiz.
 
@@ -344,7 +344,7 @@ Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/cic
 | 2, 13 | **O card pode subir o rigor, nunca baixar** — invariante testada | `motor/cascudo/lei/guarda.ts` |
 | 13 | `config/regras-inegociaveis.json` + `regrasQueBatem(files, regras)` | `config/`, `motor/cascudo/lei/guarda.ts` |
 | 8 | `config/review-criteria.json` — checklist objetivo, versionado, auditável | `config/` |
-| 8 | `CRV` roda contra o critério; reprovar volta ao implementador **com o motivo** | `motor/ciclo/crivo/criterios.ts` |
+| 8 | `Crivo` roda contra o critério; reprovar volta ao implementador **com o motivo** | `motor/ciclo/crivo/criterios.ts` |
 | 21 | Matriz de cenário: acerto, erro conhecido, borda, validação de entrada, validação de saída | `config/review-criteria.json` |
 | 5 | RED antes de GREEN obrigatório no perfil `completo`, com evidência anexada ao card | `motor/agentes/chagas/red-primeiro.ts` |
 | 22 | Projeto/feature nova não avança da Fase 1 sem teste rodando e debug documentado | `motor/cordel/bussola/setup-ferramental.ts` |
@@ -372,7 +372,7 @@ bun test ./test/bussola-setup-ferramental.test.ts # projeto novo sem config de t
 
 ---
 
-## ONDA 6 — Acervo de skills (CSD)
+## ONDA 6 — Acervo de skills (Cascudo)
 
 **Objetivo:** papel deixa de ser agente hardcoded e passa a ser loadout + skills carregadas do disco. Adicionar conhecimento novo para de tocar no motor.
 
@@ -385,7 +385,7 @@ bun test ./test/bussola-setup-ferramental.test.ts # projeto novo sem config de t
 | — | `config/skill-sources.json` + `resolutionOrder` (`_native` sempre primeiro) | `config/` |
 | — | `ORIGIN.json` + `LICENSE.txt` por origem externa | `skills/_sources/<origem>/` |
 | 3 | Pack `common/`: `coding-standards`, `git-workflow`, `api-design`, `security-baseline`, **`search-first`** | `skills/_native/common/` |
-| 7 | `config/security-checklist/<stack>.json`, consumido por VTB | `config/security-checklist/` |
+| 7 | `config/security-checklist/<stack>.json`, consumido por Vital | `config/security-checklist/` |
 | 10 | Pack `games-multiplatform/` — o gap que nenhum dos 5 orquestradores estudados cobre | `skills/_native/games-multiplatform/` |
 | 15 | Notas de referência 2026 aplicadas em cada `SKILL.md` | todo o acervo |
 
@@ -416,7 +416,7 @@ O checklist de stack (item 7) só entra no papel `seguranca` — um checklist de
 
 ---
 
-## ONDA 7 — Parede humana ampliada (CTR + LUC + MIR)
+## ONDA 7 — Parede humana ampliada (Cartório + Lúcio + Mirante)
 
 **Objetivo:** hoje a parede humana só existe no merge. Passa a existir também antes de escrever a primeira linha de código.
 
@@ -511,7 +511,7 @@ bun test ./test/mirante/comandos-manuais.test.ts   # comando manual só pré-car
 
 ---
 
-## ONDA 8 — Julgamento subjetivo (CND + RDA + VTO)
+## ONDA 8 — Julgamento subjetivo (Canudos + Roda + Voto)
 
 > **Trava:** só começa com a Onda 9 fechada. `orcamentoPorCard` é pré-requisito declarado.
 
@@ -522,7 +522,7 @@ bun test ./test/mirante/comandos-manuais.test.ts   # comando manual só pré-car
 | Item | Entrega | Arquivo |
 |---|---|---|
 | 23 | Gauntlet Loop: comparação **cega** contra referência externa concreta e buscável | `motor/ciclo/canudos/gauntlet.ts` |
-| 23 | Múltiplos críticos com lentes distintas → `RDA` consenso / `VTO` voto | `motor/ciclo/{rda,vto}.ts` |
+| 23 | Múltiplos críticos com lentes distintas → `Roda` consenso / `Voto` voto | `motor/ciclo/{rda,vto}.ts` |
 | 23 | Boundary obrigatório: recusa iniciar sem `orcamentoPorCard.tetoUsd` configurado | `motor/ciclo/canudos/gauntlet.ts` |
 
 ### Estado
@@ -534,7 +534,7 @@ que colhe candidatos e chama os críticos, e ele depende de existir de onde tira
 a referência externa (captura de tela de produto real, exemplo publicado). Sem
 referência não há comparação cega, só opinião com nome novo.
 
-Duas recusas deliberadas, cada uma com teste: empate no `VTO` **não elege
+Duas recusas deliberadas, cada uma com teste: empate no `Voto` **não elege
 ninguém** (desempatar sozinho é fabricar veredicto onde os críticos não
 produziram um) e `podeIniciar()` recusa quando o teto não é legível, em vez de
 assumir infinito.
@@ -550,7 +550,7 @@ assumir infinito.
 
 ```bash
 bun run test
-bun test ./test/ciclo/canudos-boundary.test.ts        # sem teto legível, CND recusa iniciar
+bun test ./test/ciclo/canudos-boundary.test.ts        # sem teto legível, Canudos recusa iniciar
 bun test ./test/ciclo/canudos-comparacao-cega.test.ts # o crítico não sabe qual candidato é o do motor
 bun test ./test/ciclo/canudos-dominio.test.ts         # domínio de lógica pura NÃO habilita gauntlet
 bun test ./test/ciclo/roda-voto.test.ts             # empate não elege ninguém; votação vazia lança
@@ -560,11 +560,11 @@ bun test ./test/ciclo/roda-voto.test.ts             # empate não elege ninguém
 > desde a Onda 1b, `test/` espelha os domínios de `motor/`, e
 > `test/mapa-de-testes.test.ts` reprova arquivo solto na raiz.
 
-**Reprova se:** CND puder rodar sem teto de custo. Relatos de mercado registram sessões de centenas de dólares sem boundary — é o risco declarado do item.
+**Reprova se:** Canudos puder rodar sem teto de custo. Relatos de mercado registram sessões de centenas de dólares sem boundary — é o risco declarado do item.
 
 ---
 
-## ONDA 9 — Governança (TSR + RUI + VTB)
+## ONDA 9 — Governança (Tesouro + RUI + Vital)
 
 **Objetivo:** custo por ação vira decisão auditável em arquivo, não hábito implícito no código. E a config do próprio agente vira superfície auditada.
 
@@ -575,9 +575,9 @@ bun test ./test/ciclo/roda-voto.test.ts             # empate não elege ninguém
 | 19 | `config/model-tier.json` com `tier` **e `motivo`** por ação | `config/` |
 | 19 | `regraDeSubida`: card ou regra LEI pode forçar tier acima do padrão, **nunca abaixo** | `motor/oswaldo/rui.ts` |
 | 19 | `orcamentoPorCard.tetoUsd` + `acaoAoEstourar: "pausar e notificar humano"` | `motor/euclides/tesouro/orcamento.ts` |
-| 19 | Evento `model_tier_selected` com o motivo, no diário EUC | `motor/euclides/eventos.ts` |
+| 19 | Evento `model_tier_selected` com o motivo, no diário Euclides | `motor/euclides/eventos.ts` |
 | 14 | `auditoria_harness` — grep determinístico por prompt injection em `SKILL.md`, `mcp.json`, hooks | `motor/agentes/vital/auditoria-harness.ts` |
-| 14 | Roda **antes** de qualquer skill nova (humana ou promovida por FRE) carregar em produção | `motor/cascudo/acervo.ts` |
+| 14 | Roda **antes** de qualquer skill nova (humana ou promovida por Freire) carregar em produção | `motor/cascudo/acervo.ts` |
 
 ### Gate de saída
 
@@ -591,7 +591,7 @@ bun test ./test/vital-auditoria-harness.test.ts  # SKILL.md com "ignore as instr
 
 ---
 
-## ONDA 10 — Papéis novos (CLR + OSW + FRE)
+## ONDA 10 — Papéis novos (Clarice + Oswaldo + Freire)
 
 **Objetivo:** fechar o loop de aprendizado. O que o motor aprende para de ser "mais um texto pro modelo ler" e vira condição que o gate cobra.
 
@@ -603,11 +603,11 @@ bun test ./test/vital-auditoria-harness.test.ts  # SKILL.md com "ignore as instr
 | 11 | `despacharAgentesNaFase(specs)` — orchestrator-workers dentro de uma fase | `motor/oswaldo/despacho-de-agentes.ts` |
 | 11 | Quem decide `specs` é função determinística sobre diff/card. **Nunca "a IA decide se chama outro agente"** | `motor/oswaldo/despacho-de-agentes.ts` |
 | 12 | `aprendiz` — roda 1x no fechamento do card, depois do merge | `motor/cascudo/freire/aprendiz.ts` |
-| 12 | Lê o **diário EUC**, não o código. Audita como o card se comportou | `motor/cascudo/freire/aprendiz.ts` |
+| 12 | Lê o **diário Euclides**, não o código. Audita como o card se comportou | `motor/cascudo/freire/aprendiz.ts` |
 | 12 | `ProblemSignature` = `hash(dominio + tipo_falha + causa_raiz)`, com evidência do diário — nunca opinião do modelo | `motor/cascudo/freire/assinatura.ts` |
 | 12 | `.hii/candidatos-regras/<assinatura>.json` — acumula sem efeito no gate até N cards (default 3) | `motor/cascudo/freire/candidatos.ts` |
 
-### A regra de ouro do FRE
+### A regra de ouro do Freire
 
 Nenhuma das duas trilhas — instinto macio ou regra dura — é lida de volta como instrução confiável **dentro da mesma sessão que a gerou**. Sempre passa por revisão humana em lote primeiro. É a fronteira de confiança de memória que o ECC documentou, e ela não é negociável.
 
@@ -668,7 +668,7 @@ Fechar antes esconderia dele exatamente o rastro que ele existe para auditar.
 ### O que NÃO foi ligado, e por quê
 
 **Item 18 (`executarEmBlocos`)** — mantida a recomendação já registrada: o laço de
-`fechar.ts` já faz executa → valida → para cedo. Rotear por TJL ali é cerimônia
+`fechar.ts` já faz executa → valida → para cedo. Rotear por Tijolo ali é cerimônia
 para dar um chamador ao módulo, sem entregar economia. O valor real exige
 fatiador determinístico por stack, que pertence à camada de skill.
 
@@ -704,7 +704,7 @@ Nenhum dos dois foi lembrança: foram gates fechando por sinal real.
 
 ---
 
-## ONDA 11 — Produção (EMB + CFR + QLB)
+## ONDA 11 — Produção (Embarque + Cofre + Quilombo)
 
 **Objetivo:** a mesma imagem roda em VPS, AWS, Azure e GCP sem escolher lado.
 
@@ -757,7 +757,7 @@ amarrar. `hii doctor` diz o que falta antes de qualquer card rodar.
 
 ---
 
-## ONDA 12 — Divergência antes de convergir (MCN)
+## ONDA 12 — Divergência antes de convergir (Macunaíma)
 
 > **Origem:** pedido de trazer para o hii a ideia do `uditakhourii/adhd`, em versão
 > própria e com nome da taxonomia BRAZIL. Item **33**, novo — não estava nos 32.
@@ -778,11 +778,11 @@ dentro de um prompt só.
 
 `npx skills add` traria pacote npm, CLI e biblioteca de terceiro para dentro do
 fluxo — viola a regra de zero dependência de runtime. E metade do mecanismo **já
-existe aqui**: o crítico é o `CRV`, o voto é o `VTO`, o consenso é a `RDA`, o
-debate é a `ARN`. O que falta é só a metade divergente, com isolamento de
+existe aqui**: o crítico é o `Crivo`, o voto é o `Voto`, o consenso é a `Roda`, o
+debate é a `Arena`. O que falta é só a metade divergente, com isolamento de
 contexto garantido.
 
-### Nome — **MCN, Macunaíma**
+### Nome — **Macunaíma, Macunaíma**
 
 Seguindo a regra do `brazil-orchestrator-naming.md` (§10): nome brasileiro =
 comportamento arquitetural, nunca homenagem solta. Macunaíma é o herói de muitas
@@ -799,7 +799,7 @@ design, mas descreve o evento, não o comportamento de ramificar.
 |---|---|---|
 | 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/enquadramentos.json`, `motor/ciclo/macunaima/enquadramentos.ts` |
 | 33 | `despacharDivergencia(enunciado, frames)` — N invocações **sem contexto compartilhado**; teste prova que nenhum ramo enxerga o outro | `motor/ciclo/macunaima/divergir.ts` |
-| 33 | Convergência **reusa** `CRV` (critério escrito) e `VTO`; nenhum juiz novo | `motor/ciclo/macunaima/convergir.ts` |
+| 33 | Convergência **reusa** `Crivo` (critério escrito) e `Voto`; nenhum juiz novo | `motor/ciclo/macunaima/convergir.ts` |
 | 33 | Teto obrigatório: recusa iniciar sem `orcamentoPorCard` — N ramos multiplicam custo por N | `motor/ciclo/macunaima/divergir.ts` |
 | 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/oswaldo/rota/perfil.ts`, `motor/niemeyer/lucio/plano.ts` |
 
@@ -808,7 +808,7 @@ design, mas descreve o evento, não o comportamento de ramificar.
 ```bash
 bun test ./test/ciclo/macunaima-divergir.test.ts       # isolamento: nenhum ramo cita ou lê outro
 bun test ./test/ciclo/macunaima-enquadramentos.test.ts # lente é dado versionado; ausente/vazio/duplicado LANÇA
-bun test ./test/ciclo/macunaima-convergir.test.ts      # nenhum juiz novo — delega a VTO e RDA
+bun test ./test/ciclo/macunaima-convergir.test.ts      # nenhum juiz novo — delega a Voto e Roda
 bun test ./test/oswaldo/rota-divergencia.test.ts    # gatilho: FECHADO vence ABERTO, e o padrão é não divergir
 bun test ./test/niemeyer/lucio-plano-render.test.ts   # a divergência aparece no plano que o humano aprova
 ```
@@ -829,7 +829,7 @@ o operador só descobre no fim do mês. Enunciado sem marca de desenho não dive
 **`FECHADO` vence `ABERTO` na ordem de avaliação.** "Arquitetura do cálculo de
 comissão" tem as duas marcas e continua tendo uma resposta só.
 
-**Os críticos são os critérios escritos do `CRV`, não os enquadramentos que
+**Os críticos são os critérios escritos do `Crivo`, não os enquadramentos que
 geraram.** Se os mesmos frames julgassem, o placar mediria de novo a preferência
 de quem propôs — que é o ancoramento que a divergência acabou de gastar dinheiro
 para evitar.
@@ -841,20 +841,20 @@ que foi enviado, e um módulo que fala com a rede por dentro não deixa. Manter
 ### Onde entra, e onde NÃO entra
 
 Entra na **Fase 3 (Plano)**, antes da matriz de entendimento — divergir depois de
-o plano estar escrito é tarde. Reaproveita o `TSL`/`ideacao`, que já produz
-alternativas e já leva divergência para decisão humana no `CLARIFY`; MCN é o
-`TSL` com isolamento real entre ramos e crítico separado.
+o plano estar escrito é tarde. Reaproveita o `Tarsila`/`ideacao`, que já produz
+alternativas e já leva divergência para decisão humana no `CLARIFY`; Macunaíma é o
+`Tarsila` com isolamento real entre ramos e crítico separado.
 
 **Não entra** em card de lógica com resposta única (cálculo de comissão não tem
 "várias formas certas"), nem em reparo de build (o `narrowFix` é estreito de
-propósito — divergir ali é desperdício). O mesmo boundary do `CND`.
+propósito — divergir ali é desperdício). O mesmo boundary do `Canudos`.
 
 **Trava:** depende da Onda 9 pelo mesmo motivo que a Onda 8 — N ramos sem teto
 de custo é a forma mais rápida de queimar orçamento.
 
 ---
 
-## ONDA 13 — Superfície humana sem travamento (MIR)
+## ONDA 13 — Superfície humana sem travamento (Mirante)
 
 > **Origem:** pedido de teste completo de controle da TUI. Item **34**, novo.
 
@@ -915,38 +915,38 @@ impressão — senão é o mesmo teatro de qualidade que o motor recusa em gate.
 
 | # | Item | Onda | Dono |
 |---|---|---|---|
-| 1 | Harness interface formal | 2 + 2b | TMD |
+| 1 | Harness interface formal | 2 + 2b | Tomada |
 | 2 | Guarda de risco sobre o diff | 5 | LEI |
-| 3 | `search-first` em `common/` | 6 | CSD |
-| 4 | Confirmação humana do plano | 7 | CTR |
-| 5 | RED antes de GREEN | 5 | CHG |
-| 6 | `BuildRepairer` por domínio | 4 | RPR |
-| 7 | Checklist de segurança por stack | 6 | VTB |
-| 8 | Critério escrito pro crivo | 5 | CRV |
-| 9 | `doc-updater` | 10 | CLR |
-| 10 | Pack `games-multiplatform/` | 6 | CSD |
-| 11 | Despacho dinâmico numa fase | 10 | OSW |
-| 12 | `aprendiz` + candidatos a regra | 10 | FRE |
+| 3 | `search-first` em `common/` | 6 | Cascudo |
+| 4 | Confirmação humana do plano | 7 | Cartório |
+| 5 | RED antes de GREEN | 5 | Chagas |
+| 6 | `BuildRepairer` por domínio | 4 | Reprise |
+| 7 | Checklist de segurança por stack | 6 | Vital |
+| 8 | Critério escrito pro crivo | 5 | Crivo |
+| 9 | `doc-updater` | 10 | Clarice |
+| 10 | Pack `games-multiplatform/` | 6 | Cascudo |
+| 11 | Despacho dinâmico numa fase | 10 | Oswaldo |
+| 12 | `aprendiz` + candidatos a regra | 10 | Freire |
 | 13 | `regras-inegociaveis.json` | 5 | LEI |
-| 14 | Auditoria do próprio harness | 9 | VTB |
-| 15 | Notas 2026 em cada `SKILL.md` | 6 | CSD |
-| 16 | Comandos manuais + `/layout` | 7 | MIR |
+| 14 | Auditoria do próprio harness | 9 | Vital |
+| 15 | Notas 2026 em cada `SKILL.md` | 6 | Cascudo |
+| 16 | Comandos manuais + `/layout` | 7 | Mirante |
 | 17 | Prefixo estável | 4 | ECO |
-| 18 | Blocos com validação incremental | 4 | TJL |
-| 19 | `model-tier.json` + orçamento | 9 | TSR |
-| 20 | Matriz de entendimento | 7 | LUC |
-| 21 | Matriz de cenário | 5 | CRV |
-| 22 | Setup ferramental na Fase 1 | 5 | BSS |
-| 23 | Modo `gauntlet` | 8 | CND |
-| 24 | `topologia.json` | 2 | NMY |
-| 25 | Idempotência | 3 | SLV |
-| 26 | Retomada no restart | 3 | EUC |
-| 27 | Evento `orfao` + compensação | 3 | SLV |
-| 28 | `Dockerfile` + compose | 11 | EMB |
-| 29 | `secrets.ts` | 11 | CFR |
-| 30 | `/health` + shutdown gracioso | 3 | RDR |
-| 31 | Snapshot + git | 11 | EMB |
-| 32 | Limite por worktree | 11 | QLB |
+| 18 | Blocos com validação incremental | 4 | Tijolo |
+| 19 | `model-tier.json` + orçamento | 9 | Tesouro |
+| 20 | Matriz de entendimento | 7 | Lúcio |
+| 21 | Matriz de cenário | 5 | Crivo |
+| 22 | Setup ferramental na Fase 1 | 5 | Bússola |
+| 23 | Modo `gauntlet` | 8 | Canudos |
+| 24 | `topologia.json` | 2 | Niemeyer |
+| 25 | Idempotência | 3 | Salvo-conduto |
+| 26 | Retomada no restart | 3 | Euclides |
+| 27 | Evento `orfao` + compensação | 3 | Salvo-conduto |
+| 28 | `Dockerfile` + compose | 11 | Embarque |
+| 29 | `secrets.ts` | 11 | Cofre |
+| 30 | `/health` + shutdown gracioso | 3 | Radar |
+| 31 | Snapshot + git | 11 | Embarque |
+| 32 | Limite por worktree | 11 | Quilombo |
 
 Adicionais fora da lista de 32, absorvidos: **§3.7** probe real do `kimi` (Onda 2), **§3.2** repair loop genérico (Onda 4), **§3.8** diário por evento (Onda 3), **Parte IV** modelo multi-origem de skills (Onda 6).
 
@@ -970,7 +970,7 @@ Adicionais fora da lista de 32, absorvidos: **§3.7** probe real do `kimi` (Onda
 | Sem tmux — paralelismo é N cards × N worktrees, que já dá isolamento de **arquivo**, não só de processo | Parte III §9 |
 | Sem instalar ECC / wshobson / Maestro / OMC / Ruflo como orquestrador paralelo — entram como **catálogo de conteúdo** em `skills/_sources/` | Parte II §4, Parte IV |
 | Sem troca automática de provedor em cota estourada | Parte I §4 |
-| `NMY` é dado inspecionável, não motor de grafo | Parte I §3.9, item 24 |
+| `Niemeyer` é dado inspecionável, não motor de grafo | Parte I §3.9, item 24 |
 
 ---
 

@@ -70,7 +70,7 @@ function pilhaFlag(card: Card, fileCount: number, limit: number): PlanFlags {
   return { on: false, reason: `${fileCount} arquivo(s), teto ${limit}` }
 }
 
-// MCN entra na Fase 3, e entra COMO FLAG VISIVEL. Divergir multiplica o custo
+// Macunaima entra na Fase 3, e entra COMO FLAG VISIVEL. Divergir multiplica o custo
 // por N: uma decisao dessas nao pode acontecer sem aparecer no plano que o
 // humano le antes de aprovar. Mesmo formato de layout e pilha, de proposito.
 function divergenciaFlag(card: Card, objetivo: string, surface: string): PlanFlags {

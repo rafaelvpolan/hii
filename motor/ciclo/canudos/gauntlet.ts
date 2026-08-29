@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { lerGovernanca, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { cardsDir } from '../../cordel/alicerce/config.ts'
 
-// CND — Canudos. A solucao tem de sobreviver a varias investidas.
+// Canudos — Canudos. A solucao tem de sobreviver a varias investidas.
 //
-// Existe para o que o criterio escrito do CRV nao alcanca: UI, tela de jogo,
+// Existe para o que o criterio escrito do Crivo nao alcanca: UI, tela de jogo,
 // sensacao de interacao. Ali nao ha "certo" enumeravel — ha comparacao contra
 // coisa real que existe no mercado.
 //

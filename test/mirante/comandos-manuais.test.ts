@@ -13,7 +13,7 @@ import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 import { carregarAcervo, skillsPara } from '../../motor/cascudo/acervo.ts'
 import { allCards, readCard } from '../../motor/cordel/store.ts'
 
-// MIR — item 16. A regra que define estes comandos: eles pre-carregam CONTEUDO
+// Mirante — item 16. A regra que define estes comandos: eles pre-carregam CONTEUDO
 // diferente e rodam O MESMO pipeline. Atalho com caminho de execucao proprio
 // seria um segundo motor, com gates proprios — e os gates do primeiro deixariam
 // de valer para metade do trabalho.

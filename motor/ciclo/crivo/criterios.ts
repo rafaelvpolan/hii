@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { ROOT } from '../../cordel/alicerce/config.ts'
 import { ENV_CRITERIOS_FILE } from '../../cordel/alicerce/contrato.ts'
 
-// CRV — o criterio escrito. Antes os padroes viviam numa string dentro do
+// Crivo — o criterio escrito. Antes os padroes viviam numa string dentro do
 // prompt do gate: nao davam para versionar, auditar nem citar numa reprovacao.
 // Agora o crivo reprova contra um id, e quem le a reprovacao sabe o que
 // consertar sem adivinhar o que o modelo quis dizer.

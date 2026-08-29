@@ -1,4 +1,4 @@
-// ASS — quem tem teste e quem nao tem.
+// Assis — quem tem teste e quem nao tem.
 //
 // Por que import e nao nome: o casamento por stem quebra no instante em que o
 // fonte e renomeado sem renomear o teste — foi o que a Onda 1 fez com 172

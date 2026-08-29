@@ -93,7 +93,7 @@ async function portaoComReparo(portao: Portao, o: OpcoesDoPortao): Promise<boole
         addMetric(o.fsteps, o.chaveDeTempo, { time: Math.round((Date.now() - t0) / 1000), cost: 0, tokens: 0 })
         primeira = false
         // Teste que reprova na PRIMEIRA rodada e a unica evidencia de RED que
-        // o motor produz sozinho — CHG (item 5) le isto do diario depois.
+        // o motor produz sozinho — Chagas (item 5) le isto do diario depois.
         if (r.err && portao.id === 'testes' && o.id) registrarRed(o.id, `${cmd.label} reprovou antes do reparo`)
       }
       return r.err ? reprovado(String(r.stderr || r.stdout || '').slice(0, MAX_SAIDA)) : APROVADO

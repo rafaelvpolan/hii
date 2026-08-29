@@ -68,8 +68,8 @@ export function lerTopologia(): Topologia {
   }
 }
 
-// Puro de proposito: NMY nao executa transicao nenhuma, so responde se ela esta
-// declarada. Quem move o card continua sendo o OSW.
+// Puro de proposito: Niemeyer nao executa transicao nenhuma, so responde se ela esta
+// declarada. Quem move o card continua sendo o Oswaldo.
 export function transicaoPermitida(topo: Topologia, de: Status, para: Status): boolean {
   if (de === para) return true
   if (topo.sempreAlcancavel.includes(para)) return true

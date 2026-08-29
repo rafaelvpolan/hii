@@ -4,7 +4,7 @@ import { diretorioDeSkills, fundirOrigens } from './acervo.ts'
 import type { Fusao } from './acervo.ts'
 import { ROOT } from '../cordel/alicerce/config.ts'
 
-// CSD — a fusao. `_resolved/` e GERADA a partir de `_native/` e `_sources/*`.
+// Cascudo — a fusao. `_resolved/` e GERADA a partir de `_native/` e `_sources/*`.
 // Ninguem edita `_resolved/` na mao: e recalculada quando skill-sources.json
 // muda. Isso evita o problema que o proprio ECC documentou — duas instalacoes
 // brigando pelo mesmo diretorio de skill. Aqui a fusao e deterministica e

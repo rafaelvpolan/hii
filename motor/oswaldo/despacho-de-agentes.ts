@@ -1,6 +1,6 @@
 import type { PapelDeSkill } from '../cascudo/acervo.ts'
 
-// OSW — orchestrator-workers DENTRO de uma fase, sem motor novo.
+// Oswaldo — orchestrator-workers DENTRO de uma fase, sem motor novo.
 //
 // O pipeline de card continua unico e sequencial nas fases macro. O que muda e
 // que uma fase pode rodar mais de um especialista quando o diff pede — front e

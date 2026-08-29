@@ -1,4 +1,4 @@
-// VTO — Voto. Seleciona uma alternativa entre varias, e diz o placar.
+// Voto — Voto. Seleciona uma alternativa entre varias, e diz o placar.
 //
 // Duas recusas deliberadas, pelas quais existem testes: votacao vazia LANCA em
 // vez de aprovar por omissao, e EMPATE nao escolhe ninguem. Desempatar sozinho

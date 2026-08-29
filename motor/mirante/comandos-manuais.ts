@@ -1,7 +1,7 @@
 import { carregarAcervo } from '../cascudo/acervo.ts'
 import type { Skill } from '../cascudo/acervo.ts'
 
-// MIR — item 16. Os comandos manuais sao ATALHOS DE INTAKE, e a distincao nao e
+// Mirante — item 16. Os comandos manuais sao ATALHOS DE INTAKE, e a distincao nao e
 // cosmetica: eles pre-carregam CONTEUDO diferente e rodam O MESMO pipeline. Um
 // comando que criasse caminho de execucao proprio seria um segundo motor com
 // gates proprios, e os gates do primeiro deixariam de valer para metade do

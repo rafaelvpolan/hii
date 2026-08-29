@@ -1,6 +1,6 @@
 import { GATE_DIFF_LIMIT } from '../../cordel/alicerce/config.ts'
 
-// ASS — os TIPOS e os LIMIARES da auditoria manual, separados de quem os aplica.
+// Assis — os TIPOS e os LIMIARES da auditoria manual, separados de quem os aplica.
 // Ficam num arquivo so porque limiar e contrato: mudar `MAX_LINHAS` aqui muda o
 // que o auditor chama de monolito, e isso tem de ser uma linha visivel, nao um
 // numero perdido no meio da funcao que o usa.

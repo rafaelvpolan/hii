@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path'
 import { isoNow } from '../../cordel/index.ts'
 
-// FRE — o candidato a regra. Acumula SEM efeito no gate.
+// Freire — o candidato a regra. Acumula SEM efeito no gate.
 //
 // O limiar existe porque falha isolada e ruido, nao padrao. Promover na primeira
 // vez produziria bloqueio permanente a partir de um caso mal interpretado — o

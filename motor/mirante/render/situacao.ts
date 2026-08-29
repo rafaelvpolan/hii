@@ -4,7 +4,7 @@ import type { EventoDoCard } from '../../euclides/eventos.ts'
 import type { Atividade } from '../atividade.ts'
 import { truncVisible } from '../tui/layout.ts'
 
-// MIR — "o que esta acontecendo AGORA", numa tela.
+// Mirante — "o que esta acontecendo AGORA", numa tela.
 //
 // Nasceu de duas queixas que sao a mesma: (1) perguntar dentro da tarefa nao
 // respondia nada — o texto virava instrucao anexada ao card; (2) a area de execucao

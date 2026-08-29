@@ -1,6 +1,6 @@
 import { run } from '../../../quilombo/git.ts'
 import type { Fields } from '../../../cordel/index.ts'
-import { executarComIdempotencia } from '../../../quilombo/salvo-conduto/idempotencia.ts'
+import { executarComIdempotencia, FASE_DA_PONTE } from '../../../quilombo/salvo-conduto/idempotencia.ts'
 import type { ExternalTask, TaskSync } from './tipos.ts'
 
 interface GhIssue {
@@ -9,7 +9,7 @@ interface GhIssue {
   body?: string
 }
 
-// PNT — espelho de tarefa externa. Duas regras aqui, e as duas nasceram de
+// Ponte — espelho de tarefa externa. Duas regras aqui, e as duas nasceram de
 // defeito medido:
 //
 // 1. FALHA NAO VIRA LISTA VAZIA. `gh` ausente, sem login ou fora de cota devolvia
@@ -17,7 +17,7 @@ interface GhIssue {
 //    criados, N espelhados de 0 externos" com exit 0 — sucesso anunciado sobre
 //    trabalho que nao aconteceu, num comando cuja unica funcao e falar com o
 //    mundo de fora.
-// 2. COMENTARIO E EFEITO EXTERNO. Ele passa por SLV. Antes ficava fora, e dois
+// 2. COMENTARIO E EFEITO EXTERNO. Ele passa por Salvo-conduto. Antes ficava fora, e dois
 //    `hii sync` no mesmo card geravam dois comentarios na mesma issue.
 
 function repoArgs(): string[] {
@@ -64,7 +64,7 @@ export class GithubIssuesSync implements TaskSync {
     // repetir o mesmo estado a cada sync e ruido na issue de outra pessoa.
     const feito = await executarComIdempotencia({
       card: String(card.id ?? ''),
-      fase: 'pnt',
+      fase: FASE_DA_PONTE,
       operacao: `issue_comment:${status}`,
       executar: async (): Promise<string> => {
         const r = await run('gh', ['issue', 'comment', num, '--body', body, ...repoArgs()], { timeout: 30000 })

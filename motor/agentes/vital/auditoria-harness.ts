@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { diretorioDeSkills } from '../../cordel/alicerce/config.ts'
 
-// VTB — a configuracao do proprio agente como superficie de ataque.
+// Vital — a configuracao do proprio agente como superficie de ataque.
 //
 // Todo gate deste motor olha o codigo que a IA produz. Nenhum olhava o que a IA
 // LE: SKILL.md, mcp.json e hooks entram no prompt de um papel que roda com Bash

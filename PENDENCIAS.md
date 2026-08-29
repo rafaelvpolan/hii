@@ -643,7 +643,7 @@ Decidido: **LIGAR**. O interruptor é `HICODE_RIGOR_ESTRITO=1` no ambiente — n
 mudança de código a fazer, e por isso ligar é ato de operação, não de commit: quem
 liga escolhe o momento em que os cards em voo podem parar.
 
-O que mudou nesta rodada é que o interruptor ficou **utilizável de verdade**. O CHG
+O que mudou nesta rodada é que o interruptor ficou **utilizável de verdade**. O Chagas
 (item 5) foi consertado na Onda C, e nesta rodada `test/agentes/chagas-red-primeiro.test.ts`
 passou a provar a ordem certa com guarda contra o `-1` — antes o invariante
 certificava a ordem invertida. Até a Onda C, ligar pararia todo card no perfil
@@ -675,13 +675,13 @@ insumo para decidir quando apertar. Ligar hoje pararia todo trabalho em voo.
 Não são pendências: são escolhas registradas para não parecerem esquecimento.
 
 **Item 18 (`executarEmBlocos`).** O laço de `motor/quilombo/cartorio/fechar.ts` já faz
-executa → valida → para cedo. Rotear por TJL ali é cerimônia. O valor real —
+executa → valida → para cedo. Rotear por Tijolo ali é cerimônia. O valor real —
 fatiar uma implementação em blocos validados — exige fatiador determinístico por
 stack, que pertence à camada de skill, não ao `core/`.
 
 ---
 
-## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
+## PENDÊNCIA — o Macunaíma diverge, mas ninguém ainda gasta token com ele
 
 A Onda 12 entregou o mecanismo completo e ligado ao plano: `valeDivergir()` decide,
 e a flag aparece em `buildPlan()` para o humano ver antes de aprovar. O que **não**
@@ -694,8 +694,8 @@ isolamento ser verificável sem rede, e ligar o provedor de verdade é uma decis
 de custo (N ramos multiplicam por N) que merece ser tomada olhando o gasto real
 por card, não junto com a entrega do mecanismo.
 
-Onde mexer: `motor/agentes/clarice/clarificar.ts:77` já chama `idear()` do TSL no
-`CLARIFY`. É o ponto onde o MCN substitui o TSL — mesma fase, com isolamento real
+Onde mexer: `motor/agentes/clarice/clarificar.ts:77` já chama `idear()` do Tarsila no
+`CLARIFY`. É o ponto onde o Macunaíma substitui o Tarsila — mesma fase, com isolamento real
 entre ramos e crítico separado.
 
 **Uma ressalva desta rodada, para quando você for ligar:** o teto por ramo

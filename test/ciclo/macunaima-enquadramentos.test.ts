@@ -62,7 +62,7 @@ test('lista vazia LANCA — divergencia sem ramo nao e divergencia', () => {
   })
 })
 
-test('id repetido LANCA aqui, e nao la na apuracao — o VTO recusa lente duplicada', () => {
+test('id repetido LANCA aqui, e nao la na apuracao — o Voto recusa lente duplicada', () => {
   const dois = { versao: 1, enquadramentos: [
     { id: 'a', nome: 'a', lente: 'x' },
     { id: 'a', nome: 'outro', lente: 'y' },

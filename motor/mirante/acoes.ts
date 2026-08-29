@@ -161,7 +161,7 @@ export function approvePlan(id: string): GuardedResult {
     return { ok: false, reason: `#${id} esta em ${status} — o plano ja foi executado; aprovar aqui descartaria o trabalho e pagaria de novo`, motivo: 'estado' }
   }
   const parede = conferirParedeDoPlano(id)
-  patchCard(id, { matriz_entendimento: parede.satisfeito ? 'ok' : 'incompleta' }, `${isoNow()} CTR (Fase 4): ${parede.motivo}`)
+  patchCard(id, { matriz_entendimento: parede.satisfeito ? 'ok' : 'incompleta' }, `${isoNow()} Cartorio (Fase 4): ${parede.motivo}`)
   if (!parede.satisfeito && rigorEstrito()) {
     return { ok: false, reason: `#${id} nao pode ser aprovado: ${parede.motivo}`, motivo: 'parede' }
   }

@@ -1,4 +1,4 @@
-// ASS — a face publica da auditoria manual (`/verificar`).
+// Assis — a face publica da auditoria manual (`/verificar`).
 //
 // O arquivo era um monolito de 402 linhas que misturava quatro assuntos: os
 // limiares, a medicao de um arquivo, a decisao de quem tem teste, a montagem

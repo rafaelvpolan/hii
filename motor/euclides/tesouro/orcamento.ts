@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { ROOT, numeroDeEnv } from '../../cordel/alicerce/config.ts'
 import { ENV_TIER_FILE } from '../../cordel/alicerce/contrato.ts'
 
-// TSR — governanca de custo como DADO versionado, nao habito no codigo.
+// Tesouro — governanca de custo como DADO versionado, nao habito no codigo.
 //
 // O tier ja era escolhido, so que implicitamente (implement no claude, gate no
 // codex). Escolha implicita nao se audita e nao se discute: ninguem pergunta

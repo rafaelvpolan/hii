@@ -41,7 +41,7 @@ test('o aprendiz roda ANTES do fechamento — fechar primeiro esconderia o diari
   anexarEvento({ card: 'mrg-4', evento: 'gate_verdict', fase: 'build', detalhe: 'falhou: composer sem autoload' })
   await M.aoMergear('mrg-4', alvo, 'laravel')
   const eventos = eventosDoCard('mrg-4')
-  const iAprendiz = eventos.findIndex(e => e.evento === 'efeito_registrado' && e.fase === 'fre')
+  const iAprendiz = eventos.findIndex(e => e.evento === 'efeito_registrado' && e.fase === 'freire')
   const iFechado = eventos.findIndex(e => e.evento === 'card_fechado')
   expect(iAprendiz).toBeGreaterThanOrEqual(0)
   expect(iAprendiz).toBeLessThan(iFechado)

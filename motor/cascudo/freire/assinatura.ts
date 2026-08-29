@@ -1,11 +1,11 @@
-// FRE — Freire. Aprender do que aconteceu, nao do que alguem achou que aconteceu.
+// Freire — Freire. Aprender do que aconteceu, nao do que alguem achou que aconteceu.
 //
 // A assinatura agrupa o MESMO problema visto em cards diferentes. Duas decisoes
 // que ela carrega:
 //
 // LEGIVEL, nao hash hexadecimal. O plano dizia hash(dominio+falha+causa), mas o
 // candidato e lido por humano na revisao em lote, e o proprio exemplo do plano
-// usa nome legivel no arquivo. Mesmo motivo de chaveDeEfeito em SLV: hash nao
+// usa nome legivel no arquivo. Mesmo motivo de chaveDeEfeito em Salvo-conduto: hash nao
 // conta o que aconteceu.
 //
 // NORMALIZADA, mas nao demais. Caixa, acento e pontuacao nao podem criar duas

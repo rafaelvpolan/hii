@@ -3,7 +3,7 @@ import { executarComIdempotencia } from '../../quilombo/salvo-conduto/idempotenc
 import { assinar, causaRaizDe, ehFalha } from './assinatura.ts'
 import { registrarOcorrencia } from './candidatos.ts'
 
-// FRE — o aprendiz. Roda UMA vez no fechamento do card.
+// Freire — o aprendiz. Roda UMA vez no fechamento do card.
 //
 // Le o diario, nao o codigo: audita COMO o card se comportou, e nao reescreve a
 // solucao nem julga gosto. A evidencia e o trecho do diario que comprova, nunca
@@ -14,7 +14,7 @@ import { registrarOcorrencia } from './candidatos.ts'
 // e falsearia o limiar — um card contado em dobro promoveria regra sem ter a
 // recorrencia que a justifica.
 
-export const FASE_DO_APRENDIZ = 'fre'
+export const FASE_DO_APRENDIZ = 'freire'
 export const OPERACAO_DO_APRENDIZ = 'aprendiz'
 
 export interface ContextoDoAprendiz {

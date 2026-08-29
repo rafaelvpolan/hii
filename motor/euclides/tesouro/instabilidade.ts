@@ -3,7 +3,7 @@ import { eventosDoCard } from '../eventos.ts'
 import { maxReajuste } from '../../cordel/alicerce/config.ts'
 import { MAX_CONFLICT } from '../../cordel/alicerce/config.ts'
 
-// TSR — medir antes de automatizar.
+// Tesouro — medir antes de automatizar.
 //
 // A pergunta que isto responde e "quais alvos consomem reparo demais", que e o
 // insumo que faltava para decidir baixar HICODE_REAJUSTE_RETRIES ou

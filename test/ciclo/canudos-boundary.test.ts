@@ -9,11 +9,11 @@ afterAll(() => {
   delete process.env.HICODE_TIER_FILE
 })
 
-const CND = await import('../../motor/ciclo/canudos/gauntlet.ts')
+const Canudos = await import('../../motor/ciclo/canudos/gauntlet.ts')
 
 test('com governanca valida, o gauntlet pode iniciar e sabe qual e o teto', () => {
   delete process.env.HICODE_TIER_FILE
-  const p = CND.podeIniciar()
+  const p = Canudos.podeIniciar()
   expect(p.pode).toBe(true)
   expect(p.tetoUsd).toBeGreaterThan(0)
 })
@@ -23,7 +23,7 @@ test('BOUNDARY sem teto de orcamento legivel, o gauntlet RECUSA iniciar', () => 
   writeFileSync(ruim, JSON.stringify({ versao: 1, padrao: 'tier2_padrao', criterios: {} }))
   process.env.HICODE_TIER_FILE = ruim
   try {
-    const p = CND.podeIniciar()
+    const p = Canudos.podeIniciar()
     expect(p.pode, 'sessao de gauntlet sem teto e o risco declarado do item 23').toBe(false)
     expect(p.motivo).toContain('orcamentoPorCard')
     expect(p.tetoUsd).toBe(0)
@@ -35,7 +35,7 @@ test('BOUNDARY sem teto de orcamento legivel, o gauntlet RECUSA iniciar', () => 
 test('BOUNDARY governanca ausente tambem recusa, em vez de assumir teto infinito', () => {
   process.env.HICODE_TIER_FILE = join(BASE, 'nao-existe.json')
   try {
-    expect(CND.podeIniciar().pode).toBe(false)
+    expect(Canudos.podeIniciar().pode).toBe(false)
   } finally {
     delete process.env.HICODE_TIER_FILE
   }
@@ -55,7 +55,7 @@ test('BOUNDARY tetoUsd que nao e numero finito positivo RECUSA — coercao do JS
     writeFileSync(caminho, `{"versao":1,"padrao":"tier2_padrao","criterios":{},"orcamentoPorCard":{"tetoUsd":${bruto},"acaoAoEstourar":"pausar"}}`)
     process.env.HICODE_TIER_FILE = caminho
     try {
-      const p = CND.podeIniciar()
+      const p = Canudos.podeIniciar()
       expect(p.pode, `${nome} nao e teto legivel — teto infinito e a ausencia de boundary com outro nome`).toBe(false)
       expect(p.tetoUsd).toBe(0)
     } finally {

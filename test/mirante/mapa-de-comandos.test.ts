@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { COMMANDS, ALIASES, canonico, handle, newSession } from '../../motor/mirante/sessao.ts'
 
-// MIR — a varredura que faz comando novo sem teste REPROVAR.
+// Mirante — a varredura que faz comando novo sem teste REPROVAR.
 //
 // COMMANDS alimenta o autocompletar: o que esta na lista o usuario ve e tenta
 // usar. Uma lista que oferece comando que ninguem exercita e pior que uma lista

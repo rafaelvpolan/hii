@@ -14,11 +14,11 @@ const { eventosDoCard } = await import('../../motor/euclides/eventos.ts')
 // Reproduz o cenario da Parte VI do MODERNIZATION.md: o `gh pr create` roda e
 // devolve a url, e o processo morre ANTES de o card gravar pr_url. No reinicio,
 // reconcileStranded devolve o card de CLEANED para URL_OK e o finish roda de
-// novo. Sem SLV, `pularCriacaoDePr('')` e falso e um SEGUNDO PR e aberto.
+// novo. Sem Salvo-conduto, `pularCriacaoDePr('')` e falso e um SEGUNDO PR e aberto.
 async function tentarAbrirPr(id: string, prNoCard: string, contador: { n: number }): Promise<string> {
   const r = await executarComIdempotencia({
     card: id,
-    fase: 'ctr',
+    fase: 'cartorio',
     operacao: 'pr_create',
     executar: (): Promise<string> => {
       if (prNoCard) return Promise.resolve(prNoCard)
@@ -47,7 +47,7 @@ test('REGRESSAO crash entre `gh pr create` e a gravacao do card NAO abre um segu
 test('a url fica no diario no instante em que o gh devolve, nao depois do worktree sair', async () => {
   const id = 'crash-2'
   await tentarAbrirPr(id, '', { n: 40 })
-  const registrado = eventosDoCard(id).find(e => e.evento === 'efeito_registrado' && e.chave === `${id}:ctr:pr_create`)
+  const registrado = eventosDoCard(id).find(e => e.evento === 'efeito_registrado' && e.chave === `${id}:cartorio:pr_create`)
   expect(registrado?.resultado).toBe('https://github.com/org/repo/pull/41')
   expect(registrado?.detalhe).toBe('pr_create')
 })
@@ -70,8 +70,8 @@ test('REGRESSAO url forjada no diario NAO vira pr_url do card', async () => {
   const { anexarEvento } = await import('../../motor/euclides/eventos.ts')
   const id = 'forjado-1'
   anexarEvento({
-    card: id, evento: 'efeito_registrado', fase: 'ctr',
-    chave: `${id}:ctr:pr_create`, resultado: 'https://phishing.example/pull/1',
+    card: id, evento: 'efeito_registrado', fase: 'cartorio',
+    chave: `${id}:cartorio:pr_create`, resultado: 'https://phishing.example/pull/1',
   })
   expect(prOrfaoDe(id, ''), 'a url do atacante chegaria ao card').toBeNull()
   expect(temOrfao(id, 'notificacao_incerta'), 'recusar em silencio esconderia a adulteracao').toBe(true)

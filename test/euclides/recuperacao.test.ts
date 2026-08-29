@@ -21,7 +21,7 @@ function cardEm(status: string): string {
 
 async function registrarPrAberto(id: string, url: string): Promise<void> {
   await executarComIdempotencia({
-    card: id, fase: 'ctr', operacao: 'pr_create',
+    card: id, fase: 'cartorio', operacao: 'pr_create',
     executar: (): Promise<string> => Promise.resolve(url),
   })
 }

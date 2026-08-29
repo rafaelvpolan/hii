@@ -311,7 +311,7 @@ export function skillsDoAgente(agent: string, wt: string, alvo: string, packs: r
   const papel = PAPEL_DO_AGENTE[agent]
   if (!papel) return ''
   const skills = renderizarSkills(skillsPara(papel, contextoDeSkill(wt, alvo, packs)))
-  // VTB: o checklist da stack roda DEPOIS do security-baseline generico, e so
+  // Vital: o checklist da stack roda DEPOIS do security-baseline generico, e so
   // para o papel de seguranca. Um checklist de Laravel num passo de limpeza
   // seria ruido caro.
   const checklist = papel === 'seguranca' ? renderizarChecklist(checklistParaStack(stackOf(alvo))) : ''

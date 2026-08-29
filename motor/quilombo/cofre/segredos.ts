@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ENV_SECRETS_DIR } from '../../cordel/alicerce/contrato.ts'
-// CFR — Cofre. Segredo portavel: variavel de ambiente e o caminho que SEMPRE
+// Cofre — Cofre. Segredo portavel: variavel de ambiente e o caminho que SEMPRE
 // funciona, e cofre de nuvem e opcional e plugavel.
 //
 // A regra que faz isso valer: segredo ausente LANCA, nomeando a variavel e onde

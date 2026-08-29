@@ -79,7 +79,7 @@ const ESTILO_FORTE = [
 // `token` acima: rodar o pipeline a mais numa troca de cor custa quatro chamadas de
 // agente; pular Testes numa mudanca de regra de negocio custa o incidente.
 
-// MCN — vocabulario de pergunta ABERTA: onde existe mais de uma forma certa e a
+// Macunaima — vocabulario de pergunta ABERTA: onde existe mais de uma forma certa e a
 // escolha e de desenho. So aqui divergir se paga.
 const REPO = ['conflito\\w*', 'conflict\\w*', 'merge', 'mergear', 'rebase', 'cherry-pick', 'cherrypick', 'gitignore', 'changelog', 'revert\\w*', 'reverter', 'submodul\\w*', 'pull request', 'worktree\\w*']
 
@@ -263,7 +263,7 @@ export function aplicarLei(plano: StepPlan, lei: VeredictoDaLei, todos: Pipeline
   }
 }
 
-// MCN — o gatilho da divergencia. Deliberado: mesmo formato de veredicto do CND
+// Macunaima — o gatilho da divergencia. Deliberado: mesmo formato de veredicto do Canudos
 // (`{ vale, motivo }`), porque os dois respondem a mesma pergunta — "este card
 // merece um modo que custa varias vezes mais?".
 //

@@ -1,4 +1,4 @@
-// RPR — reparador de build por DOMINIO, nao generico.
+// Reprise — reparador de build por DOMINIO, nao generico.
 //
 // O padrao veio do ECC, que mantem 8+ desses (go-build-resolver,
 // rust-build-resolver, cpp-build-resolver...). A razao de existir: a saida de
@@ -8,7 +8,7 @@
 // este motor faz.
 //
 // Adicionar um dominio novo e um arquivo aqui + uma linha no registro. Mesma
-// disciplina do harness (TMD).
+// disciplina do harness (Tomada).
 
 export interface ReparadorDeBuild {
   readonly id: string

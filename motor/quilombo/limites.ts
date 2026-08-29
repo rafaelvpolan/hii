@@ -1,7 +1,7 @@
 import { cpus, totalmem } from 'node:os'
 import { numeroDeEnv } from '../cordel/alicerce/config.ts'
 
-// QLB — teto de recurso por worktree paralelo.
+// Quilombo — teto de recurso por worktree paralelo.
 //
 // Limite REAL de cpu e memoria e do container, declarado em docker-stack.yml
 // (`deploy.resources.limits`, honrado pelo swarm) ou pelo equivalente de cada nuvem. Um processo Node

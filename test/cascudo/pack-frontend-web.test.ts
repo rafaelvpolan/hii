@@ -1,7 +1,7 @@
 import { test, expect } from '../apoio/runner.ts'
 
 const A = await import('../../motor/cascudo/acervo.ts')
-const CND = await import('../../motor/ciclo/canudos/gauntlet.ts')
+const Canudos = await import('../../motor/ciclo/canudos/gauntlet.ts')
 
 const ACERVO = A.carregarAcervo()
 const DO_PACK = ACERVO.filter(s => s.pack === 'frontend-web')
@@ -32,12 +32,12 @@ test('o gatilho dispara em arquivo de front e NAO em arquivo de backend', () => 
 test('o pack habilita o modo gauntlet do crivo — era o bloqueio do item 23', () => {
   const packs = [...new Set(A.skillsPara('avaliador', CTX_VUE, ACERVO).map(s => s.pack))]
   expect(packs).toContain('frontend-web')
-  expect(CND.gauntletVale(packs).vale, 'sem pack com referencia de mercado o gauntlet nunca ligava').toBe(true)
+  expect(Canudos.gauntletVale(packs).vale, 'sem pack com referencia de mercado o gauntlet nunca ligava').toBe(true)
 })
 
 test('backend continua fora do gauntlet — nao existe screenshot de "comissao calculada certo"', () => {
   const packs = [...new Set(A.skillsPara('avaliador', CTX_BACKEND, ACERVO).map(s => s.pack))]
-  expect(CND.gauntletVale(packs).vale).toBe(false)
+  expect(Canudos.gauntletVale(packs).vale).toBe(false)
 })
 
 test('item 15: cada skill do pack cita referencia datada de 2026, nao conselho atemporal', () => {

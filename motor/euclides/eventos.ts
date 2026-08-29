@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { isoNow } from '../cordel/index.ts'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 
-// EUC — Euclides. Diario append-only de execucao: registra o que aconteceu, em
+// Euclides — Euclides. Diario append-only de execucao: registra o que aconteceu, em
 // ordem, e NUNCA reescreve. E daqui que a retomada apos crash reconstroi onde
 // cada card parou (motor/euclides/recuperar.ts) e daqui que a idempotencia sabe se
 // um efeito ja foi produzido (motor/quilombo/salvo-conduto/idempotencia.ts).

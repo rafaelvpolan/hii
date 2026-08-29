@@ -2,7 +2,7 @@ import { anexarEvento, cardFechado, cardsComDiario, eventosDoCard, ultimoEvento 
 import type { TipoDeEvento } from './eventos.ts'
 import type { EventoDoCard } from './eventos.ts'
 
-// EUC — retomada. No restart, o motor precisa reconstruir ONDE cada card parou
+// Euclides — retomada. No restart, o motor precisa reconstruir ONDE cada card parou
 // lendo o proprio diario, em vez de assumir que tudo recomeca do zero.
 //
 // O erro que a Parte VI marca como mais comum: sem checkpoint, a recuperacao

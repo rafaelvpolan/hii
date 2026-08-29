@@ -1,4 +1,4 @@
-// MIR — pergunta vs instrucao dentro de uma tarefa aberta.
+// Mirante — pergunta vs instrucao dentro de uma tarefa aberta.
 //
 // Antes, TODO texto digitado com a tarefa aberta virava instrucao anexada ao card:
 // "o que esta fazendo no barbeiro?" era gravado como pedido de mudanca e nunca

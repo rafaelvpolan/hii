@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, rea
 import { join } from 'node:path'
 import { isoNow } from '../cordel/index.ts'
 
-// CSD — memoria do projeto: decisoes e convencoes acumuladas entre cards,
+// Cascudo — memoria do projeto: decisoes e convencoes acumuladas entre cards,
 // injetada no prompt do implementador (motor/ciclo/agente.ts).
 //
 // O teto existe porque isto entra em TODA chamada de implementacao: sem limite,

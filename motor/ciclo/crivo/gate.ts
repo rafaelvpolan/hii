@@ -256,7 +256,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     : escolha.modo === 'gauntlet'
       ? `${escolha.motivo}, mas ${provider.supportsVision ? 'o card nao tem tela renderizada' : `${provider.name} nao le imagem`} — cai no criterio escrito`
       : escolha.motivo
-  if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} CND: ${motivoDoModo}${avisoDeCorte}`)
+  if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} Canudos: ${motivoDoModo}${avisoDeCorte}`)
   const res = await runProvider(id, provider, {
     prompt: gauntlet ? buildPromptGauntlet(desc, tela, referencias, id) : buildPrompt(desc, diff),
     cwd: ROOT,

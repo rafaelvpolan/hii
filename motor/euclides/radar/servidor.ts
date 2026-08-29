@@ -5,8 +5,8 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { ENV_HEALTH_BIND, ENV_HEALTH_PORT } from '../../cordel/alicerce/contrato.ts'
 
-// RDR — observabilidade de INFRAESTRUTURA, distinta da observabilidade de
-// decisao de IA (que e o diario EUC). Serve para systemd, politica de restart
+// Radar — observabilidade de INFRAESTRUTURA, distinta da observabilidade de
+// decisao de IA (que e o diario Euclides). Serve para systemd, politica de restart
 // do Docker e load balancer de qualquer nuvem saberem quando reiniciar.
 //
 // Desligado por padrao: abrir porta na maquina de alguem sem pedir nao e

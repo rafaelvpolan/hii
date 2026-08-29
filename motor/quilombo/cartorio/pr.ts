@@ -1,4 +1,4 @@
-import { executarComIdempotencia } from '../salvo-conduto/idempotencia.ts'
+import { executarComIdempotencia, FASE_DO_CARTORIO } from '../salvo-conduto/idempotencia.ts'
 import { run } from '../git.ts'
 
 export function pularCriacaoDePr(prUrl: string): boolean {
@@ -29,7 +29,7 @@ const TIMEOUT_GH_MS = 60000
 // Abrir PR e efeito externo IRREVERSIVEL, e por isso ha duas guardas em serie:
 //
 //  1. `prExistente` — o card ja sabe a url. Nao chama o gh.
-//  2. a chave de idempotencia (SLV) — o diario ja registrou a abertura. O guarda
+//  2. a chave de idempotencia (Salvo-conduto) — o diario ja registrou a abertura. O guarda
 //     antigo era so `card.fm.pr_url`, gravado DEPOIS do gh e depois de remover o
 //     worktree: morrer nesse meio deixava pr_url vazio, o reconcileStranded
 //     devolvia o card para URL_OK e o finish abria um SEGUNDO PR.
@@ -43,7 +43,7 @@ export async function abrirPrUmaVez(p: PedidoDePr, executar: typeof run = run): 
   let chamouOGh = false
   const r = await executarComIdempotencia({
     card: p.card,
-    fase: 'ctr',
+    fase: FASE_DO_CARTORIO,
     operacao: 'pr_create',
     executar: async (): Promise<string> => {
       if (p.prExistente) return p.prExistente

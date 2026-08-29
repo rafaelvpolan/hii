@@ -6,7 +6,7 @@ import { handle, newSession, canonico } from '../../motor/mirante/sessao.ts'
 import { dispatch } from '../../motor/mirante/despacho.ts'
 import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 
-// MIR — /ia, /model, /effort e /mode nao tinham teste nenhum, e a varredura de
+// Mirante — /ia, /model, /effort e /mode nao tinham teste nenhum, e a varredura de
 // test/mirante/mapa-de-comandos.test.ts encontrou os quatro. Sao exatamente os
 // comandos que mudam QUAL modelo gasta o token do usuario: superficie sem
 // cobertura no lugar mais caro de errar.

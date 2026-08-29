@@ -3,7 +3,7 @@ import { renderFrame } from '../../motor/mirante/tui/layout.ts'
 import { frameToAnsi, pinturaDiferencial } from '../../motor/mirante/tui/screen.ts'
 import type { FrameInput } from '../../motor/mirante/tui/layout.ts'
 
-// MIR — o teto de tempo do quadro, medido. "Parece rapido" e o mesmo teatro de
+// Mirante — o teto de tempo do quadro, medido. "Parece rapido" e o mesmo teatro de
 // qualidade que o motor recusa num gate: sem numero nao ha reprovacao possivel.
 //
 // Duas familias de asserção, e as duas precisam existir:

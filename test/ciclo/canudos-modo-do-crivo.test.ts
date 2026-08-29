@@ -1,6 +1,6 @@
 import { test, expect, lerArquivo } from '../apoio/runner.ts'
 
-const CND = await import('../../motor/ciclo/canudos/gauntlet.ts')
+const Canudos = await import('../../motor/ciclo/canudos/gauntlet.ts')
 
 const PACKS_FRONT = ['common', 'frontend-web']
 const REF = ['/cards/refs/042/ref-1.png']
@@ -10,23 +10,23 @@ const REF = ['/cards/refs/042/ref-1.png']
 const LIGADO = { ativado: true }
 
 test('frontend com referencia anexada entra em gauntlet', () => {
-  const m = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO })
+  const m = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO })
   expect(m.modo).toBe('gauntlet')
 })
 
 test('SEM referencia anexada volta ao criterio escrito — sem referencia nao existe comparacao cega', () => {
-  const m = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: [], ...LIGADO })
+  const m = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: [], ...LIGADO })
   expect(m.modo).toBe('criterio-escrito')
   expect(m.motivo).toContain('referencia')
 })
 
 test('dominio de logica pura fica no criterio escrito mesmo com imagem anexada', () => {
-  const m = CND.modoDoCrivo({ packs: ['common', 'backend-web'], referencias: REF, ...LIGADO })
+  const m = Canudos.modoDoCrivo({ packs: ['common', 'backend-web'], referencias: REF, ...LIGADO })
   expect(m.modo).toBe('criterio-escrito')
 })
 
 test('BOUNDARY sem teto legivel nao entra em gauntlet, mesmo com dominio e referencia', () => {
-  const m = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao: { pode: false, tetoUsd: 0, motivo: 'teto ilegivel' } })
+  const m = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao: { pode: false, tetoUsd: 0, motivo: 'teto ilegivel' } })
   expect(m.modo).toBe('criterio-escrito')
   expect(m.motivo).toContain('teto')
 })
@@ -38,7 +38,7 @@ test('o motivo sempre explica a escolha — modo sem porque nao se audita', () =
     { packs: ['common'], referencias: REF, ...LIGADO },
     { packs: PACKS_FRONT, referencias: REF },
   ]) {
-    expect(CND.modoDoCrivo(caso).motivo.length).toBeGreaterThan(10)
+    expect(Canudos.modoDoCrivo(caso).motivo.length).toBeGreaterThan(10)
   }
 })
 
@@ -49,27 +49,27 @@ test('INVARIANTE o crivo escolhe o modo e registra no card', async () => {
 })
 
 test('DESLIGADO por omissao: dominio e referencia nao bastam — o gauntlet e escolha explicita do humano', () => {
-  const m = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF })
+  const m = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF })
   expect(m.modo, 'ligado por heuristica, um card de front com imagem anexada saia sem NENHUMA leitura de codigo').toBe('criterio-escrito')
   expect(m.motivo).toContain('/gauntlet on')
 })
 
 test('ativado: false e o mesmo que desligado — nao existe meio-ligado', () => {
-  expect(CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ativado: false }).modo).toBe('criterio-escrito')
+  expect(Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ativado: false }).modo).toBe('criterio-escrito')
 })
 
 test('TETO APLICADO: card que ja gastou o teto nao entra em gauntlet, mesmo ligado e com tudo no lugar', () => {
   const permissao = { pode: true, tetoUsd: 16, motivo: 'teto de US$16 por card' }
-  const acima = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao, gastoUsd: 16 })
+  const acima = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao, gastoUsd: 16 })
   expect(acima.modo, 'ler o teto e nao compara-lo com o gasto e teto decorativo').toBe('criterio-escrito')
   expect(acima.motivo).toContain('16')
-  const abaixo = CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao, gastoUsd: 1.5 })
+  const abaixo = Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao, gastoUsd: 1.5 })
   expect(abaixo.modo).toBe('gauntlet')
 })
 
 test('gasto desconhecido nao inventa bloqueio — sem numero nao ha comparacao com o teto', () => {
   const permissao = { pode: true, tetoUsd: 16, motivo: 'teto de US$16 por card' }
-  expect(CND.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao }).modo).toBe('gauntlet')
+  expect(Canudos.modoDoCrivo({ packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao }).modo).toBe('gauntlet')
 })
 
 // `null` de gastoDoCard e CORROMPIDO, nao "nao sei". Mapear os dois para
@@ -77,7 +77,7 @@ test('gasto desconhecido nao inventa bloqueio — sem numero nao ha comparacao c
 // o registro de custo esta quebrado — fail-open num portao de gasto.
 test('TETO gasto CORROMPIDO barra o gauntlet, nao vira "gasto desconhecido"', async () => {
   const permissao = { pode: true, tetoUsd: 16, motivo: 'teto de US$16 por card' }
-  const corrompido = CND.modoDoCrivo({
+  const corrompido = Canudos.modoDoCrivo({
     packs: PACKS_FRONT, referencias: REF, ...LIGADO, permissao,
     gastoUsd: Number.POSITIVE_INFINITY,
   })
@@ -93,8 +93,8 @@ test('INVARIANTE o gate converte cost_usd corrompido em barreira, nao em undefin
 })
 
 test('MAX_CANDIDATOS_CEGOS e derivado dos rotulos, nao copiado', () => {
-  expect(CND.MAX_CANDIDATOS_CEGOS).toBe(8)
-  const candidatos = Array.from({ length: CND.MAX_CANDIDATOS_CEGOS }, (_, i) => ({ origem: `o${i}`, conteudo: `c${i}` }))
-  expect(() => CND.cegar(candidatos, 'x'), 'exatamente o maximo tem de passar').not.toThrow()
-  expect(() => CND.cegar([...candidatos, { origem: 'extra', conteudo: 'c' }], 'x')).toThrow('ate 8')
+  expect(Canudos.MAX_CANDIDATOS_CEGOS).toBe(8)
+  const candidatos = Array.from({ length: Canudos.MAX_CANDIDATOS_CEGOS }, (_, i) => ({ origem: `o${i}`, conteudo: `c${i}` }))
+  expect(() => Canudos.cegar(candidatos, 'x'), 'exatamente o maximo tem de passar').not.toThrow()
+  expect(() => Canudos.cegar([...candidatos, { origem: 'extra', conteudo: 'c' }], 'x')).toThrow('ate 8')
 })

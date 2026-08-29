@@ -3,7 +3,7 @@ import type { Governanca } from '../../euclides/tesouro/orcamento.ts'
 import { escolherEnquadramentos } from './enquadramentos.ts'
 import type { Enquadramento } from './enquadramentos.ts'
 
-// MCN — a metade DIVERGENTE. O que a distingue do TSL nao e o prompt: e que o
+// Macunaima — a metade DIVERGENTE. O que a distingue do Tarsila nao e o prompt: e que o
 // isolamento entre ramos aqui e estrutural, nao prometido.
 //
 // "the generator-critic split is mechanical — separate LLM calls with opposite

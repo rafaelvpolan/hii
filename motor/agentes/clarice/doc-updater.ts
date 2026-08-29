@@ -1,4 +1,4 @@
-// CLR — Clarice. Documentacao muda quando o CONTRATO PUBLICO muda, nao a cada commit.
+// Clarice — Clarice. Documentacao muda quando o CONTRATO PUBLICO muda, nao a cada commit.
 //
 // A distincao e o valor da peca: mexer no corpo de uma funcao nao muda nada para
 // quem esta do lado de fora, e pedir atualizacao de doc ali gera ruido que faz o

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { cardsDir } from '../../cordel/alicerce/config.ts'
 import { executarComIdempotencia } from '../../quilombo/salvo-conduto/idempotencia.ts'
 
-// LUC — Lucio Costa: a estrutura vem antes de erguer parede.
+// Lucio — Lucio Costa: a estrutura vem antes de erguer parede.
 //
 // Pilar 1: nao se toca em codigo sem entender o que se vai fazer. O plano
 // falava em "95% de entendimento", mas porcentagem que o proprio modelo
@@ -33,7 +33,7 @@ export const SECOES_DA_MATRIZ = [
 
 export type IdDeSecao = (typeof SECOES_DA_MATRIZ)[number]['id']
 
-export const FASE_DA_MATRIZ = 'luc'
+export const FASE_DA_MATRIZ = 'lucio'
 export const OPERACAO_DA_MATRIZ = 'matriz_criada'
 
 function diretorioDeMatrizes(): string {

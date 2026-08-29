@@ -3,7 +3,7 @@ import { renderFrame, visibleLen, quebrarEmLargura, truncVisible } from '../../m
 import { frameToAnsi, pinturaDiferencial } from '../../motor/mirante/tui/screen.ts'
 import type { FrameInput } from '../../motor/mirante/tui/layout.ts'
 
-// MIR — a guarda contra TRAVAMENTO. O teto de tempo do arquivo ao lado mede o
+// Mirante — a guarda contra TRAVAMENTO. O teto de tempo do arquivo ao lado mede o
 // caso normal; aqui o estado e hostil de proposito: log gigante, linha unica
 // absurdamente longa, terminal de uma coluna, milhares de cards.
 //

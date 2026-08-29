@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { ENV_RUNTIME } from './contrato.ts'
 
-// ALI — qual runtime de JS o motor usa para rodar os proprios scripts auxiliares
+// Alicerce — qual runtime de JS o motor usa para rodar os proprios scripts auxiliares
 // e para (re)subir o daemon.
 //
 // Existe porque o codigo spawnava 'bun' fixo em cinco lugares. Os scripts

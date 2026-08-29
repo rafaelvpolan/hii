@@ -129,7 +129,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const ctx: RunCtx = { contract, pkg, target, arquivos: changed }
   patchCard(id, {}, `${isoNow()} contrato: ${contract.stack}${pkg ? ` · pacote afetado: ${pkg.name}` : ''}`)
 
-  // BSS / Pilar 3: ferramenta de teste e de debug no momento em que a area
+  // Bussola / Pilar 3: ferramenta de teste e de debug no momento em que a area
   // nasce, nao depois. So vale para area NOVA — todo arquivo do diff foi
   // criado. Card que toca codigo existente nao paga esse pedagio, senao todo
   // trabalho num repo legado travaria aqui para sempre.
@@ -141,7 +141,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const criados = diffCriados.stdout.split('\n').filter(Boolean)
   if (ehAreaNova(changed, criados)) {
     const setup = conferirSetup(wt, contract)
-    patchCard(id, { setup_ferramental: setup.pronto ? 'ok' : 'incompleto' }, `${isoNow()} BSS (area nova): ${relatoDoSetup(setup)}`)
+    patchCard(id, { setup_ferramental: setup.pronto ? 'ok' : 'incompleto' }, `${isoNow()} Bussola (area nova): ${relatoDoSetup(setup)}`)
     // Barra so por falta de COMANDO DE TESTE, e so com rigor estrito ligado.
     // Falta de documento de debug e julgamento, nao criterio de bloqueio.
     if (setup.semTeste && rigorEstrito()) {
@@ -159,12 +159,12 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // "contrato_publico: estavel" — fato positivo sobre dado parcial.
   const diffCompleto = await runGit(wt, ['diff', `origin/${base}...HEAD`])
   if (diffCompleto.err) {
-    patchCard(id, { contrato_publico: 'indeterminado' }, `${isoNow()} CLR: NAO consegui ler o diff completo (${String(diffCompleto.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 140) ?? diffCompleto.err.message}) — nao afirmo nada sobre o contrato publico`)
+    patchCard(id, { contrato_publico: 'indeterminado' }, `${isoNow()} Clarice: NAO consegui ler o diff completo (${String(diffCompleto.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 140) ?? diffCompleto.err.message}) — nao afirmo nada sobre o contrato publico`)
   }
   const diffTexto = diffCompleto.err ? '' : diffCompleto.stdout
   const contratoPublico = contratoPublicoMudou({ arquivos: changed, diff: diffTexto })
   if (!diffCompleto.err) {
-    patchCard(id, { contrato_publico: contratoPublico.mudou ? 'mudou' : 'estavel' }, `${isoNow()} CLR: ${relatoDeContrato(contratoPublico)}`)
+    patchCard(id, { contrato_publico: contratoPublico.mudou ? 'mudou' : 'estavel' }, `${isoNow()} Clarice: ${relatoDeContrato(contratoPublico)}`)
   }
 
   const all = activeSteps(wt)
@@ -274,14 +274,14 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       if (relato.aceito) {
         registrarRed(id, `${step.label}: ${primeiraLinhaUtil(relato.saida)}`, 'agente')
       }
-      patchCard(id, {}, `${isoNow()} CHG: evidencia de RED do passo de testes — ${relato.aceito ? 'ACEITA' : 'RECUSADA'}: ${relato.motivo}`)
+      patchCard(id, {}, `${isoNow()} Chagas: evidencia de RED do passo de testes — ${relato.aceito ? 'ACEITA' : 'RECUSADA'}: ${relato.motivo}`)
     }
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
       haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`, step.label)
       return
     }
     if (step.gate === 'test') {
-      // CHG / item 5: no perfil completo, o teste tem de ter FALHADO antes de
+      // Chagas / item 5: no perfil completo, o teste tem de ter FALHADO antes de
       // passar. A evidencia vem do diario, nao do relato do modelo.
       //
       // A consulta roda DEPOIS de testGate, e nao antes, porque o unico produtor da
@@ -293,7 +293,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       // apertar" era uma constante.
       const red = exigirRedAntesDoGreen(id, plan.profile)
       if (red.exigido) {
-        patchCard(id, { red_antes_do_green: red.satisfeito ? 'sim' : 'nao' }, `${isoNow()} CHG: ${red.motivo}`)
+        patchCard(id, { red_antes_do_green: red.satisfeito ? 'sim' : 'nao' }, `${isoNow()} Chagas: ${red.motivo}`)
         if (!red.satisfeito && rigorEstrito()) {
           haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED ${red.motivo}`, step.label)
           process.stdout.write(`[runner] #${id}: HALTED — sem RED antes do GREEN\n`)

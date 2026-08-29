@@ -1,6 +1,6 @@
 import { anexarEvento, eventoPorChave } from '../../euclides/eventos.ts'
 
-// SLV — Salvo-conduto. "Este ja foi liberado, nao revista de novo."
+// Salvo-conduto — Salvo-conduto. "Este ja foi liberado, nao revista de novo."
 //
 // Toda operacao que fala com o mundo FORA do processo do hii — abrir PR,
 // comentar em issue, disparar webhook, notificar humano — passa por aqui.
@@ -40,11 +40,15 @@ export interface ResultadoIdempotente {
 }
 
 // Composta e legivel de proposito, em vez de hash: o diario e lido por humano
-// quando um card trava, e `023:ctr:pr_create` diz o que aconteceu — um hash
+// quando um card trava, e `023:cartorio:pr_create` diz o que aconteceu — um hash
 // hexadecimal nao diz.
 export function chaveDeEfeito(card: string, fase: string, operacao: string): string {
   return `${card}:${fase}:${operacao}`
 }
+
+export const FASE_DO_CARTORIO = 'cartorio'
+
+export const FASE_DA_PONTE = 'ponte'
 
 export async function executarComIdempotencia(op: OperacaoComEfeito): Promise<ResultadoIdempotente> {
   const chave = chaveDeEfeito(op.card, op.fase, op.operacao)

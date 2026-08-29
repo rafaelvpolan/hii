@@ -4,7 +4,7 @@ import { STATUSES } from '../cordel/index.ts'
 import { anexarEvento } from '../euclides/eventos.ts'
 import type { Status } from '../cordel/index.ts'
 
-// NMY — a topologia deixa de ser FOTO e passa a ser OBSERVADA.
+// Niemeyer — a topologia deixa de ser FOTO e passa a ser OBSERVADA.
 //
 // O invariante anterior comparava so o DESTINO: "todo estado que o motor escreve
 // e destino de alguma transicao declarada". Com HALTED e PAUSED em

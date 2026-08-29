@@ -1,6 +1,6 @@
 import { anexarEvento } from '../euclides/eventos.ts'
 
-// CIC — o repair loop generico. Uma tentativa DIRIGIDA por vez, com teto, e
+// Ciclo — o repair loop generico. Uma tentativa DIRIGIDA por vez, com teto, e
 // sempre reportando ao humano o que ja foi tentado quando esgota.
 //
 // Nao e um mecanismo novo: o motor ja tinha QUATRO copias deste padrao —

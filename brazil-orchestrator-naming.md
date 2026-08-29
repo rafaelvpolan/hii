@@ -3,36 +3,40 @@
 > Taxonomia de nomes para a arquitetura do motor de orquestração multi-IA.
 >
 > **Princípio:** o nome brasileiro representa o comportamento arquitetural do componente — não apenas uma homenagem.
+>
+> **A abreviatura de três letras foi aposentada em 29/08/2026** — o nome por extenso é o que
+> aparece em pasta, arquivo, comentário e documento. Commits anteriores a essa data usam o
+> código curto.
 
 ---
 
 ## 1. Espinha dorsal
 
-| Código | Nome | Conceito | Papel no motor |
-|---|---|---|---|
-| **OSW** | **Oswaldo** | Oswaldo Cruz | Orquestrador principal |
-| **RTA** | **Rota** | Rotas / exploração territorial | Router inteligente |
-| **NMY** | **Niemeyer** | Oscar Niemeyer | Graph Engineering |
-| **CIC** | **Ciclo** | Ciclos de execução | Agent Loop |
-| **CRV** | **Crivo** | Filtro rigoroso | Hardness / Quality Gate |
-| **CND** | **Canudos** | Resistência sob pressão | Gauntlet Loop |
+| Nome | Conceito | Papel no motor |
+|---|---|---|
+| **Oswaldo** | Oswaldo Cruz | Orquestrador principal |
+| **Rota** | Rotas / exploração territorial | Router inteligente |
+| **Niemeyer** | Oscar Niemeyer | Graph Engineering |
+| **Ciclo** | Ciclos de execução | Agent Loop |
+| **Crivo** | Filtro rigoroso | Hardness / Quality Gate |
+| **Canudos** | Resistência sob pressão | Gauntlet Loop |
 
 ### Princípio operacional
 
 ```text
-OSW roteia.
-RTA decide.
-NMY estrutura.
-CIC executa.
-CRV julga.
-CND pressiona.
+Oswaldo roteia.
+Rota decide.
+Niemeyer estrutura.
+Ciclo executa.
+Crivo julga.
+Canudos pressiona.
 ```
 
 ---
 
 ## 2. Orquestração
 
-### OSW — Oswaldo
+### Oswaldo — Oswaldo
 
 **Referência:** Oswaldo Cruz
 
@@ -43,16 +47,16 @@ Coordena o sistema como um todo, distribuindo responsabilidades entre routers, g
 ```text
 Intent
   ↓
-OSW
-  ├── RTA → escolhe rota
-  ├── NMY → constrói graph
-  ├── CIC → executa loop
-  └── CRV → valida resultado
+Oswaldo
+  ├── Rota → escolhe rota
+  ├── Niemeyer → constrói graph
+  ├── Ciclo → executa loop
+  └── Crivo → valida resultado
 ```
 
 ---
 
-### RUI — Rui
+### Rui — Rui
 
 **Referência:** Rui Barbosa
 
@@ -64,7 +68,7 @@ Pode atuar como camada estratégica acima da execução.
 
 ---
 
-### RTA — Rota
+### Rota — Rota
 
 **Referência:** rotas, bandeiras e integração territorial brasileira
 
@@ -73,7 +77,7 @@ Pode atuar como camada estratégica acima da execução.
 Decide **para onde** uma tarefa deve ir.
 
 ```text
-RTA
+Rota
 ├── Claude
 ├── GPT
 ├── Codex
@@ -91,7 +95,7 @@ Pergunta central:
 
 ## 3. Loops
 
-### CIC — Ciclo
+### Ciclo — Ciclo
 
 **Referência:** conceito de ciclos
 
@@ -117,7 +121,7 @@ Responsável por permitir que um agente execute, observe o resultado, reflita e 
 
 ---
 
-### CRV — Crivo
+### Crivo — Crivo
 
 **Referência:** crivo como mecanismo de filtragem rigorosa
 
@@ -132,7 +136,7 @@ Agent
   ↓
 Result
   ↓
-CRV
+Crivo
   ├── PASS → continue
   └── FAIL → CICLO novamente
 ```
@@ -147,7 +151,7 @@ Responsabilidades:
 
 ---
 
-### CND — Canudos
+### Canudos — Canudos
 
 **Referência:** Guerra de Canudos
 
@@ -158,14 +162,14 @@ Representa resistência, múltiplas investidas e sobrevivência sob pressão.
 Um problema é submetido a várias rodadas de agentes, críticas e validações.
 
 ```text
-CND
+Canudos
  │
  ├── Agent
  ├── Agent
  ├── Critic
  ├── Test
  ├── Security
- ├── CRV
+ ├── Crivo
  └── Retry
 ```
 
@@ -175,7 +179,7 @@ A solução precisa **sobreviver ao gauntlet**.
 
 ## 4. Graph Engineering
 
-### NMY — Niemeyer
+### Niemeyer — Niemeyer
 
 **Referência:** Oscar Niemeyer
 
@@ -184,7 +188,7 @@ A solução precisa **sobreviver ao gauntlet**.
 Representa arquitetura, estrutura e composição.
 
 ```text
-NMY
+Niemeyer
 ├── Nodes
 ├── Edges
 ├── Conditions
@@ -196,16 +200,16 @@ NMY
 Possíveis componentes:
 
 ```text
-NMY Graph
-NMY Node
-NMY Edge
-NMY Runtime
-NMY Planner
+Niemeyer Graph
+Niemeyer Node
+Niemeyer Edge
+Niemeyer Runtime
+Niemeyer Planner
 ```
 
 ---
 
-### LUC — Lúcio
+### Lúcio — Lúcio
 
 **Referência:** Lúcio Costa
 
@@ -213,18 +217,18 @@ NMY Planner
 
 Responsável pela organização estrutural do graph antes da execução.
 
-Pode trabalhar em conjunto com NMY:
+Pode trabalhar em conjunto com Niemeyer:
 
 ```text
-LUC → planeja estrutura
-NMY → materializa / executa estrutura
+Lúcio → planeja estrutura
+Niemeyer → materializa / executa estrutura
 ```
 
 ---
 
 ## 5. Agents
 
-### RND — Rondon
+### Rondon — Rondon
 
 **Referência:** Marechal Rondon
 
@@ -233,7 +237,7 @@ NMY → materializa / executa estrutura
 Exploração, mapeamento, descoberta e investigação de território desconhecido.
 
 ```text
-RND
+Rondon
 ├── Search
 ├── Explore
 ├── Collect
@@ -243,7 +247,7 @@ RND
 
 ---
 
-### DUM — Dumont
+### Dumont — Dumont
 
 **Referência:** Santos Dumont
 
@@ -254,7 +258,7 @@ Representa invenção, engenharia, experimentação e construção.
 ```text
 Requirement
   ↓
-DUM
+Dumont
   ↓
 Implementation
   ↓
@@ -263,7 +267,7 @@ Tests
 
 ---
 
-### ASS — Assis
+### Assis — Assis
 
 **Referência:** Machado de Assis
 
@@ -272,7 +276,7 @@ Tests
 Responsável por análise crítica e identificação de inconsistências.
 
 ```text
-ASS
+Assis
 ├── Review
 ├── Detect
 ├── Question
@@ -292,7 +296,7 @@ Pode analisar:
 
 ---
 
-### SEN — Senna
+### Senna — Senna
 
 **Referência:** Ayrton Senna
 
@@ -310,14 +314,14 @@ Indicado para:
 - decisões de baixo custo.
 
 ```text
-SEN
+Senna
 ↓
 FAST PATH
 ```
 
 ---
 
-### DRM — Drummond
+### Drummond — Drummond
 
 **Referência:** Carlos Drummond de Andrade
 
@@ -335,14 +339,14 @@ Indicado para:
 - problemas com múltiplas dependências.
 
 ```text
-DRM
+Drummond
 ↓
 DEEP REASONING
 ```
 
 ---
 
-### TSL — Tarsila
+### Tarsila — Tarsila
 
 **Referência:** Tarsila do Amaral
 
@@ -362,7 +366,7 @@ Indicado para:
 
 ---
 
-### PRT — Portinari
+### Portinari — Portinari
 
 **Referência:** Cândido Portinari
 
@@ -380,7 +384,7 @@ Indicado para:
 
 ---
 
-### CLR — Clarice
+### Clarice — Clarice
 
 **Referência:** Clarice Lispector
 
@@ -398,7 +402,7 @@ Indicado para:
 
 ---
 
-### CSD — Cascudo
+### Cascudo — Cascudo
 
 **Referência:** Câmara Cascudo
 
@@ -417,7 +421,7 @@ Indicado para:
 
 ## 6. Integração e infraestrutura
 
-### PNT — Ponte
+### Ponte — Ponte
 
 **Referência:** ponte como ligação entre sistemas
 
@@ -428,7 +432,7 @@ Conecta o motor a ferramentas, serviços e sistemas externos.
 ```text
 Agent
   ↓
-PNT
+Ponte
   ├── MCP
   ├── APIs
   ├── Services
@@ -438,7 +442,7 @@ PNT
 
 ---
 
-### MAP — Mapa
+### Mapa — Mapa
 
 **Referência:** cartografia e mapeamento
 
@@ -447,7 +451,7 @@ PNT
 Catálogo de ferramentas e capacidades disponíveis.
 
 ```text
-MAP
+Mapa
 ├── Tool
 ├── Capability
 ├── Provider
@@ -457,7 +461,7 @@ MAP
 
 ---
 
-### RDR — Radar
+### Radar — Radar
 
 **Referência:** radar
 
@@ -466,7 +470,7 @@ MAP
 Monitora o comportamento do motor.
 
 ```text
-RDR
+Radar
 ├── Events
 ├── Metrics
 ├── Traces
@@ -477,7 +481,7 @@ RDR
 
 ---
 
-### ECO — Eco
+### Eco — Eco
 
 **Referência:** eco
 
@@ -488,7 +492,7 @@ Permite reutilização de informações e resultados já produzidos.
 ```text
 Request
   ↓
-ECO
+Eco
   ├── HIT  → reuse
   └── MISS → execute
 ```
@@ -497,7 +501,7 @@ ECO
 
 ## 7. Coordenação
 
-### RDA — Roda
+### Roda — Roda
 
 **Referência:** roda de conversa
 
@@ -507,13 +511,13 @@ Permite que múltiplos agentes apresentem posições e cheguem a uma decisão.
 
 ```text
 Agent A ─┐
-Agent B ─┼→ RDA → Consensus
+Agent B ─┼→ Roda → Consensus
 Agent C ─┘
 ```
 
 ---
 
-### ARN — Arena
+### Arena — Arena
 
 **Referência:** arena
 
@@ -523,13 +527,13 @@ Coloca agentes ou soluções em confronto deliberado.
 
 ```text
 Solution A ─┐
-            ├── ARN → Winner / Synthesis
+            ├── Arena → Winner / Synthesis
 Solution B ─┘
 ```
 
 ---
 
-### VTO — Voto
+### Voto — Voto
 
 **Referência:** voto
 
@@ -539,13 +543,13 @@ Seleciona uma alternativa entre múltiplas propostas.
 
 ```text
 A ─┐
-B ─┼→ VTO → B
+B ─┼→ Voto → B
 C ─┘
 ```
 
 ---
 
-### RPR — Reprise
+### Reprise — Reprise
 
 **Referência:** repetição / nova tentativa
 
@@ -556,14 +560,14 @@ Executa novamente uma etapa após falha ou resultado insuficiente.
 ```text
 FAIL
  ↓
-RPR
+Reprise
  ↓
 RETRY
 ```
 
 ---
 
-### RTD — Retirada
+### Retirada — Retirada
 
 **Referência:** retirada estratégica
 
@@ -576,43 +580,43 @@ Route A
   ↓
 FAIL
   ↓
-RTD
+Retirada
   ↓
 Route B
 ```
 
 ---
 
-## 8. Taxonomia consolidada
+## 8. Taxonomia consolidada — nomes
 
-| Código | Nome | Papel |
-|---|---|---|
-| **OSW** | Oswaldo | Orchestrator |
-| **RUI** | Rui | Strategic Orchestrator |
-| **RTA** | Rota | Router |
-| **NMY** | Niemeyer | Graph Engineering |
-| **LUC** | Lúcio | Graph Planning |
-| **CIC** | Ciclo | Agent Loop |
-| **CRV** | Crivo | Hardness / Quality Gate |
-| **CND** | Canudos | Gauntlet Loop |
-| **RND** | Rondon | Research |
-| **DUM** | Dumont | Engineering / Code |
-| **ASS** | Assis | Review / Critic |
-| **SEN** | Senna | Fast |
-| **DRM** | Drummond | Deep Reasoning |
-| **TSL** | Tarsila | Creative |
-| **PRT** | Portinari | Vision |
-| **CLR** | Clarice | Language |
-| **CSD** | Cascudo | Knowledge |
-| **PNT** | Ponte | Integration / MCP |
-| **MAP** | Mapa | Tool Registry |
-| **RDR** | Radar | Telemetry |
-| **ECO** | Eco | Cache |
-| **RDA** | Roda | Consensus |
-| **ARN** | Arena | Debate |
-| **VTO** | Voto | Voting |
-| **RPR** | Reprise | Retry |
-| **RTD** | Retirada | Fallback |
+| Nome | Papel |
+|---|---|
+| **Oswaldo** | Orchestrator |
+| **Rui** | Strategic Orchestrator |
+| **Rota** | Router |
+| **Niemeyer** | Graph Engineering |
+| **Lúcio** | Graph Planning |
+| **Ciclo** | Agent Loop |
+| **Crivo** | Hardness / Quality Gate |
+| **Canudos** | Gauntlet Loop |
+| **Rondon** | Research |
+| **Dumont** | Engineering / Code |
+| **Assis** | Review / Critic |
+| **Senna** | Fast |
+| **Drummond** | Deep Reasoning |
+| **Tarsila** | Creative |
+| **Portinari** | Vision |
+| **Clarice** | Language |
+| **Cascudo** | Knowledge |
+| **Ponte** | Integration / MCP |
+| **Mapa** | Tool Registry |
+| **Radar** | Telemetry |
+| **Eco** | Cache |
+| **Roda** | Consensus |
+| **Arena** | Debate |
+| **Voto** | Voting |
+| **Reprise** | Retry |
+| **Retirada** | Fallback |
 
 ---
 
@@ -620,24 +624,24 @@ Route B
 
 ```text
                          ┌─────────────┐
-                         │     OSW     │
+                         │     Oswaldo     │
                          │ ORCHESTRATOR│
                          └──────┬──────┘
                                 │
                          ┌──────▼──────┐
-                         │     RUI     │
+                         │     Rui     │
                          │  STRATEGY   │
                          └──────┬──────┘
                                 │
                          ┌──────▼──────┐
-                         │     RTA     │
+                         │     Rota     │
                          │   ROUTER    │
                          └──────┬──────┘
                                 │
               ┌─────────────────┼─────────────────┐
               │                 │                 │
           ┌───▼───┐         ┌───▼───┐         ┌───▼───┐
-          │  NMY  │         │  CIC  │         │  CND  │
+          │  Niemeyer  │         │  Ciclo  │         │  Canudos  │
           │ GRAPH │         │ LOOP  │         │GAUNT. │
           └───┬───┘         └───┬───┘         └───┬───┘
               │                 │                 │
@@ -649,13 +653,13 @@ Route B
                                 │
        ┌────────┬────────┬──────┼──────┬────────┬────────┐
        │        │        │      │      │        │        │
-      RND      DUM      ASS    SEN    DRM      TSL      PRT
+      Rondon      Dumont      Assis    Senna    Drummond      Tarsila      Portinari
     Research   Code    Review  Fast   Deep   Creative  Vision
        │        │        │      │      │        │        │
        └────────┴────────┴──────┼──────┴────────┴────────┘
                                 │
                          ┌──────▼──────┐
-                         │     CRV     │
+                         │     Crivo     │
                          │   CRIVO     │
                          └──────┬──────┘
                                 │
@@ -665,7 +669,7 @@ Route B
                     │                       │
                    PASS                    FAIL
                     │                       │
-                 OUTPUT                   CIC
+                 OUTPUT                   Ciclo
                                             │
                                             └──→ retry
 ```

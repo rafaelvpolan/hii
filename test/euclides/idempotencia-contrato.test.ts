@@ -19,7 +19,7 @@ test('CONTRATO executar que LANCA propaga e NAO grava efeito — o retry continu
   let tentativas = 0
   const op = {
     card: 'ctr-lanca',
-    fase: 'ctr',
+    fase: 'cartorio',
     operacao: 'pr_create',
     executar: async (): Promise<string> => {
       tentativas += 1
@@ -37,7 +37,7 @@ test('CONTRATO depois de uma falha que lancou, o sucesso seguinte grava normalme
   let falhar = true
   const op = {
     card: 'ctr-recupera',
-    fase: 'ctr',
+    fase: 'cartorio',
     operacao: 'pr_create',
     executar: async (): Promise<string> => {
       if (falhar) throw new Error('falha transitoria')
@@ -48,15 +48,15 @@ test('CONTRATO depois de uma falha que lancou, o sucesso seguinte grava normalme
   falhar = false
   const r = await executarComIdempotencia(op)
   expect(r.reaproveitada).toBe(false)
-  expect(efeitoJaProduzido('ctr-recupera', 'ctr', 'pr_create')).toBe('https://github.com/org/repo/pull/1')
+  expect(efeitoJaProduzido('ctr-recupera', 'cartorio', 'pr_create')).toBe('https://github.com/org/repo/pull/1')
 })
 
 test('CONTRATO a mesma operacao em cards diferentes nao colide', async () => {
   const executar = async (): Promise<string> => 'feito'
-  await executarComIdempotencia({ card: 'ctr-a', fase: 'ctr', operacao: 'pr_create', executar })
-  const b = await executarComIdempotencia({ card: 'ctr-b', fase: 'ctr', operacao: 'pr_create', executar })
+  await executarComIdempotencia({ card: 'ctr-a', fase: 'cartorio', operacao: 'pr_create', executar })
+  const b = await executarComIdempotencia({ card: 'ctr-b', fase: 'cartorio', operacao: 'pr_create', executar })
   expect(b.reaproveitada, 'o efeito do card A nao pode contar como efeito do card B').toBe(false)
-  expect(chaveDeEfeito('ctr-a', 'ctr', 'pr_create')).not.toBe(chaveDeEfeito('ctr-b', 'ctr', 'pr_create'))
+  expect(chaveDeEfeito('ctr-a', 'cartorio', 'pr_create')).not.toBe(chaveDeEfeito('ctr-b', 'cartorio', 'pr_create'))
 })
 
 function arquivosDoMotor(raiz = 'motor'): string[] {

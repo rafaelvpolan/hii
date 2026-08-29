@@ -233,7 +233,7 @@ test('a criacao entra no diario como efeito, com chave propria', async () => {
   await criarMatriz('mtz-diario', 'titulo')
   const efeitos = eventosDoCard('mtz-diario').filter(e => e.evento === 'efeito_registrado')
   expect(efeitos.length).toBe(1)
-  expect(efeitos[0]?.chave).toBe(chaveDeEfeito('mtz-diario', 'luc', 'matriz_criada'))
+  expect(efeitos[0]?.chave).toBe(chaveDeEfeito('mtz-diario', 'lucio', 'matriz_criada'))
 })
 
 test('o template traz as seis secoes e o titulo do card, para o humano saber o que responder', () => {

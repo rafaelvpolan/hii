@@ -22,22 +22,22 @@ test('os candidatos sao numerados a partir de 1 — o critico responde por numer
   expect(LISTA[0]?.texto).toBe(PROPOSTAS[0]?.texto)
 })
 
-test('NENHUM JUIZ NOVO os criticos sao os criterios escritos do CRV', () => {
+test('NENHUM JUIZ NOVO os criticos sao os criterios escritos do Crivo', () => {
   const lentes = lentesDeCriterio()
   expect(lentes.length).toBeGreaterThan(1)
   expect(lentes.map(l => l.id)).toEqual(idsDosCriticos())
-  // Se alguem trocar o CRV por uma lista local, este teste cai junto.
+  // Se alguem trocar o Crivo por uma lista local, este teste cai junto.
   for (const l of lentes) {
     expect(l.checa.trim().length, `criterio "${l.id}" sem "checa"`).toBeGreaterThan(0)
   }
 })
 
-test('NENHUM JUIZ NOVO convergir.ts nao reimplementa contagem — delega a VTO e RDA', () => {
+test('NENHUM JUIZ NOVO convergir.ts nao reimplementa contagem — delega a Voto e Roda', () => {
   const fonte = readFileSync('motor/ciclo/macunaima/convergir.ts', 'utf8')
   expect(fonte).toContain("from '../voto.ts'")
   expect(fonte).toContain("from '../roda.ts'")
   // Contagem propria aqui criaria um segundo placar que envelheceria calado
-  // quando o VTO mudasse.
+  // quando o Voto mudasse.
   expect(fonte).not.toMatch(/new Map<string, number>/)
 })
 
@@ -75,7 +75,7 @@ test('votacao vazia NAO vira aprovacao por omissao', () => {
   expect(r.abstencoes).toBe(3)
 })
 
-test('EMPATE nao elege ninguem — o MCN nao desempata sozinho', () => {
+test('EMPATE nao elege ninguem — o Macunaima nao desempata sozinho', () => {
   const r = convergir(votos([['a', 1], ['b', 2]]), LISTA, 0, ['a', 'b'])
   expect(r.houveVeredicto).toBe(false)
   expect(r.escolhido).toBeNull()

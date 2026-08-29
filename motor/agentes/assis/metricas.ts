@@ -9,7 +9,7 @@ import type { ArquivoAuditavel, ForaDaAuditoria } from './tipos.ts'
 import { ehArquivoDeTeste, extensaoDe, temTesteCorrespondente } from './cobertura.ts'
 import type { CoberturaDeTeste } from './cobertura.ts'
 
-// ASS — a MEDICAO de um arquivo: quanto ele pesa, e por que ele e risco.
+// Assis — a MEDICAO de um arquivo: quanto ele pesa, e por que ele e risco.
 // Separado da selecao porque medir um arquivo nao precisa saber nada sobre
 // lotes, orcamento ou escopo.
 

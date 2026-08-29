@@ -357,7 +357,7 @@ crescente, até `HICODE_WAITING_MAX_ATTEMPTS`. Falha de **cota** pode trocar de
 provedor, se `HICODE_QUOTA_FALLBACK=on`. Falha **terminal** não é repetida —
 repetir daria o mesmo resultado.
 
-### 8.4 Laço de divergência (MCN)
+### 8.4 Laço de divergência (Macunaíma)
 
 Para pergunta **aberta de desenho**, o motor gera N alternativas isoladas e
 compara, em vez de iterar uma só. `HICODE_MCN_RAMOS` (padrão **4**) e

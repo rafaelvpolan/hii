@@ -15,14 +15,14 @@ let seq = 0
 function card(): string { return `idem-${++seq}` }
 
 test('chave e composta e legivel — o diario e lido por humano quando um card trava', () => {
-  expect(chaveDeEfeito('023', 'ctr', 'pr_create')).toBe('023:ctr:pr_create')
+  expect(chaveDeEfeito('023', 'cartorio', 'pr_create')).toBe('023:cartorio:pr_create')
 })
 
 test('o efeito roda uma vez; a segunda chamada devolve o resultado gravado sem executar', async () => {
   const id = card()
   let execucoes = 0
   const op = {
-    card: id, fase: 'ctr', operacao: 'pr_create',
+    card: id, fase: 'cartorio', operacao: 'pr_create',
     executar: (): Promise<string> => { execucoes++; return Promise.resolve('https://github.com/org/repo/pull/7') },
   }
   const a = await executarComIdempotencia(op)
@@ -37,27 +37,27 @@ test('REGRESSAO efeito que NAO aconteceu nao e registrado — senao o retry nunc
   const id = card()
   let execucoes = 0
   const falha = {
-    card: id, fase: 'ctr', operacao: 'pr_create',
+    card: id, fase: 'cartorio', operacao: 'pr_create',
     executar: (): Promise<string> => { execucoes++; return Promise.resolve('') },
   }
   await executarComIdempotencia(falha)
   await executarComIdempotencia(falha)
   expect(execucoes, 'gh falhou duas vezes: as duas tentativas tem de rodar de verdade').toBe(2)
-  expect(efeitoJaProduzido(id, 'ctr', 'pr_create')).toBeUndefined()
+  expect(efeitoJaProduzido(id, 'cartorio', 'pr_create')).toBeUndefined()
 
   const agora = await executarComIdempotencia({
-    card: id, fase: 'ctr', operacao: 'pr_create',
+    card: id, fase: 'cartorio', operacao: 'pr_create',
     executar: (): Promise<string> => Promise.resolve('https://github.com/org/repo/pull/9'),
   })
   expect(agora.reaproveitada).toBe(false)
-  expect(efeitoJaProduzido(id, 'ctr', 'pr_create')).toBe('https://github.com/org/repo/pull/9')
+  expect(efeitoJaProduzido(id, 'cartorio', 'pr_create')).toBe('https://github.com/org/repo/pull/9')
 })
 
 test('produziuEfeito customizado decide o que conta como efeito', async () => {
   const id = card()
   let execucoes = 0
   const op = {
-    card: id, fase: 'ctr', operacao: 'webhook',
+    card: id, fase: 'cartorio', operacao: 'webhook',
     executar: (): Promise<string> => { execucoes++; return Promise.resolve('0') },
     produziuEfeito: (r: string): boolean => r !== '0',
   }
@@ -68,8 +68,8 @@ test('produziuEfeito customizado decide o que conta como efeito', async () => {
 
 test('cada operacao tem chave propria — um efeito nao mascara o outro', async () => {
   const id = card()
-  const a = await executarComIdempotencia({ card: id, fase: 'ctr', operacao: 'pr_create', executar: (): Promise<string> => Promise.resolve('pr') })
-  const b = await executarComIdempotencia({ card: id, fase: 'ctr', operacao: 'notificar', executar: (): Promise<string> => Promise.resolve('notif') })
+  const a = await executarComIdempotencia({ card: id, fase: 'cartorio', operacao: 'pr_create', executar: (): Promise<string> => Promise.resolve('pr') })
+  const b = await executarComIdempotencia({ card: id, fase: 'cartorio', operacao: 'notificar', executar: (): Promise<string> => Promise.resolve('notif') })
   expect(a.resultado).toBe('pr')
   expect(b.resultado).toBe('notif')
   expect(b.reaproveitada).toBe(false)

@@ -1,4 +1,4 @@
-// RTA — de onde o motor pode ESCREVER, e o que e so referencia.
+// Rota — de onde o motor pode ESCREVER, e o que e so referencia.
 //
 // O incidente que motivou: o pedido citou dois caminhos — "de acordo com o padrao
 // barbeiro-frontend/" (referencia) e "executado em ui-lab/leaderboard.html" (alvo)

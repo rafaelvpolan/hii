@@ -11,7 +11,7 @@ import { dispatch } from '../../motor/mirante/despacho.ts'
 import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 import type { Terminal } from '../../motor/mirante/tui/screen.ts'
 
-// MIR — o percurso completo. Cobertura de comportamento ja existe em ~50
+// Mirante — o percurso completo. Cobertura de comportamento ja existe em ~50
 // arquivos; o que faltava era o passeio que atravessa TUDO de uma vez e prova
 // que nenhuma combinacao de comando, estado e tamanho de terminal escapa uma
 // excecao ou pinta um quadro torto.
