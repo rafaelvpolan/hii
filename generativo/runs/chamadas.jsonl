@@ -8,3 +8,5 @@
 {"ts":"2026-08-29T19:05:09.217Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":1185,"tokens_out":4445,"dur_ms":96845,"ok":true}
 {"ts":"2026-08-29T19:05:46.046Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-politica.txt","tokens_in":1181,"tokens_out":1275,"dur_ms":36772,"ok":true}
 {"ts":"2026-08-29T19:06:23.926Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-cota.txt","tokens_in":1978,"tokens_out":2249,"dur_ms":37827,"ok":true}
+{"ts":"2026-08-29T19:11:01.687Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":1185,"tokens_out":3684,"dur_ms":77159,"ok":true}
+{"ts":"2026-08-29T19:11:35.732Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-cota.txt","tokens_in":1989,"tokens_out":1226,"dur_ms":34005,"ok":true}

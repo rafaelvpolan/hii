@@ -1,11 +1,10 @@
 Voce e um engenheiro de testes. Abaixo esta o codigo de motor/euclides/tesouro/cota.ts (controle de cota/janela de provedores de IA).
-PASSO 1 (interno, nao responda): identifique as funcoes exportadas e os ramos de cada uma (if/else, early return, filtro vazio).
-PASSO 2 (sua resposta): liste ate 12 cenarios de borda, UM POR RAMO de negocio — nao fuzzing numerico de constantes.
+Liste ate 12 cenarios de borda, UM POR RAMO de negocio das funcoes (if/else, early return, filtro vazio) — nao fuzzing numerico de constantes.
 FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
 - **Cenario:** nome curto (cite a funcao e o ramo)
-  - **Entrada/Condicao:** estado dos registros/janela que atinge o ramo
-  - **Comportamento Esperado:** o que a funcao retorna/faz nesse ramo
-REGRAS: nao invente valores — todo numero citado precisa vir de uma constante do codigo (cite o NOME da constante). Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta.
+  - **Entrada/Condicao:** um estado CONCRETO (ex.: "registro com ias=[{provedor:'claude', classeDeFalha:'quota'}]"). PROIBIDO escrever "qualquer valor" ou equivalente.
+  - **Comportamento Esperado:** o retorno/efeito especifico nesse ramo (nao generico).
+REGRAS: nao invente valores — todo numero citado precisa vir de uma constante do codigo (cite o NOME da constante). Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta. Responda so os cenarios.
 
 CODIGO:
 import { isoAt } from '../../cordel/index.ts'

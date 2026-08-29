@@ -93,6 +93,18 @@ RTX 3060 Ti (8 GB VRAM), 16 cores, **7 GB RAM**. Consequência medida:
    mas vários cenários ficaram tautológicos ("qualquer valor → atualiza o
    objeto"). Teto do 7B em lógica temporal/de janela confirmado.
 
+## 4º ciclo (rerodadas corrigidas)
+
+- **qwen3:8b** rerodado com o mesmo prompt: voltou a 88/88 linhas válidas —
+  o deslize de formato do ciclo anterior era variância de run, não do prompt.
+  Placar mudou de novo (31/39/18), confirmando a instabilidade entre runs.
+- **cota.ts** com regra anti-tautologia ("PROIBIDO 'qualquer valor'"): 11
+  cenários, zero tautologias, estados concretos citando `PROVEDOR_DESCONHECIDO`
+  e funções reais. A correção de prompt segurou.
+- **Concordância final estável em ~50%** (44/44 de 88). Meio a meio é o número
+  honesto para consenso entre dois 7-8B; a fila de revisão humana é a outra
+  metade. Artefato atualizado em `divergencias-triagem-*.md`.
+
 ## Frentes e onde cada uma encaixa
 
 1. **Geração de testes (tier2, "escopo definido pela matriz")** — viável.
