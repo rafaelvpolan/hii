@@ -51,7 +51,7 @@ test('INVARIANTE nenhuma API Bun.* fora das fixtures e da ponte', () => {
     .filter(f => {
       const fonte = readFileSync(f, 'utf8')
       // So conta ocorrencia FORA de string e de comentario: `Bun.spawn` aparece como
-      // DADO em test/euc/idempotencia-contrato.test.ts, e a troca mecanica ja
+      // DADO em test/euclides/idempotencia-contrato.test.ts, e a troca mecanica ja
       // corrompeu esse arquivo uma vez tratando texto como codigo.
       return fonte.split('\n').some(l => {
         const semComentario = l.replace(/\/\/.*$/, '')
@@ -119,7 +119,7 @@ test('INVARIANTE import dinamico leva .ts ANTES da query — senao o node nao re
   for (const f of ALVOS) {
     for (const m of readFileSync(f, 'utf8').matchAll(/import\(\s*[`'"]([^`'"]+)[`'"]\s*\)/g)) {
       const alvo = m[1] ?? ''
-      // `...` e reticencia de exemplo, nao caminho: test/cdl/import-com-extensao
+      // `...` e reticencia de exemplo, nao caminho: test/cordel/import-com-extensao
       // guarda esta mesma regra e cita formas ilustrativas.
       if (!alvo.startsWith('.') || alvo.includes('...')) continue
       const semQuery = alvo.split('?')[0] ?? ''
@@ -151,7 +151,7 @@ test('os quatro invariantes de portabilidade conseguem acusar', () => {
 // `--test-timeout` NAO pega esse caso: o timeout mata teste lento, nao processo com
 // handle aberto. A guarda tem de ser o `unref`.
 test('INVARIANTE o timer de repintura da TUI nao segura o processo vivo', async () => {
-  const fonte = await lerArquivo('motor/mir/tui/app.ts')
+  const fonte = await lerArquivo('motor/mirante/tui/app.ts')
   const linhas = fonte.split('\n')
   const iTimer = linhas.findIndex(l => l.includes('setInterval(') && l.includes('desenhar()'))
   expect(iTimer, 'o timer de repintura tem de existir').toBeGreaterThan(-1)

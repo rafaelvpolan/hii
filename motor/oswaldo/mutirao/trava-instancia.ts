@@ -1,0 +1,104 @@
+import { linkSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { alive, argvDoProcesso, argvIlegivelEhOMotor, eOMotor } from './daemon.ts'
+import { ROOT } from '../../cordel/alicerce/config.ts'
+import { ENV_RUNNER_LOCK } from '../../cordel/alicerce/contrato.ts'
+import { temEncerramentoGracioso } from './encerramento.ts'
+
+const STEAL_ATTEMPTS = 3
+
+export interface InstanceLock {
+  readonly acquired: boolean
+  readonly holder: number
+}
+
+export function lockFile(): string {
+  return process.env[ENV_RUNNER_LOCK] || join(ROOT, '.runner.lock')
+}
+
+function readHolder(file: string): string {
+  try {
+    return readFileSync(file, 'utf8').trim()
+  } catch {
+    return ''
+  }
+}
+
+function createExclusive(file: string, pid: number): boolean {
+  const staging = `${file}.${pid}.tmp`
+  try {
+    writeFileSync(staging, `${pid}\n`)
+    linkSync(staging, file)
+    return true
+  } catch {
+    return false
+  } finally {
+    try {
+      unlinkSync(staging)
+    } catch {
+      void 0
+    }
+  }
+}
+
+function heldByEngine(pid: number): boolean {
+  if (!alive(pid)) return false
+  const argv = argvDoProcesso(pid)
+  // Mesma politica de daemon.ts, agora vinda de um lugar so: argv ilegivel de
+  // um processo VIVO conta como motor, e a trava dele nao e roubada.
+  if (argv === null) return argvIlegivelEhOMotor()
+  return eOMotor(argv)
+}
+
+function dropOrphan(file: string, holder: string): void {
+  if (readHolder(file) !== holder) return
+  try {
+    unlinkSync(file)
+  } catch {
+    void 0
+  }
+}
+
+export function acquireInstanceLock(file: string = lockFile()): InstanceLock {
+  for (let attempt = 0; attempt < STEAL_ATTEMPTS; attempt++) {
+    if (createExclusive(file, process.pid)) return { acquired: true, holder: process.pid }
+    const holder = readHolder(file)
+    const pid = Number(holder)
+    if (pid === process.pid) return { acquired: true, holder: process.pid }
+    if (pid && heldByEngine(pid)) return { acquired: false, holder: pid }
+    dropOrphan(file, holder)
+  }
+  return { acquired: false, holder: Number(readHolder(file)) || 0 }
+}
+
+export function releaseInstanceLock(file: string = lockFile()): void {
+  if (Number(readHolder(file)) !== process.pid) return
+  try {
+    unlinkSync(file)
+  } catch {
+    void 0
+  }
+}
+
+export function holdInstanceLock(): InstanceLock {
+  const file = lockFile()
+  const lock = acquireInstanceLock(file)
+  if (!lock.acquired) return lock
+  process.on('exit', () => { releaseInstanceLock(file) })
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => {
+      // Se ha encerramento gracioso instalado, ELE decide quando sair, e o
+      // handler de 'exit' acima libera a trava do mesmo jeito. Sair aqui
+      // matava o daemon antes de a fila drenar — e como este handler e
+      // registrado primeiro, o gracioso nunca chegava a rodar.
+      if (temEncerramentoGracioso()) return
+      releaseInstanceLock(file)
+      process.exit(0)
+    })
+  }
+  return lock
+}
+
+export function refusalMessage(holder: number): string {
+  return `motor ja em execucao (pid ${holder}) — espere ele terminar; se for o daemon, pare com "hii stop"\n`
+}

@@ -63,8 +63,8 @@ test('exatamente um lado de cada par existe em disco', () => {
 // significaria arquivo do mapa perdido, que e o defeito de verdade.
 test('os dez dominios da Onda 1 continuam todos la, e nenhum encolheu', () => {
   const minimo: Record<string, number> = {
-    mir: 57, tmd: 25, cdl: 20, euc: 18, qlb: 17,
-    cic: 12, osw: 9, nmy: 7, agentes: 6, csd: 1,
+    mirante: 57, tomada: 25, cordel: 20, euclides: 18, quilombo: 17,
+    ciclo: 12, oswaldo: 9, niemeyer: 7, agentes: 6, cascudo: 1,
   }
   const real: Record<string, number> = {}
   for (const [, destino] of todos) {
@@ -77,8 +77,8 @@ test('os dez dominios da Onda 1 continuam todos la, e nenhum encolheu', () => {
   }
 })
 
-// O minimo por dominio e cego a TROCA: apagar motor/mir/algo.ts e adicionar
-// motor/mir/novo.ts mantem a contagem e o teste passava. Perda de arquivo do mapa e
+// O minimo por dominio e cego a TROCA: apagar motor/mirante/algo.ts e adicionar
+// motor/mirante/novo.ts mantem a contagem e o teste passava. Perda de arquivo do mapa e
 // o defeito de verdade, e so da para ver por NOME — por isso o destino de cada
 // arquivo migrado esta congelado num fixture.
 //

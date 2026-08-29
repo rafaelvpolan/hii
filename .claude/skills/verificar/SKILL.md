@@ -1,6 +1,6 @@
 ---
 name: verificar
-description: "Auditoria manual do repositório INTEIRO (não do diff). Seleciona todo o código versionado com motor/agentes/ass/auditoria.ts — respeitando .gitignore, filtrando config/IaC/docs, ordenando por risco (monolito, god-file, arquivo sem teste) e dividindo em lotes por orçamento de caracteres —, roda o crivo (read-only) lote a lote e consolida um relatório que declara quantos arquivos entraram, quantos ficaram fora e por quê, com os achados ordenados por gravidade. Execução manual, sob pedido: NÃO gateia push, NÃO instala hook, NÃO conserta código. Use quando o usuário pedir /verificar, auditoria do repo, revisão do repositório inteiro, varredura de qualidade geral."
+description: "Auditoria manual do repositório INTEIRO (não do diff). Seleciona todo o código versionado com motor/agentes/assis/auditoria.ts — respeitando .gitignore, filtrando config/IaC/docs, ordenando por risco (monolito, god-file, arquivo sem teste) e dividindo em lotes por orçamento de caracteres —, roda o crivo (read-only) lote a lote e consolida um relatório que declara quantos arquivos entraram, quantos ficaram fora e por quê, com os achados ordenados por gravidade. Execução manual, sob pedido: NÃO gateia push, NÃO instala hook, NÃO conserta código. Use quando o usuário pedir /verificar, auditoria do repo, revisão do repositório inteiro, varredura de qualidade geral."
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[prefixo de caminho] [--lotes N] [--orcamento CHARS]"
@@ -8,7 +8,7 @@ argument-hint: "[prefixo de caminho] [--lotes N] [--orcamento CHARS]"
 
 # /verificar — auditoria manual do repositório inteiro
 
-O gate do motor (`motor/cic/crv/gate.ts`) só olha o **diff** da branch: `git diff --name-status`
+O gate do motor (`motor/ciclo/crivo/gate.ts`) só olha o **diff** da branch: `git diff --name-status`
 mais o patch truncado em `GATE_DIFF_LIMIT`. Nada no hicode olha o **repositório inteiro**. Este skill
 é essa varredura — e é **manual**.
 
@@ -29,7 +29,7 @@ mais o patch truncado em `GATE_DIFF_LIMIT`. Nada no hicode olha o **repositório
 
 ## FASE 1 — Plano de auditoria (seleção determinística)
 
-Quem seleciona e lotea é `motor/agentes/ass/auditoria.ts` (puro, testado em `test/auditoria.test.ts`):
+Quem seleciona e lotea é `motor/agentes/assis/auditoria.ts` (puro, testado em `test/auditoria.test.ts`):
 lista com `git ls-files -z --cached --others --exclude-standard` (respeita `.gitignore`, nunca anda no
 diretório, nunca pega `node_modules`), filtra por extensão de código (`ts/tsx/mts/cts/js/jsx/mjs/cjs/
 vue/py` — config, IaC, docs, `.d.ts` e binário ficam fora **com motivo**), ordena por risco (monolito
@@ -99,7 +99,7 @@ arquivo`. Se não puder garantir isso, use só o crivo e registre a lacuna no re
 Não invente agente novo: o catálogo é `.claude/agents/`.
 
 Para cada lote, delegue via Agent tool reaproveitando a **forma do prompt do gate** (não reescreva a
-política — a fonte é `buildPrompt` em `motor/cic/crv/gate.ts`):
+política — a fonte é `buildPrompt` em `motor/ciclo/crivo/gate.ts`):
 
 - mesma linha de **PADRÕES**: tudo tipado strict, proibido `any`/`unknown`; arquivo ≤350 linhas e
   nunca god-file; sem comentário de prosa; Vue 3 Composition API (nunca React); erro nunca silenciado;
@@ -111,7 +111,7 @@ política — a fonte é `buildPrompt` em `motor/cic/crv/gate.ts`):
 - mesma regra de calibragem do gate: `BLOCKED` só para defeito real/violação de alta confiança; em
   dúvida, `CONDITIONAL`. Achado sem evidência citável (arquivo:linha) é descartado, não "suspeita".
 
-Para **parsear** o veredito, use `extractVerdictJson` de `motor/cic/crv/gate.ts` — é o parser que
+Para **parsear** o veredito, use `extractVerdictJson` de `motor/ciclo/crivo/gate.ts` — é o parser que
 já existe (varre o texto e pega o último objeto JSON válido com `verdict`). Não escreva outro.
 
 Narre o progresso (`[lote 2/5] 12 arquivos…`). Lote cujo agente falhou/estourou timeout **não conta
@@ -130,7 +130,7 @@ relatório no repo), na ordem:
    a contagem de cada um; `maior-que-o-lote` e `acima-do-limite-de-lotes` são **dívida de cobertura**:
    diga que esses arquivos não foram vistos por ninguém e como vê-los (`--orcamento` maior, recorte).
 3. **Achados ordenados por gravidade** — junte os `findings` de todos os lotes e ordene com
-   `ordenarAchados` de `motor/agentes/ass/auditoria.ts` (alta → média → baixa, depois arquivo e linha). Cada
+   `ordenarAchados` de `motor/agentes/assis/auditoria.ts` (alta → média → baixa, depois arquivo e linha). Cada
    achado: `gravidade · arquivo:linha · defeito`, uma linha, sem prosa de enrolação.
 4. **Dívida estrutural medida** — do próprio plano, sem IA: quantos arquivos passam de 350 linhas,
    quantos são god-file, quantos não têm teste correspondente (a heurística de teste é por **nome**;

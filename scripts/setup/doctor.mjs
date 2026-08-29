@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { runDoctor } from '../../motor/euc/rdr/doctor.ts'
+import { runDoctor } from '../../motor/euclides/radar/doctor.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

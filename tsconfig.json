@@ -5,9 +5,6 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "types": ["node", "bun"],
-    "paths": {
-      "#shared/*": ["./panel/shared/*"]
-    },
     "allowJs": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -18,7 +15,7 @@
     "noEmit": true,
     // Node exige extensao explicita no especificador ESM; o Bun aceita. Com os
     // dois carregando o mesmo codigo-fonte, a extensao passa a ser obrigatoria
-    // — ver test/cdl/import-com-extensao.test.ts.
+    // — ver test/cordel/import-com-extensao.test.ts.
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { AgentMode, AgentRequest, AgentResult, Harness } from '../../motor/tmd/tipos.ts'
+import type { AgentMode, AgentRequest, AgentResult, Harness } from '../../motor/tomada/tipos.ts'
 
 export type ModoDoCassete = 'reproduzir' | 'gravar-se-faltar' | 'regravar'
 

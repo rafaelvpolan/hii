@@ -3,24 +3,24 @@
 // producao e node:24-slim (Dockerfile: ENTRYPOINT ["node", "bin/hii.ts"]), e o
 // node 24 roda este arquivo por type stripping nativo. Um shebang `bun` fazia o
 // bin instalado exigir um binario que a imagem nao tem — a mesma promessa de
-// "roda em qualquer lugar" que motor/cdl/ali/runtime.ts existe para cumprir.
+// "roda em qualquer lugar" que motor/cordel/alicerce/runtime.ts existe para cumprir.
 // Quem prefere bun continua rodando `bun bin/hii.ts` (o shebang nao atrapalha).
 import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { renderProgress } from '../motor/euc/rdr/progresso.ts'
-import { initHicodeHome } from '../motor/cdl/ali/home.ts'
-import { installPrePush, uninstallPrePush } from '../motor/cdl/ali/hooks.ts'
-import { runSync, relatoDeSync } from '../motor/tmd/pnt/tarefas/sync.ts'
-import { taskSyncName } from '../motor/tmd/pnt/tarefas/registro.ts'
-import { limparTmpAntigo, usoDeDisco } from '../motor/euc/estado-em-disco.ts'
-import { linhasDoDisco } from '../motor/mir/render/disco.ts'
-import { snapshotDoMotor, revisaoDoEstado } from '../motor/mir/estado-json.ts'
-import { executarAcao, criarTarefa } from '../motor/mir/comandos-de-tarefa.ts'
-import type { AcaoDeTarefa } from '../motor/mir/comandos-de-tarefa.ts'
-import { prepararMatriz } from '../motor/qlb/ctr/aprovar-plano.ts'
-import { runtimeDeScript } from '../motor/cdl/ali/runtime.ts'
-import { ajudaDeComandosManuais } from '../motor/mir/comandos-manuais.ts'
+import { renderProgress } from '../motor/euclides/radar/progresso.ts'
+import { initHicodeHome } from '../motor/cordel/alicerce/home.ts'
+import { installPrePush, uninstallPrePush } from '../motor/cordel/alicerce/hooks.ts'
+import { runSync, relatoDeSync } from '../motor/tomada/ponte/tarefas/sync.ts'
+import { taskSyncName } from '../motor/tomada/ponte/tarefas/registro.ts'
+import { limparTmpAntigo, usoDeDisco } from '../motor/euclides/estado-em-disco.ts'
+import { linhasDoDisco } from '../motor/mirante/render/disco.ts'
+import { snapshotDoMotor, revisaoDoEstado } from '../motor/mirante/estado-json.ts'
+import { executarAcao, criarTarefa } from '../motor/mirante/comandos-de-tarefa.ts'
+import type { AcaoDeTarefa } from '../motor/mirante/comandos-de-tarefa.ts'
+import { prepararMatriz } from '../motor/quilombo/cartorio/aprovar-plano.ts'
+import { runtimeDeScript } from '../motor/cordel/alicerce/runtime.ts'
+import { ajudaDeComandosManuais } from '../motor/mirante/comandos-manuais.ts'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')

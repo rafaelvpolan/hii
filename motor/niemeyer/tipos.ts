@@ -1,0 +1,23 @@
+import type { Status } from '../cordel/index.ts'
+
+export type StepKind = 'quality' | 'security' | 'review' | 'cleanup' | 'custom'
+
+export type GateKind = 'none' | 'test' | 'verdict'
+
+export interface PipelineStep {
+  id: string
+  label: string
+  kind: StepKind
+  agent: string
+  state: Status
+  gate: GateKind
+  enabled: boolean
+  gated?: boolean
+  needs?: string[]
+  instruction: string
+}
+
+export interface PipelineConfig {
+  version: number
+  steps: PipelineStep[]
+}

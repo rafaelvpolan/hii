@@ -7,6 +7,7 @@
 //   bun scripts/renomear-brazil.mjs --dominio=cdl --aplicar
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs'
 import { join, dirname, relative, resolve, extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
 const RAIZ = process.cwd()
@@ -241,7 +242,10 @@ function aplicar(lote, aplicarDeVerdade) {
 
 // ---------- cli ----------
 
-if (import.meta.main) {
+const ESTE_SCRIPT = fileURLToPath(import.meta.url)
+const invocadoDiretamente = process.argv[1] !== undefined && resolve(process.argv[1]) === ESTE_SCRIPT
+
+if (invocadoDiretamente) {
   const argv = process.argv.slice(2)
   const aplicarDeVerdade = argv.includes('--aplicar')
   const filtro = (argv.find(a => a.startsWith('--dominio=')) ?? '').split('=')[1] || null

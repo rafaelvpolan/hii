@@ -4,7 +4,7 @@
 #   HII_IMAGEM=<registry>/hii:<tag> docker stack deploy -c docker-stack.yml hii
 #
 # COMPOSE E PROIBIDO NESTE PROJETO — ver config/regras-inegociaveis.json (r-0001)
-# e test/cdl/sem-compose.test.ts, que reprova a suite. O motivo e tecnico: em
+# e test/cordel/sem-compose.test.ts, que reprova a suite. O motivo e tecnico: em
 # compose o bloco `deploy.resources.limits` abaixo e IGNORADO, e o teto de cpu e
 # memoria do item 32 viraria decorativo. Teto decorativo e pior que teto nenhum,
 # porque parece que existe.
@@ -13,7 +13,7 @@
 # unsupported options: build" e SOBE ASSIM MESMO, com exit 0 (verificado em
 # docker 29.6). Quem escrever build: aqui acha que construiu e publicou a imagem
 # velha — ignorar em silencio e pior que recusar, e e por isso que quem barra e
-# o teste (test/cdl/sem-compose.test.ts), nao o docker. A imagem vem pronta de um
+# o teste (test/cordel/sem-compose.test.ts), nao o docker. A imagem vem pronta de um
 # registry, o que tambem obriga a versionar o que esta em producao.
 version: "3.9"
 
@@ -25,8 +25,8 @@ services:
       # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
       # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
       # decidir quantos worktrees abre em paralelo. Quem le: orcamentoDeRecurso e
-      # quantosWorktreesCabem em motor/qlb/limites.ts, aplicados pelo escalonador
-      # em motor/osw/mtr/fila.ts (tetoDeParalelismo). Enquanto nao havia esse
+      # quantosWorktreesCabem em motor/quilombo/limites.ts, aplicados pelo escalonador
+      # em motor/oswaldo/mutirao/fila.ts (tetoDeParalelismo). Enquanto nao havia esse
       # ultimo elo, este comentario afirmava com file:line uma leitura que nao
       # acontecia — o escalonador usava so HICODE_CONCURRENCY e abria 3 worktrees
       # de 2048MB contra o limite de 4096MB.

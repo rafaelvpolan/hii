@@ -4,9 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { envolverComCassete } from '../apoio/cassete.ts'
 import type { EntradaDoCassete, OpcoesDoCassete } from '../apoio/cassete.ts'
-import type { Terminal } from '../../motor/mir/tui/screen.ts'
-import { harnessPorNome } from '../../motor/tmd/registro.ts'
-import type { AgentRequest, AgentResult, AgentRole, Harness, HarnessId } from '../../motor/tmd/tipos.ts'
+import type { Terminal } from '../../motor/mirante/tui/screen.ts'
+import { harnessPorNome } from '../../motor/tomada/registro.ts'
+import type { AgentRequest, AgentResult, AgentRole, Harness, HarnessId } from '../../motor/tomada/tipos.ts'
 
 export const REPO_NOME = 'org/repo'
 

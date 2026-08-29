@@ -69,12 +69,12 @@
     ["CORRECTING", "WAITING"],
     ["SPECCED", "WAITING"]
   ],
-  "sobreRecuperacao": "Rotas que NAO fazem parte do caminho de um card feliz — elas existem porque o processo morre, o provedor falha e o humano manda refazer. Ficam num array proprio para o caminho normal acima continuar legivel, e VALEM como transicao permitida. Quem as produz: reconcileStranded (motor/osw/mtr/estado-da-fila.ts:35,39) devolve card de polimento para URL_OK apos reinicio, ou adota PR orfao; resumeFrom (motor/mir/acoes.ts:57) rebobina para URL_OK de qualquer estado; aplicarPolitica (motor/cic/rpr/politica.ts:89) manda para WAITING quando a falha e transitoria; instruir/acoes mandam para CORRECTING. Esta lista saiu de EXECUCAO observada, nao de leitura de codigo: o observador de deriva (motor/nmy/deriva-de-transicao.ts) grita no par que ninguem declarou.",
+  "sobreRecuperacao": "Rotas que NAO fazem parte do caminho de um card feliz — elas existem porque o processo morre, o provedor falha e o humano manda refazer. Ficam num array proprio para o caminho normal acima continuar legivel, e VALEM como transicao permitida. Quem as produz: reconcileStranded (motor/oswaldo/mutirao/estado-da-fila.ts:35,39) devolve card de polimento para URL_OK apos reinicio, ou adota PR orfao; resumeFrom (motor/mirante/acoes.ts:57) rebobina para URL_OK de qualquer estado; aplicarPolitica (motor/ciclo/reprise/politica.ts:89) manda para WAITING quando a falha e transitoria; instruir/acoes mandam para CORRECTING. Esta lista saiu de EXECUCAO observada, nao de leitura de codigo: o observador de deriva (motor/niemeyer/deriva-de-transicao.ts) grita no par que ninguem declarou.",
   "sempreAlcancavel": ["HALTED", "PAUSED"],
   "checkpointsHumanos": ["URL", "CONFIRM", "PR_OPEN"],
   "semEscritaNoMotor": {
     "sobre": "Estados declarados em STATUSES que nenhum arquivo de motor/ escreve hoje. Ficam listados de proposito: deriva declarada e deriva visivel.",
     "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED", "REVIEWED"],
-    "nota": "EXECUTED e LIDO por motor/osw/mtr/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel. REVIEWED era o estado do step `review` do pipeline, removido: o crivo do fecho (runCodefoxGate) ja faz a revisao adversarial LENDO o diff, e o veredito do step nunca era lido. O no fica declarado porque card antigo em disco pode estar nele e a fila precisa reconcilia-lo."
+    "nota": "EXECUTED e LIDO por motor/oswaldo/mutirao/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel. REVIEWED era o estado do step `review` do pipeline, removido: o crivo do fecho (runCodefoxGate) ja faz a revisao adversarial LENDO o diff, e o veredito do step nunca era lido. O no fica declarado porque card antigo em disco pode estar nele e a fila precisa reconcilia-lo."
   }
 }

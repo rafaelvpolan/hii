@@ -93,7 +93,7 @@ hii sync                  # sincroniza tarefas externas (HICODE_TASK_SYNC)
 
 ## 3. Harnesses — quem executa a IA
 
-Quatro registrados (`motor/tmd/registro.ts`): **claude**, **codex**, **ollama**,
+Quatro registrados (`motor/tomada/registro.ts`): **claude**, **codex**, **ollama**,
 **kimi**. Cada um é um CLI externo; o motor só monta o argv e lê a saída.
 
 Os valores abaixo foram lidos de `capabilities()` em execução, não do que a
@@ -154,7 +154,7 @@ as ferramentas. Por isso o catálogo de modos dele tem um item só.
 O grafo está declarado como **dado** em `config/topologia.json`, e é conferido em
 execução: `updateCard` é o único ponto de escrita, e toda transição passa por lá.
 Transição que o código faz e o dado não declara vira **deriva** — vai para o
-diário do card e para o stderr, e reprova em `test/nmy/deriva-de-transicao.test.ts`.
+diário do card e para o stderr, e reprova em `test/niemeyer/deriva-de-transicao.test.ts`.
 
 ### Caminho feliz
 
@@ -195,7 +195,7 @@ espera. **Merge é sempre humano** — o motor abre o PR e não o fecha.
 ## 5. O grafo do pipeline e os perfis
 
 Depois do `implement`, o fecho roda um pipeline com dependências declaradas
-(`motor/nmy/config.ts`):
+(`motor/niemeyer/config.ts`):
 
 ```
 Arquitetura (rufus)
@@ -210,7 +210,7 @@ alvo tem de passar, com reajuste até o teto.
 ### Perfis
 
 O motor classifica a tarefa pelo vocabulário do título e do objetivo
-(`motor/osw/rta/perfil.ts`) e **corta passos**:
+(`motor/oswaldo/rota/perfil.ts`) e **corta passos**:
 
 | Perfil | Passos | Quando | Enunciado que cai nele |
 |---|---|---|---|
@@ -239,7 +239,7 @@ do caminho rápido mesmo que ela fale de cor. Duas consequências que não são 
   "classe de comissão", "gap de cálculo", "plano light" — nenhuma delas dá caminho
   rápido sozinha. Se der, uma mudança de regra de negócio roda sem Testes.
 
-E a **LEI** (`motor/csd/lei/`) olha o **diff** depois e só pode **subir** o rigor —
+E a **LEI** (`motor/cascudo/lei/`) olha o **diff** depois e só pode **subir** o rigor —
 nunca baixar. É o que impede o classificador de enunciado de ser a última palavra.
 
 O perfil escolhido, com o motivo de cada corte, aparece no **plano** — que é o que
@@ -283,7 +283,7 @@ mas perderia capacidade em silêncio — declarar o padrão mantém as duas cois
 
 ### Os dois modos do crivo
 
-`modoDoCrivo` (`motor/cic/cnd/gauntlet.ts`) escolhe:
+`modoDoCrivo` (`motor/ciclo/canudos/gauntlet.ts`) escolhe:
 
 - **`criterio-escrito`** — padrão. O crivo lê o diff contra o critério escrito.
 - **`gauntlet`** — comparação **cega** entre candidatos. Só entra quando: o
@@ -357,7 +357,7 @@ crescente, até `HICODE_WAITING_MAX_ATTEMPTS`. Falha de **cota** pode trocar de
 provedor, se `HICODE_QUOTA_FALLBACK=on`. Falha **terminal** não é repetida —
 repetir daria o mesmo resultado.
 
-### 8.4 Laço de divergência (MCN)
+### 8.4 Laço de divergência (Macunaíma)
 
 Para pergunta **aberta de desenho**, o motor gera N alternativas isoladas e
 compara, em vez de iterar uma só. `HICODE_MCN_RAMOS` (padrão **4**) e

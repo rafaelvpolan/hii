@@ -4,7 +4,7 @@ import { join } from 'node:path'
 // hicode:allow-any — o script de rename e .mjs; a fronteira e checada aqui.
 import { caminhosNaoAlcancaveis } from '../scripts/renomear-testes-brazil.mjs'
 
-const DOMINIOS = ['agentes', 'cdl', 'cic', 'csd', 'euc', 'mir', 'nmy', 'osw', 'qlb', 'tmd']
+const DOMINIOS = ['agentes', 'cordel', 'ciclo', 'cascudo', 'euclides', 'mirante', 'niemeyer', 'oswaldo', 'quilombo', 'tomada']
 // Só o que não exercita motor/ fica na raiz: guardas do próprio repositório.
 const NA_RAIZ = [
   'isolamento-de-testes.test.ts',

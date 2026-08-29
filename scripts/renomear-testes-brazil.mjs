@@ -5,8 +5,9 @@
 // palpite pelo nome. O nome do arquivo so muda quando cita um modulo que foi
 // renomeado; qualificadores (-custo, -wait-attempts) ficam como estao, porque
 // traduzi-los seria outra mudanca, com outro risco.
-import { readdirSync, readFileSync, existsSync, statSync, mkdirSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'node:fs'
 import { join, dirname, relative, resolve, extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
 const RAIZ = process.cwd()
@@ -17,56 +18,56 @@ const ESPEC = /(\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"])(
 
 // Onde a derivacao automatica erra. Cada linha e um julgamento, nao um bug.
 const EXCECOES = {
-  'test/commands.test.ts': 'test/mir/comandos.test.ts',
-  'test/card-store.test.ts': 'test/cdl/store.test.ts',
-  'test/card-store-cache.test.ts': 'test/cdl/store-cache.test.ts',
-  'test/card-frontmatter.test.ts': 'test/cdl/frontmatter.test.ts',
-  'test/contract-probe.test.ts': 'test/cdl/bss-sondar.test.ts',
-  'test/contract-detect.test.ts': 'test/cdl/bss-detectar.test.ts',
-  'test/environment-contract.test.ts': 'test/cdl/ali-contrato.test.ts',
-  'test/hicode-home.test.ts': 'test/cdl/ali-home.test.ts',
-  'test/config-root.test.ts': 'test/cdl/ali-config.test.ts',
-  'test/failure-policy.test.ts': 'test/cic/rpr-politica.test.ts',
-  'test/failure-classify.test.ts': 'test/cic/classe-de-falha.test.ts',
-  'test/gated-step.test.ts': 'test/cic/passo-com-gate.test.ts',
-  'test/finish-cost.test.ts': 'test/qlb/fechar-custo.test.ts',
-  'test/finish-wait-attempts.test.ts': 'test/qlb/fechar-wait-attempts.test.ts',
-  'test/execute-cost.test.ts': 'test/osw/executar-custo.test.ts',
-  'test/execute-worktree-fate.test.ts': 'test/osw/executar-worktree-fate.test.ts',
-  'test/execute-quota-fallback-off.test.ts': 'test/osw/executar-quota-fallback-off.test.ts',
-  'test/queue-reconcile.test.ts': 'test/osw/fila-reconcile.test.ts',
-  'test/runner-once-wakes-waiting.test.ts': 'test/osw/runner-once-acorda-espera.test.ts',
-  'test/waiting-wake.test.ts': 'test/cic/espera-wake.test.ts',
-  'test/correct-wait-attempts.test.ts': 'test/cic/corrigir-wait-attempts.test.ts',
-  'test/mcp-estado.test.ts': 'test/tmd/pnt-estado.test.ts',
-  'test/mcp.test.ts': 'test/tmd/pnt-mcp.test.ts',
-  'test/mcp-escopo.test.ts': 'test/tmd/pnt-escopo.test.ts',
-  'test/comandos-da-ia.test.ts': 'test/tmd/map-comandos.test.ts',
-  'test/cache.test.ts': 'test/tmd/eco-memo.test.ts',
-  'test/cota-cache.test.ts': 'test/euc/tsr-cota-cache.test.ts',
-  'test/daemon-health.test.ts': 'test/euc/rdr-tick.test.ts',
-  'test/saude-motor.test.ts': 'test/euc/rdr-saude.test.ts',
-  'test/progress-custo-piso.test.ts': 'test/euc/rdr-progresso-custo-piso.test.ts',
-  'test/podar-registros.test.ts': 'test/euc/podar.test.ts',
-  'test/ideate.test.ts': 'test/agentes/tsl-ideacao.test.ts',
-  'test/analyze.test.ts': 'test/osw/rta-perfil.test.ts',
-  'test/classify.test.ts': 'test/osw/rta-superficie.test.ts',
-  'test/instance-lock.test.ts': 'test/osw/mtr-trava-instancia.test.ts',
-  'test/file-lock.test.ts': 'test/osw/mtr-trava-arquivo.test.ts',
-  'test/daemon-arranque.test.ts': 'test/osw/mtr-daemon-arranque.test.ts',
-  'test/health-probe.test.ts': 'test/tmd/sonda.test.ts',
-  'test/registry-provedores.test.ts': 'test/tmd/registro-provedores.test.ts',
-  'test/ai-usage.test.ts': 'test/tmd/uso.test.ts',
-  'test/session.test.ts': 'test/mir/sessao.test.ts',
-  'test/activity.test.ts': 'test/mir/atividade.test.ts',
-  'test/complete.test.ts': 'test/mir/completar.test.ts',
-  'test/archive.test.ts': 'test/cdl/arquivar.test.ts',
-  'test/core-actions.test.ts': 'test/mir/acoes.test.ts',
-  'test/core-repos.test.ts': 'test/cdl/repos.test.ts',
-  'test/plan-render.test.ts': 'test/nmy/luc-plano-render.test.ts',
-  'test/private-net-literal.test.ts': 'test/qlb/alf-rede-privada-literal.test.ts',
-  'test/refs-anexo.test.ts': 'test/qlb/alf-anexo.test.ts',
-  'test/finish-pushed-sha.test.ts': 'test/qlb/fechar-pushed-sha.test.ts',
+  'test/commands.test.ts': 'test/mirante/comandos.test.ts',
+  'test/card-store.test.ts': 'test/cordel/store.test.ts',
+  'test/card-store-cache.test.ts': 'test/cordel/store-cache.test.ts',
+  'test/card-frontmatter.test.ts': 'test/cordel/frontmatter.test.ts',
+  'test/contract-probe.test.ts': 'test/cordel/bussola-sondar.test.ts',
+  'test/contract-detect.test.ts': 'test/cordel/bss-detectar.test.ts',
+  'test/environment-contract.test.ts': 'test/cordel/alicerce-contrato.test.ts',
+  'test/hicode-home.test.ts': 'test/cordel/alicerce-home.test.ts',
+  'test/config-root.test.ts': 'test/cordel/alicerce-config.test.ts',
+  'test/failure-policy.test.ts': 'test/ciclo/reprise-politica.test.ts',
+  'test/failure-classify.test.ts': 'test/ciclo/classe-de-falha.test.ts',
+  'test/gated-step.test.ts': 'test/ciclo/passo-com-gate.test.ts',
+  'test/finish-cost.test.ts': 'test/quilombo/fechar-custo.test.ts',
+  'test/finish-wait-attempts.test.ts': 'test/quilombo/fechar-wait-attempts.test.ts',
+  'test/execute-cost.test.ts': 'test/oswaldo/executar-custo.test.ts',
+  'test/execute-worktree-fate.test.ts': 'test/oswaldo/executar-worktree-fate.test.ts',
+  'test/execute-quota-fallback-off.test.ts': 'test/oswaldo/executar-quota-fallback-off.test.ts',
+  'test/queue-reconcile.test.ts': 'test/oswaldo/fila-reconcile.test.ts',
+  'test/runner-once-wakes-waiting.test.ts': 'test/oswaldo/runner-once-acorda-espera.test.ts',
+  'test/waiting-wake.test.ts': 'test/ciclo/espera-wake.test.ts',
+  'test/correct-wait-attempts.test.ts': 'test/ciclo/corrigir-wait-attempts.test.ts',
+  'test/mcp-estado.test.ts': 'test/tomada/ponte-estado.test.ts',
+  'test/mcp.test.ts': 'test/tomada/ponte-mcp.test.ts',
+  'test/mcp-escopo.test.ts': 'test/tomada/ponte-escopo.test.ts',
+  'test/comandos-da-ia.test.ts': 'test/tomada/mapa-comandos.test.ts',
+  'test/cache.test.ts': 'test/tomada/eco-memo.test.ts',
+  'test/cota-cache.test.ts': 'test/euclides/tesouro-cota-cache.test.ts',
+  'test/daemon-health.test.ts': 'test/euclides/radar-tick.test.ts',
+  'test/saude-motor.test.ts': 'test/euclides/radar-saude.test.ts',
+  'test/progress-custo-piso.test.ts': 'test/euclides/radar-progresso-custo-piso.test.ts',
+  'test/podar-registros.test.ts': 'test/euclides/podar.test.ts',
+  'test/ideate.test.ts': 'test/agentes/tarsila-ideacao.test.ts',
+  'test/analyze.test.ts': 'test/oswaldo/rota-perfil.test.ts',
+  'test/classify.test.ts': 'test/oswaldo/rota-superficie.test.ts',
+  'test/instance-lock.test.ts': 'test/oswaldo/mutirao-trava-instancia.test.ts',
+  'test/file-lock.test.ts': 'test/oswaldo/mutirao-trava-arquivo.test.ts',
+  'test/daemon-arranque.test.ts': 'test/oswaldo/mutirao-daemon-arranque.test.ts',
+  'test/health-probe.test.ts': 'test/tomada/sonda.test.ts',
+  'test/registry-provedores.test.ts': 'test/tomada/registro-provedores.test.ts',
+  'test/ai-usage.test.ts': 'test/tomada/uso.test.ts',
+  'test/session.test.ts': 'test/mirante/sessao.test.ts',
+  'test/activity.test.ts': 'test/mirante/atividade.test.ts',
+  'test/complete.test.ts': 'test/mirante/completar.test.ts',
+  'test/archive.test.ts': 'test/cordel/arquivar.test.ts',
+  'test/core-actions.test.ts': 'test/mirante/acoes.test.ts',
+  'test/core-repos.test.ts': 'test/cordel/repos.test.ts',
+  'test/plan-render.test.ts': 'test/niemeyer/lucio-plano-render.test.ts',
+  'test/private-net-literal.test.ts': 'test/quilombo/alfandega-rede-privada-literal.test.ts',
+  'test/refs-anexo.test.ts': 'test/quilombo/alfandega-anexo.test.ts',
+  'test/finish-pushed-sha.test.ts': 'test/quilombo/fechar-pushed-sha.test.ts',
   // ficam na raiz: nao exercitam motor/, exercitam scripts/ ou o proprio mapa
   'test/no-any-detect.test.ts': 'test/no-any-detect.test.ts',
   'test/scripts-setup-imports.test.ts': 'test/scripts-setup-imports.test.ts',
@@ -160,7 +161,10 @@ export function caminhosNaoAlcancaveis() {
   return achados
 }
 
-if (import.meta.main) {
+const ESTE_SCRIPT = fileURLToPath(import.meta.url)
+const invocadoDiretamente = process.argv[1] !== undefined && resolve(process.argv[1]) === ESTE_SCRIPT
+
+if (invocadoDiretamente) {
   const lote = mapaDosTestes()
   const destinos = new Set()
   for (const [o, d] of lote) {
@@ -204,7 +208,7 @@ if (import.meta.main) {
       const novo = porSpec.get(spec)
       return novo ? `${pre}${q}${novo}${q}` : todo
     })
-    if (depois !== antes) { const { writeFileSync } = require('node:fs'); writeFileSync(local, depois); tocados++ }
+    if (depois !== antes) { writeFileSync(local, depois); tocados++ }
   }
   process.stdout.write(`aplicado: ${lote.length} movido(s), ${tocados} arquivo(s) com import reescrito\n`)
   const manuais = caminhosNaoAlcancaveis()
