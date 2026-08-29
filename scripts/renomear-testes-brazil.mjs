@@ -5,8 +5,9 @@
 // palpite pelo nome. O nome do arquivo so muda quando cita um modulo que foi
 // renomeado; qualificadores (-custo, -wait-attempts) ficam como estao, porque
 // traduzi-los seria outra mudanca, com outro risco.
-import { readdirSync, readFileSync, existsSync, statSync, mkdirSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'node:fs'
 import { join, dirname, relative, resolve, extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
 const RAIZ = process.cwd()
@@ -160,7 +161,10 @@ export function caminhosNaoAlcancaveis() {
   return achados
 }
 
-if (import.meta.main) {
+const ESTE_SCRIPT = fileURLToPath(import.meta.url)
+const invocadoDiretamente = process.argv[1] !== undefined && resolve(process.argv[1]) === ESTE_SCRIPT
+
+if (invocadoDiretamente) {
   const lote = mapaDosTestes()
   const destinos = new Set()
   for (const [o, d] of lote) {
@@ -204,7 +208,7 @@ if (import.meta.main) {
       const novo = porSpec.get(spec)
       return novo ? `${pre}${q}${novo}${q}` : todo
     })
-    if (depois !== antes) { const { writeFileSync } = require('node:fs'); writeFileSync(local, depois); tocados++ }
+    if (depois !== antes) { writeFileSync(local, depois); tocados++ }
   }
   process.stdout.write(`aplicado: ${lote.length} movido(s), ${tocados} arquivo(s) com import reescrito\n`)
   const manuais = caminhosNaoAlcancaveis()

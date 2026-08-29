@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Controla o daemon do motor hicode (bun runner.ts) via PID-file.
+# Controla o daemon do motor hicode (`$RUNTIME runner.ts`, ver runtime_do_daemon) via PID-file.
 # Substitui o `pkill -f "runner.ts"`, que casava com o proprio shell que rodava o comando
 # (auto-kill, exit 144). Aqui mata-se por PID exato; tanto o PID-file quanto o fallback so
 # aceitam um pid que PROVE ser o motor (cmdline EXATO + cwd == raiz esperada), nunca por
@@ -12,7 +12,7 @@
 # continua ancorada no ROOT deste clone — nao ha registro alheio a herdar ali.
 # Onde nao ha /proc (macOS), a prova forte e impossivel: o PID-file degrada para `kill -0` (o que
 # ja funcionava antes da prova forte existir) e a varredura de fallback nao adota ninguem — sem
-# /proc nao da para distinguir o motor de outro `bun`, e matar estranho e pior do que nao achar.
+# /proc nao da para distinguir o motor de outro `bun`/`node`, e matar estranho e pior do que nao achar.
 # `start` NUNCA regrava o sidecar de uma adocao ja provada por dono_do_pidfile: a raiz ali dentro
 # ja foi validada contra o pid (find_daemon/e_o_motor), inclusive quando pertence a outro clone —
 # regravar com o ROOT de quem executou o `start` substituiria um registro provado por um chute.
@@ -29,6 +29,23 @@ LOCKFILE="${HICODE_RUNNER_LOCK:-$ROOT/.runner.lock}"
 ARRANQUE_ESPERAS=60
 ARRANQUE_INTERVALO=0.05
 
+# Mesma politica de motor/cdl/ali/runtime.ts, e pelo mesmo motivo: HICODE_RUNTIME manda;
+# sem ele, bun se estiver no PATH, senao node. Este script prendia `bun` em tres pontos
+# (a cmdline aceita, o pgrep e o nohup do start) enquanto a imagem de producao e
+# node:24-slim com COM_BUN=0 por padrao — ou seja, no container o daemon nao subia.
+# Runtime desconhecido PARA o script em vez de cair no padrao: escolher outro binario em
+# silencio seria rodar algo que o operador nao pediu.
+runtime_do_daemon() {
+  case "${HICODE_RUNTIME:-}" in
+    bun|node) echo "${HICODE_RUNTIME}"; return 0 ;;
+    "") ;;
+    *) echo "HICODE_RUNTIME=\"${HICODE_RUNTIME}\" nao e um runtime suportado (bun | node)" >&2; return 1 ;;
+  esac
+  if command -v bun >/dev/null 2>&1; then echo bun; else echo node; fi
+}
+
+RUNTIME="$(runtime_do_daemon)"
+
 caminho_real() {
   readlink -f "$1" 2>/dev/null || echo "$1"
 }
@@ -43,16 +60,24 @@ e_o_motor() {
   proc_legivel || return 1
   [ "$(caminho_real "/proc/$pid/cwd")" = "$(caminho_real "$raiz")" ] || return 1
   cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+  # Aceita os DOIS runtimes de proposito, e nao apenas o $RUNTIME desta invocacao: o
+  # daemon pode ter subido sob bun e o `stop` rodar de um shell sem bun no PATH (ou o
+  # operador ter trocado HICODE_RUNTIME no meio). Provar "este pid E o motor" nao pode
+  # depender de qual binario QUEM PERGUNTA escolheria — a prova forte continua sendo
+  # cmdline exata + cwd igual a raiz esperada.
   case "$cmd" in
     "bun runner.ts "|"bun runner.ts") return 0 ;;
+    "node runner.ts "|"node runner.ts") return 0 ;;
     *) return 1 ;;
   esac
 }
 
 find_daemon() {
-  local pid
-  for pid in $(pgrep -x bun 2>/dev/null || true); do
-    if e_o_motor "$pid" "$ROOT"; then echo "$pid"; return 0; fi
+  local pid rt
+  for rt in bun node; do
+    for pid in $(pgrep -x "$rt" 2>/dev/null || true); do
+      if e_o_motor "$pid" "$ROOT"; then echo "$pid"; return 0; fi
+    done
   done
   return 1
 }
@@ -98,7 +123,7 @@ start() {
   if pid="$(dono_do_pidfile)"; then echo "runner ja online (PID $pid)"; return 0; fi
   if pid="$(find_daemon)"; then marca_dono "$pid"; echo "runner ja online (PID $pid)"; return 0; fi
   cd "$ROOT"
-  nohup bun runner.ts >>"$LOG" 2>&1 &
+  nohup "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
   pid=$!
   if ! arrancou "$pid"; then
     echo "runner NAO subiu: o processo $pid morreu no arranque - motivo em $LOG" >&2

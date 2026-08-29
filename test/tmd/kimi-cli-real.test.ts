@@ -49,7 +49,7 @@ test('o CLI do kimi recusa flag de modo junto com -p — a razao do argv ser com
     expect(erro, `se o CLI passou a ACEITAR ${flag}, revisite kimiArgv e KIMI_MODOS`).toContain('Cannot combine')
     expect(erro).toContain(flag)
   }
-})
+}, 60000)
 
 test('o argv que o motor monta nao contem nenhuma das flags recusadas', () => {
   const a = kimiArgv(pedido())
@@ -64,4 +64,4 @@ test('quando o kimi esta instalado, o binario que o adaptador chama resolve no P
   if (!TEM_KIMI) return
   const versao = execFileSync('kimi', ['--version'], { encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] }).trim()
   expect(versao, `versao lida: ${versao}`).toMatch(/^\d+\.\d+/)
-})
+}, 60000)

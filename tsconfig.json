@@ -5,9 +5,6 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "types": ["node", "bun"],
-    "paths": {
-      "#shared/*": ["./panel/shared/*"]
-    },
     "allowJs": true,
     "strict": true,
     "noUnusedLocals": true,

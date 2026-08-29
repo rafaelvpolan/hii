@@ -4,454 +4,70 @@ O que ficou em aberto, com o porquê e onde mexer. Ordem = o que dói primeiro.
 
 Quando um item sair, apague a seção — este arquivo é lista de trabalho, não histórico.
 
----
-
-## FEITO — Ondas D a H (as respostas em R: desta rodada)
-
-Tudo o que estava respondido com `R:` foi aplicado. O que sobrou está nomeado nas
-seções abaixo, com o porquê.
-
-| Frente | O que foi feito |
-|---|---|
-| Step `review` sem `gated` | **Removido do pipeline.** `runCodefoxGate` no fecho já faz a revisão adversarial LENDO o diff; o veredito do step nunca era lido e ele custava uma chamada de agente com escrita habilitada. O tier `review` de `model-tier.json` passou a ser registrado pelo gate do fecho — senão viraria config morta |
-| Gauntlet substituindo o critério escrito | **Interruptor explícito na TUI**: `/gauntlet on\|off\|toggle` (apelido `/crivo`), estado visível na linha de propriedades junto com as ias. Desligado por omissão — antes, um card de pack visual com imagem anexada saía do pipeline sem NENHUMA leitura de código. O `tetoUsd` de `podeIniciar()` deixou de ser decorativo: o modo recusa iniciar se o card já gastou o teto |
-| `auditoria.ts` monolito (402 linhas) | **Dividido** em `tipos/cobertura/metricas/plano/relato`, com `auditoria.ts` virando reexport de 17 linhas. Uma ferramenta de auditoria que se isenta do próprio critério não vale como critério |
-| Guardas que não podiam falhar | Topologia por **par (origem, destino)** conferido no ponto de escrita do card (`motor/nmy/deriva-de-transicao.ts`) — a varredura por destino não podia reprovar nada, e o motor executava 17 transições não declaradas. Idempotência pelo lado do **efeito** (toda invocação de `gh` que muta). Prefixo em `mapa-de-comandos`. `indexOf` sem guarda do `-1` em `retomada-no-arranque` e `tui-fluxo`. Asserção sobre texto-fonte em `vtb-checklist`, `escolher-ia`, `bss-setup-ferramental`. `not.toContain` de string inexistente em `comandos-de-modelo`, `board`, `tui-layout`. Fórmula repetida em `mcn-divergir` |
-| Produção | `HICODE_HEALTH_HOST` × `HICODE_HEALTH_BIND` unificados, os dois no contrato de ambiente, e três guardas novas: toda `HICODE_*` do Dockerfile tem de estar no contrato, e `EXPOSE` exige bind coerente. Comentário do `docker-stack.yml` e do `limites.ts` passaram a citar o consumidor real |
-| Silenciamento | `git merge` nomeia a causa (conflito × mudança local × `index.lock` × ref inválida) lendo stdout **e** stderr. `gh` propaga falha e o `hii sync` sai != 0. MCP separa "não consegui listar" de "não existe" (e a primeira é transitória, não HALT). `package.json` e `contract.json` corrompidos avisam em vez de virar "ausente". `ia.json` corrompido avisa. Ledger de custo que falha grita. `ollama` leva `j.error` para `detail` (sem isso `OLLAMA_SINAIS.terminal` era inalcançável). `executar.ts` separa "repo sem dev server" de "dev server não subiu". `recuperar.ts` fecha TODAS as fases abertas, e por par abertura/fechamento |
-| TUI | Colagem recuperada do histórico volta expandida (o histórico guardava o marcador e `pastes` era zerado no mesmo passo). Linha maior que o terminal ganhou **rolagem horizontal** (`janelaHorizontal`): o texto sob o cursor fica visível e `cursorCol` nunca passa da largura |
-| Valor calculado e nunca aplicado | `porRamoUsd` chega ao ramo e estouro sai nomeado · `Plan.divergencia` renderizado · `tetoUsd` do gauntlet aplicado · `tetoUsd` do painel passou a ser o **mesmo** que o motor barra (lia `HICODE_BUDGET_USD`, que nada mais escreve) · `taskSyncNames` virou validação de `HICODE_TASK_SYNC` · `modoResolvido` no rodapé · `FonteDeSkills.ativa` desliga a origem de verdade · `ehAreaNova` com a regra certa e usada no fecho · `readProjectConfig` virou checagem de divergência no `doctor` · `placar()` removida (era reexport de `contar()` sem consumidor) |
-| Defeitos da própria auditoria | `comandos-manuais.ts` agora é chamado no arranque (o comentário afirmava isso e só o teste chamava) · shebang de `bin/hii.ts` virou `node`, o runtime da imagem · `convergir.ts` não coage `true`/`[1]` em voto na primeira proposta · `origem` das regras inegociáveis ganhou tipo e validação (estava no plano mestre, no JSON e em guarda nenhuma) · `docker-compose.yml` virou `docker-stack.yml` no plano mestre, com o motivo |
-
-A memória do erro de verificação (sondar `/health` de dentro do container e
-concluir alcance externo) ficou registrada fora do repo, como pedido.
-
-### E depois o `/verificar` achou defeito no próprio conserto
-
-A auditoria rodou sobre a **superfície desta branch** (107 arquivos em 12 lotes,
-`crivo` adversarial por lote) e voltou com defeito real no que eu tinha acabado de
-escrever. Vale registrar, porque é o argumento de existir do gate:
-
-| Achado da verificação | Onde |
-|---|---|
-| **Crash no caminho que o conserto criou.** O tratamento novo de falha da listagem MCP zerava o cache ANTES do closure lê-lo: `await consulta.servidores()` dava `undefined` e estourava `TypeError` — exatamente no caso que o tratamento existia para cobrir, e a exceção subia até o card fazer HALT sem retry | `motor/tmd/pnt/mcp.ts` |
-| **Segundo teto de orçamento.** A trava nova do gauntlet comparava o gasto contra `model-tier.json` direto, ignorando `HICODE_CARD_BUDGET_USD` — o "teto lido de duas fontes" que o invariante do repo proíbe. O invariante não viu porque a lista de adotantes estava incompleta; agora há varredura que exige registro | `motor/cic/cnd/gauntlet.ts` |
-| **Rolagem horizontal desalinhada + off-by-one.** O deslocamento em colunas era passado no parâmetro da coluna do cursor, então cada linha rolava por conta própria (com o comentário afirmando o contrário); e sem moldura o `cursorCol` chegava a `cols+1` — o teste não alcançava esse caminho | `motor/mir/tui/layout.ts` |
-| **Uma das ALTA da lista original só tinha sido meio consertada.** `fase-spec.ts` recebeu o argumento novo na Onda B, mas o retorno de `runStep` continuava inteiramente descartado: falha do agente virava "spec reprovado no openspec validate" (causa falsa) e o gasto da fase não entrava no card | `motor/nmy/luc/fase-spec.ts` |
-| **O classificador de merge foi adotado em 1 de 2 sítios.** `syncWithBase` continuava chamando toda falha de conflito — e mandava ao agente "Resolva os conflitos nestes arquivos: " com lista VAZIA, pagando chamadas | `motor/qlb/ctr/sync.ts` |
-| **Trocar uma asserção vácua por outra.** O conserto de `board.test.ts` passou a afirmar `not.toContain('0/0')` — string que o código nunca emite | `test/mir/board.test.ts` |
-| **Sanitização assimétrica.** Guardar a colagem EXPANDIDA no histórico fez o caminho não-sanitizado do marcador levar ANSI para o buffer renderizado | `motor/mir/tui/input.ts` |
-
-Todos foram consertados, mais os achados de gravidade média e baixa dos 12 lotes
-(atribuição falsa de reprovação ao crivo, `fetch` descartado no sync, `Number('')`
-passando por guarda de contagem, `merge --abort` sem verificação, escape de
-diretiva inalcançável em `Write` de arquivo novo, `replace_all` ignorado na
-simulação do hook, `hii approve` citando comando inexistente, `/health` derrubando
-o processo por porta ocupada, atalhos do item 16 invisíveis no `/help`, e mais).
-
-### E uma segunda rodada de verificação achou defeito nos consertos dos consertos
-
-Rodei o crivo de novo, agora **contra as próprias correções**, pedindo para refutá-las.
-Voltou com mais oito, todos reais:
-
-- **`merge --abort` avisava no conjunto oposto ao pretendido.** Nas recusas que o
-  classificador reconhece o git nem começa o merge, então o abort sempre falha e o
-  detalhe passou a afirmar "o worktree ficou no meio do merge" — falso. Agora o
-  abort só roda se `MERGE_HEAD` existe.
-- **O `detail` classificado do sync era dado morto:** `fechar.ts` tinha o HALT
-  fixo em "conflito não resolvido após 3x", então fetch quebrado virava diagnóstico
-  falso de conflito **e** contagem falsa de tentativas.
-- **Minha guarda de fetch tornou dois testes de regressão vácuos** — o fixture não
-  tinha remoto `origin`, então o laço de conflito nunca rodava e a única asserção
-  era `r.ok === false`. O fixture ganhou remoto de verdade, e as asserções provam
-  que o laço rodou.
-- **`fase-spec.ts` reintroduziu o `parseFloat(cost_usd || '0') || 0`** que o
-  `gastoDoCard` tinha acabado de substituir — e pior, gravava o total zerado de
-  volta no card, apagando a evidência de corrupção e desarmando as guardas dos
-  outros três pontos.
-- **Fail-open no teto do gauntlet:** `gastoDoCard(...) ?? undefined` mapeava
-  "corrompido" para "não sei", e a trava só compara quando sabe — o modo caro
-  iniciava justamente com o registro de custo quebrado.
-- **`ia.json` ilegível era read-modify-WRITE:** `/ia`, `/model`, `/effort`, `/mode`
-  e `/gauntlet` liam `{}` e gravavam de volta só o papel ajustado, **destruindo a
-  escolha de todos os outros papéis** — com a mensagem dizendo "vale na próxima
-  tarefa". Agora recusa mexer no arquivo.
-- **O `/health` ainda podia matar o daemon:** o handler chama `allCards()`, que faz
-  `readFileSync` por card; um `hii rm` concorrente lançava dentro do callback HTTP.
-  E `porta` era lida logo após `listen()` — assíncrono no node, o runtime de
-  produção —, então `subirServidorDeSaude(0)` respondia porta 0.
-- **O conserto de `help.test.ts` reintroduziu o furo de substring** que eu tinha
-  acabado de fechar no arquivo irmão: com `/model` e `/mode` na lista, apagar a
-  linha do `/mode` continuava verde.
-
-Duas coisas viraram código por causa disso: `abrirPrUmaVez` (a guarda contra o
-segundo PR, extraída com `executar` injetável, porque antes só era verificável por
-ordem de linhas no arquivo) e `scripts/auditar.ts` (o consumidor real de `apenas`,
-que antes existia só como prosa no `SKILL.md` — opção sem chamador é o mesmo
-defeito que a auditoria persegue).
-
-### Terceira rodada: o conserto do conserto do conserto
-
-Rodei o crivo uma terceira vez, agora contra as correções da segunda. Três achados,
-os dois primeiros graves:
-
-- **O conserto do `ia.json` podia MATAR a TUI.** Fazer `ler()` lançar era certo
-  (evita sobrescrever e apagar a preferência dos outros papéis), mas `aplicar` e
-  `ciclarModo` são chamados de dentro do handler de **tecla** — `onKey` →
-  `inp.on('data')` —, que não tem catch. Com `config/ia.json` quebrado, um Shift+Tab
-  derrubava o processo com o terminal em raw mode. Agora nenhuma função exportada do
-  módulo lança. E os `definir*` passaram a **propagar** o `ok: false` de `aplicar`:
-  antes anunciavam sucesso sobre gravação que falhou.
-- **Fail-open de escopo no script novo.** `apenas: []` significa "sem recorte", ou
-  seja repositório inteiro — então `--branch` numa árvore limpa imprimia o plano do
-  repo todo rotulado como "superfície da branch", e `resumoAuditoria` só avisa de
-  recorte vazio para `escopo`, nunca para `apenas`. Agora sai dizendo que está vazia.
-- **A guarda de lista vazia no sync agia depois do gasto.** A consulta do topo do
-  laço não verificava `err`, então o agente era chamado — pago — com "Resolva os
-  conflitos nestes arquivos: " vazio.
-
-Também nesta rodada: `handleSpec` ganhou `SpecDeps` injetável (a fase decide HALT
-por custo e por falha de agente, e sem a costura isso só era verificável subindo
-openspec e um provedor de verdade — ou seja, não era), e o alcance externo do
-`/health` virou teste que sonda de um **endereço não-loopback** — a medição que a
-auditoria original não fez.
-
-**Números:** 2442 testes em 224 arquivos, `bun run test` verde (typecheck +
-`lint:types` + `lint:clone` + suíte). Baseline antes desta rodada: 2265 em 213.
-Zero monolito e zero god-file na superfície da branch, medido pelo próprio auditor.
+**Podado em 29/08/2026.** Saiu daqui tudo o que foi conferido no código como feito:
+as ondas D–H e as três rodadas de crivo, o roadmap dos 34 itens, `truncVisible`
+(razão 417× → 0,98×, com teste de razão por tamanho de entrada em
+`test/mir/tui-sob-carga.test.ts:110-130`), a migração da suíte para `node:test`, a
+evidência de RED pela opção 2, e os itens 1, 2 e 4 da ordem de corte de custo. O que
+restou abaixo foi reconferido arquivo por arquivo — cada seção diz onde está a prova.
 
 ---
 
-## ESTADO — o roadmap dos 34 itens está fechado
-
-Itens 1 a 34, incluindo os dois novos (33 MCN, 34 MIR) e o 16, que era o último
-parcial. O que vier daqui em diante entra como pendência nomeada abaixo, ou como
-onda nova em `WORKFLOW-EXECUCAO.md`.
-
----
-
-## RECOMENDAÇÃO — `truncVisible` percorre o texto inteiro para cortar 80 colunas
-
-`larguraDeTexto`, `stripAnsi` e o `split` de `motor/mir/tui/layout.ts` varrem a
-string toda antes do corte: medido ~189× mais caro num texto 500× maior. Não é
-travamento (~0,5ms para meio milhão de caracteres, e `test/mir/tui-sob-carga.test.ts`
-guarda esse tempo) — é ineficiência num caminho quente: cada linha visível paga o
-custo da linha inteira.
-
-**A dúvida registrada estava errada, e é por isso que a recomendação é fazer.** O
-receio era "medir só um prefixo parte cluster de grafema quando o corte cai no
-meio de um". Não parte: quem produz os clusters é `Intl.Segmenter`, e ele só
-entrega cluster INTEIRO. `SEGMENTADOR.segment(texto)` devolve um iterável
-preguiçoso — consumir os primeiros N segmentos não olha o resto da string e não
-pode cortar no meio de um cluster, porque um cluster meio-lido não existe na
-saída do segmentador. O que `grafemasDe` faz de errado é materializar o array
-inteiro (`for (...) saida.push(...)`), jogando fora a preguiça que o segmentador
-já dava. **Não é preciso provar margem segura nenhuma: a margem é o próprio
-segmentador.**
-
-Onde está o O(n), em ordem de peso:
-
-1. `visibleLen(s)` no early-return de `truncVisible`. Para responder "cabe?" ele
-   calcula a largura TOTAL — e dentro dele `stripAnsi` faz duas passadas de regex
-   sobre a string toda, e `grafemasDe` materializa todos os clusters. A pergunta
-   real é "a largura passa de `max`?", que se responde parando no primeiro
-   grafema que estoura.
-2. `s.split(ESCAPE_SPLIT)` — aloca a string inteira em pedaços para depois
-   consumir só o começo.
-3. O laço de grafemas em si já para em `teto`. Esse pedaço está certo.
-
-**Recomendação, em três primitivas em `motor/mir/tui/largura.ts`:**
-
-- `grafemasEm(texto): Iterable<string>` — generator delegando ao segmentador, sem
-  materializar. `grafemasDe` fica como `[...grafemasEm(t)]` para quem precisa da
-  lista (a tabela de `test/mir/largura.test.ts` continua valendo).
-- `larguraAte(texto, teto): { colunas, indice, excedeu }` — acumula largura e para
-  no primeiro grafema que passaria de `teto`. Custo O(min(n, teto)). É a resposta
-  do early-return **e** o ponto de corte, no mesmo passo.
-- um scanner de ANSI com regex *sticky* (`/…/y` + `lastIndex`) avançando junto,
-  em vez de `split`: reconhece a sequência na posição corrente e a copia inteira
-  sem quebrar a string.
-
-`truncVisible` passa a ser uma passada só, e para no corte. `padVisible`,
-`visibleLen` e a assinatura pública não mudam. `janelaHorizontal` (a rolagem
-horizontal da entrada, adicionada nesta rodada) tem exatamente a mesma forma —
-hoje ela também materializa todos os grafemas e deve usar as mesmas primitivas.
-
-**Como provar que preservou comportamento:** `test/mir/largura.test.ts` fixa a
-tabela exata de cortes, grafemas, surrogates e ANSI — uma reescrita que passe ali
-preservou o comportamento. Falta uma guarda que pegue a REGRESSÃO de custo:
-`tui-sob-carga.test.ts` mede tempo absoluto, que varia com a máquina. O que
-detecta o problema é a **razão**: `truncVisible(s, 80)` com `|s|` 500× maior tem
-de custar tempo aproximadamente igual (hoje custa ~189×). Uma asserção de razão
-com folga generosa (por exemplo, no máximo 5×) reprova a volta do O(n) sem ficar
-instável.
-
-**Custo estimado:** três funções pequenas em `largura.ts`, reescrita de
-`truncVisible` e `janelaHorizontal`, um teste de razão. Não toca a semântica de
-nada.
-
-R: pode fazer.
-
-**FEITO** — razão medida caiu de **417×** para **0,98×** (Unicode) e de 140× para
-0,97× (ASCII). Duas armadilhas que a recomendação não previa: um laço por code unit
-até achar o próximo ESC devolvia o O(n) pela porta dos fundos, e o `Intl.Segmenter`
-tem custo de **preparo** proporcional a |s| — iterar preguiçosamente não basta, a
-string entregue a ele tem de ser pequena. Daí a segmentação em **janelas**, com o
-último grafema adiado para a janela seguinte porque ele pode continuar depois do
-corte. Verificado que o resultado é idêntico ao de segmentar tudo de uma vez,
-inclusive com grafema atravessando a borda.
-
-O teste de carga que existia media a razão por **colunas pedidas** e passava com
-folga — justamente porque tudo era O(n) e o número de colunas não mudava nada. Ele
-certificava o defeito. Trocado pela razão por **tamanho da entrada**, nas duas
-famílias.
-
----
-
-## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
-
-A Onda 12 entregou o mecanismo completo e ligado ao plano: `valeDivergir()` decide,
-e a flag aparece em `buildPlan()` para o humano ver antes de aprovar. O que **não**
-existe é o consumidor que de fato despacha os ramos contra um provedor de IA —
-`despacharDivergencia()` recebe o despachante injetado, e hoje só os testes o
-passam.
-
-Isso é escolha, não esquecimento: o despachante é injetado justamente para o
-isolamento ser verificável sem rede, e ligar o provedor de verdade é uma decisão
-de custo (N ramos multiplicam por N) que merece ser tomada olhando o gasto real
-por card, não junto com a entrega do mecanismo.
-
-Onde mexer: `motor/agentes/clr/clarificar.ts:77` já chama `idear()` do TSL no
-`CLARIFY`. É o ponto onde o MCN substitui o TSL — mesma fase, com isolamento real
-entre ramos e crítico separado.
-
-**Uma ressalva desta rodada, para quando você for ligar:** o teto por ramo
-(`porRamoUsd`) deixou de ser decorativo — chega ao ramo em `Ramo.tetoUsd` e o
-estouro sai nomeado em `ramosQueEstouraram`. Mas é **post-hoc**: nenhum ramo é
-abortado no meio, e estouro não vira HALT. Com o despachante de verdade ligado,
-isso quer dizer que o dinheiro do ramo que estourou já foi gasto quando o relato
-aparece. Abortar exige o despachante cooperar (passar o teto ao provedor, ou cortar
-por timeout), e isso é decisão de quem ligar.
-
-R: aguardar eu verificar na pratica
-
----
-
-## PLANO — migrar a suíte para um runner que rode nos dois (node:test)
-
-Decidido: **`node:test` nativo, com um shim fino de `expect`**. Zero dependência
-nova, roda sob o Node 24 da imagem de produção e sob Bun. Onda própria — este é o
-plano que a decisão pedia antes de começar; nada foi executado ainda.
-
-**Por que isto existe.** A suíte inteira roda sob `bun:test`. O CI ganhou
-`node bin/hii.ts --help`, que prova que o grafo de import do CLI carrega sob Node
-— não prova o resto. Não é hipótese: foi essa cegueira que deixou a Onda 11
-mergear verde com uma imagem que morria em `ERR_MODULE_NOT_FOUND` no arranque,
-porque o Bun resolve import relativo sem extensão e o Node não. `docker build`
-dava exit 0 e ninguém tinha rodado o ENTRYPOINT.
-
-### O que a suíte de fato usa (medido, não estimado)
-
-| Superfície | Ocorrências | Sob node:test |
-|---|---|---|
-| `test`, `expect` | 219 arquivos | `node:test` dá `test`; `expect` vem do shim |
-| `afterAll` / `beforeEach` / `afterEach` / `beforeAll` | 93 / 47 / 12 / 1 | `node:test` tem `after`/`beforeEach`/`afterEach`/`before` — renomear |
-| `describe`, `test.skip/only/each` | **0** | nada a fazer |
-| `mock` / `spyOn` / `jest.*` | **0** | nada a fazer — a injeção é por parâmetro, não por mock |
-| `expect(valor, 'mensagem')` posicional | **436** de 5199 | extensão do Bun. **É o argumento decisivo contra Vitest**, que não aceita a mensagem posicional: migrar para lá exigiria reescrever 436 asserções e perderia a mensagem que explica o invariante |
-| matchers distintos | 17 | `toBe`, `toContain`, `toEqual`, `toBeGreaterThan(OrEqual)`, `toBeLessThan(OrEqual)`, `toThrow`, `toBeNull`, `toHaveLength`, `toBeUndefined`, `toBeDefined`, `toBeCloseTo`, `toMatchObject`, `toBeTruthy`, `toMatch`, `toStartWith`, mais `.not` e `.rejects` |
-| `Bun.file` | 40 | `readFileSync` / `readFile` |
-| `Bun.serve` | 26 (10 arquivos) | `node:http` `createServer` — o motor já usa `node:http` no `/health` |
-| `Bun.sleep` | 6 | `node:timers/promises` `setTimeout` |
-| `Bun.spawn` | 4 | `node:child_process` |
-| `Bun.which` | 1 | `spawnSync('command', ['-v', bin])` ou o próprio `runtime.ts` |
-
-### Passos, em ordem, cada um mergeável sozinho
-
-1. **`test/apoio/expect.ts` — o shim.** 17 matchers, `.not`, `.rejects`, e a
-   mensagem posicional. Escrito sobre `node:assert/strict`, jogando a mensagem no
-   `AssertionError`. Vem com teste próprio (`test/apoio/expect.test.ts`) que prova
-   cada matcher nos dois sentidos: passa quando deve passar **e falha quando deve
-   falhar**. Sem isso, a migração inteira pode ficar verde por shim permissivo —
-   que é o defeito que esta auditoria toda persegue.
-2. **`test/apoio/bun.ts` — as pontes.** `lerArquivo`, `servidorDeTeste`,
-   `dormir`, `rodar`, `qualBinario`, cada uma com a implementação de `node:*`.
-3. **`test/apoio/runner.ts` — a fachada.** Reexporta `test`, `expect` e os hooks
-   com os nomes que a suíte já usa (`afterAll` → `after`), para o passo 4 ser um
-   `sed` de import e nada mais.
-4. **Troca mecânica dos 214 arquivos.** `import { … } from 'bun:test'` →
-   `from '../apoio/runner.ts'`, e `Bun.file(x).text()` → `lerArquivo(x)`. Um
-   commit, revisável pela ausência de mudança de asserção.
-5. **Os 10 arquivos com `Bun.serve`.** Únicos que exigem leitura caso a caso, por
-   causa do ciclo de vida do servidor. Feitos por último, com a suíte já verde nos
-   outros 204.
-6. **CI nos dois runtimes.** `node --test` e `bun test`, ambos obrigatórios. É
-   este passo que fecha a falha da Onda 11 — os anteriores só o tornam possível.
-7. **Invariante de fecho.** Um teste que varre `test/` e reprova qualquer
-   `from 'bun:test'` ou `Bun.` remanescente, para a migração não vazar de volta.
-
-### Medido antes de planejar, não assumido
-
-Rodei um arquivo real da suíte (`test/cic/cnd-dominio.test.ts`) sob `node --test`
-com um shim de duas linhas por matcher. Resultado: o Node 24 carregou o TypeScript
-do teste **e** o módulo `motor/cic/cnd/gauntlet.ts` sem reclamar de sintaxe, e os
-testes passaram — **exceto** o único que usa `Bun.file`, que falhou com
-`ReferenceError: Bun is not defined`. Ou seja: type stripping não é obstáculo, e o
-trabalho real é exatamente o inventário da tabela acima. `grep` por `enum` e
-`namespace` em `test/` e `motor/`: zero ocorrências de sintaxe não apagável (as
-duas linhas que casam são prosa em comentário e em prompt).
-
-`test/cdl/import-com-extensao.test.ts` já guarda a extensão nos imports, que era o
-outro requisito do Node.
-
-R: pode fazer.
-
-**FEITO** — os sete passos. A suíte roda nos dois runtimes: **2566 testes sob bun**
-e **2561 sob `node --test`, em 32s**, e `bun run test:node` entrou no CI ao lado de
-`test:unit`.
-
-O que o node encontrou na primeira execução, e que nenhum teste podia ver antes:
-`import.meta.dir` é extensão do bun (11 arquivos), `require()` não existe em ESM
-(5 arquivos), import dinâmico precisa da extensão **antes** da query de cache, e
-JSON por `import()` exige atributo de tipo. Nenhuma delas aparece como teste
-vermelho — elas derrubam o arquivo no **carregamento**, e o arquivo some da
-contagem, que é pior de notar. Cada uma virou invariante em
-`test/apoio/migracao-node-test.test.ts`.
-
-Duas armadilhas da troca mecânica: `Bun.spawn` em
-`test/euc/idempotencia-contrato.test.ts` só existe **dentro de string** (é o dado do
-teste), e o sed reescreveu como se fosse chamada. E o próprio
-`expect-diferencial.test.ts` teve o import reescrito para a fachada — passou a
-comparar o shim **consigo mesmo**, quatro testes verdes provando nada. Ele agora
-reprova se apontarem os dois lados para o mesmo motor.
-
-E duas coisas que só apareceram rodando a suíte inteira no node até o fim:
-
-**A suíte não era lenta — ela travava.** Seis arquivos que criam a TUI prendiam o
-processo por causa do `setInterval` de repintura, que o bun ignora ao sair e o node
-respeita. Travamento é pior que falha: o processo fica vivo sem reprovar e sem
-terminar, e no CI isso vira "job demorou demais" em vez de "teste X quebrou".
-`--test-timeout` **não** pega esse caso — ele mata teste lento, não processo com
-handle aberto. Com `unref()` no timer (que é o certo: repintura não pode ser a razão
-de o processo viver), a suíte passou de "não termina em 20 minutos" para **32
-segundos**.
-
-**A ponte de servidor não punha `Content-Length`**, que o `Bun.serve` põe sozinho.
-O node respondia em chunked, e um teste de teto de download — que depende do tamanho
-**anunciado** — deixou de testar o que testava. Fidelidade da ponte é o que separa
-migrar de reescrever o teste sem perceber.
-
-## DECISÃO PENDENTE — a evidência de RED premia o card que chega quebrado
-
-Achado da auditoria desta rodada, e é **material para a decisão de ligar o
-`HICODE_RIGOR_ESTRITO=1`**: o interruptor funciona, mas o que ele cobra não é o
-que o item 5 diz cobrar.
-
-O único produtor de evidência de RED é `registrarRed`
-(`motor/cic/crv/portoes-de-fecho.ts:97`), chamado quando a **primeira rodada do
-comando de teste reprova** no fecho. Daí sai o incentivo invertido:
-
-| Card `completo` que… | Tem RED? | Com rigor estrito |
-|---|---|---|
-| chega com a suíte **verde** (TDD feito no worktree, tudo passando) | **não** | **HALT** |
-| chega **quebrado** e é reparado pelo motor | sim | passa |
-
-Ou seja: o card bem-feito para e o card que chegou vermelho passa. Corrigi o que
-era mecânico (a ordem da consulta, na Onda C, e o teste que certificava a ordem
-invertida, nesta rodada) — mas **isto não é conserto mecânico**: mexer aqui muda o
-que o item 5 mede, e por isso fica para a sua palavra.
-
-`test/agentes/chg-red-primeiro.test.ts` prende os dois casos com o nome `LIMITE`,
-para o comportamento não derivar enquanto a decisão não vem.
-
-As saídas que enxergo:
-
-1. **Observar o RED na fase de execução, não no fecho.** Rodar o comando de teste
-   uma vez ANTES do passo `testes` e uma vez depois: baseline verde + pós-passo
-   vermelho é RED de verdade (o teste novo falha contra o código que ainda não
-   existe). Custa uma execução de suíte por card `completo` e é a única forma de o
-   motor VER o ciclo em vez de acreditar no relato.
-2. **Exigir o RED do agente de teste, com evidência.** O `testudo` roda o teste
-   novo e anexa a saída vermelha ao diário antes de implementar. Mais barato, mas
-   volta a depender do que o modelo diz ter feito — que é o que este gate existe
-   para não aceitar.
-3. **Trocar a exigência.** Em vez de "houve RED", cobrar "o diff toca teste E
-   código" — verificável, barato, e mais fraco: não prova ordem.
-
-Enquanto não houver decisão, ligar o rigor estrito vai parar todo card `completo`
-com suíte verde. Isso é diferente do que a seção abaixo dizia antes desta rodada.
-
-R: pode fazer 2.
-
-**FEITO** — opção 2 implementada, com a fraqueza dela tratada, não escondida.
-
-O passo de testes, **só no perfil `completo`**, recebe a exigência: escrever o teste
-antes, rodar o comando de teste do alvo, e **colar a saída real** entre
-`<<<RED>>>` e `<<<FIM RED>>>`. A instrução e o leitor moram no mesmo módulo
-(`motor/agentes/chg/red-primeiro.ts`) para o formato exigido e o formato lido não
-poderem divergir.
-
-O que o motor **consegue** conferir naquele texto, ele confere: que o bloco existe,
-que tem corpo (duas linhas ou 40 caracteres — o sumário do `node --test` é legítimo
-e curto), que tem sinal de falha, e que **não é uma suíte verde**. Essa última é a
-que faria a exigência virar carimbo: relatório verde **contém** a palavra "fail",
-em "0 fail". Se a busca por sinal de falha viesse antes da checagem de verde, a
-suíte inteira passando seria aceita como evidência de RED. As três ordens de
-contagem estão cobertas — `0 fail` (bun), `failed: 0` (jest/vitest) e `fail 0`
-(node:test).
-
-O que o motor **não** consegue é saber se o comando rodou mesmo. Por isso a
-evidência é **marcada na origem**: `[motor observou]` quando o comando reprovou na
-primeira rodada do fecho, `[agente anexou saída]` quando veio do relato. As duas
-valem, não valem o mesmo, e quem audita o card vê a diferença sem ir ao código.
-
-Isso desfaz o incentivo invertido: o produtor do motor só vê a suíte já com o código
-escrito, então **TDD bem-feito chega verde e não deixa rastro** — era por isso que o
-card bem-feito parava e o que chegava quebrado passava.
-
----
-
-## ESTADO — o que está atrás de `HICODE_RIGOR_ESTRITO=1`
-
-Decidido: **LIGAR**. O interruptor é `HICODE_RIGOR_ESTRITO=1` no ambiente — não há
-mudança de código a fazer, e por isso ligar é ato de operação, não de commit: quem
-liga escolhe o momento em que os cards em voo podem parar.
-
-O que mudou nesta rodada é que o interruptor ficou **utilizável de verdade**. O CHG
-(item 5) foi consertado na Onda C, e nesta rodada `test/agentes/chg-red-primeiro.test.ts`
-passou a provar a ordem certa com guarda contra o `-1` — antes o invariante
-certificava a ordem invertida. Até a Onda C, ligar pararia todo card no perfil
-`completo`, porque `red_antes_do_green` era constante `nao`.
-
-**Antes de ligar, saiba o que passa a barrar:** os três itens abaixo. O item 5
-**funciona mas cobra a coisa errada** — veja a seção anterior: card `completo` com
-suíte verde vai fazer HALT. O 22 e o 4 escrevem o veredicto no card e nunca
-barraram ninguém, então o primeiro card `completo` depois de ligar é o primeiro
-teste real deles. Ligar num momento de fila vazia é mais barato que ligar no meio
-de uma onda.
-
-Três exigências já escrevem o veredicto no card e só barram com o interruptor
-ligado:
-
-| Item | Exige | Campo no card |
-|---|---|---|
-| 5 | perfil `completo` teve teste que FALHOU antes de passar | `red_antes_do_green` |
-| 22 | área nova tem comando de teste no contrato do alvo | `setup_ferramental` |
-| 4 | matriz de entendimento respondida antes de aprovar o plano | `matriz_entendimento` |
-
-Enquanto desligado dá para ver, card a card, quem passou sem provar — que é o
-insumo para decidir quando apertar. Ligar hoje pararia todo trabalho em voo.
-
----
-
-## ESTADO — mecanismo pronto sem consumidor, por decisão
-
-Não são pendências: são escolhas registradas para não parecerem esquecimento.
-
-**Item 18 (`executarEmBlocos`).** O laço de `motor/qlb/ctr/fechar.ts` já faz
-executa → valida → para cedo. Rotear por TJL ali é cerimônia. O valor real —
-fatiar uma implementação em blocos validados — exige fatiador determinístico por
-stack, que pertence à camada de skill, não ao `core/`.
+## PENDÊNCIA — o motor desfaz a parada humana, e a sonda cura o que não diagnosticou
+
+Três mecanismos independentes que produzem o mesmo sintoma — "a tarefa ficou travada
+em loop" — e que a rodada do PR #28 **não** corrigiu. Ficam aqui com âncora porque
+cada um é trabalho próprio, e o primeiro é o mais grave do repositório hoje.
+
+**1. `updateCard` grava sem compare-and-set.** `motor/cdl/store.ts:43-65` é o único
+ponto de escrita de card, e ele conhece o par (estado anterior, estado novo) — a
+linha 54 chama `conferirTransicao(before.status, resolvedFields.status, id)`. Só que
+o retorno é **ignorado**: `conferirTransicao` observa, registra a deriva e devolve;
+o laço logo abaixo escreve `fm[k] = v` de qualquer jeito. Há `withFileLock`, então
+não é corrida de escrita — é ausência de política. Ninguém pergunta "esta transição
+é permitida a partir do estado que eu li?" nem "o card ainda está onde eu esperava?".
+
+Consequência medida, no card 001 em disco: `17:17:08 CORRECTING->HALTED parado pelo
+humano`, e às `17:20:30` o mesmo card volta para `URL` pela mão de
+`motor/cic/corrigir.ts:126-134` — o job que já estava em voo terminou e escreveu por
+cima. **Toda parada humana durante um job em voo é silenciosamente desfeita.** Para
+quem está olhando a TUI, isso é exatamente "eu mandei parar e ele continuou".
+
+O conserto não é barrar transição não declarada em produção — isso trocaria deriva
+silenciosa por card travado, e o comentário de `motor/nmy/deriva-de-transicao.ts`
+já diz isso. O conserto é o job em voo **reler o estado antes de escrever** e desistir
+quando o card saiu de baixo dele, que é o que `HALTED` e `PAUSED` significam.
+
+**2. A sonda de saúde não tem relação causal com a falha que ela libera.**
+`motor/cic/rpr/espera.ts:69` chama `probeProviderHealth(provider)`, que cai em
+`motor/tmd/registro.ts:112-115` — e ali harness desconhecido devolve `true`
+incondicionalmente. Quando o harness é conhecido, a sonda é
+`alcancavelPorHttp` (`motor/tmd/sonda.ts:8-16`), que faz `curl` numa URL e aceita
+`code > 0 && code < 500`: **429 e 403 contam como saudável.**
+
+Card 002 é a prova: entrou em `WAITING` às 13:20:03 por *timeout de 900s do CLI*, e
+às 13:20:33 foi acordado com "sonda de saude ok". Um GET de cinco segundos numa URL
+declarou curado um binário que não respondeu em quinze minutos. O que falhou e o que
+foi medido não têm relação nenhuma — e o card volta para a fila para falhar de novo,
+que é a forma mais cara possível de loop.
+
+**3. `resume_from` atravessa a correção e faz o fecho pular todos os passos.**
+`motor/euc/metricas-de-fecho.ts:57` grava `resume_from: RESUME_POST_STEPS` ao pausar
+para confirmação. Se o humano responde "não resolveu", `motor/mir/acoes.ts:145-149`
+manda o card para `CORRECTING` **sem limpar o campo**, e o fluxo de sucesso de
+`motor/cic/corrigir.ts` também não limpa. Quando o card volta a `URL_OK`,
+`motor/qlb/ctr/fechar.ts:92-93` lê `resume_from` e o repassa a `resumeStart`
+(`motor/qlb/ctr/retomar.ts:9`), que devolve `steps.length` — e o `for` de
+`fechar.ts:200` **itera zero vezes**. O card sai "polido" sem ter rodado passo nenhum.
+
+Precisão importante: `fechar.ts:93` limpa o campo ao lê-lo, então o pulo acontece uma
+vez só, não para sempre. Uma vez basta — é justamente o card que voltou da correção,
+o que mais precisa dos passos, que os perde.
+
+**Onde mexer, em ordem:** o item 1 primeiro, porque enquanto ele existir qualquer
+parada é ilusória e os outros dois são difíceis de observar. Depois o 2, trocando a
+sonda por uma que meça o que falhou (o binário, não uma URL) e que trate 429 como
+indisponível. O 3 é uma linha em cada handler do meio.
 
 ---
 
@@ -538,6 +154,15 @@ corrigir `cost_usd` no frontmatter (RECOMENDACAO item 3), o teto de orçamento d
 decorativo. Ambos são pré-requisitos para o terceiro: detecção de não-progresso (item 5 em
 CORVINUS, hash de `gate.reason` entre voltas).
 
+**Reconferido em 29/08:** o terceiro pré-requisito citado acima — detecção de
+não-progresso — **já foi feito** e saiu da lista: `motor/cic/reparo.ts:48-50`
+(`assinaturaDeVeredicto`) e `:84-93` comparam a volta anterior e quebram o laço, e
+`motor/cic/passo-com-gate.ts:60,136-141` fazem o mesmo antes do teto de `maxReajuste()`.
+O que continua aberto nesta seção é o resto: `status_since` (zero ocorrências no
+repositório), `halt_class` (2 escritores contra ~26 escritas de `HALTED`),
+`provider_override_implement` sem limpador, os 6 pares de transição fora de
+`topologia.json`, e a ausência de cooldown por card em `motor/osw/mtr/fila.ts`.
+
 ---
 
 ## PLANO — transformar motor/tmd/registro de harnesses em roteador de rotas
@@ -612,60 +237,57 @@ Card em `EXECUTING` com quota de claude redirecciona para codex no mesmo tick. T
 
 ---
 
-## RECOMENDAÇÃO — onde o dinheiro queima hoje, e a ordem de corte
+## RECOMENDAÇÃO — onde o dinheiro queima, agora medido no ledger e não estimado
 
-**O custo acumulado no frontmatter fica obsoleto durante a execução.** `motor/cic/corrigir.ts:126-134`
-fecha o fluxo de sucesso da correção gravando `status`, `correction`, `verify` — **sem `cost_usd`
-nem `tokens_total`**. O custo (`r.cost`) entra só como texto na mensagem de log (`:134`). Resultado:
-guardar a correção anterior não atualiza o frontmatter. **Prova em card 001:** linhas 11-12 têm
-`cost_usd: 2.2684` (soma dos três passos anteriores, 179311 tokens); linha 68 registra a correção
-que rodou depois: `"custo $1.5380 · 92122 tokens"` — texto puro, nunca estruturado. Frontmatter segue
-em 2.2684. **Impacto:** todo guard de orçamento que lê `card.fm.cost_usd` (5 sítios: `executar.ts:170`,
-`corrigir.ts:88`, `fechar.ts:71`, `fase-spec.ts:78`, `gate.ts:217`) faz decisão sobre número 41%
-desatualizado. TRAVA 2 do gauntlet (`motor/cic/cnd/gauntlet.ts:166-168`) que rebaixa o modo quando
-gasto passa do teto pode deixar o modo caro ativo por falta de visibilidade.
+Os itens 1, 2 e 4 da ordem de corte anterior entraram no PR #28 e saíram desta lista.
+O que sobrou é o item 3 — e a medição abaixo, que não existia quando a ordem foi
+escrita, muda a prioridade dele de "quando der" para "primeiro".
 
-**A conta de chamadas de IA** dentro do teto declarado, com as constantes conferidas: uma passagem
-de `handleFinish` com quatro passos, três deles gated, custa até vinte e sete chamadas só nos
-gated — três voltas por passo (`maxReajuste()` = 2 em `motor/cdl/ali/config.ts:60-62`, laço em
-`motor/cic/passo-com-gate.ts:64`), cada volta com uma chamada do agente e até duas do crivo
-(`GATE_RETRIES` = 1, `config.ts:64`) — mais o passo não gated. Multiplicado pelas retomadas de
-espera por fronteira de passo (A4), chega à ordem de centenas antes de qualquer HALT, **nenhuma
-batendo o teto, porque a conferência acontece só na entrada do handler e nunca dentro do laço de
-passos**. Ao custo observado de US$3,0416 num único passo do card 002 (`.runner.log:30`), não é
-preciso chegar perto de centenas de chamadas para o card passar do limite de US$16 sem que ele
-dispare: bastam seis passos daquele porte. O teto de orçamento não segura — essa é a conclusão
-provada. O número exato de chamadas por card continua **sem medida** e precisa ser instrumentado
-antes de virar meta de corte.
+**Somando todo `cards/runs/*.ias.jsonl` em disco: 27 chamadas, US$ 19,80.**
 
-**Tiering de modelo já é computado e descartado.** `motor/osw/rui.ts:40-63` computa `EscolhaDeTier`
-(tier + motivo) para 9 ações em `motor/cdl/ali/config.ts:24-28` — `registrarTier` (`:56-63`) manda
-o resultado para `anexarEvento` e acabou. Nenhum consumidor em `providerFor`, `modelFor`, `effortFor`.
-A decisão de custo **nunca alimenta a escolha do custo**.
+| papel | n | US$ | % do custo | tokens de cache | tokens de saída | segundos |
+|---|---|---|---|---|---|---|
+| `implement` | 4 | 7,70 | 39% | 205.888 | 68.633 | 1.070 |
+| `step` | 11 | 7,13 | 36% | 311.232 | 56.363 | 862 |
+| `gate` (crivo) | 9 | 4,47 | 23% | **640.015** | 74.920 | 993 |
+| `clarify` | 2 | 0,32 | 2% | 75.045 | 719 | 26 |
+| `avaliacao` | 1 | 0,19 | 1% | 44.845 | 141 | 11 |
 
-**Cache de prefixo:** está correto (`motor/tmd/eco/prefixo.ts` replica exatamente a disciplina de
-prefixo fixo + sufixos append-only, auditado em byte). Não mexer.
+**Card 006 sozinho custou US$ 15,94 e está em `URL` desde 25/08, sem entregar.** O
+teto por card é US$ 16 (`config/model-tier.json`): ele parou a seis centavos do teto
+sem que o teto tivesse nada a ver com isso. É a prova mais direta de que hoje se gasta
+sem acertar — e o motivo de "acertivo" vir antes de "barato" na ordem de trabalho.
 
-**Ordem de corte, do dano maior para menor:**
+**O crivo é o maior consumidor de contexto do repositório, com folga.** 640 mil dos
+1,28 milhão de tokens de cache de toda a história saem de 9 chamadas — ~71 mil tokens
+lidos por chamada para produzir ~8 mil de saída. A causa está em
+`motor/cic/crv/gate.ts:165` (`buildPrompt`): o crivo revisa o **diff acumulado** da
+branch inteira contra a base (`:122`, range `origin/<base>...HEAD`, teto
+`GATE_DIFF_LIMIT` = 60.000 caracteres em `motor/cdl/ali/config.ts:68`) a **cada passo
+gated**. Com quatro passos, o mesmo diff é lido quatro vezes, e cada leitura é maior
+que a anterior — o custo do gate cresce com o quadrado do número de passos.
 
-1. **Gravar `cost_usd`/`tokens_total` em todo `patchCard` de sucesso dentro do laço** (`motor/cic/corrigir.ts:126-134`,
-   `motor/cic/passo-com-gate.ts:93`, `motor/qlb/ctr/fechar.ts:293`). Chamar `accumulatedTotals(card, fsteps)`
-   que já existe (`motor/euc/metricas-de-fecho.ts:35-39`). Sem isso, o terceiro item abaixo fica cego.
+Rever o acumulado é escolha deliberada (pega regressão que o passo isolado esconde) e
+não deve ser trocada às cegas por diff incremental. O que dá para fazer sem perder
+isso: mandar o **incremental do passo** como corpo e o **acumulado só como lista de
+arquivos** (`diff.names`, que já é calculado em `:123` e truncado em 4.000 caracteres),
+deixando o crivo pedir o trecho acumulado quando a lista indicar sobreposição. Antes de
+mexer, medir: o número acima é a linha de base.
 
-2. **Conferir `gastoDoCard` no topo do laço de passos** (`motor/qlb/ctr/fechar.ts:200`), não só na
-   entrada do handler. Hoje só `fase-spec.ts:99` faz (por volta de retry). Uma passagem inteira de
-   passos inteira roda entre duas conferências. [-> Celer para calibrar o teto real]
+**O item 3 continua parado, e continua sendo decisão de negócio, não de engenharia.**
+`config/model-tier.json` mapeia **ação → tier** e não tem uma linha ligando tier a
+provedor, modelo ou esforço. `motor/osw/rui.ts:50,62` (`tierDoCard`/`registrarTier`) tem
+consumidor apenas em `motor/qlb/ctr/fechar.ts:214,353`, e lá só emite evento de diário:
+o tier é auditado e não roteia gasto nenhum. `providerFor`/`modelFor`/`effortFor`
+(`motor/tmd/registro.ts:59,116,120`) decidem por `preferenciaDoPapel` + variável de
+ambiente, sem olhar tier.
 
-3. **Mapear tier → (provedor, modelo, esforço) e consultar em `providerFor`/`modelFor`/`effortFor`.** 
-   `config/model-tier.json` tem os dados; `preferencias.ts` já lê a config. Um mapa `tier->default`
-   como guia de fallback em ausência de override por papel. Sem descobrir o que tier significa em
-   moeda de IA, nada mais aqui faz sentido.
-
-4. **Detectar não-progresso com hash de output entre voltas.** `motor/cic/passo-com-gate.ts:75` instrui
-   "Refaça o passo do zero" — reset, não convergência. Hash de `gate.reason` normalizado entre
-   voltas 1 e 2: se idêntico, parar antes do teto. Idem em `motor/cic/reparo.ts:51` (`repararAteOTeto`)
-   com `veredicto.detalhe`. Dados já coletados em `motor/cic/rpr/tentativas.ts` (appendAttempt) e
-   descartados por nenhum decisor consultá-los. [-> Corvinus item 4]
+O material para decidir já está na máquina: os quatro provedores estão instalados
+(`claude`, `codex`, `kimi`, `ollama`), e o `ollama` local tem `qwen3-coder:30b` — que
+custa US$ 0,00 em dólar e tempo de GPU em vez de token. As 27 chamadas medidas foram
+**todas** em `claude`. Escrever o mapa `tier → (provedor, modelo, esforço)` no arquivo
+de governança é o que falta; ligar `providerFor`/`modelFor`/`effortFor` ao tier já
+computado é trabalho pequeno depois disso.
 
 ---
 
@@ -736,6 +358,161 @@ o sinal de "aberto há quanto tempo" (item 1 acima, `status_since`) habilita ale
 Reaper de `url_pid` e worktrees órfãs — já foi mencionado em PENDENCIA acima. Trata-se do mesmo padrão:
 reconferir saúde de recurso que foi delegado e nunca se verifica depois.
 
+---
+
+## DECISÃO — o que fica no bun, o que fica no node, e o que hoje está no lugar errado
+
+Levantado por varredura de `motor/`, `bin/`, `scripts/`, `runner.ts`, `Dockerfile`,
+`.github/workflows/ci.yml` e `package.json`, com os tempos medidos nesta máquina
+(node v24.17.0, bun 1.4.0).
+
+**O ponto de partida é melhor do que parecia: o núcleo já é neutro.** Grep por `Bun.`,
+`bun:`, `import.meta.dir` e afins em `motor/` + `bin/` + `scripts/` + `runner.ts`
+devolve **zero**, e isso não é sorte — é invariante em
+`test/cdl/ali-runtime.test.ts:60-64`. `motor/cdl/ali/runtime.ts:47-62` já escolhe o
+runtime por `HICODE_RUNTIME`, com detecção automática e memoização (`:40-51`, porque a
+TUI consulta a cada ~400 ms). Os 983 imports relativos de `motor/`+`bin/` carregam
+extensão `.ts` explícita — 983 de 983, guardado por
+`test/cdl/import-com-extensao.test.ts:41-59`. Não há dependência de runtime no
+`package.json`: só devDeps.
+
+**Portanto a pergunta não é "reescrever para bun ou para node".** É onde cada um paga,
+e o que hoje está fora do lugar.
+
+### Onde o bun paga, medido
+
+| Superfície | Medida | Decisão |
+|---|---|---|
+| Arranque do CLI/TUI interativo | `bin/hii.ts --help`: **bun 0,03 s × node 0,15 s** (5×) | **bun**, que já é o default local por detecção |
+| Binário único distribuível | `bun build --compile` não tem equivalente prático no node | **bun**, e é o caminho barato de "proteger o código" citado na última seção |
+| Instalação de dependências no CI | `bun install --frozen-lockfile` já é o passo (`ci.yml:32`) | **bun** |
+
+### Onde o node paga, medido
+
+| Superfície | Medida | Decisão |
+|---|---|---|
+| Daemon de produção | imagem `node:24-slim`, `ENTRYPOINT ["node","bin/hii.ts"]` (`Dockerfile:4,54`), `HICODE_RUNTIME=node` (`:36`) | **node**. Foi o node que expôs o `setInterval` sem `unref` que prendia o processo — o bun ignora timer pendente ao sair, o node respeita, e o certo é o do node |
+| Suíte de testes | `node --test` roda **2.704 testes em 32 s**, um processo por arquivo, em paralelo | **node é a trilha primária** |
+| Scripts `.mjs` de lint e manutenção | ESM puro, `node:fs`/`node:path`; o prefixo `bun` em `package.json:15-17` é convenção, não necessidade | **node** |
+
+### O que está no lugar errado hoje
+
+1. **`scripts/runner-daemon.sh` exige `bun` e a imagem de produção não tem.** Ele
+   hardcoda `bun` em três pontos — `:47` (reconhece o daemon só se a linha de comando
+   for `bun runner.ts`), `:54` (`pgrep -x bun`) e `:101` (`nohup bun runner.ts`) — e é
+   chamado por `bin/hii.ts:31` sem passar runtime. Com `COM_BUN=0`, que é o padrão do
+   `Dockerfile:23`, **o container não tem `bun` e o daemon não sobe**. `runtimeDeScript()`
+   existe exatamente para isso e não é usado aqui. É o defeito de runtime mais grave do
+   repositório, e é de produção.
+
+2. **A trilha bun é 2,5× mais lenta que a node, e a culpa não é do bun.**
+   `scripts/test-bun.mjs:39-52` é um `for` com `spawnSync` — um arquivo por vez, sem
+   concorrência nenhuma —, daí 1m22s contra os 32 s do `node --test`. Paralelizar esse
+   laço pelo número de núcleos é a correção; o processo por arquivo tem de ficar, porque
+   é o que dá o isolamento que a suíte precisa.
+
+3. **`bun run test` não roda a trilha node.** `package.json:19` encadeia typecheck +
+   `lint:types` + `lint:clone` + `test:unit` e para aí. O critério de verde local é
+   mais fraco que o do CI (`ci.yml:43`), e essa diferença já custou uma imagem que
+   morria no arranque com o CI verde.
+
+4. **A trilha node depende de `bun` para passar.** `test/scripts-setup-imports.test.ts:18`
+   spawna `bun build` para conferir resolução de import, e `package.json:18` só exclui
+   `apoio/expect-diferencial` da lista. Rodar `bun run test:node` numa máquina sem bun
+   reprova por ausência de binário, não por defeito.
+
+5. **Dois scripts têm bloco de CLI que nunca executa sob node.**
+   `scripts/renomear-brazil.mjs:244` e `scripts/renomear-testes-brazil.mjs:163` usam
+   `if (import.meta.main)`, que é extensão do bun — sob node é `undefined`, e o bloco
+   some em silêncio. É a forma de falha que este repositório mais persegue: o recurso
+   morto que ninguém vê. `scripts/auditar.ts:126-128` documenta o mesmo comportamento
+   sabendo dele.
+
+6. **`require()` dentro de um `.mjs`.** `scripts/renomear-testes-brazil.mjs:207` faz
+   `const { writeFileSync } = require('node:fs')` — `ReferenceError` em qualquer runtime
+   se a linha for atingida. O invariante que proíbe isso
+   (`test/apoio/migracao-node-test.test.ts:112-115`) varre só `test/`, nunca `scripts/`.
+
+7. **Duas incoerências menores de configuração.** O `Dockerfile:27` copia `bun.lock` e
+   o `:31` roda `npm install --omit=dev`, que o ignora — funciona só porque não há
+   dependência de runtime. E `tsconfig.json:9` mapeia `#shared/*` para `./panel/*`, um
+   diretório que não existe no repositório.
+
+### O que NÃO fazer
+
+Adotar `Bun.file`/`Bun.spawn`/`Bun.serve` no motor para "ganhar desempenho". O caminho
+quente do motor é chamada de IA e comando de git: as 27 chamadas medidas levaram de 11 s
+a 230 s cada. Trocar o custo de um `spawn` ali é ruído contra isso, e o preço seria
+perder a neutralidade que hoje permite escolher o runtime por superfície — que é
+justamente o que esta seção usa.
+
+---
+
+## PENDÊNCIA — o revezamento de IAs não tem onde acontecer, e a troca que já existe é invisível
+
+O pedido é começar uma tarefa numa IA, trocar no meio, voltar, e terminar noutra. A pesquisa e a
+leitura do código dizem duas coisas incômodas, e as duas mudam o que dá para prometer.
+
+**Primeira: continuidade fiel de conversa entre os harnesses não existe, e não é limitação do hii.**
+Os provedores conectados aqui são binários de CLI com loop de ferramentas e sessão próprios —
+não uma API de completion crua. Cada um resume só a si mesmo: `claude --resume` lê
+`~/.claude/projects/`, `codex exec resume` lê JSONL em `~/.codex/sessions/`, formatos proprietários
+e estruturalmente diferentes, sem adaptador entre eles. E mesmo entre modelos do mesmo fornecedor,
+cache de prefixo é hash de (ferramentas + system + mensagens) **e específico do modelo**, e blocos de
+raciocínio precisam voltar inalterados à mesma API. Ou seja: o que atravessa uma troca é texto final,
+nunca raciocínio em progresso nem cache aquecido. O único padrão que generaliza para agentes que não
+compartilham estado interno é o **bastão escrito** — um briefing em prosa que o próximo recebe no
+lugar do histórico. Vale registrar que nenhum harness usa hoje a retomada nativa da própria CLI:
+`grep` por `--resume` e `--continue` em `motor/tmd/harness/` não devolve nada.
+
+**Segunda, e essa é o achado: o bastão escrito já existe, embrionário, e ninguém o chama de handoff.**
+`motor/cic/rpr/tentativas.ts:52-57` persiste cada tentativa em `cards/runs/<id>.attempts.json` com
+até 8000 caracteres de resposta, e `attemptHistory` (`motor/cic/corrigir.ts:67-72`) reinjeta isso no
+prompt da tentativa seguinte, truncado em 200 caracteres por linha, sob a frase "Historico de
+tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta)". É
+**agnóstico de provedor** e roda no caminho de `CORRECTING` (`:75`). Não foi desenhado para
+revezamento, mas é exatamente a forma certa: estado da tarefa em texto neutro, mais o worktree
+carregando o que de fato mudou.
+
+**Terceira: a única troca de provedor que o motor faz hoje é invisível para a função que existe
+para observá-la.** `motor/euc/ias-da-sessao.ts:189-201` tem `trocasDeProvedor(chamadas)`, que lê
+troca de provedor dentro de uma sessão. Só que sessão, ali, é por **execução**, não por card:
+`idDaSessao` monta `<card>-<carimbo>` com carimbo de precisão de segundo (`:23-29`), e `abrirSessao`
+sobrescreve o registro anterior (`:41-46`). Some-se a isso o fallback de cota
+(`motor/osw/executar.ts:309-314`): ele grava `provider_override_implement` e **retorna sem mudar o
+status**. O card continua em `EXECUTING`, a fila o redespacha, `handleExecute` chama `abrirSessao` de
+novo — e as duas chamadas, a que falhou por cota e a que rodou no provedor novo, caem em **ledgers
+diferentes**. `trocasDeProvedor` nunca vê nenhuma das duas pontas junta. O próprio teste do módulo
+diz isso no título: `test/euc/ias-da-sessao.test.ts:35-43`, "a sessao de um card e estavel entre
+chamadas, e uma nova execucao abre outra".
+
+Some-se ainda que o escritor da escolha de provedor está do lado errado da costura
+(`motor/mir/escolher-ia.ts`), que o `provider_override_implement` tem um único escritor de produção
+(`motor/osw/executar.ts:312`) e que `implement` (`motor/cic/agente.ts:187`) não aceita override por
+parâmetro — lê do frontmatter em `:190`. O daemon não troca de IA no meio de um card porque a
+capacidade de escolher nunca esteve no motor.
+
+**O que fazer, em ordem, e onde mexer.**
+
+1. Fazer a sessão cobrir o card, e não a execução. `abrirSessao` (`euc/ias-da-sessao.ts:41`) passa a
+   reaproveitar a sessão existente do card em vez de abrir outra. É o pré-requisito de tudo: sem
+   isso, nenhuma leitura de travessia entre provedores é confiável, inclusive a que já existe.
+2. Fazer o fallback de cota mudar o status ao retornar (`osw/executar.ts:309-314`). Hoje ele é um dos
+   `return` sem transição que a PENDÊNCIA anterior sobre laço quente já enumera — e é o mesmo defeito.
+3. Promover `attemptHistory` a briefing de passagem explícito: um campo no card dizendo qual provedor
+   escreveu cada tentativa, para o texto reinjetado dizer de quem veio o bastão. `Fields` é
+   `Record<string, string>` (`motor/cdl/tipos.ts:11`), então campo novo não muda tipo.
+4. Levar a escolha de provedor para o motor, deixando `mir/escolher-ia.ts` como cliente.
+
+**O que fica em aberto.** O contrato de sessão completo foi escrito três vezes e reprovado nas três
+pelo crivo — não por otimismo sobre o handoff, que foi corretamente recusado nas três, mas por erros
+de fato em cima da premissa de que a sessão já cobria o card. Corrigido o item 1 acima, o desenho
+volta a ser possível sobre terreno verdadeiro. Também fica em aberto a incorporação dos comandos
+nativos de cada IA: `motor/tmd/map/comandos.ts` já enumera manifestos `.md` por provedor, mas
+`comandosDaIaAtiva` (`:137`) olha só `providerNameFor('implement')`, nunca mescla provedores, e não
+tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
+entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
+no repositório: `MCP_PREFIX` em `motor/tmd/pnt/mcp.ts:6`.
 
 ---
 
@@ -806,203 +583,6 @@ retomar isto começa por aí, não pelo grafo de imports.
 
 ---
 
-## PENDÊNCIA — o revezamento de IAs não tem onde acontecer, e a troca que já existe é invisível
-
-O pedido é começar uma tarefa numa IA, trocar no meio, voltar, e terminar noutra. A pesquisa e a
-leitura do código dizem duas coisas incômodas, e as duas mudam o que dá para prometer.
-
-**Primeira: continuidade fiel de conversa entre os harnesses não existe, e não é limitação do hii.**
-Os provedores conectados aqui são binários de CLI com loop de ferramentas e sessão próprios —
-não uma API de completion crua. Cada um resume só a si mesmo: `claude --resume` lê
-`~/.claude/projects/`, `codex exec resume` lê JSONL em `~/.codex/sessions/`, formatos proprietários
-e estruturalmente diferentes, sem adaptador entre eles. E mesmo entre modelos do mesmo fornecedor,
-cache de prefixo é hash de (ferramentas + system + mensagens) **e específico do modelo**, e blocos de
-raciocínio precisam voltar inalterados à mesma API. Ou seja: o que atravessa uma troca é texto final,
-nunca raciocínio em progresso nem cache aquecido. O único padrão que generaliza para agentes que não
-compartilham estado interno é o **bastão escrito** — um briefing em prosa que o próximo recebe no
-lugar do histórico. Vale registrar que nenhum harness usa hoje a retomada nativa da própria CLI:
-`grep` por `--resume` e `--continue` em `motor/tmd/harness/` não devolve nada.
-
-**Segunda, e essa é o achado: o bastão escrito já existe, embrionário, e ninguém o chama de handoff.**
-`motor/cic/rpr/tentativas.ts:52-57` persiste cada tentativa em `cards/runs/<id>.attempts.json` com
-até 8000 caracteres de resposta, e `attemptHistory` (`motor/cic/corrigir.ts:67-72`) reinjeta isso no
-prompt da tentativa seguinte, truncado em 200 caracteres por linha, sob a frase "Historico de
-tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta)". É
-**agnóstico de provedor** e roda no caminho de `CORRECTING` (`:75`). Não foi desenhado para
-revezamento, mas é exatamente a forma certa: estado da tarefa em texto neutro, mais o worktree
-carregando o que de fato mudou.
-
-**Terceira: a única troca de provedor que o motor faz hoje é invisível para a função que existe
-para observá-la.** `motor/euc/ias-da-sessao.ts:189-201` tem `trocasDeProvedor(chamadas)`, que lê
-troca de provedor dentro de uma sessão. Só que sessão, ali, é por **execução**, não por card:
-`idDaSessao` monta `<card>-<carimbo>` com carimbo de precisão de segundo (`:23-29`), e `abrirSessao`
-sobrescreve o registro anterior (`:41-46`). Some-se a isso o fallback de cota
-(`motor/osw/executar.ts:309-314`): ele grava `provider_override_implement` e **retorna sem mudar o
-status**. O card continua em `EXECUTING`, a fila o redespacha, `handleExecute` chama `abrirSessao` de
-novo — e as duas chamadas, a que falhou por cota e a que rodou no provedor novo, caem em **ledgers
-diferentes**. `trocasDeProvedor` nunca vê nenhuma das duas pontas junta. O próprio teste do módulo
-diz isso no título: `test/euc/ias-da-sessao.test.ts:35-43`, "a sessao de um card e estavel entre
-chamadas, e uma nova execucao abre outra".
-
-Some-se ainda que o escritor da escolha de provedor está do lado errado da costura
-(`motor/mir/escolher-ia.ts`), que o `provider_override_implement` tem um único escritor de produção
-(`motor/osw/executar.ts:312`) e que `implement` (`motor/cic/agente.ts:187`) não aceita override por
-parâmetro — lê do frontmatter em `:190`. O daemon não troca de IA no meio de um card porque a
-capacidade de escolher nunca esteve no motor.
-
-**O que fazer, em ordem, e onde mexer.**
-
-1. Fazer a sessão cobrir o card, e não a execução. `abrirSessao` (`euc/ias-da-sessao.ts:41`) passa a
-   reaproveitar a sessão existente do card em vez de abrir outra. É o pré-requisito de tudo: sem
-   isso, nenhuma leitura de travessia entre provedores é confiável, inclusive a que já existe.
-2. Fazer o fallback de cota mudar o status ao retornar (`osw/executar.ts:309-314`). Hoje ele é um dos
-   `return` sem transição que a PENDÊNCIA anterior sobre laço quente já enumera — e é o mesmo defeito.
-3. Promover `attemptHistory` a briefing de passagem explícito: um campo no card dizendo qual provedor
-   escreveu cada tentativa, para o texto reinjetado dizer de quem veio o bastão. `Fields` é
-   `Record<string, string>` (`motor/cdl/tipos.ts:11`), então campo novo não muda tipo.
-4. Levar a escolha de provedor para o motor, deixando `mir/escolher-ia.ts` como cliente.
-
-**O que fica em aberto.** O contrato de sessão completo foi escrito três vezes e reprovado nas três
-pelo crivo — não por otimismo sobre o handoff, que foi corretamente recusado nas três, mas por erros
-de fato em cima da premissa de que a sessão já cobria o card. Corrigido o item 1 acima, o desenho
-volta a ser possível sobre terreno verdadeiro. Também fica em aberto a incorporação dos comandos
-nativos de cada IA: `motor/tmd/map/comandos.ts` já enumera manifestos `.md` por provedor, mas
-`comandosDaIaAtiva` (`:137`) olha só `providerNameFor('implement')`, nunca mescla provedores, e não
-tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
-entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
-no repositório: `MCP_PREFIX` em `motor/tmd/pnt/mcp.ts:6`.
-
-
----
-
-## PENDÊNCIA — o motor desfaz a parada humana, e a sonda cura o que não diagnosticou
-
-Três mecanismos independentes que produzem o mesmo sintoma — "a tarefa ficou travada
-em loop" — e que a rodada do PR #28 **não** corrigiu. Ficam aqui com âncora porque
-cada um é trabalho próprio, e o primeiro é o mais grave do repositório hoje.
-
-**1. `updateCard` grava sem compare-and-set.** `motor/cdl/store.ts:43-65` é o único
-ponto de escrita de card, e ele conhece o par (estado anterior, estado novo) — a
-linha 54 chama `conferirTransicao(before.status, resolvedFields.status, id)`. Só que
-o retorno é **ignorado**: `conferirTransicao` observa, registra a deriva e devolve;
-o laço logo abaixo escreve `fm[k] = v` de qualquer jeito. Há `withFileLock`, então
-não é corrida de escrita — é ausência de política. Ninguém pergunta "esta transição
-é permitida a partir do estado que eu li?" nem "o card ainda está onde eu esperava?".
-
-Consequência medida, no card 001 em disco: `17:17:08 CORRECTING->HALTED parado pelo
-humano`, e às `17:20:30` o mesmo card volta para `URL` pela mão de
-`motor/cic/corrigir.ts:126-134` — o job que já estava em voo terminou e escreveu por
-cima. **Toda parada humana durante um job em voo é silenciosamente desfeita.** Para
-quem está olhando a TUI, isso é exatamente "eu mandei parar e ele continuou".
-
-O conserto não é barrar transição não declarada em produção — isso trocaria deriva
-silenciosa por card travado, e o comentário de `motor/nmy/deriva-de-transicao.ts`
-já diz isso. O conserto é o job em voo **reler o estado antes de escrever** e desistir
-quando o card saiu de baixo dele, que é o que `HALTED` e `PAUSED` significam.
-
-**2. A sonda de saúde não tem relação causal com a falha que ela libera.**
-`motor/cic/rpr/espera.ts:69` chama `probeProviderHealth(provider)`, que cai em
-`motor/tmd/registro.ts:112-115` — e ali harness desconhecido devolve `true`
-incondicionalmente. Quando o harness é conhecido, a sonda é
-`alcancavelPorHttp` (`motor/tmd/sonda.ts:8-16`), que faz `curl` numa URL e aceita
-`code > 0 && code < 500`: **429 e 403 contam como saudável.**
-
-Card 002 é a prova: entrou em `WAITING` às 13:20:03 por *timeout de 900s do CLI*, e
-às 13:20:33 foi acordado com "sonda de saude ok". Um GET de cinco segundos numa URL
-declarou curado um binário que não respondeu em quinze minutos. O que falhou e o que
-foi medido não têm relação nenhuma — e o card volta para a fila para falhar de novo,
-que é a forma mais cara possível de loop.
-
-**3. `resume_from` atravessa a correção e faz o fecho pular todos os passos.**
-`motor/euc/metricas-de-fecho.ts:57` grava `resume_from: RESUME_POST_STEPS` ao pausar
-para confirmação. Se o humano responde "não resolveu", `motor/mir/acoes.ts:145-149`
-manda o card para `CORRECTING` **sem limpar o campo**, e o fluxo de sucesso de
-`motor/cic/corrigir.ts` também não limpa. Quando o card volta a `URL_OK`,
-`motor/qlb/ctr/fechar.ts:92-93` lê `resume_from` e o repassa a `resumeStart`
-(`motor/qlb/ctr/retomar.ts:9`), que devolve `steps.length` — e o `for` de
-`fechar.ts:200` **itera zero vezes**. O card sai "polido" sem ter rodado passo nenhum.
-
-Precisão importante: `fechar.ts:93` limpa o campo ao lê-lo, então o pulo acontece uma
-vez só, não para sempre. Uma vez basta — é justamente o card que voltou da correção,
-o que mais precisa dos passos, que os perde.
-
-**Onde mexer, em ordem:** o item 1 primeiro, porque enquanto ele existir qualquer
-parada é ilusória e os outros dois são difíceis de observar. Depois o 2, trocando a
-sonda por uma que meça o que falhou (o binário, não uma URL) e que trate 429 como
-indisponível. O 3 é uma linha em cada handler do meio.
-
----
-
-## ESTADO — as duas trilhas de teste passam, e o que foi preciso para isso
-
-Ponto de partida: `bun run test` — o comando que o `package.json` declara e que todo
-mundo digita — estava **vermelho**, e o critério real de verde era `bun run test:node`,
-o que não estava escrito em lugar nenhum. Hoje as duas passam:
-
-| Trilha | Comando | Resultado |
-|---|---|---|
-| bun | `bun run test` | **248 arquivos, 2710 testes, 0 falhas** |
-| node | `bun run test:node` | **2704 testes, 0 falhas** |
-
-Foram três defeitos distintos, e vale registrar cada um porque nenhum era o que
-parecia à primeira vista.
-
-**1. A fachada de teste ignorava metade do próprio propósito.**
-`test/apoio/runner.ts` se anunciava como ponte sobre `bun:test` e `node:test`, e
-importava **só** `node:test`. Sob `bun test`, a suíte usava o *shim* de `node:test` do
-Bun em vez do runner nativo — e esse shim tem a guarda `checkNotInsideTest`, que
-proíbe registrar teste enquanto outro roda. Como **140 dos 248 arquivos** fazem
-`await import(...)` no topo, o módulo suspende, o runner começa a executar o que já
-registrou, e quando o módulo volta para chamar `test()` a guarda dispara. Eram 125
-erros e só 1566 dos 2704 testes chegando a rodar. A fachada passou a escolher o runner
-nativo de cada plataforma em tempo de execução.
-
-**2. `bun test` não dá isolamento por arquivo, e a suíte depende disso.**
-`node --test` roda cada arquivo num processo próprio; `bun test` roda os 248 num
-processo só. A suíte assume o primeiro modelo em vários pontos: **66 arquivos escrevem
-`process.env` no topo do módulo**, e os testes que sobem servidor HTTP, que leem a
-trava de instância ou que mexem em `PATH` pisam uns nos outros.
-
-O sintoma media a **ordem**, não o código: um teste de socket que rodasse tarde falhava
-com `ConnectionRefused` mesmo com `listen` bem-sucedido, evento `listening` emitido e
-porta válida — e ao trocar a ordem dos diretórios a falha mudava de dono. Reproduzido
-igual em bun 1.3.14 e 1.4.0, então não era versão. Excluir diretórios não ajudava:
-tirar `test/qlb/` fazia aparecerem falhas novas na trava de instância.
-
-A alternativa seria tornar 248 arquivos herméticos num processo compartilhado.
-`scripts/test-bun.mjs` roda **um processo por arquivo** — a mesma garantia que a trilha
-node já dava — e sai mais rápido que a rodada em processo único (1m22s contra 1m13s de
-uma rodada que nem terminava verde).
-
-**3. Dois defeitos que só a trilha bun podia ver**, e o segundo é de produção:
-
-- **`classifyFailure` não reconhecia binário ausente sob Bun.** O padrão em
-  `motor/cic/rpr/classe-de-falha.ts:16` cobria `ENOENT` (a forma do node) e não
-  `Executable not found in $PATH` (a forma do bun). E **Bun é o runtime em que o motor
-  roda** (`.bun-version`, `bin/hii.ts`). Em produção, provedor não instalado caía na
-  última linha do classificador e o operador lia "falha nao reconhecida" em vez do
-  motivo real. O teste que devia pegar isso amarrava a asserção à string do node —
-  passava verde afirmando o comportamento do runtime errado.
-- **A pós-condição da tarefa-ouro dependia de quem hospedava a suíte.**
-  `test/osw/tarefa-ouro.test.ts` rodava a suíte do repo-alvo com `process.execPath`,
-  que sob `bun test` é o bun. A pós-condição media o runner, não o trabalho da IA.
-
-**O que fica em aberto.** As 66 escritas de `process.env` em topo de módulo continuam
-lá — o isolamento por processo as torna inofensivas, não corretas. Se algum dia a
-suíte precisar rodar em processo compartilhado (paralelismo dentro de um worker, por
-exemplo), elas voltam a morder. E `.bun-version` pede 1.4.0: rodar com outra versão
-faz `test/cdl/scripts-existem.test.ts` acusar, por desenho.
-
-**Instabilidade por carga.** `test/mir/tempo-de-pintura.test.ts` e
-`test/mir/tui-sob-carga.test.ts` medem tempo absoluto de parede e ficam vermelhos com
-a máquina carregada — observado com *load average* 22, verde de novo com 12, mesmo
-código. A `RECOMENDAÇÃO` sobre `truncVisible` acima já aponta a saída: asserção por
-**razão** entre dois tamanhos, não por milissegundo. Isso deixa de ser detalhe agora
-que existe suíte E2E paralela: ela satura a máquina e derruba testes que não têm nada
-a ver com ela.
-
----
-
 ## PENDÊNCIA — o que ficou em aberto no cassete e na trilha cara
 
 O PR #28 entregou `test/apoio/cassete.ts` e `test/apoio/e2e.ts`, e corrigiu dois
@@ -1033,27 +613,100 @@ teto de gasto era inutilizável com `codex` e `kimi`, que declaram
 
 ---
 
-## ESTADO — os cortes de custo da RECOMENDAÇÃO, e o que travou o quarto
+## ESTADO — o que ficou aberto nas duas trilhas de teste
 
-Da ordem de corte registrada na `RECOMENDAÇÃO` acima, três entraram no PR #28, cada
-um com teste que foi conferido dos dois lados:
+As duas trilhas passam (`bun run test:unit` e `bun run test:node`), e os três defeitos
+que impediam isso saíram desta lista com o PR #28. O que continua aberto:
 
-1. **Feito.** O custo do passo e o da correção passam a ir para `cost_usd`/
-   `tokens_total`, e não só para o texto do diário.
-2. **Feito.** O teto de orçamento é conferido no topo do laço de passos
-   (`motor/qlb/ctr/fechar.ts`), e não só na entrada do handler.
-4. **Feito.** `motor/cic/passo-com-gate.ts` e `repararAteOTeto` comparam a assinatura
-   do veredicto com a da volta anterior e param na primeira repetição. Dois testes que
-   diziam medir o teto na verdade mediam isto — os roteiros repetiam a mesma frase
-   em todas as voltas — e foram separados.
+- **75 arquivos de teste escrevem `process.env` no topo do módulo** (124 ocorrências).
+  O isolamento por processo — um processo por arquivo nas duas trilhas — as torna
+  inofensivas, **não corretas**. Se algum dia a suíte rodar em processo compartilhado,
+  elas voltam a morder. Exemplos: `test/mir/tui-sob-carga.test.ts:15`,
+  `test/mir/tempo-de-pintura.test.ts:29-31`.
+- **Duas asserções ainda medem milissegundo absoluto**, e ficam vermelhas com a máquina
+  carregada (observado com *load average* 22, verde de novo com 12, mesmo código):
+  `test/mir/tempo-de-pintura.test.ts:29-31` (`TETO_QUADRO_MS`, `TETO_QUADRO_CJK_MS`,
+  `TETO_PINTURA_MS`) e `test/mir/tui-sob-carga.test.ts:15` (`TETO_MS`). As duas já
+  convivem com asserções por **razão** nos mesmos arquivos, que é a forma estável — a
+  absoluta é deliberada e sobrescrevível por env, mas é ela que derruba a suíte quando
+  a trilha E2E satura a máquina em paralelo.
+- **`.bun-version` pede 1.4.0**: rodar com outra versão faz
+  `test/cdl/scripts-existem.test.ts` acusar, por desenho. O pino é do CI
+  (`ci.yml:20-22`) e existe porque `expect([NaN]).toContain(NaN)` passa no bun 1.3.14
+  (SameValueZero) e falha no 1.4.0 (`===`).
 
-**O item 3 não entrou, e não é falta de código.** `config/model-tier.json` mapeia
-**ação → tier** e não tem uma única linha ligando tier a provedor, modelo ou esforço.
-`motor/osw/rui.ts:40-63` computa `EscolhaDeTier`, `registrarTier` manda para
-`anexarEvento` e acaba ali. Decidir que `tier3_barato` é o `ollama` local — que roda
-de graça em dólar — e que `tier1_caro` é o `claude` é decisão de negócio, não de
-engenharia. Com o mapa escrito no arquivo de governança, o resto é ligar
-`providerFor`/`modelFor`/`effortFor` ao tier já computado.
+---
+
+## ESTADO — o que está atrás de `HICODE_RIGOR_ESTRITO=1`
+
+Decidido: **LIGAR**. O interruptor é `HICODE_RIGOR_ESTRITO=1` no ambiente — não há
+mudança de código a fazer, e por isso ligar é ato de operação, não de commit: quem
+liga escolhe o momento em que os cards em voo podem parar.
+
+O que mudou nesta rodada é que o interruptor ficou **utilizável de verdade**. O CHG
+(item 5) foi consertado na Onda C, e nesta rodada `test/agentes/chg-red-primeiro.test.ts`
+passou a provar a ordem certa com guarda contra o `-1` — antes o invariante
+certificava a ordem invertida. Até a Onda C, ligar pararia todo card no perfil
+`completo`, porque `red_antes_do_green` era constante `nao`.
+
+**Antes de ligar, saiba o que passa a barrar:** os três itens abaixo. O item 5
+**funciona mas cobra a coisa errada** — veja a seção anterior: card `completo` com
+suíte verde vai fazer HALT. O 22 e o 4 escrevem o veredicto no card e nunca
+barraram ninguém, então o primeiro card `completo` depois de ligar é o primeiro
+teste real deles. Ligar num momento de fila vazia é mais barato que ligar no meio
+de uma onda.
+
+Três exigências já escrevem o veredicto no card e só barram com o interruptor
+ligado:
+
+| Item | Exige | Campo no card |
+|---|---|---|
+| 5 | perfil `completo` teve teste que FALHOU antes de passar | `red_antes_do_green` |
+| 22 | área nova tem comando de teste no contrato do alvo | `setup_ferramental` |
+| 4 | matriz de entendimento respondida antes de aprovar o plano | `matriz_entendimento` |
+
+Enquanto desligado dá para ver, card a card, quem passou sem provar — que é o
+insumo para decidir quando apertar. Ligar hoje pararia todo trabalho em voo.
+
+---
+
+## ESTADO — mecanismo pronto sem consumidor, por decisão
+
+Não são pendências: são escolhas registradas para não parecerem esquecimento.
+
+**Item 18 (`executarEmBlocos`).** O laço de `motor/qlb/ctr/fechar.ts` já faz
+executa → valida → para cedo. Rotear por TJL ali é cerimônia. O valor real —
+fatiar uma implementação em blocos validados — exige fatiador determinístico por
+stack, que pertence à camada de skill, não ao `core/`.
+
+---
+
+## PENDÊNCIA — o MCN diverge, mas ninguém ainda gasta token com ele
+
+A Onda 12 entregou o mecanismo completo e ligado ao plano: `valeDivergir()` decide,
+e a flag aparece em `buildPlan()` para o humano ver antes de aprovar. O que **não**
+existe é o consumidor que de fato despacha os ramos contra um provedor de IA —
+`despacharDivergencia()` recebe o despachante injetado, e hoje só os testes o
+passam.
+
+Isso é escolha, não esquecimento: o despachante é injetado justamente para o
+isolamento ser verificável sem rede, e ligar o provedor de verdade é uma decisão
+de custo (N ramos multiplicam por N) que merece ser tomada olhando o gasto real
+por card, não junto com a entrega do mecanismo.
+
+Onde mexer: `motor/agentes/clr/clarificar.ts:77` já chama `idear()` do TSL no
+`CLARIFY`. É o ponto onde o MCN substitui o TSL — mesma fase, com isolamento real
+entre ramos e crítico separado.
+
+**Uma ressalva desta rodada, para quando você for ligar:** o teto por ramo
+(`porRamoUsd`) deixou de ser decorativo — chega ao ramo em `Ramo.tetoUsd` e o
+estouro sai nomeado em `ramosQueEstouraram`. Mas é **post-hoc**: nenhum ramo é
+abortado no meio, e estouro não vira HALT. Com o despachante de verdade ligado,
+isso quer dizer que o dinheiro do ramo que estourou já foi gasto quando o relato
+aparece. Abortar exige o despachante cooperar (passar o teto ao provedor, ou cortar
+por timeout), e isso é decisão de quem ligar.
+
+R: aguardar eu verificar na pratica
 
 ---
 

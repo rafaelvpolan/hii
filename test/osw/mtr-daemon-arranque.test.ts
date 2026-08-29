@@ -19,8 +19,10 @@ mkdirSync(CARDS, { recursive: true })
 symlinkSync(join(REPO, 'scripts', 'runner-daemon.sh'), SCRIPT)
 writeFileSync(SEM_PROC, readFileSync(join(REPO, 'scripts', 'runner-daemon.sh'), 'utf8').replaceAll('/proc', '/nao-existe-proc'))
 
+const TRAVA_COM_EXTENSAO_QUE_O_NODE_TAMBEM_RESOLVE = join(REPO, 'motor', 'osw', 'mtr', 'trava-instancia.ts')
+
 const MOTOR = [
-  `import { holdInstanceLock, refusalMessage } from ${JSON.stringify(join(REPO, 'motor', 'osw', 'mtr', 'trava-instancia'))}`,
+  `import { holdInstanceLock, refusalMessage } from ${JSON.stringify(TRAVA_COM_EXTENSAO_QUE_O_NODE_TAMBEM_RESOLVE)}`,
   'const trava = holdInstanceLock()',
   'if (!trava.acquired) {',
   '  process.stderr.write(refusalMessage(trava.holder))',
@@ -74,6 +76,33 @@ function correr(script: string, sub: string, nome: string): Saida {
 
 function daemon(sub: string, nome: string): Saida {
   return correr(SCRIPT, sub, nome)
+}
+
+const FERRAMENTAS_DO_SCRIPT = ['sh', 'bash', 'node', 'cat', 'tr', 'readlink', 'pgrep', 'sleep', 'tail', 'rm', 'nohup', 'dirname', 'pwd', 'kill']
+
+function pathSemBun(): string {
+  const bin = join(BASE, 'bin-sem-bun')
+  if (existsSync(bin)) return bin
+  mkdirSync(bin, { recursive: true })
+  for (const ferramenta of FERRAMENTAS_DO_SCRIPT) {
+    const achado = spawnSync('sh', ['-c', `command -v ${ferramenta}`], { encoding: 'utf8' })
+    const caminho = String(achado.stdout ?? '').trim()
+    if (caminho !== '') symlinkSync(caminho, join(bin, ferramenta))
+  }
+  return bin
+}
+
+function correrCom(sub: string, nome: string, extra: Record<string, string>): Saida {
+  const r = spawnSync('bash', [SCRIPT, sub], {
+    env: { ...ambiente(nome), ...extra },
+    encoding: 'utf8',
+    timeout: 40000,
+  })
+  return { status: r.status ?? -1, stdout: String(r.stdout ?? ''), stderr: String(r.stderr ?? '') }
+}
+
+function cmdlineDe(pid: number): string {
+  return readFileSync(`/proc/${pid}/cmdline`, 'utf8').replaceAll('\0', ' ').trim()
 }
 
 function vivo(pid: number): boolean {
@@ -139,6 +168,49 @@ test('start com a trava livre so declara sucesso depois que o motor sobreviveu a
   expect(parada.status).toBe(0)
   expect(existsSync(pidfile)).toBe(false)
 }, 60000)
+
+test('REGRESSAO: o daemon sobe SEM bun no PATH — e a condicao da imagem de producao (node:24-slim com COM_BUN=0)', () => {
+  const nome = 'sem-bun-no-path'
+  const pidfile = join(BASE, `${nome}.pid`)
+  const semBun = { PATH: pathSemBun() }
+
+  expect(spawnSync('sh', ['-c', 'command -v bun'], { env: { ...process.env, ...semBun } }).status).not.toBe(0)
+
+  const r = correrCom('start', nome, semBun)
+
+  expect(r.status, r.stderr).toBe(0)
+  const pid = Number(readFileSync(pidfile, 'utf8').trim())
+  iniciados.push(pid)
+  expect(vivo(pid)).toBe(true)
+  expect(cmdlineDe(pid), 'sem bun no PATH o daemon tem de subir sob node, nao morrer no arranque').toBe('node runner.ts')
+
+  expect(correrCom('status', nome, semBun).stdout).toContain(`online (PID ${pid})`)
+  expect(correrCom('stop', nome, semBun).status).toBe(0)
+  expect(vivo(pid)).toBe(false)
+}, 60000)
+
+test('HICODE_RUNTIME=node manda mesmo com bun disponivel — e o `stop` de um shell que escolheria bun ainda reconhece esse motor', () => {
+  const nome = 'runtime-pedido'
+  const pidfile = join(BASE, `${nome}.pid`)
+
+  const r = correrCom('start', nome, { HICODE_RUNTIME: 'node' })
+
+  expect(r.status, r.stderr).toBe(0)
+  const pid = Number(readFileSync(pidfile, 'utf8').trim())
+  iniciados.push(pid)
+  expect(cmdlineDe(pid)).toBe('node runner.ts')
+
+  expect(daemon('status', nome).stdout).toContain(`online (PID ${pid})`)
+  expect(daemon('stop', nome).status).toBe(0)
+  expect(vivo(pid)).toBe(false)
+}, 60000)
+
+test('HICODE_RUNTIME desconhecido PARA o script em vez de cair no padrao em silencio', () => {
+  const r = correrCom('status', 'runtime-invalido', { HICODE_RUNTIME: 'deno' })
+
+  expect(r.status).not.toBe(0)
+  expect(r.stderr).toContain('nao e um runtime suportado')
+})
 
 test('"bun runner.ts" de OUTRO clone nao e adotado como daemon deste ROOT', () => {
   expect(vivo(alheio.pid ?? 0)).toBe(true)
