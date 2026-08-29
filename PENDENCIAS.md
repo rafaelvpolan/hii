@@ -871,3 +871,189 @@ nativos de cada IA: `motor/tmd/map/comandos.ts` já enumera manifestos `.md` por
 tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
 entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
 no repositório: `MCP_PREFIX` em `motor/tmd/pnt/mcp.ts:6`.
+
+
+---
+
+## PENDÊNCIA — o motor desfaz a parada humana, e a sonda cura o que não diagnosticou
+
+Três mecanismos independentes que produzem o mesmo sintoma — "a tarefa ficou travada
+em loop" — e que a rodada do PR #28 **não** corrigiu. Ficam aqui com âncora porque
+cada um é trabalho próprio, e o primeiro é o mais grave do repositório hoje.
+
+**1. `updateCard` grava sem compare-and-set.** `motor/cdl/store.ts:43-65` é o único
+ponto de escrita de card, e ele conhece o par (estado anterior, estado novo) — a
+linha 54 chama `conferirTransicao(before.status, resolvedFields.status, id)`. Só que
+o retorno é **ignorado**: `conferirTransicao` observa, registra a deriva e devolve;
+o laço logo abaixo escreve `fm[k] = v` de qualquer jeito. Há `withFileLock`, então
+não é corrida de escrita — é ausência de política. Ninguém pergunta "esta transição
+é permitida a partir do estado que eu li?" nem "o card ainda está onde eu esperava?".
+
+Consequência medida, no card 001 em disco: `17:17:08 CORRECTING->HALTED parado pelo
+humano`, e às `17:20:30` o mesmo card volta para `URL` pela mão de
+`motor/cic/corrigir.ts:126-134` — o job que já estava em voo terminou e escreveu por
+cima. **Toda parada humana durante um job em voo é silenciosamente desfeita.** Para
+quem está olhando a TUI, isso é exatamente "eu mandei parar e ele continuou".
+
+O conserto não é barrar transição não declarada em produção — isso trocaria deriva
+silenciosa por card travado, e o comentário de `motor/nmy/deriva-de-transicao.ts`
+já diz isso. O conserto é o job em voo **reler o estado antes de escrever** e desistir
+quando o card saiu de baixo dele, que é o que `HALTED` e `PAUSED` significam.
+
+**2. A sonda de saúde não tem relação causal com a falha que ela libera.**
+`motor/cic/rpr/espera.ts:69` chama `probeProviderHealth(provider)`, que cai em
+`motor/tmd/registro.ts:112-115` — e ali harness desconhecido devolve `true`
+incondicionalmente. Quando o harness é conhecido, a sonda é
+`alcancavelPorHttp` (`motor/tmd/sonda.ts:8-16`), que faz `curl` numa URL e aceita
+`code > 0 && code < 500`: **429 e 403 contam como saudável.**
+
+Card 002 é a prova: entrou em `WAITING` às 13:20:03 por *timeout de 900s do CLI*, e
+às 13:20:33 foi acordado com "sonda de saude ok". Um GET de cinco segundos numa URL
+declarou curado um binário que não respondeu em quinze minutos. O que falhou e o que
+foi medido não têm relação nenhuma — e o card volta para a fila para falhar de novo,
+que é a forma mais cara possível de loop.
+
+**3. `resume_from` atravessa a correção e faz o fecho pular todos os passos.**
+`motor/euc/metricas-de-fecho.ts:57` grava `resume_from: RESUME_POST_STEPS` ao pausar
+para confirmação. Se o humano responde "não resolveu", `motor/mir/acoes.ts:145-149`
+manda o card para `CORRECTING` **sem limpar o campo**, e o fluxo de sucesso de
+`motor/cic/corrigir.ts` também não limpa. Quando o card volta a `URL_OK`,
+`motor/qlb/ctr/fechar.ts:92-93` lê `resume_from` e o repassa a `resumeStart`
+(`motor/qlb/ctr/retomar.ts:9`), que devolve `steps.length` — e o `for` de
+`fechar.ts:200` **itera zero vezes**. O card sai "polido" sem ter rodado passo nenhum.
+
+Precisão importante: `fechar.ts:93` limpa o campo ao lê-lo, então o pulo acontece uma
+vez só, não para sempre. Uma vez basta — é justamente o card que voltou da correção,
+o que mais precisa dos passos, que os perde.
+
+**Onde mexer, em ordem:** o item 1 primeiro, porque enquanto ele existir qualquer
+parada é ilusória e os outros dois são difíceis de observar. Depois o 2, trocando a
+sonda por uma que meça o que falhou (o binário, não uma URL) e que trate 429 como
+indisponível. O 3 é uma linha em cada handler do meio.
+
+---
+
+## ESTADO — a suíte tem duas trilhas e só uma passa
+
+Medido em 28/08/2026, com as duas trilhas rodadas na mesma máquina:
+
+| Trilha | Comando | Resultado |
+|---|---|---|
+| node | `bun run test:node` | **2704 testes, 0 falhas** |
+| bun | `bun run test:unit` (dentro de `bun run test`) | 1566 rodados, 127 falhas, **125 erros** |
+
+Os 125 erros são todos o mesmo: `test/apoio/runner.ts:20` chama `test()` de
+`node:test`, e o Bun ainda não implementa `test()` dentro de `test()`. É a migração
+que o `PLANO` acima já registra — o que muda aqui é a **medida**, e ela piorou: a
+trilha `bun test` tinha 46 erros antes dos arquivos de cassete e matriz, e passou a
+125. A distância entre as duas trilhas cresce a cada arquivo novo, e hoje o `bun test`
+roda **1566 de 2704** testes.
+
+Isso importa porque `bun run test` — o comando que o `package.json` declara e que
+todo mundo digita — é o que está vermelho. Quem chega ao repo mede a qualidade pela
+trilha quebrada. Enquanto a migração não fecha, o critério real de verde é
+`bun run test:node`, e isso não está escrito em lugar nenhum fora daqui.
+
+**Cinco falhas restantes na trilha bun são de ambiente**, não de código, e não devem
+ser perseguidas: o pino de `.bun-version` pede 1.4.0, `kimi` pode não estar instalado,
+e os três testes de `/health` precisam abrir socket.
+
+**Instabilidade por carga.** `test/mir/tempo-de-pintura.test.ts` e
+`test/mir/tui-sob-carga.test.ts` medem tempo absoluto de parede e ficam vermelhos com
+a máquina carregada — observado com *load average* 22, verde de novo com 12, mesmo
+código. A `RECOMENDAÇÃO` sobre `truncVisible` acima já aponta a saída: asserção por
+**razão** entre dois tamanhos, não por milissegundo. Isso deixa de ser detalhe agora
+que existe suíte E2E paralela: ela satura a máquina e derruba testes que não têm nada
+a ver com ela.
+
+---
+
+## PENDÊNCIA — o que ficou em aberto no cassete e na trilha cara
+
+O PR #28 entregou `test/apoio/cassete.ts` e `test/apoio/e2e.ts`, e corrigiu dois
+defeitos que o crivo confirmou (o modo `regravar` destruía sequência multi-chamada; o
+teto de gasto era inutilizável com `codex` e `kimi`, que declaram
+`reportsCostUsd:false`). Ficou em aberto, tudo apontado pelo crivo e nenhum corrigido:
+
+- **O gravador nunca consulta o teto.** `test/apoio/cassete.ts` grava e
+  `test/apoio/e2e.ts` conta gasto, mas a ligação entre os dois existe só como frase na
+  mensagem de erro. Uma gravação nova pode estourar o teto sem que a rodada perceba.
+- **`formatoVersao: 1` é gravado e nunca validado na leitura.** Cassete de formato
+  antigo será lido como se fosse do formato corrente.
+- **Gravação concorrente perde entrada.** É read-modify-write sem trava; dois testes
+  gravando o mesmo arquivo em paralelo derrubam um ao outro. Hoje ninguém faz isso, o
+  que torna o defeito invisível até o dia em que alguém fizer.
+- **`<DIR:n>` é posicional.** Repositórios diferentes que caem na mesma posição da
+  lista colidem na mesma chave — dois pedidos distintos servidos pelo mesmo cassete.
+- **O cassete envolve `Harness.run`, e é um degrau acima de onde o defeito mora.**
+  A pesquisa que embasou o desenho já avisava: gravar `AgentRequest -> AgentResult`
+  pula o parser de cada harness (`claude-stream.ts`, `codex.ts`), e foi exatamente num
+  parser que o argv errado do kimi sobreviveu verde. Gravar stdout/stderr/exit-code do
+  subprocesso exercitaria o parser de verdade, ao custo de uma costura por harness.
+- **Não há como o motor receber o harness envolvido.** `motor/tmd/registro.ts:13-16` é
+  `ReadonlyMap` const e os oito chamadores resolvem por `providerFor()` internamente.
+  A costura de percurso que o repo de fato usa é `ExecuteDeps`
+  (`test/osw/executar-custo.test.ts:51-54`) — é por ali que um teste ponta a ponta
+  entra hoje, não envolvendo o harness.
+
+---
+
+## ESTADO — os cortes de custo da RECOMENDAÇÃO, e o que travou o quarto
+
+Da ordem de corte registrada na `RECOMENDAÇÃO` acima, três entraram no PR #28, cada
+um com teste que foi conferido dos dois lados:
+
+1. **Feito.** O custo do passo e o da correção passam a ir para `cost_usd`/
+   `tokens_total`, e não só para o texto do diário.
+2. **Feito.** O teto de orçamento é conferido no topo do laço de passos
+   (`motor/qlb/ctr/fechar.ts`), e não só na entrada do handler.
+4. **Feito.** `motor/cic/passo-com-gate.ts` e `repararAteOTeto` comparam a assinatura
+   do veredicto com a da volta anterior e param na primeira repetição. Dois testes que
+   diziam medir o teto na verdade mediam isto — os roteiros repetiam a mesma frase
+   em todas as voltas — e foram separados.
+
+**O item 3 não entrou, e não é falta de código.** `config/model-tier.json` mapeia
+**ação → tier** e não tem uma única linha ligando tier a provedor, modelo ou esforço.
+`motor/osw/rui.ts:40-63` computa `EscolhaDeTier`, `registrarTier` manda para
+`anexarEvento` e acaba ali. Decidir que `tier3_barato` é o `ollama` local — que roda
+de graça em dólar — e que `tier1_caro` é o `claude` é decisão de negócio, não de
+engenharia. Com o mapa escrito no arquivo de governança, o resto é ligar
+`providerFor`/`modelFor`/`effortFor` ao tier já computado.
+
+---
+
+## DECISÃO PENDENTE — virar provedor de IAs e cobrar por isso
+
+Registrado porque muda o alvo do motor, e **estacionado por decisão do dono**: primeiro
+fazer funcionar, depois pôr preço.
+
+**O bloqueio é contratual antes de ser técnico.** Os harnesses conectados hoje são
+CLIs autenticadas por assento, com a conta de quem roda. Assinatura por assento não dá
+direito de revender acesso; cobrar de terceiros por trabalho que passa pela sua sessão
+do `claude` é o tipo de coisa que encerra conta. Vender exige acesso comercial por API
+com direito de uso para terceiros. Isso se resolve fora do código e vem antes de
+qualquer arquitetura.
+
+**São dois produtos, e o hii hoje é só um.** O motor de execução precisa do repositório
+do cliente, do git, do `gh` e de servidor de desenvolvimento — roda na máquina dele. Um
+roteador de IAs que se cobra por token roda no seu servidor, multi-inquilino, sem tocar
+em repositório nenhum. Compartilham o roteador e quase nada mais. Mover a execução para
+o servidor obrigaria a hospedar código-fonte e credencial de terceiro, que é
+responsabilidade maior do que a que se queria evitar.
+
+**A convergência que vale notar:** o requisito de trocar de IA no meio do prompt e o
+objetivo de cobrar pedem a mesma peça — um harness por **API** ao lado dos de CLI. Com
+o histórico na mão (e não dentro de um binário opaco), a troca no meio da tarefa deixa
+de ser handoff por bastão escrito e vira o que a `PENDÊNCIA` sobre revezamento diz hoje
+ser impossível. E a medição por token, que a cobrança exige, passa a existir de verdade
+— hoje `codex` e `kimi` declaram `reportsCostUsd:false` e não têm o que medir.
+
+**O que não existe e o produto exigiria:** inquilino (não há conceito de usuário),
+medição por cliente (há por card, em `AgentResult` e no ledger de
+`motor/euc/ias-da-sessao.ts` — a matéria-prima existe), cota por cliente
+(`motor/euc/tsr/orcamento.ts` tem teto por card) e limite de taxa.
+
+**Sobre proteger o código, que foi a pergunta de origem:** se o produto virar uma API
+medida, o cliente nunca recebe fonte e o servidor é a fronteira natural. Enquanto o
+produto for o motor local, o caminho barato é compilar — o Bun gera executável único —
+e não subir servidor nenhum.
