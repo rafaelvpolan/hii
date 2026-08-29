@@ -292,7 +292,12 @@ test('ENOENT real (binario ausente de verdade, PATH em branco) vira terminal com
   for (const nome of providerNames()) {
     const res = await comPathEmBranco(() => harnessPorNome(nome).run(pedidoSimples()))
     expect(res.ok, nome).toBe(false)
-    expect(res.detail, nome).toContain('ENOENT')
+    // A frase depende do RUNTIME: node diz `spawn ENOENT`, bun diz
+    // `Executable not found in $PATH`. Exigir 'ENOENT' amarrava o teste ao node e
+    // escondia que o classificador do motor nao reconhecia a forma do bun — que e
+    // o runtime real do motor. Aqui basta que o detalhe nomeie a ausencia; quem
+    // decide o significado e a assercao de classificacao logo abaixo.
+    expect(/enoent|executable not found/i.test(res.detail), `${nome}: detalhe nao nomeia binario ausente — ${res.detail}`).toBe(true)
     const cls = classifyFailure(harnessPorNome(nome), { timedOut: res.timedOut, detail: res.detail, text: res.text })
     expect(cls.failureClass, nome).toBe('terminal')
     expect(cls.reason, nome).toBe('provedor nao instalado (binario nao encontrado)')

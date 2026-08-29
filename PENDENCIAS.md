@@ -933,30 +933,53 @@ indisponível. O 3 é uma linha em cada handler do meio.
 
 ---
 
-## ESTADO — a suíte tem duas trilhas e só uma passa
+## ESTADO — as duas trilhas de teste, e o que ainda separa uma da outra
 
-Medido em 28/08/2026, com as duas trilhas rodadas na mesma máquina:
+A trilha `bun test` estava **quebrada por defeito próprio**, e foi consertada.
+`test/apoio/runner.ts` se anunciava como fachada sobre `bun:test` e `node:test`, mas
+importava **só** `node:test`. Rodando sob `bun test`, a suíte usava o *shim* de
+`node:test` do Bun em vez do runner nativo — e esse shim tem a guarda
+`checkNotInsideTest`, que proíbe registrar teste enquanto outro roda. Como **140 dos
+248 arquivos** fazem `await import(...)` no topo, o módulo suspende, o runner começa
+a executar o que já registrou, e quando o módulo volta para chamar `test()` a guarda
+dispara. Eram 125 erros, e só **1566 dos 2704** testes chegavam a rodar.
 
-| Trilha | Comando | Resultado |
-|---|---|---|
-| node | `bun run test:node` | **2704 testes, 0 falhas** |
-| bun | `bun run test:unit` (dentro de `bun run test`) | 1566 rodados, 127 falhas, **125 erros** |
+A fachada passou a escolher o runner nativo de cada plataforma em tempo de execução.
+Medido depois do conserto: **2710 testes rodados, 2708 passando**.
 
-Os 125 erros são todos o mesmo: `test/apoio/runner.ts:20` chama `test()` de
-`node:test`, e o Bun ainda não implementa `test()` dentro de `test()`. É a migração
-que o `PLANO` acima já registra — o que muda aqui é a **medida**, e ela piorou: a
-trilha `bun test` tinha 46 erros antes dos arquivos de cassete e matriz, e passou a
-125. A distância entre as duas trilhas cresce a cada arquivo novo, e hoje o `bun test`
-roda **1566 de 2704** testes.
+O conserto expôs dois defeitos que a trilha node não podia ver, ambos corrigidos:
 
-Isso importa porque `bun run test` — o comando que o `package.json` declara e que
-todo mundo digita — é o que está vermelho. Quem chega ao repo mede a qualidade pela
-trilha quebrada. Enquanto a migração não fecha, o critério real de verde é
-`bun run test:node`, e isso não está escrito em lugar nenhum fora daqui.
+- **`classifyFailure` não reconhecia binário ausente sob Bun** — e Bun é o runtime em
+  que o motor de fato roda (`.bun-version`, `bin/hii.ts`). O padrão em
+  `motor/cic/rpr/classe-de-falha.ts:16` cobria `ENOENT` (a forma do node) e não
+  `Executable not found in $PATH` (a forma do bun). Em produção, provedor não
+  instalado caía na última linha do classificador e o operador lia "falha nao
+  reconhecida" em vez do motivo real. O teste que devia pegar isso amarrava a
+  asserção à string do node.
+- **A pós-condição da tarefa-ouro dependia de quem hospedava a suíte.**
+  `test/osw/tarefa-ouro.test.ts` rodava a suíte do repo-alvo com `process.execPath`,
+  que sob `bun test` é o bun. A pós-condição mecânica media o runner, não o trabalho
+  da IA — o contrário do que uma tarefa-ouro existe para medir.
 
-**Cinco falhas restantes na trilha bun são de ambiente**, não de código, e não devem
-ser perseguidas: o pino de `.bun-version` pede 1.4.0, `kimi` pode não estar instalado,
-e os três testes de `/health` precisam abrir socket.
+### O que ainda separa as duas trilhas
+
+**1. Teste de socket falha se rodar tarde no processo.** `node --test` dá um processo
+por arquivo; `bun test` roda os 248 num processo só. Qualquer teste que sobe servidor
+HTTP passa isolado e falha quando roda no fim da fila — provado por ordenação: com
+`test/euc/` primeiro, os três testes de `/health` passam e passa a falhar
+`com porta configurada, o servidor sobe e responde de verdade`, que aí roda tarde.
+Não há erro de `listen`, e `pronto` resolve no evento `listening`, com porta válida —
+o `fetch` seguinte é que é recusado. É degradação do shim de `node:http` do Bun com
+muitos handles abertos, não defeito de lógica do motor nem dos testes.
+
+O caminho não é enfraquecer os testes. É dar isolamento por arquivo à trilha bun
+(fatiar `test:unit`), ou assumir `bun run test:node` como critério canônico e dizer
+isso no `package.json`, que hoje declara `test` apontando para a trilha que quebra.
+
+**2. O pino de versão.** `.bun-version` pede 1.4.0 e o teste
+`a versao do bun em uso e a pinada` existe justamente para acusar divergência. Numa
+máquina com 1.3.14 ele falha por desenho, e é possível que parte do item 1 acima
+desapareça em 1.4.0 — não foi medido.
 
 **Instabilidade por carga.** `test/mir/tempo-de-pintura.test.ts` e
 `test/mir/tui-sob-carga.test.ts` medem tempo absoluto de parede e ficam vermelhos com

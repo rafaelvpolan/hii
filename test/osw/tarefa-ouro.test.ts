@@ -170,9 +170,15 @@ function envSemContextoDeTesteAninhado(): NodeJS.ProcessEnv {
   return env
 }
 
+// `node`, e nao `process.execPath`. O binario que hospeda ESTA suite muda com a
+// trilha — sob `bun test`, execPath e o bun, e `bun --test soma.test.mjs` executa o
+// arquivo direto, onde `node:test` recusa com "Cannot use test outside of the test
+// runner" e sai 1. A pos-condicao passava a depender de quem rodava o teste, e nao
+// do trabalho da IA — que e exatamente o contrario do que uma tarefa-ouro mede.
+// O comando aqui e o mesmo que o card pede ao agente, palavra por palavra.
 function rodarSuiteAlvo(wt: string): { codigo: number; saida: string } {
   try {
-    const saida = execFileSync(process.execPath, ['--test', 'soma.test.mjs'], { cwd: wt, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: envSemContextoDeTesteAninhado() })
+    const saida = execFileSync('node', ['--test', 'soma.test.mjs'], { cwd: wt, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: envSemContextoDeTesteAninhado() })
     return { codigo: 0, saida }
   } catch (e) {
     const erro = e as { status?: number | null; stdout?: string; stderr?: string }
