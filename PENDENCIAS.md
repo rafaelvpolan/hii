@@ -933,53 +933,65 @@ indisponível. O 3 é uma linha em cada handler do meio.
 
 ---
 
-## ESTADO — as duas trilhas de teste, e o que ainda separa uma da outra
+## ESTADO — as duas trilhas de teste passam, e o que foi preciso para isso
 
-A trilha `bun test` estava **quebrada por defeito próprio**, e foi consertada.
-`test/apoio/runner.ts` se anunciava como fachada sobre `bun:test` e `node:test`, mas
-importava **só** `node:test`. Rodando sob `bun test`, a suíte usava o *shim* de
-`node:test` do Bun em vez do runner nativo — e esse shim tem a guarda
-`checkNotInsideTest`, que proíbe registrar teste enquanto outro roda. Como **140 dos
-248 arquivos** fazem `await import(...)` no topo, o módulo suspende, o runner começa
-a executar o que já registrou, e quando o módulo volta para chamar `test()` a guarda
-dispara. Eram 125 erros, e só **1566 dos 2704** testes chegavam a rodar.
+Ponto de partida: `bun run test` — o comando que o `package.json` declara e que todo
+mundo digita — estava **vermelho**, e o critério real de verde era `bun run test:node`,
+o que não estava escrito em lugar nenhum. Hoje as duas passam:
 
-A fachada passou a escolher o runner nativo de cada plataforma em tempo de execução.
-Medido depois do conserto: **2710 testes rodados, 2708 passando**.
+| Trilha | Comando | Resultado |
+|---|---|---|
+| bun | `bun run test` | **248 arquivos, 2710 testes, 0 falhas** |
+| node | `bun run test:node` | **2704 testes, 0 falhas** |
 
-O conserto expôs dois defeitos que a trilha node não podia ver, ambos corrigidos:
+Foram três defeitos distintos, e vale registrar cada um porque nenhum era o que
+parecia à primeira vista.
 
-- **`classifyFailure` não reconhecia binário ausente sob Bun** — e Bun é o runtime em
-  que o motor de fato roda (`.bun-version`, `bin/hii.ts`). O padrão em
+**1. A fachada de teste ignorava metade do próprio propósito.**
+`test/apoio/runner.ts` se anunciava como ponte sobre `bun:test` e `node:test`, e
+importava **só** `node:test`. Sob `bun test`, a suíte usava o *shim* de `node:test` do
+Bun em vez do runner nativo — e esse shim tem a guarda `checkNotInsideTest`, que
+proíbe registrar teste enquanto outro roda. Como **140 dos 248 arquivos** fazem
+`await import(...)` no topo, o módulo suspende, o runner começa a executar o que já
+registrou, e quando o módulo volta para chamar `test()` a guarda dispara. Eram 125
+erros e só 1566 dos 2704 testes chegando a rodar. A fachada passou a escolher o runner
+nativo de cada plataforma em tempo de execução.
+
+**2. `bun test` não dá isolamento por arquivo, e a suíte depende disso.**
+`node --test` roda cada arquivo num processo próprio; `bun test` roda os 248 num
+processo só. A suíte assume o primeiro modelo em vários pontos: **66 arquivos escrevem
+`process.env` no topo do módulo**, e os testes que sobem servidor HTTP, que leem a
+trava de instância ou que mexem em `PATH` pisam uns nos outros.
+
+O sintoma media a **ordem**, não o código: um teste de socket que rodasse tarde falhava
+com `ConnectionRefused` mesmo com `listen` bem-sucedido, evento `listening` emitido e
+porta válida — e ao trocar a ordem dos diretórios a falha mudava de dono. Reproduzido
+igual em bun 1.3.14 e 1.4.0, então não era versão. Excluir diretórios não ajudava:
+tirar `test/qlb/` fazia aparecerem falhas novas na trava de instância.
+
+A alternativa seria tornar 248 arquivos herméticos num processo compartilhado.
+`scripts/test-bun.mjs` roda **um processo por arquivo** — a mesma garantia que a trilha
+node já dava — e sai mais rápido que a rodada em processo único (1m22s contra 1m13s de
+uma rodada que nem terminava verde).
+
+**3. Dois defeitos que só a trilha bun podia ver**, e o segundo é de produção:
+
+- **`classifyFailure` não reconhecia binário ausente sob Bun.** O padrão em
   `motor/cic/rpr/classe-de-falha.ts:16` cobria `ENOENT` (a forma do node) e não
-  `Executable not found in $PATH` (a forma do bun). Em produção, provedor não
-  instalado caía na última linha do classificador e o operador lia "falha nao
-  reconhecida" em vez do motivo real. O teste que devia pegar isso amarrava a
-  asserção à string do node.
+  `Executable not found in $PATH` (a forma do bun). E **Bun é o runtime em que o motor
+  roda** (`.bun-version`, `bin/hii.ts`). Em produção, provedor não instalado caía na
+  última linha do classificador e o operador lia "falha nao reconhecida" em vez do
+  motivo real. O teste que devia pegar isso amarrava a asserção à string do node —
+  passava verde afirmando o comportamento do runtime errado.
 - **A pós-condição da tarefa-ouro dependia de quem hospedava a suíte.**
   `test/osw/tarefa-ouro.test.ts` rodava a suíte do repo-alvo com `process.execPath`,
-  que sob `bun test` é o bun. A pós-condição mecânica media o runner, não o trabalho
-  da IA — o contrário do que uma tarefa-ouro existe para medir.
+  que sob `bun test` é o bun. A pós-condição media o runner, não o trabalho da IA.
 
-### O que ainda separa as duas trilhas
-
-**1. Teste de socket falha se rodar tarde no processo.** `node --test` dá um processo
-por arquivo; `bun test` roda os 248 num processo só. Qualquer teste que sobe servidor
-HTTP passa isolado e falha quando roda no fim da fila — provado por ordenação: com
-`test/euc/` primeiro, os três testes de `/health` passam e passa a falhar
-`com porta configurada, o servidor sobe e responde de verdade`, que aí roda tarde.
-Não há erro de `listen`, e `pronto` resolve no evento `listening`, com porta válida —
-o `fetch` seguinte é que é recusado. É degradação do shim de `node:http` do Bun com
-muitos handles abertos, não defeito de lógica do motor nem dos testes.
-
-O caminho não é enfraquecer os testes. É dar isolamento por arquivo à trilha bun
-(fatiar `test:unit`), ou assumir `bun run test:node` como critério canônico e dizer
-isso no `package.json`, que hoje declara `test` apontando para a trilha que quebra.
-
-**2. O pino de versão.** `.bun-version` pede 1.4.0 e o teste
-`a versao do bun em uso e a pinada` existe justamente para acusar divergência. Numa
-máquina com 1.3.14 ele falha por desenho, e é possível que parte do item 1 acima
-desapareça em 1.4.0 — não foi medido.
+**O que fica em aberto.** As 66 escritas de `process.env` em topo de módulo continuam
+lá — o isolamento por processo as torna inofensivas, não corretas. Se algum dia a
+suíte precisar rodar em processo compartilhado (paralelismo dentro de um worker, por
+exemplo), elas voltam a morder. E `.bun-version` pede 1.4.0: rodar com outra versão
+faz `test/cdl/scripts-existem.test.ts` acusar, por desenho.
 
 **Instabilidade por carga.** `test/mir/tempo-de-pintura.test.ts` e
 `test/mir/tui-sob-carga.test.ts` medem tempo absoluto de parede e ficam vermelhos com
