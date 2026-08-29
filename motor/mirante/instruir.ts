@@ -86,6 +86,7 @@ export function instruir(id: string, texto: string): ResultadoInstrucao {
       : { correction: limpo, status: 'CORRECTING', resume_from: '' }
   const numero = subPrompts(card.body).length + 1
   const r = updateCard(id, {
+    apesarDaParada: true,
     fields: destino,
     body: body => anexarSubPrompt(body, limpo),
     log: refaz

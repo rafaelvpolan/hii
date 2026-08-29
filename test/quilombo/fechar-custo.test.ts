@@ -91,7 +91,7 @@ test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume-
   expect(apos1aFalha?.fm.cost_usd).toBe('0.1000')
   expect(apos1aFalha?.fm.tokens_total).toBe('100')
 
-  patchCard(id, { status: 'EXECUTING' }, 'retomado pelo humano (teste)')
+  core.transition(id, 'EXECUTING', 'retomado pelo humano (teste)')
   await handleExecute(id, agenteExecute)
   const apos2aExecucao = readCard(id)
   expect(apos2aExecucao?.fm.status).toBe('URL')

@@ -51,6 +51,7 @@ export function submit(input: NewCardInput): string {
 
 export function transition(id: string, status: string, note?: string): ActionResult {
   return updateCard(id, {
+    apesarDaParada: true,
     fields: { status },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->${status}${note ? ' ' + note : ''}`,
   })
@@ -58,6 +59,7 @@ export function transition(id: string, status: string, note?: string): ActionRes
 
 export function resumeFrom(id: string, step: string): ActionResult {
   return updateCard(id, {
+    apesarDaParada: true,
     fields: { resume_from: step, status: 'URL_OK' },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->URL_OK replay a partir de ${step}`,
   })
@@ -116,6 +118,7 @@ export function confirmarFecho(id: string): GuardedResult {
     return { ok: false, reason: `#${id} esta em ${status} — so da para encerrar card que pediu confirmacao`, motivo: 'estado' }
   }
   const r = updateCard(id, {
+    apesarDaParada: true,
     fields: { fecho_confirmado: CONFIRMADO, status: 'URL_OK', resume_from: RESUME_POST_STEPS },
     log: () => `${isoNow()} CONFIRM->URL_OK voce confirmou que resolveu — encerrando e abrindo o PR (nenhum passo repetido)`,
   })
@@ -137,12 +140,14 @@ export function recusarFecho(id: string, motivo: string): GuardedResult {
   }
   if (!temWorktree) {
     const r = updateCard(id, {
+    apesarDaParada: true,
       fields: { correction: razao, status: 'EXECUTING', refazer: 'true', resume_from: '' },
       log: () => `${isoNow()} CONFIRM->EXECUTING nao resolveu (${razao}) — worktree ja nao existe, refazendo do zero`,
     })
     return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
   }
   const r = updateCard(id, {
+    apesarDaParada: true,
     fields: { correction: razao, correction_file: '', correction_line: '', correction_line_text: '', status: 'CORRECTING', resume_from: '' },
     log: () => `${isoNow()} CONFIRM->CORRECTING nao resolveu: ${razao}`,
   })
@@ -180,6 +185,7 @@ export function requestCorrection(id: string, file: string, instruction: string,
   if (!card.fm.worktree || !existsSync(join(card.fm.worktree, '.git'))) return null
   const anchor = file ? `${file}${line ? ':' + line : ''}` : '(geral)'
   return updateCard(id, {
+    apesarDaParada: true,
     fields: {
       correction: instruction,
       correction_file: file,
@@ -200,6 +206,7 @@ export function answerClarify(id: string, answers: ClarifyAnswer[]): ActionResul
   }
   writeClarify(id, questions)
   return updateCard(id, {
+    apesarDaParada: true,
     fields: { clarified: 'true', status: 'EXECUTING' },
     log: `${isoNow()} CLARIFY->EXECUTING respondido (${answers.length} resposta(s))`,
   })
@@ -218,6 +225,7 @@ export function edit(id: string, fields: EditInput): ActionResult {
   const title = fields.title?.trim()
   const desc = fields.desc?.trim()
   return updateCard(id, {
+    apesarDaParada: true,
     fields: {
       ...optional({ title, risk: fields.risk === 'high' || fields.risk === 'low' ? fields.risk : undefined }),
       ...(pausa ? { status: 'PAUSED' } : {}),
@@ -229,6 +237,7 @@ export function edit(id: string, fields: EditInput): ActionResult {
 
 export function setUrlPid(id: string, pid: number, hard = false): ActionResult {
   return updateCard(id, {
+    apesarDaParada: true,
     fields: { url_pid: String(pid) },
     log: `${isoNow()} RESET url reiniciado (pid ${pid}${hard ? ', cache limpo' : ''})`,
   })

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-cards-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { createCard, readCard, patchCard, cardsByStatus, nextId, allCards } = await import('../../motor/cordel/store.ts')
+const { createCard, readCard, patchCard, updateCard, cardsByStatus, nextId, allCards, PARADAS_HUMANAS } = await import('../../motor/cordel/store.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -141,3 +141,53 @@ test('CONTROLE NEGATIVO: ler-fora-do-lock-e-so-depois-escrever perde incrementos
   await raceIncrementers(join(import.meta.dirname, '..', 'fixtures', 'increment-loop-broken.ts'), id, procs, times)
   expect(Number(readCard(id)?.fm.wait_attempts)).toBeLessThan(procs * times)
 }, 30000)
+
+function corpoDoCard(id: string): string {
+  const c = readCard(id)
+  return (c as unknown as { body?: string })?.body ?? ''
+}
+
+test('REGRESSAO: job em voo NAO tira o card da parada humana — no card 001 a parada das 17:17 era desfeita as 17:20 pelo job que ainda estava no ar', () => {
+  const id = fresh({ title: 'parado no meio', status: 'CORRECTING', repo: 'org/repo', cost_usd: '1.0000' })
+  patchCard(id, { status: 'HALTED' }, 'parado pelo humano')
+
+  patchCard(id, { status: 'URL', cost_usd: '2.5000', tokens_total: '900' }, 'correcao concluida')
+
+  const c = readCard(id)
+  expect(c?.fm.status, 'quem mandou parar tem de continuar parado').toBe('HALTED')
+  expect(c?.fm.cost_usd, 'o custo ja foi pago; descartar o patch inteiro perderia a contabilidade').toBe('2.5000')
+  expect(c?.fm.tokens_total).toBe('900')
+  expect(corpoDoCard(id), 'a tentativa descartada tem de ficar visivel no diario').toContain('escrita descartada')
+})
+
+test('PAUSED tem a mesma protecao que HALTED — as duas sao parada humana', () => {
+  const id = fresh({ title: 'pausado', status: 'EXECUTING', repo: 'org/repo' })
+  patchCard(id, { status: 'PAUSED' }, 'pausado pelo humano')
+
+  patchCard(id, { status: 'EXECUTING' }, 'job em voo tentando seguir')
+
+  expect(readCard(id)?.fm.status).toBe('PAUSED')
+  expect(PARADAS_HUMANAS).toEqual(['HALTED', 'PAUSED'])
+})
+
+test('apesarDaParada deixa a acao HUMANA tirar o card da parada — senao a guarda travaria o card para sempre', () => {
+  const id = fresh({ title: 'retomado', status: 'EXECUTING', repo: 'org/repo' })
+  patchCard(id, { status: 'HALTED' }, 'parado pelo humano')
+
+  updateCard(id, { apesarDaParada: true, fields: { status: 'EXECUTING' }, log: 'retomado pelo humano' })
+
+  expect(readCard(id)?.fm.status).toBe('EXECUTING')
+  expect(corpoDoCard(id), 'retomada legitima nao deixa rastro de descarte').not.toContain('escrita descartada')
+})
+
+test('escrita SEM status sobre card parado passa inteira — diario e metrica nao sao ressurreicao', () => {
+  const id = fresh({ title: 'so metrica', status: 'EXECUTING', repo: 'org/repo' })
+  patchCard(id, { status: 'HALTED' }, 'parado pelo humano')
+
+  patchCard(id, { cost_usd: '3.3300' }, 'custo da chamada que ja tinha saido')
+
+  const c = readCard(id)
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.cost_usd).toBe('3.3300')
+  expect(corpoDoCard(id)).not.toContain('escrita descartada')
+})

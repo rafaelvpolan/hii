@@ -34,10 +34,17 @@ export function readCard(id: string): Card | null {
   return { ...splitFrontMatter(readFileSync(join(cardsDir(), f), 'utf8')), file: f }
 }
 
+export const PARADAS_HUMANAS: readonly string[] = ['HALTED', 'PAUSED']
+
 export interface CardPatch {
   fields?: Fields | ((fm: Fields) => Fields)
   body?: (body: string, fm: Fields) => string
   log?: string | ((fm: Fields) => string)
+  apesarDaParada?: boolean
+}
+
+function tiraCardDaParada(antes: string | undefined, depois: string | undefined): boolean {
+  return PARADAS_HUMANAS.includes(antes ?? '') && depois !== undefined && depois !== antes
 }
 
 export function updateCard(id: string, patch: CardPatch): Fields | null {
@@ -47,7 +54,17 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
   return withFileLock(file, () => {
     const { fm, order, body } = splitFrontMatter(readFileSync(file, 'utf8'))
     const before: Fields = { ...fm }
-    const resolvedFields = typeof patch.fields === 'function' ? patch.fields(before) : (patch.fields ?? {})
+    const pedidos = typeof patch.fields === 'function' ? patch.fields(before) : (patch.fields ?? {})
+    // Card parado pelo humano so sai da parada por decisao humana. O job em voo que
+    // terminou depois da parada continua gravando o que MEDIU (custo, tokens, diario)
+    // e perde APENAS o status — descartar o patch inteiro jogaria fora a contabilidade
+    // da chamada que ja foi paga.
+    //
+    // Sem isto, `17:17:08 CORRECTING->HALTED parado pelo humano` era desfeito as
+    // `17:20:30` pelo job que ainda estava no ar, e para quem olhava a TUI isso era
+    // exatamente "eu mandei parar e ele continuou".
+    const desfariaParada = !patch.apesarDaParada && tiraCardDaParada(before.status, resolvedStatus(pedidos))
+    const resolvedFields = desfariaParada ? semStatus(pedidos) : pedidos
     // Unico ponto do motor que conhece o PAR (estado anterior, estado novo). A
     // topologia declarada e conferida aqui, nao por grep no texto-fonte.
     if (resolvedFields.status !== undefined) conferirTransicao(before.status, resolvedFields.status, id)
@@ -59,9 +76,19 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     let nb = patch.body ? patch.body(body, before) : body
     const line = typeof patch.log === 'function' ? patch.log(before) : patch.log
     if (line) nb = appendLog(nb, line)
+    if (desfariaParada) nb = appendLog(nb, `${isoNow()} escrita descartada: o card esta em ${before.status} e um job em voo tentou leva-lo para ${resolvedStatus(pedidos)} — parada humana so sai por decisao humana`)
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
     return { ...fm, file: name }
   })
+}
+
+function resolvedStatus(f: Fields): string | undefined {
+  return f.status
+}
+
+function semStatus(f: Fields): Fields {
+  const { status: _descartado, ...resto } = f
+  return resto
 }
 
 export function patchCard(id: string, fields: Fields, logLine?: string): void {
