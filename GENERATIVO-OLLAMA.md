@@ -69,6 +69,30 @@ RTX 3060 Ti (8 GB VRAM), 16 cores, **7 GB RAM**. Consequência medida:
    superficial com comportamento esperado vago. Cenário para lógica temporal
    continua sendo trabalho de tier1/humano.
 
+## Aprendizados do 3º ciclo (prompts corrigidos, rerodado)
+
+1. **A regra anti-invenção funciona e é verificável.** Com "todo número precisa
+   vir de constante do código", os cenários de `politica.ts` citaram
+   `BACKOFF_STEPS_MS` com os valores reais (`30_000`…`600_000`) e o clamp
+   `Math.min(Math.max(attempt,1), length)-1` — conferido contra
+   `motor/ciclo/reprise/politica.ts:25-29`, bate. No 1º ciclo o mesmo modelo
+   tinha inventado esses números.
+2. **"Pense internamente, não responda" não funciona** — os dois modelos
+   despejaram o PASSO 1 na saída. E isso é bom: o raciocínio visível é
+   revisável. Ajuste de padrão: não pedir raciocínio escondido; cadeia visível
+   = auditável.
+3. **O mesmo modelo varia entre runs.** Prompt quase idêntico: o coder moveu
+   C de 14→3 arquivos; o qwen3 caiu de 88→77 linhas válidas e mudou o placar
+   inteiro. Classificação generativa precisa de N runs ou de lista de
+   divergência como produto — nunca de uma run única como verdade.
+4. **Consenso entre modelos caiu (27/73) e isso não é regressão do processo** —
+   é a medida honesta de que classificação A/B/C por modelo pequeno é instável.
+   A espinha continua sendo: mapa determinístico + consenso automático +
+   divergência para o humano (`generativo/runs/divergencias-triagem-*.md`).
+5. `cota.ts` melhorou (de fuzzing numérico para um cenário por ramo de função),
+   mas vários cenários ficaram tautológicos ("qualquer valor → atualiza o
+   objeto"). Teto do 7B em lógica temporal/de janela confirmado.
+
 ## Frentes e onde cada uma encaixa
 
 1. **Geração de testes (tier2, "escopo definido pela matriz")** — viável.

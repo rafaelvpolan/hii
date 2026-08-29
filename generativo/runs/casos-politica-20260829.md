@@ -1,59 +1,79 @@
-1. **Cenario de borda: Erro de quota**
-   - **Entrada/Condicao:** failureClass = 'quota', failureReason = "Quota excedida"
-   - **Comportamento Esperado:** Motor deve parar e configurar HICODE_QUOTA_FALLBACK para permitir troca explicita.
+**PASSO 1: Identificação das Funções Exportadas e Ramos de Cada uma**
 
-2. **Cenario de borda: Erro terminal**
-   - **Entrada/Condicao:** failureClass = 'terminal', failureReason = "Erro irreparável"
-   - **Comportamento Esperado:** Motor deve parar e registrar o erro terminal.
+As funções exportadas do código são `backoffMsFor`, `haltFields`, `recordFailure`, e `applyFailurePolicy`. Vamos analisar os ramos de cada função:
 
-3. **Cenario de borda: Número de tentativas esgotadas**
-   - **Entrada/Condicao:** attempt > maxWaitingAttempts()
-   - **Comportamento Esperado:** Motor deve parar após exceder o número máximo de tentativas.
+1. **Function `backoffMsFor(attempt: number): number`**
+   - **Ramo 1**: `attempt < 1`
+     - Comportamento Esperado: Devolve `BACKOFF_STEPS_MS[0]`, que é `30_000`.
+   - **Ramo 2**: `attempt > BACKOFF_STEPS_MS.length`
+     - Comportamento Esperado: Devolve o último elemento de `BACKOFF_STEPS_MS`, que é `600_000`.
+   - **Ramo 3**: `1 <= attempt <= BACKOFF_STEPS_MS.length`
+     - Comportamento Esperado: Devolve `BACKOFF_STEPS_MS[idx]`, onde `idx` é o valor de `attempt` subtraído por `1`.
 
-4. **Cenario de borda: Primeira tentativa**
-   - **Entrada/Condicao:** attempt = 1
-   - **Comportamento Esperado:** Motor deve aguardar por 30 segundos antes da próxima tentativa.
+2. **Function `haltFields(input: FailurePolicyInput): Fields`**
+   - **Ramo 1**: Sem ramificação específica, sempre devolve um objeto com campos preenchidos.
 
-5. **Cenario de borda: Segunda tentativa**
-   - **Entrada/Condicao:** attempt = 2
-   - **Comportamento Esperado:** Motor deve aguardar por 1 minuto antes da próxima tentativa.
+3. **Function `recordFailure(input: FailurePolicyInput, attempt: number, outcome: PolicyOutcome): void`**
+   - **Ramo 1**: Sem ramificação específica, sempre executa as funções `stampRunFailure` e `appendFailureAttempt`.
 
-6. **Cenario de borda: Tercera tentativa**
-   - **Entrada/Condicao:** attempt = 3
-   - **Comportamento Esperado:** Motor deve aguardar por 2 minutos antes da próxima tentativa.
+4. **Function `applyFailurePolicy(input: FailurePolicyInput): PolicyOutcome`**
+   - **Ramo 1**: `input.failureClass === 'quota'`
+     - Comportamento Esperado: Chama `patchCard` com campos de status HALTED e retorna `'halt'`.
+   - **Ramo 2**: `input.failureClass === 'terminal'`
+     - Comportamento Esperado: Chama `patchCard` com campos de status HALTED e retorna `'halt'`.
+   - **Ramo 3**: `attempts > maxWaitingAttempts()`
+     - Comportamento Esperado: Chama `patchCard` com campos de status HALTED e retorna `'halt'`.
+   - **Ramo 4**: Caso contrário
+     - Comportamento Esperado: Chama `patchCard` com campos de status WAITING e retorna `'waiting'`.
 
-7. **Cenario de borda: Quarta tentativa**
-   - **Entrada/Condicao:** attempt = 4
-   - **Comportamento Esperado:** Motor deve aguardar por 5 minutos antes da próxima tentativa.
+**PASSO 2: Cenários de Borda Cobrindo os Ramos Reais**
 
-8. **Cenario de borda: Quinta tentativa**
-   - **Entrada/Condicao:** attempt = 5
-   - **Comportamento Esperado:** Motor deve aguardar por 10 minutos antes da próxima tentativa.
+Aqui estão 12 cenários de borda que cobrem os ramos reais:
 
-9. **Cenario de borda: Sexta tentativa**
-   - **Entrada/Condicao:** attempt = 6
-   - **Comportamento Esperado:** Motor deve parar após exceder o número máximo de tentativas.
+1. **Cenario:** quota_halt
+   - **Entrada/Condicao:** `input.failureClass = 'quota'`, `attempt = 1`
+   - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.
 
-10. **Cenario de borda: Tentativa zero (inconsistência)**
-    - **Entrada/Condicao:** attemptNumber(id) retorna 0
-    - **Comportamento Esperado:** Motor deve aguardar por 60 minutos antes da próxima tentativa.
+2. **Cenario:** terminal_halt
+   - **Entrada/Condicao:** `input.failureClass = 'terminal'`, `attempt = 1`
+   - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.
 
-11. **Cenario de borda: Tentativa máxima (maxWaitingAttempts())**
-    - **Entrada/Condicao:** attemptNumber(id) retorna maxWaitingAttempts()
-    - **Comportamento Esperado:** Motor deve parar após exceder o número máximo de tentativas.
+3. **Cenario:** max_attempts_reached
+   - **Entrada/Condicao:** `attempts = maxWaitingAttempts() + 1`
+   - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.
 
-12. **Cenario de borda: ExtraFields não informados**
-    - **Entrada/Condicao:** input.extraFields = undefined
-    - **Comportamento Esperado:** Campos extra devem ser ignorados, apenas os padrões serão usados.
+4. **Cenario:** attempt_less_than_one
+   - **Entrada/Condicao:** `attempt = 0`
+   - **Comportamento Esperado:** Devolve `30_000` (primeiro valor de `BACKOFF_STEPS_MS`).
 
-13. **Cenario de borda: Tentativa final com sucesso**
-    - **Entrada/Condicao:** attemptNumber(id) retorna maxWaitingAttempts() - 1 e outcome = 'success'
-    - **Comportamento Esperado:** Motor deve continuar a operação sem parar.
+5. **Cenario:** attempt_greater_than_max_steps
+   - **Entrada/Condicao:** `attempt = BACKOFF_STEPS_MS.length + 1`
+   - **Comportamento Esperado:** Devolve `600_000` (último valor de `BACKOFF_STEPS_MS`).
 
-14. **Cenario de borda: Erro técnico inesperado**
-    - **Entrada/Condicao:** failureClass = undefined, technicalDetail = "Erro desconhecido"
-    - **Comportamento Esperado:** Motor deve parar e registrar o erro técnico.
+6. **Cenario:** attempt_between_steps
+   - **Entrada/Condicao:** `attempt = 3`
+   - **Comportamento Esperado:** Devolve `120_000` (valor do terceiro elemento de `BACKOFF_STEPS_MS`).
 
-15. **Cenario de borda: Erro de conexão (URL_OK)**
-    - **Entrada/Condicao:** resumeStatus = 'URL_OK', failureReason = "Conexão falhou"
-    - **Comportamento Esperado:** Motor deve parar e registrar o erro de conexão, mas não deve tentar novamente.
+7. **Cenario:** halt_fields_all_fields
+   - **Entrada/Condicao:** Qualquer `FailurePolicyInput` válido
+   - **Comportamento Esperado:** Retorna um objeto com todos os campos preenchidos corretamente.
+
+8. **Cenario:** record_failure_halt
+   - **Entrada/Condicao:** Qualquer `FailurePolicyInput`, `attempt = 1`, `outcome = 'halt'`
+   - **Comportamento Esperado:** Executa `stampRunFailure` e `appendFailureAttempt`.
+
+9. **Cenario:** record_failure_waiting
+   - **Entrada/Condicao:** Qualquer `FailurePolicyInput`, `attempt = 2`, `outcome = 'waiting'`
+   - **Comportamento Esperado:** Executa `stampRunFailure` e `appendFailureAttempt`.
+
+10. **Cenario:** apply_policy_quota_halt
+    - **Entrada/Condicao:** `input.failureClass = 'quota'`, `attempt = 1`
+    - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.
+
+11. **Cenario:** apply_policy_terminal_halt
+    - **Entrada/Condicao:** `input.failureClass = 'terminal'`, `attempt = 1`
+    - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.
+
+12. **Cenario:** apply_policy_max_attempts_reached_halt
+    - **Entrada/Condicao:** `attempts = maxWaitingAttempts() + 1`
+    - **Comportamento Esperado:** Chama `patchCard` com status HALTED e retorna `'halt'`.

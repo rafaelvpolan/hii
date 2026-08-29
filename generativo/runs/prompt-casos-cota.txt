@@ -1,9 +1,11 @@
-Voce e um engenheiro de testes. Abaixo esta o codigo de motor/euclides/tesouro/cota.ts (controle de cota/janela de provedores de IA). Liste ate 12 cenarios de borda para a suite de testes.
+Voce e um engenheiro de testes. Abaixo esta o codigo de motor/euclides/tesouro/cota.ts (controle de cota/janela de provedores de IA).
+PASSO 1 (interno, nao responda): identifique as funcoes exportadas e os ramos de cada uma (if/else, early return, filtro vazio).
+PASSO 2 (sua resposta): liste ate 12 cenarios de borda, UM POR RAMO de negocio — nao fuzzing numerico de constantes.
 FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
-- **Cenario:** nome curto
-  - **Entrada/Condicao:** ...
-  - **Comportamento Esperado:** ...
-REGRAS: nao invente valores — todo numero citado precisa existir no codigo abaixo (cite o nome da constante). Se o codigo for ambiguo, marque [VERIFICAR] no nome. Sem codigo na resposta.
+- **Cenario:** nome curto (cite a funcao e o ramo)
+  - **Entrada/Condicao:** estado dos registros/janela que atinge o ramo
+  - **Comportamento Esperado:** o que a funcao retorna/faz nesse ramo
+REGRAS: nao invente valores — todo numero citado precisa vir de uma constante do codigo (cite o NOME da constante). Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta.
 
 CODIGO:
 import { isoAt } from '../../cordel/index.ts'

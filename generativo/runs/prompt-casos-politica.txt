@@ -1,4 +1,11 @@
-Voce e um engenheiro de testes. Abaixo esta o codigo de motor/ciclo/reprise/politica.ts, a politica de retry/reparo do motor de execucao autonoma. Liste cenarios de borda que a suite de testes deveria cobrir. Para cada cenario: nome curto, entrada/condicao, comportamento esperado. Formato: lista com tracos, sem codigo, no maximo 15 cenarios, do mais critico ao menos critico.
+Voce e um engenheiro de testes. Abaixo esta o codigo de motor/ciclo/reprise/politica.ts, a politica de retry/reparo do motor de execucao autonoma.
+PASSO 1 (interno, nao responda): identifique as funcoes exportadas e os ramos de cada uma.
+PASSO 2 (sua resposta): liste ate 12 cenarios de borda cobrindo os ramos reais.
+FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
+- **Cenario:** nome curto (cite a funcao)
+  - **Entrada/Condicao:** ...
+  - **Comportamento Esperado:** ...
+REGRAS: nao invente valores — todo numero citado precisa vir de uma constante do codigo (cite o NOME da constante, nao o valor). Se o codigo for ambiguo, marque [VERIFICAR] no nome. Sem codigo na resposta.
 
 CODIGO:
 import { isoAt, isoNow } from '../../cordel/index.ts'

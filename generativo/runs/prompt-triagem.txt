@@ -2,8 +2,8 @@ Voce e um engenheiro de testes. Abaixo esta a lista de arquivos de motor/ (motor
 A) precisa de teste unitario proprio (logica com ramos, regras de negocio);
 B) fio condutor/tipo/orquestrador — coberto indiretamente, teste direto seria fragil;
 C) fronteira de IO (disco, rede, subprocesso) — pede teste de integracao ou contrato, nao unitario.
-Responda SOMENTE em linhas no formato: CAMINHO | A/B/C | motivo de ate 12 palavras.
-Ao final, uma linha "RESUMO: A=n B=n C=n".
+Responda SOMENTE com uma linha por arquivo, no formato exato: CAMINHO | A/B/C | motivo de ate 12 palavras.
+Sem resumo, sem contagem, sem cabecalho — so as linhas.
 
 ARQUIVOS:
 motor/agentes/chagas/red-primeiro.ts

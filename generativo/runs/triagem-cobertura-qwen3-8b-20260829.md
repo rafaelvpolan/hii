@@ -1,93 +1,77 @@
-motor/agentes/chagas/red-primeiro.ts | A | lógica de agente com regras específicas  
-motor/agentes/clarice/clarificar.ts | A | lógica de clarificação com regras de negócio  
-motor/agentes/clarice/doc-updater.ts | A | atualização de documentos com lógica interna  
-motor/agentes/registro.ts | A | lógica de registro com regras  
-motor/agentes/tarsila/design.ts | A | lógica de design com regras  
-motor/agentes/tarsila/ideate-run.ts | A | lógica de ideação com regras  
-motor/agentes/vital/auditoria-harness.ts | B | orquestrador de auditoria  
-motor/cascudo/freire/aprendiz.ts | A | lógica de aprendizagem interna  
-motor/cascudo/freire/assinatura.ts | A | lógica de assinatura com regras  
-motor/cascudo/freire/candidatos.ts | A | lógica de seleção de candidatos  
-motor/cascudo/memoria.ts | C | IO com armazenamento em disco  
-motor/ciclo/canudos/gauntlet.ts | B | orquestrador de processos  
-motor/ciclo/crivo/avaliar.ts | A | lógica de avaliação com regras  
-motor/ciclo/crivo/perguntas-do-crivo.ts | B | orquestrador de perguntas  
-motor/ciclo/crivo/portoes-de-fecho.ts | B | orquestrador de portões  
-motor/ciclo/reparo.ts | A | lógica de reparo com regras  
-motor/ciclo/reprise/espera.ts | A | lógica de espera com regras  
-motor/ciclo/reprise/politica.ts | A | lógica de política com regras  
-motor/ciclo/reprise/reparadores/laravel-php.ts | C | IO com serviços externos  
-motor/ciclo/reprise/reparadores/tipos.ts | A | lógica de tipos  
-motor/ciclo/reprise/tentativas.ts | A | lógica de tentativas com regras  
-motor/ciclo/roda.ts | B | orquestrador de ciclo  
-motor/cordel/alicerce/snapshot.ts | C | IO com armazenamento em disco  
-motor/cordel/arquivar.ts | C | IO com arquivamento  
-motor/cordel/frontmatter.ts | C | IO com metadados  
-motor/cordel/repos.ts | C | IO com repositórios  
-motor/cordel/texto.ts | A | lógica de processamento de texto  
-motor/cordel/util.ts | B | utilitários de orquestração  
-motor/euclides/estado-em-disco.ts | C | IO com estado em disco  
-motor/euclides/eventos.ts | A | lógica de eventos com regras  
-motor/euclides/radar/progresso.ts | A | lógica de progresso com regras  
-motor/euclides/radar/saude.ts | B | orquestrador de saúde  
-motor/euclides/radar/servidor.ts | C | IO com servidor  
-motor/euclides/radar/tick.ts | B | orquestrador de ticks  
-motor/euclides/recuperar.ts | A | lógica de recuperação com regras  
-motor/euclides/registros.ts | C | IO com registros  
-motor/euclides/sessao.ts | A | lógica de sessão com regras  
-motor/euclides/tesouro/consumo.ts | A | lógica de consumo com regras  
-motor/euclides/tesouro/cota-runs.ts | B | orquestrador de cotas  
-motor/euclides/tesouro/cota.ts | A | lógica de cota com regras  
-motor/euclides/tesouro/custo.ts | A | lógica de custo com regras  
-motor/euclides/tesouro/instabilidade.ts | A | lógica de instabilidade com regras  
-motor/euclides/tesouro/janelas.ts | A | lógica de janelas com regras  
-motor/euclides/tesouro/lacuna.ts | A | lógica de lacuna com regras  
-motor/euclides/tesouro/orcamento.ts | A | lógica de orçamento com regras  
-motor/mirante/acoes.ts | A | lógica de ações com regras  
-motor/mirante/cli/comandos.ts | B | orquestrador de comandos  
-motor/mirante/cli/dados.ts | C | IO com dados  
-motor/mirante/cli/rodape-tui.ts | C | IO com interface  
-motor/mirante/cli/saida.ts | C | IO com saída  
-motor/mirante/cli/situacao-cli.ts | B | orquestrador de situação  
-motor/mirante/cli/tela-tarefa.ts | C | IO com interface  
-motor/mirante/comandos-de-tarefa.ts | A | lógica de comandos de tarefa  
-motor/mirante/estado-json.ts | C | IO com estado JSON  
-motor/mirante/refs-comando.ts | A | lógica de referências  
-motor/mirante/render/config/paineis.ts | C | IO com configuração  
-motor/mirante/render/config/tipos.ts | A | lógica de tipos  
-motor/mirante/render/disco.ts | C | IO com renderização  
-motor/mirante/watch.ts | C | IO com monitoramento  
-motor/niemeyer/lucio/matriz-entendimento.ts | A | lógica de entendimento  
-motor/niemeyer/passos.ts | A | lógica de passos  
-motor/niemeyer/tijolo/blocos.ts | A | lógica de blocos  
+motor/agentes/chagas/red-primeiro.ts | A | logica de agente com regras de negocio  
+motor/agentes/clarice/clarificar.ts | A | logica de clarificacao com regras de negocio  
+motor/agentes/clarice/doc-updater.ts | C | manipulacao de arquivos e dados externos  
+motor/agentes/registro.ts | A | logica de registro com regras de negocio  
+motor/agentes/tarsila/design.ts | B | fio condutor de projeto ou arquitetura  
+motor/agentes/tarsila/ideate-run.ts | A | logica de ideacao com ramos de decisao  
+motor/agentes/vital/auditoria-harness.ts | B | orquestrador de auditorias indiretamente coberto  
+motor/cascudo/freire/aprendiz.ts | A | logica de aprendizado com regras de negocio  
+motor/cascudo/freire/assinatura.ts | C | manipulacao de assinaturas e dados externos  
+motor/cascudo/freire/cota-runs.ts | C | gerenciamento de dados e processos externos  
+motor/cascudo/freire/tipos.ts | A | definicao de tipos com logica interna  
+motor/cascudo/freire/registros.ts | C | armazenamento de registros externos  
+motor/cascudo/freire/fila.ts | C | gerenciamento de fila com dados externos  
+motor/cordel/alicerce/snapshot.ts | C | salvamento de estado em disco  
+motor/cordel/arquivar.ts | C | manipulacao de arquivos e dados externos  
+motor/cordel/frontmatter.ts | C | manipulacao de metadados externos  
+motor/cordel/repos.ts | C | gerenciamento de repositórios externos  
+motor/cordel/texto.ts | A | processamento de texto com logica interna  
+motor/cordel/util.ts | A | utilitarios com logica interna  
+motor/euclides/estado-em-disco.ts | C | armazenamento de estado em disco  
+motor/euclides/eventos.ts | C | manipulacao de eventos externos  
+motor/euclides/radar/progresso.ts | C | monitoramento de progresso externo  
+motor/euclides/radar/saude.ts | C | monitoramento de saude externo  
+motor/euclides/radar/servidor.ts | C | monitoramento de servidor externo  
+motor/euclides/radar/tick.ts | C | temporizacao de eventos externos  
+motor/euclides/recuperar.ts | A | logica de recuperacao com regras de negocio  
+motor/euclides/registros.ts | C | armazenamento de registros externos  
+motor/euclides/sessao.ts | C | gerenciamento de sessao com dados externos  
+motor/euclides/tesouro/consumo.ts | A | logica de consumo com regras de negocio  
+motor/euclides/tesouro/custo.ts | A | logica de custo com regras de negocio  
+motor/euclides/tesouro/instabilidade.ts | A | logica de instabilidade com regras de negocio  
+motor/euclides/tesouro/janelas.ts | C | manipulacao de janelas externas  
+motor/euclides/tesouro/lacuna.ts | C | manipulacao de lacunas externas  
+motor/euclides/tesouro/orcamento.ts | A | logica de orcamento com regras de negocio  
+motor/mirante/acoes.ts | A | logica de acoes com regras de negocio  
+motor/mirante/cli/comandos.ts | C | interface com dados externos  
+motor/mirante/cli/dados.ts | C | manipulacao de dados externos  
+motor/mirante/cli/rodape-tui.ts | C | interface com dados externos  
+motor/mirante/cli/saida.ts | C | manipulacao de saida externa  
+motor/mirante/cli/situacao-cli.ts | C | manipulacao de situacao externa  
+motor/mirante/cli/tela-tarefa.ts | C | interface com dados externos  
+motor/mirante/comandos-de-tarefa.ts | A | logica de comandos com regras de negocio  
+motor/mirante/estado-json.ts | C | manipulacao de estado em disco  
+motor/mirante/refs-comando.ts | C | referencias a dados externos  
+motor/mirante/render/config/paineis.ts | C | interface com dados externos  
+motor/mirante/render/config/tipos.ts | A | definicao de tipos com logica interna  
+motor/mirante/render/disco.ts | C | manipulacao de dados em disco  
+motor/mirante/watch.ts | C | monitoramento de dados externos  
+motor/niemeyer/lucio/matriz-entendimento.ts | A | logica de entendimento com regras de negocio  
+motor/niemeyer/passos.ts | A | logica de passos com regras de negocio  
+motor/niemeyer/tijolo/blocos.ts | A | definicao de blocos com logica interna  
 motor/oswaldo/despacho-de-agentes.ts | B | orquestrador de agentes  
-motor/oswaldo/mutirao/encerramento.ts | A | lógica de encerramento  
-motor/oswaldo/mutirao/fila.ts | B | orquestrador de filas  
-motor/oswaldo/rui.ts | A | lógica de processo específico  
-motor/quilombo/alfandega/anexo.ts | C | IO com anexos  
-motor/quilombo/alfandega/confianca.ts | A | lógica de confiança  
-motor/quilombo/alfandega/ipv4.ts | C | IO com IPv4  
-motor/quilombo/alfandega/refs.ts | A | lógica de referências  
-motor/quilombo/cartorio/aprovar-plano.ts | A | lógica de aprovação  
-motor/quilombo/cartorio/merge.ts | A | lógica de merge  
-motor/quilombo/cartorio/pr.ts | A | lógica de PR  
-motor/quilombo/cartorio/responder-pergunta.ts | A | lógica de resposta  
-motor/quilombo/cartorio/retomar.ts | A | lógica de retomada  
-motor/quilombo/cofre/segredos.ts | C | IO com segredos  
-motor/quilombo/limites.ts | A | lógica de limites  
-motor/quilombo/salvo-conduto/compensacao.ts | A | lógica de compensação  
-motor/quilombo/salvo-conduto/idempotencia.ts | A | lógica de idempotência  
-motor/tomada/catalogo.ts | C | IO com catalogo  
-motor/tomada/confianca.ts | A | lógica de confiança  
-motor/tomada/harness/claude-stream.ts | C | IO com serviço externo  
-motor/tomada/harness/ollama.ts | C | IO com serviço externo  
-motor/tomada/modo-puro.ts | A | lógica de modo puro  
-motor/tomada/ponte/tarefas/sync.ts | C | IO com sincronização  
-motor/tomada/ponte/tarefas/tipos.ts | A | lógica de tipos  
-motor/tomada/preferencias.ts | C | IO com preferências  
-motor/tomada/sonda.ts | C | IO com sondagem  
-
-**Summary:**  
-A: 60  
-B: 17  
-C: 36
+motor/oswaldo/mutirao/encerramento.ts | A | logica de encerramento com regras de negocio  
+motor/oswaldo/mutirao/fila.ts | C | gerenciamento de fila com dados externos  
+motor/oswaldo/rui.ts | A | logica de Rui com regras de negocio  
+motor/quilombo/alfandega/anexo.ts | C | manipulacao de anexos externos  
+motor/quilombo/alfandega/confianca.ts | A | logica de confianca com regras de negocio  
+motor/quilombo/alfandega/ipv4.ts | C | manipulacao de IPv4 externo  
+motor/quilombo/alfandega/refs.ts | C | referencias a dados externos  
+motor/quilombo/cartorio/aprovar-plano.ts | A | logica de aprovacao com regras de negocio  
+motor/quilombo/cartorio/merge.ts | A | logica de merge com regras de negocio  
+motor/quilombo/cartorio/pr.ts | C | manipulacao de PR externo  
+motor/quilombo/cartorio/responder-pergunta.ts | A | logica de resposta com regras de negocio  
+motor/quilombo/cartorio/retomar.ts | A | logica de retomar com regras de negocio  
+motor/quilombo/cofre/segredos.ts | C | manipulacao de segredos externos  
+motor/quilombo/limites.ts | A | logica de limites com regras de negocio  
+motor/quilombo/salvo-conduto/compensacao.ts | A | logica de compensacao com regras de negocio  
+motor/quilombo/salvo-conduto/idempotencia.ts | A | logica de idempotencia com regras de negocio  
+motor/tomada/catalogo.ts | C | manipulacao de catalogo externo  
+motor/tomada/confianca.ts | A | logica de confianca com regras de negocio  
+motor/tomada/harness/claude-stream.ts | C | integracao com modelo externo  
+motor/tomada/harness/ollama.ts | C | integracao com modelo externo  
+motor/tomada/modo-puro.ts | A | logica de modo puro com regras de negocio  
+motor/tomada/ponte/tarefas/sync.ts | C | sincronizacao de dados externos  
+motor/tomada/ponte/tarefas/tipos.ts | A | definicao de tipos com logica interna  
+motor/tomada/preferencias.ts | C | manipulacao de preferencias externas  
+motor/tomada/sonda.ts | C | monitoramento de dados externos
