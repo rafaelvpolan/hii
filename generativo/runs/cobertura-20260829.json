@@ -1,0 +1,138 @@
+{
+  "gerado_em": "2026-08-29T16:42:03.564Z",
+  "heuristica": "import direto em test/**/*.ts; indiretos nao contam",
+  "total_motor": 228,
+  "exercitados": 140,
+  "por_dominio": {
+    "agentes": {
+      "total": 15,
+      "exercitados": 8
+    },
+    "cascudo": {
+      "total": 7,
+      "exercitados": 3
+    },
+    "ciclo": {
+      "total": 24,
+      "exercitados": 13
+    },
+    "cordel": {
+      "total": 23,
+      "exercitados": 17
+    },
+    "euclides": {
+      "total": 23,
+      "exercitados": 6
+    },
+    "mirante": {
+      "total": 62,
+      "exercitados": 48
+    },
+    "niemeyer": {
+      "total": 11,
+      "exercitados": 8
+    },
+    "oswaldo": {
+      "total": 13,
+      "exercitados": 9
+    },
+    "quilombo": {
+      "total": 23,
+      "exercitados": 10
+    },
+    "tomada": {
+      "total": 27,
+      "exercitados": 18
+    }
+  },
+  "sem_teste_direto": [
+    "motor/agentes/chagas/red-primeiro.ts",
+    "motor/agentes/clarice/clarificar.ts",
+    "motor/agentes/clarice/doc-updater.ts",
+    "motor/agentes/registro.ts",
+    "motor/agentes/tarsila/design.ts",
+    "motor/agentes/tarsila/ideate-run.ts",
+    "motor/agentes/vital/auditoria-harness.ts",
+    "motor/cascudo/freire/aprendiz.ts",
+    "motor/cascudo/freire/assinatura.ts",
+    "motor/cascudo/freire/candidatos.ts",
+    "motor/cascudo/memoria.ts",
+    "motor/ciclo/canudos/gauntlet.ts",
+    "motor/ciclo/crivo/avaliar.ts",
+    "motor/ciclo/crivo/perguntas-do-crivo.ts",
+    "motor/ciclo/crivo/portoes-de-fecho.ts",
+    "motor/ciclo/reparo.ts",
+    "motor/ciclo/reprise/espera.ts",
+    "motor/ciclo/reprise/politica.ts",
+    "motor/ciclo/reprise/reparadores/laravel-php.ts",
+    "motor/ciclo/reprise/reparadores/tipos.ts",
+    "motor/ciclo/reprise/tentativas.ts",
+    "motor/ciclo/roda.ts",
+    "motor/cordel/alicerce/snapshot.ts",
+    "motor/cordel/arquivar.ts",
+    "motor/cordel/frontmatter.ts",
+    "motor/cordel/repos.ts",
+    "motor/cordel/texto.ts",
+    "motor/cordel/util.ts",
+    "motor/euclides/estado-em-disco.ts",
+    "motor/euclides/eventos.ts",
+    "motor/euclides/radar/progresso.ts",
+    "motor/euclides/radar/saude.ts",
+    "motor/euclides/radar/servidor.ts",
+    "motor/euclides/radar/tick.ts",
+    "motor/euclides/recuperar.ts",
+    "motor/euclides/registros.ts",
+    "motor/euclides/sessao.ts",
+    "motor/euclides/tesouro/consumo.ts",
+    "motor/euclides/tesouro/cota-runs.ts",
+    "motor/euclides/tesouro/cota.ts",
+    "motor/euclides/tesouro/custo.ts",
+    "motor/euclides/tesouro/instabilidade.ts",
+    "motor/euclides/tesouro/janelas.ts",
+    "motor/euclides/tesouro/lacuna.ts",
+    "motor/euclides/tesouro/orcamento.ts",
+    "motor/mirante/acoes.ts",
+    "motor/mirante/cli/comandos.ts",
+    "motor/mirante/cli/dados.ts",
+    "motor/mirante/cli/rodape-tui.ts",
+    "motor/mirante/cli/saida.ts",
+    "motor/mirante/cli/situacao-cli.ts",
+    "motor/mirante/cli/tela-tarefa.ts",
+    "motor/mirante/comandos-de-tarefa.ts",
+    "motor/mirante/estado-json.ts",
+    "motor/mirante/refs-comando.ts",
+    "motor/mirante/render/config/paineis.ts",
+    "motor/mirante/render/config/tipos.ts",
+    "motor/mirante/render/disco.ts",
+    "motor/mirante/watch.ts",
+    "motor/niemeyer/lucio/matriz-entendimento.ts",
+    "motor/niemeyer/passos.ts",
+    "motor/niemeyer/tijolo/blocos.ts",
+    "motor/oswaldo/despacho-de-agentes.ts",
+    "motor/oswaldo/mutirao/encerramento.ts",
+    "motor/oswaldo/mutirao/fila.ts",
+    "motor/oswaldo/rui.ts",
+    "motor/quilombo/alfandega/anexo.ts",
+    "motor/quilombo/alfandega/confianca.ts",
+    "motor/quilombo/alfandega/ipv4.ts",
+    "motor/quilombo/alfandega/refs.ts",
+    "motor/quilombo/cartorio/aprovar-plano.ts",
+    "motor/quilombo/cartorio/merge.ts",
+    "motor/quilombo/cartorio/pr.ts",
+    "motor/quilombo/cartorio/responder-pergunta.ts",
+    "motor/quilombo/cartorio/retomar.ts",
+    "motor/quilombo/cofre/segredos.ts",
+    "motor/quilombo/limites.ts",
+    "motor/quilombo/salvo-conduto/compensacao.ts",
+    "motor/quilombo/salvo-conduto/idempotencia.ts",
+    "motor/tomada/catalogo.ts",
+    "motor/tomada/confianca.ts",
+    "motor/tomada/harness/claude-stream.ts",
+    "motor/tomada/harness/ollama.ts",
+    "motor/tomada/modo-puro.ts",
+    "motor/tomada/ponte/tarefas/sync.ts",
+    "motor/tomada/ponte/tarefas/tipos.ts",
+    "motor/tomada/preferencias.ts",
+    "motor/tomada/sonda.ts"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "gerado_em": "2026-08-29T16:41:50.929Z",
+  "total": 4014,
+  "invalidos": 0,
+  "assinados": 0,
+  "pct_assinados": 0,
+  "por_tool": {
+    "(vazio)": 4014
+  },
+  "por_dia": {
+    "2026-08-24": 3290,
+    "2026-08-25": 724
+  }
+}
