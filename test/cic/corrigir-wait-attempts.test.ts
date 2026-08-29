@@ -70,3 +70,28 @@ test('REGRESSAO: correcao bem-sucedida limpa wait_attempts residual de um incide
   expect(c?.fm.status).toBe('URL')
   expect(c?.fm.wait_attempts).toBe('')
 }, TEMPO_COM_GIT_MS)
+
+// O card 001 em producao provou o defeito: cost_usd parado em 2.2684 enquanto o
+// diario registrava "custo $1.5380 · 92122 tokens" de uma correcao ja executada.
+// Cinco portoes de orcamento leem esse campo, entao todos decidiam sobre numero
+// velho. O custo estar no TEXTO da mensagem nunca bastou — o texto ninguem soma.
+test('REGRESSAO: o custo da correcao entra no frontmatter, e nao so no texto do diario', async () => {
+  const id = createCard({
+    title: 'correcao que custa',
+    status: 'CORRECTING',
+    repo: 'org/repo',
+    surface: 'visual',
+    worktree: wt,
+    correction: 'refaca isso',
+    cost_usd: '1.0000',
+    tokens_total: '500',
+  }, '## Objetivo\nalgo\n')
+
+  await handleCorrect(id, agente)
+  const c = readCard(id)
+  expect(c?.fm.status).toBe('URL')
+  // 1.0000 que ja havia + 0.0500 do SUCESSO desta correcao.
+  expect(c?.fm.cost_usd, 'sem somar aqui, a proxima guarda de orcamento libera chamada paga sobre um gasto que ela nao conhece').toBe('1.0500')
+  // 500 que ja havia + 20 (tokens_in 10 + tokens_out 10) do SUCESSO.
+  expect(c?.fm.tokens_total).toBe('520')
+}, TEMPO_COM_GIT_MS)

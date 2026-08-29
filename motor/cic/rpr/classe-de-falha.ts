@@ -13,7 +13,12 @@ export interface FailureClassification {
 }
 
 const TERMINAL_GENERIC: SinalDeFalha[] = [
-  { pattern: /enoent|command not found|no such file or directory/i, reason: 'provedor nao instalado (binario nao encontrado)' },
+  // `executable not found` e a frase do BUN, que e o runtime em que o motor de fato
+  // roda (.bun-version, bin/hii.ts). O node diz `spawn ENOENT`, e so essa forma
+  // estava coberta: sob bun, provedor nao instalado caia na ultima linha de
+  // classifyFailure e o operador lia "falha nao reconhecida" em vez do motivo real.
+  // A suite nao podia pegar isso enquanto so a trilha node rodava.
+  { pattern: /enoent|command not found|no such file or directory|executable not found/i, reason: 'provedor nao instalado (binario nao encontrado)' },
   { pattern: /invalid[_ -]?api[_ -]?key|unauthorized|authentication[_ -]?error|please run\s*\/?login|\b401\b|\b403\b|forbidden/i, reason: 'credencial invalida' },
   { pattern: /invalid[_ -]?request[_ -]?error|malformed|\b400\b|unsupported (model|parameter)/i, reason: 'requisicao malformada' },
 ]

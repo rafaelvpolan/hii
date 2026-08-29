@@ -38,12 +38,34 @@ test('uma reprovacao vira uma tentativa dirigida, e o gate roda de novo', async 
   expect(r.veredicto.status).toBe('ok')
 })
 
+// Veredictos DISTINTOS de proposito. Enquanto o roteiro repetia a mesma frase 20
+// vezes, este teste media a parada por nao-progresso acreditando medir o teto —
+// as duas guardas ficavam cobertas pela mesma assercao, e mexer numa quebrava a
+// outra sem dizer qual. Cada uma tem o seu caso agora.
 test('REGRESSAO o teto e respeitado — o loop nao roda para sempre', async () => {
-  const roteiro: Roteiro = { veredictos: Array(20).fill(reprovado('sempre falha')), consertos: 0 }
+  const roteiro: Roteiro = { veredictos: Array.from({ length: 20 }, (_, n) => reprovado(`falha diferente ${n}`)), consertos: 0 }
   const r = await repararAteOTeto(gateQueSegue(roteiro), 3)
   expect(roteiro.consertos, 'consertou mais vezes que o teto').toBe(3)
   expect(r.tentativas).toBe(3)
   expect(r.veredicto.status).toBe('falhou')
+  expect(r.semProgresso, 'houve progresso a cada volta — parou pelo teto, nao por repeticao').toBe(false)
+})
+
+test('o laco para quando o gate REPETE a reprovacao — teto cego pagava as voltas restantes para ouvir o mesmo', async () => {
+  const roteiro: Roteiro = { veredictos: Array(20).fill(reprovado('sempre falha')), consertos: 0 }
+  const r = await repararAteOTeto(gateQueSegue(roteiro), 3)
+  expect(roteiro.consertos, 'devia ter parado na primeira repeticao, nao no teto').toBe(1)
+  expect(r.tentativas).toBe(1)
+  expect(r.semProgresso).toBe(true)
+  expect(r.veredicto.status).toBe('falhou')
+  expect(r.relato.at(-1), 'o relato precisa dizer POR QUE parou, senao parece que esgotou o teto').toContain('MESMA reprovacao')
+})
+
+test('repeticao so conta depois de um conserto — diferenca de caixa ou espaco nao vale como progresso', async () => {
+  const roteiro: Roteiro = { veredictos: [reprovado('Typecheck:  3   erros'), reprovado('typecheck: 3 erros')], consertos: 0 }
+  const r = await repararAteOTeto(gateQueSegue(roteiro), 3)
+  expect(r.semProgresso, 'a mesma frase com outra caixa e outro espacamento nao e progresso').toBe(true)
+  expect(roteiro.consertos).toBe(1)
 })
 
 test('esgotado o teto, o relato diz o que JA foi tentado — nao so que falhou', async () => {

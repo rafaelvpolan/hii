@@ -452,3 +452,643 @@ Não são pendências: são escolhas registradas para não parecerem esqueciment
 executa → valida → para cedo. Rotear por TJL ali é cerimônia. O valor real —
 fatiar uma implementação em blocos validados — exige fatiador determinístico por
 stack, que pertence à camada de skill, não ao `core/`.
+
+---
+
+## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
+
+A máquina de estados tem 15 estados; apenas 5 têm consumidor automático dentro do tick
+(`motor/osw/mtr/fila.ts:97-100`, `pending()` → handlers). Os outros 10 são checkpoints
+humanos, estados de boot ou — o pior — estados que nunca saem sozinhos. Card 001 está
+em `URL` desde 19/08. Card 002 em `HALTED` sem sinal de por quê. Ambos têm `updated`
+recente porque cada log que cai escreve `fm.updated = isoNow()` (`motor/cdl/store.ts:58`),
+mascarando staleness.
+
+`reconciledStranded()` (`motor/osw/mtr/estado-da-fila.ts:44-52`) roda uma única vez no
+boot, assume que um card é órfão se não está em estado terminal conhecido, e **refuta**
+estados reais: `URL`, `CLARIFY`, `READY`, `PAUSED`, `CONFIRM`, `HALTED` — os seis que
+o motor hoje **não consegue destravar**. A lista `checkpointsHumanos` em `config/topologia.json:74`
+declara `["URL","CONFIRM","PR_OPEN"]`, e o teste `test/nmy/topologia.test.ts:110-121` valida
+a cadeia de estados per-perfil, nunca a decisão de "quem espera humano". De fato `PR_OPEN`
+**tem** consumidor (`motor/qlb/ctr/merge.ts:39`, roda a cada 30 s) — o único checkpoint
+que o motor tira sozinho. Três dos quatro checkpoints reais (`READY`, `CLARIFY`, `PAUSED`)
+não estão na lista.
+
+**O laço quente, o problema concreto:**
+
+`handleExecute` (`motor/osw/executar.ts:309-314`) em falha de cota de provedor devolve sem
+mudar status — o card fica em `EXECUTING`. Redespachado em ≤5 s porque `fila.ts` não tem
+cooldown por card (`:97-100` só filtra `emVoo`, `:31` só reveza na chamada). `provider_override_implement`
+(`executar.ts:312`) é gravado mas **nunca apagado** — grep mostra escritor único em `:312`,
+zero leitores de limpeza. Card cravado no fallback para sempre. Se a cota original reset,
+o override continua ativo.
+
+Em outro caminho, `quotaFallbackProviderFor` (`motor/tmd/registro.ts:134-137`) é chamado em
+`executar.ts:309`, devolvendo um provedor. Mas o código devolve sem troca de estado:
+`:311-314` grava o override em `patchCard(id, { provider_override_implement: fallback })` e
+segue — o card não sai de `EXECUTING`. É redespachado. A segunda volta `:311` bate em
+`if (res.provider === fallback)` — a condição falha — e cai em `applyFailurePolicy`, que
+classifica a falha como `quota` e vai direto a `HALTED`. **Primeiro retry: fallback; segundo:
+parede.**
+
+**A contagem de tentativas se comporta de forma complexa por fronteira de passo** — `wait_attempts`
+ressurge em cada fronteira de sucesso (`fechar.ts:293`), mas entre passos **consecutivos do
+mesmo `handleFinish` há oito retomadas sem resset** (A4 em Rufus). A conta acumulada é ~40
+passagens do `handleFinish` antes de qualquer HALT por espera. Vezes 4 passos + pós-passos =
+~200. Por passagem de `handleFinish`, o pior caso verificável é: `maxReajuste()` = 2
+(`motor/cdl/ali/config.ts:60-62`) dá **três voltas** no laço de `motor/cic/passo-com-gate.ts:64`, e
+cada volta custa uma chamada do agente mais até duas do crivo (`GATE_RETRIES` = 1, `config.ts:64`)
+— nove chamadas por passo gated, vinte e sete nos três passos gated, mais o passo não gated.
+Resultado: **ordem de centenas de chamadas de IA por card, dentro dos tetos declarados, sem
+ninguém intervindo, todas podendo voltar sem progresso**. O multiplicador exato depende de quantas
+retomadas de espera cada fronteira de passo concede na prática, e essa medição não foi feita —
+o que está provado é a ordem de grandeza e o fato de nenhuma delas bater no teto. Card 002 prova: `13:20:03 EXECUTING->WAITING (tentativa 1/8)` e `13:20:33
+WAITING->EXECUTING sonda de saude ok` — um timeout de 900 s do CLI foi "curado" por um GET
+de 5 s no host da API, porque `probeProviderHealth()` (`motor/tmd/sonda.ts:14`) retorna `true`
+para qualquer código `> 0 && < 500` — código 429 conta como saudável. `wait_provider` vazio
+devolve `true` incondicional.
+
+**Deriva de transição:** `config/topologia.json:9-46` declara pares (origem, destino). `planSteps`
+(`motor/osw/rta/perfil.ts:227-242`) combina perfil + pipeline, produzindo **6 pares não declarados**:
+`URL_OK→TESTS_GREEN`, `URL_OK→CLEANED`, `URL_OK→SEC_CLEARED`, `REFINED→SEC_CLEARED`, `REFINED→CLEANED`,
+`TESTS_GREEN→CLEANED`. Quatro são heurísticos, dois foram observados. O teste `topologia.test.ts:110-121`
+valida o pipeline **completo**; nunca chama `planSteps` para cada perfil ativo.
+
+**Onde mexer:**
+
+- `motor/cdl/store.ts:53` — adicionar campo `status_since` (gravado só quando o status muda,
+  não em todo `patchCard`). Habilita staleness real e timeout de checkpoint.
+- `motor/cic/rpr/politica.ts:72` — antes do `if (input.failureClass === 'quota')`, branch para um
+  roteador que decide troca (seção PLANO abaixo).
+- `motor/tmd/registro.ts:134-137` — `quotaFallbackProviderFor` deixa de ser chamada aqui; a
+  decisão de rota integrada no roteador a substitui. O override é limpo em `executar.ts:372`
+  (implement bem-sucedido).
+- `motor/osw/rta/perfil.ts` — somar os 6 pares a `topologia.json`; `topologia.test.ts:110-121`
+  passa a varrer `planSteps(perfil)` para cada perfil ativo, não só o pipeline.
+- `motor/cic/crv/url-viva.ts:56-62` — `ensureUrl` já confere URL viva; criar consumidor em
+  `motor/osw/mtr/fila.ts:83` (`podar()`) que reconfire `url_pid` mortos e marca `url_estado`.
+- `motor/osw/mtr/fila.ts:29` — o catch-all de `runJob` manda pra `HALTED` sem `halt_class`.
+  Todas as ~26 escritas de HALT precisam de classe (`transient`/`quota`/`terminal`/`humano`/`orcamento`/`excecao`).
+
+**O que fica em aberto:**
+
+Prioridade de qual laço sair do travamento: se o roteador (PLANO) destravar a quota, a contagem
+falsa de tentativas fica em segundo plano — o card terá mais oportunidade antes de HALT. Se
+corrigir `cost_usd` no frontmatter (RECOMENDACAO item 3), o teto de orçamento deixa de ser
+decorativo. Ambos são pré-requisitos para o terceiro: detecção de não-progresso (item 5 em
+CORVINUS, hash de `gate.reason` entre voltas).
+
+---
+
+## PLANO — transformar motor/tmd/registro de harnesses em roteador de rotas
+
+O contrato `Harness` já declara capacidade em dois lugares: `capabilities()` devolve
+`HarnessCapabilities` com seis booleanos (`restrictsTools`, `isolatesReadonly`, `acceptsEffort`,
+`reportsCostUsd`, `reportsTokens`, `mcp`) — `motor/tmd/tipos.ts:56-63` — e o próprio `Harness`
+declara `supportsAgents`, `supportsVision` e `agentic` como campos, `motor/tmd/tipos.ts:101-105`.
+São dados de capacidade que já existem; o que falta é alguém consultá-los para decidir rota.
+Hoje só `isolatesReadonly` é lido, em `motor/euc/tsr/confianca.ts:74-82`.
+A classe de erro já é normalizada por harness (`sinaisDeFalha()`, `:47-51`) e `classifyFailure`
+(`motor/cic/rpr/classe-de-falha.ts:43-53`) cruza com genéricos. `probeProviderHealth()`
+(`motor/tmd/registro.ts:112-115`) existe mas é **lido só por `espera.ts:69`** — nunca para escolher.
+`TrocaDeProvedor` (`motor/cdl/tipos.ts:76-81`) é tipo que nada preencheu. O roteador que falta
+é um decisor aditivo (nunca piora o comportamento atual, só acrescenta uma saída antes do HALT),
+chamado de dentro de `decideOutcome` (`motor/cic/rpr/politica.ts:72`).
+
+**Assinatura concreta, sem dependência nova:**
+
+```ts
+// motor/tmd/rota.ts — novo arquivo, só imports de tmd/
+export interface EntradaDeRota {
+  papel: AgentRole                          // implement | verify | gate | step
+  classeDeFalha: FailureClass               // transient | quota | terminal
+  provedorAtual: HarnessId
+  tentadosNestaRodada: readonly HarnessId[] // quem já falhou NESTA rodada
+}
+
+export type DecisaoDeRota =
+  | { acao: 'manter_politica_atual'; motivo: string }
+  | { acao: 'trocar'; para: HarnessId; motivo: string }
+
+export function decidirRota(e: EntradaDeRota): DecisaoDeRota
+```
+
+Regras (tudo com dado que o motor já tem):
+
+1. `terminal` → `manter_politica_atual` (preserva HALT de hoje).
+2. Candidatos = lista ordenada do papel em `PreferenciaDePapel.providers?: string[]`
+   (`motor/tmd/preferencias.ts:13-25`, extensão retrocompatível do campo `provider` singular).
+   Fallback: `providerNames()` (os quatro conectados).
+3. Filtra por `tentadosNestaRodada` (não repetir quem falhou ESTA rodada), por `capabilities()`
+   (papel `implement` exige `agentic`, papel `verify` exige `isolatesReadonly` — regra que já
+   existe em `motor/euc/tsr/confianca.ts:74-82`, hoje só para recusar), por `autenticado()`,
+   por `janelasDoProvedor` (cota estourada, `motor/tmd/disponibilidade.ts:28-31`).
+4. Ordena preferindo `rodaLocal` quando mecânico (papel `step`/`verify` sem escrita).
+5. Lista vazia → `manter_politica_atual`. Nunca piora.
+
+**Encaixe em pontos concretos (sem redesenho):**
+
+- `motor/cic/rpr/politica.ts:72` — antes do `if (input.failureClass === 'quota')`, branch:
+  ```ts
+  const rota = decidirRota({ papel: input.papel, classeDeFalha: input.failureClass,
+    provedorAtual: input.provider, tentadosNestaRodada: card.rota_tentados?.split(',') ?? [] })
+  if (rota.acao === 'trocar') {
+    return patchCard(id, { rota_tentados: `${rota.para}` }, ...) + retry com novo harness
+  }
+  ```
+- Seis chamadores de `providerFor` em `agente.ts:350`, `gate.ts:229`, `avaliar.ts:20`,
+  `clarificar.ts:96`, `ideate-run.ts:25` passam a aceitar `override?: HarnessId` opcional
+  (como `implement` já aceita em `executar.ts:309-315`).
+- `motor/tmd/preferencias.ts` — campo novo `providers?: string[]` é opcional; código existente
+  que usa `provider` singular segue funcionando.
+- Campo novo `rota_tentados` no frontmatter do card (CSV de HarnessId) — escrito por `patchCard`,
+  limpo por `haltFields` (item 15 em Rufus) e pelo sucesso.
+
+**O que já passa a funcionar com esse roteador mínimo:**
+
+Failover de quota entre claude↔codex↔kimi para `implement`; entre claude↔codex↔ollama para `verify`.
+Card em `EXECUTING` com quota de claude redirecciona para codex no mesmo tick. Tiering de modelo
+(próximo item, RECOMENDACAO) passa a ser consultável no ponto de escolha.
+
+---
+
+## RECOMENDAÇÃO — onde o dinheiro queima hoje, e a ordem de corte
+
+**O custo acumulado no frontmatter fica obsoleto durante a execução.** `motor/cic/corrigir.ts:126-134`
+fecha o fluxo de sucesso da correção gravando `status`, `correction`, `verify` — **sem `cost_usd`
+nem `tokens_total`**. O custo (`r.cost`) entra só como texto na mensagem de log (`:134`). Resultado:
+guardar a correção anterior não atualiza o frontmatter. **Prova em card 001:** linhas 11-12 têm
+`cost_usd: 2.2684` (soma dos três passos anteriores, 179311 tokens); linha 68 registra a correção
+que rodou depois: `"custo $1.5380 · 92122 tokens"` — texto puro, nunca estruturado. Frontmatter segue
+em 2.2684. **Impacto:** todo guard de orçamento que lê `card.fm.cost_usd` (5 sítios: `executar.ts:170`,
+`corrigir.ts:88`, `fechar.ts:71`, `fase-spec.ts:78`, `gate.ts:217`) faz decisão sobre número 41%
+desatualizado. TRAVA 2 do gauntlet (`motor/cic/cnd/gauntlet.ts:166-168`) que rebaixa o modo quando
+gasto passa do teto pode deixar o modo caro ativo por falta de visibilidade.
+
+**A conta de chamadas de IA** dentro do teto declarado, com as constantes conferidas: uma passagem
+de `handleFinish` com quatro passos, três deles gated, custa até vinte e sete chamadas só nos
+gated — três voltas por passo (`maxReajuste()` = 2 em `motor/cdl/ali/config.ts:60-62`, laço em
+`motor/cic/passo-com-gate.ts:64`), cada volta com uma chamada do agente e até duas do crivo
+(`GATE_RETRIES` = 1, `config.ts:64`) — mais o passo não gated. Multiplicado pelas retomadas de
+espera por fronteira de passo (A4), chega à ordem de centenas antes de qualquer HALT, **nenhuma
+batendo o teto, porque a conferência acontece só na entrada do handler e nunca dentro do laço de
+passos**. Ao custo observado de US$3,0416 num único passo do card 002 (`.runner.log:30`), não é
+preciso chegar perto de centenas de chamadas para o card passar do limite de US$16 sem que ele
+dispare: bastam seis passos daquele porte. O teto de orçamento não segura — essa é a conclusão
+provada. O número exato de chamadas por card continua **sem medida** e precisa ser instrumentado
+antes de virar meta de corte.
+
+**Tiering de modelo já é computado e descartado.** `motor/osw/rui.ts:40-63` computa `EscolhaDeTier`
+(tier + motivo) para 9 ações em `motor/cdl/ali/config.ts:24-28` — `registrarTier` (`:56-63`) manda
+o resultado para `anexarEvento` e acabou. Nenhum consumidor em `providerFor`, `modelFor`, `effortFor`.
+A decisão de custo **nunca alimenta a escolha do custo**.
+
+**Cache de prefixo:** está correto (`motor/tmd/eco/prefixo.ts` replica exatamente a disciplina de
+prefixo fixo + sufixos append-only, auditado em byte). Não mexer.
+
+**Ordem de corte, do dano maior para menor:**
+
+1. **Gravar `cost_usd`/`tokens_total` em todo `patchCard` de sucesso dentro do laço** (`motor/cic/corrigir.ts:126-134`,
+   `motor/cic/passo-com-gate.ts:93`, `motor/qlb/ctr/fechar.ts:293`). Chamar `accumulatedTotals(card, fsteps)`
+   que já existe (`motor/euc/metricas-de-fecho.ts:35-39`). Sem isso, o terceiro item abaixo fica cego.
+
+2. **Conferir `gastoDoCard` no topo do laço de passos** (`motor/qlb/ctr/fechar.ts:200`), não só na
+   entrada do handler. Hoje só `fase-spec.ts:99` faz (por volta de retry). Uma passagem inteira de
+   passos inteira roda entre duas conferências. [-> Celer para calibrar o teto real]
+
+3. **Mapear tier → (provedor, modelo, esforço) e consultar em `providerFor`/`modelFor`/`effortFor`.** 
+   `config/model-tier.json` tem os dados; `preferencias.ts` já lê a config. Um mapa `tier->default`
+   como guia de fallback em ausência de override por papel. Sem descobrir o que tier significa em
+   moeda de IA, nada mais aqui faz sentido.
+
+4. **Detectar não-progresso com hash de output entre voltas.** `motor/cic/passo-com-gate.ts:75` instrui
+   "Refaça o passo do zero" — reset, não convergência. Hash de `gate.reason` normalizado entre
+   voltas 1 e 2: se idêntico, parar antes do teto. Idem em `motor/cic/reparo.ts:51` (`repararAteOTeto`)
+   com `veredicto.detalhe`. Dados já coletados em `motor/cic/rpr/tentativas.ts` (appendAttempt) e
+   descartados por nenhum decisor consultá-los. [-> Corvinus item 4]
+
+---
+
+## ESTADO — o que o motor não consegue ver quando um card para
+
+Três achados de diagnosticabilidade, que explica por que card 001 em `URL` há 4 dias não grita e card 002
+em `HALTED` não diz por quê. O script que responde `/health` faz `lerSaude()` → `{"ok":true,"encerrando":false,"emVoo":0,"pendentes":0,"falhasSeguidasNoTick":0,"ultimoErro":""}` porque
+`recordTickSuccess()` zera o contador de falhas sempre que o `tick` não lança exceção — mesmo que nenhum
+card tenha mudado de estado. Não há campo que meça "ciclos improdutivos seguidos".
+
+`halt_class` é escrito em apenas 2 sítios (`motor/cic/rpr/espera.ts:36`, `politica.ts:35`) e lido em 1
+(`motor/euc/rdr/saude.ts:115`). Os outros ~26 `HALT` (via `motor/mir/acoes.ts:173`, `executar.ts:172,181,191,263,272,359`,
+`corrigir.ts:90,94,104`, `fechar.ts:73,77,89,97,109,121,138,151,365,391`, `fase-spec.ts:45,56,80,85,100,113,117,124`,
+`metricas-de-fecho.ts:44-49`) cravam `status: HALTED` sem classe. Card 002 (`cards/002-faca-outro-modelo-de-ranking-current-ses.md:4`)
+prova: frontmatter sem `halt_class`, `halt_at`, `halt_reason`. O último log é texto livre. `porHalts`
+ignora o card e retorna "ocioso". Motor responde verde.
+
+`status_since` não existe no frontmatter. `updated` é gravado **incondicionalmente** em todo `patchCard`,
+inclusive nos que não mudam campo nenhum (`motor/cic/passo-com-gate.ts:32,107,119`). Um card em laço de
+reparo renova `updated` a cada log → idade aparente ≤ 2 min → invisível enquanto está laçando. Os
+6 estados sem consumidor automático (`READY`, `CLARIFY`, `PAUSED`, `CONFIRM`, `HALTED`, `URL`) estão
+ausentes de `isActive()` (`motor/mir/render/phases.ts:34-36`) — nenhum deles aparece em rodapé com
+idade. Lista "esperando você" não tem coluna de tempo. Um card em `URL` há 4 dias renderiza idêntico a
+um lá há 4 segundos.
+
+O tipo `'human_checkpoint'` de evento existe em `TIPOS_DE_EVENTO` (`motor/euc/eventos.ts:19`) e é citado
+como implementado em docs, mas **grep encontra zero emissores** de `anexarEvento` com esse tipo. `checkpointsHumanos`
+em `config/topologia.json:74` está tipado e parseado, com zero consumidores de produção. Nada sabe que
+`URL` *é* checkpoint, nada pode ter timeout.
+
+**Sinal que falta, em ordem de impacto:**
+
+1. `status_since` no frontmatter — gravado só quando status muda (não em todo `patchCard`). Em
+   `motor/cdl/store.ts:53`, onde já há `resolvedFields.status !== undefined` e chamada de `conferirTransicao`.
+2. `halt_class` obrigatório em toda escrita `HALTED` — com classes novas (`humano`, `excecao`, `orcamento`,
+   `escopo`) para casos hoje mudos. Ponto de estrangulamento único: `motor/cdl/store.ts:43-65` confere
+   status antes de gravar; ali se recusa/carimba HALT sem classe.
+3. Evento `human_checkpoint` emitido **no ponto de entrada** do checkpoint (`motor/cdl/store.ts:53`,
+   onde já se sabe se é transição) com `chave` = status e `resultado` = `aberto`. Emitido também na
+   **saída** (`motor/mir/acoes.ts:81-90` approveUrl, `acoes.ts:115-125` confirmar, `motor/qlb/ctr/merge.ts:23`
+   fechado) com `resultado` = `atendido`.
+4. Tick sem progresso detectável — em `motor/osw/mtr/fila.ts:105`, comparar assinatura de estado da
+   fila (par `id:status` de `allCards()`) contra tick anterior. Gravar `ticksSemProgresso` em
+   `motor/euc/rdr/tick.ts:6-10` (`DaemonHealth`). `/health` degrada para 503 (ou `ok:false`) quando
+   motor está de pé e improdutivo.
+5. Campo `diffHash` + `criterio` do veredito em evento `gate_verdict` — `motor/cic/passo-com-gate.ts:114`,
+   com `chave: diffHash` do diff acumulado (`motor/cic/crv/gate.ts:131`). Três vezes o mesmo hash =
+   laço comprovado, não inferido.
+6. Agregador de histórico por harness (taxa de falha por classe, latência p95) — varredura de
+   `motor/euc/tsr/cota-runs.ts` que já faz `loteDesde()` estendida a agrupar por `provedor`.
+   Base para o roteador (PLANO acima) ter memória observada.
+7. `/health` checando card preso em checkpoint — teto de dias em aberto sem sinal de progresso.
+
+Dois itens adicionais para o operador diagnosticar à mão, hoje invisíveis:
+
+- `hii doctor` não olha card — `motor/euc/rdr/doctor.ts:196-203` pula de checagem de ambiente direto para
+  daemon. Quando um card parou, o doctor responde tudo verde e deixa o humano sem pista.
+- Drenagem incompatível — `motor/osw/mtr/encerramento.ts:11` (`HICODE_SHUTDOWN_TIMEOUT_MS`=30 s) contra
+  `motor/cdl/ali/config.ts:48` (`RUN_TIMEOUT_MS`=900 s). SIGTERM durante agente mata o filho; custo da
+  passagem nunca é escrito, portão de orçamento funciona com número subconta.
+
+**O que fica em aberto:**
+
+Timeout automático de checkpoint humano — nenhuma das referências abertas (OpenRouter, Claude Code Agent
+SDK, OpenCode) documentam escalação automática por timeout. Falta decisão de produto. Enquanto não houver,
+o sinal de "aberto há quanto tempo" (item 1 acima, `status_since`) habilita alertas manuais.
+
+Reaper de `url_pid` e worktrees órfãs — já foi mencionado em PENDENCIA acima. Trata-se do mesmo padrão:
+reconferir saúde de recurso que foi delegado e nunca se verifica depois.
+
+
+---
+
+## ESTADO — a costura entre o motor e a TUI, e as três coisas chamadas sessão
+
+Levantado por varredura de import sobre `motor/`, `bin/`, `test/` e `runner.ts`, com o resultado
+conferido arquivo por arquivo pelo crivo. **O núcleo importa da TUI: 21 arestas, em 14 arquivos.**
+A dependência está invertida, e não é um caso isolado — é o padrão. Alguns exemplos que mostram o
+tamanho do problema: `motor/cic/agente.ts:2` e `motor/qlb/ctr/fechar.ts:2` puxam
+`objetivoComInstrucoes` de `mir/instruir.ts`; `motor/cic/crv/url-viva.ts:7` puxa `devCommand` e
+`devCwd` de `mir/comandos.ts`; `motor/euc/rdr/progresso.ts:13` puxa `PHASES` de
+`mir/render/phases.ts`; e `motor/tmd/map/comandos.ts:5` puxa `stripAnsi` de `mir/tui/layout.ts` —
+a camada de **provedor** dependendo de renderização de terminal.
+
+O que a varredura mostrou e que muda o diagnóstico: **cinco arquivos de `mir/` não são TUI coisa
+nenhuma.** `mir/acoes.ts` (a API de escrita de card), `mir/instruir.ts`, `mir/comandos.ts`,
+`mir/progresso.ts` e `mir/historico.ts` importam só de `cdl/`, `qlb/`, `tmd/eco` e `euc/tsr` — e
+`grep -c $'\x1b'` devolve zero nos cinco. É motor puro morando no endereço errado. A inversão,
+portanto, não é acoplamento a ser cortado: é **domínio que precisa mudar de casa**.
+
+**Não há ciclo de import a desfazer.** Tarjan sobre o grafo completo devolve exatamente dois
+componentes fortemente conexos, e nenhum deles atravessa a fronteira: `mir/render/execucao.ts` ↔
+`mir/atividade.ts`, e `osw/mtr/encerramento.ts` ↔ `osw/mtr/estado-da-fila.ts`. No nível de módulo a
+inversão é bidirecional com sete módulos, mas no nível de arquivo dá para reordenar à vontade sem
+risco de deadlock de import.
+
+**O que já serve de contrato entre os dois lados** e não precisa ser inventado: `motor/euc/eventos.ts`
+é o barramento (`TIPOS_DE_EVENTO` fechado em 11 tipos, `:13-28`; `anexarEvento` append-only em
+`cards/runs/<card>.eventos.jsonl`), `motor/cdl/store.ts` é o estado compartilhado, e
+`motor/euc/rdr/servidor.ts` já expõe `/health`. Falta uma coisa só, e é notificação: hoje a TUI
+descobre mudança por `fs.watch` em `mir/watch.ts`. Para a TUI virar cliente do motor, isso basta.
+O que **não** existe é um tipo único de fronteira: o estado do motor para quem desenha está partido
+em `SnapshotDoMotor` (`mir/estado-json.ts:64`, com `VERSAO_DO_CONTRATO = 1` em `:22` — o contrato de
+saída do motor escrito dentro da TUI), `EstadoDaConfig` (`mir/render/config/tipos.ts:57-70`) e
+`SaudeDoMotor` (`euc/rdr/saude.ts`, esse já no núcleo).
+
+### Sessão são três coisas diferentes com o mesmo nome
+
+1. `motor/euc/sessao.ts` — 18 linhas, `let atual = ''`, id `<timestamp>-<pid>`. **Sessão é o processo.**
+2. `motor/euc/ias-da-sessao.ts` — `abrirSessao`, `registrarChamada`, `agregarPorIa`, `trocasDeProvedor`.
+   **Sessão é um ledger append-only por execução**, em `cards/runs/<sessao>.ias.jsonl`.
+3. `motor/mir/sessao.ts` — `SessionState` (`:10-26`) e `handle` (`:245`). **Sessão é estado de tela.**
+
+A ponte entre a primeira e a segunda é uma concatenação de string:
+`sessaoParaChamada(id)` devolve `sessaoDoCard(id)` quando há card, e `conversa-<sessaoAtual()>` quando não há —
+`motor/euc/tsr/confianca.ts:84-86`, consumida por `motor/cdl/ali/snapshot.ts:132`.
+
+**O que fazer, e onde.** A fronteira é: núcleo = tudo menos `mir/`, mais os cinco arquivos acima;
+interface = `mir/render/`, `mir/tui/`, `mir/cli/`, `despacho.ts`, `sessao.ts`, `responder.ts`,
+`completar.ts`, `watch.ts`; composição = `bin/hii.ts`, `bin/repl.ts`, `runner.ts`.
+
+**O que fica em aberto — e por que não há plano de movimentação aqui.** A sequência de passos que
+moveria esses arquivos foi escrita três vezes e **reprovada nas três** pelo crivo, sempre por
+obstáculo real, nunca por preciosismo. Os três obstáculos, para quem for tentar de novo:
+
+- `renderProgress` é importado por `runner.ts:3` e chamado em `:43`. Movê-lo para o lado da interface
+  faz o entrypoint headless depender da apresentação — o oposto do objetivo.
+- `test/mapa-de-rename.test.ts` e `scripts/renomear-brazil.mjs` **travam o mapa de arquivos**. Há um
+  `TOTAL_ESPERADO` e um mínimo por domínio (`mir` ≥ 57, com 62 em disco: cinco de folga), mais uma
+  exigência de injetividade. Metade dos passos propostos deixava a suíte vermelha.
+- `PHASES` carrega `color: '\x1b[...'` (`mir/render/phases.ts:8-13`). Movê-lo verbatim põe ANSI no
+  núcleo e quebra o próprio invariante que a separação existe para criar. O campo tem um único
+  consumidor (`euc/rdr/progresso.ts`), que vai para o lado da interface de qualquer forma — então o
+  certo é o campo sair do tipo, não viajar junto.
+
+Mover arquivo neste repositório é caro por decisão de projeto, e o mapa de rename é a razão. Quem
+retomar isto começa por aí, não pelo grafo de imports.
+
+---
+
+## PENDÊNCIA — o revezamento de IAs não tem onde acontecer, e a troca que já existe é invisível
+
+O pedido é começar uma tarefa numa IA, trocar no meio, voltar, e terminar noutra. A pesquisa e a
+leitura do código dizem duas coisas incômodas, e as duas mudam o que dá para prometer.
+
+**Primeira: continuidade fiel de conversa entre os harnesses não existe, e não é limitação do hii.**
+Os provedores conectados aqui são binários de CLI com loop de ferramentas e sessão próprios —
+não uma API de completion crua. Cada um resume só a si mesmo: `claude --resume` lê
+`~/.claude/projects/`, `codex exec resume` lê JSONL em `~/.codex/sessions/`, formatos proprietários
+e estruturalmente diferentes, sem adaptador entre eles. E mesmo entre modelos do mesmo fornecedor,
+cache de prefixo é hash de (ferramentas + system + mensagens) **e específico do modelo**, e blocos de
+raciocínio precisam voltar inalterados à mesma API. Ou seja: o que atravessa uma troca é texto final,
+nunca raciocínio em progresso nem cache aquecido. O único padrão que generaliza para agentes que não
+compartilham estado interno é o **bastão escrito** — um briefing em prosa que o próximo recebe no
+lugar do histórico. Vale registrar que nenhum harness usa hoje a retomada nativa da própria CLI:
+`grep` por `--resume` e `--continue` em `motor/tmd/harness/` não devolve nada.
+
+**Segunda, e essa é o achado: o bastão escrito já existe, embrionário, e ninguém o chama de handoff.**
+`motor/cic/rpr/tentativas.ts:52-57` persiste cada tentativa em `cards/runs/<id>.attempts.json` com
+até 8000 caracteres de resposta, e `attemptHistory` (`motor/cic/corrigir.ts:67-72`) reinjeta isso no
+prompt da tentativa seguinte, truncado em 200 caracteres por linha, sob a frase "Historico de
+tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta)". É
+**agnóstico de provedor** e roda no caminho de `CORRECTING` (`:75`). Não foi desenhado para
+revezamento, mas é exatamente a forma certa: estado da tarefa em texto neutro, mais o worktree
+carregando o que de fato mudou.
+
+**Terceira: a única troca de provedor que o motor faz hoje é invisível para a função que existe
+para observá-la.** `motor/euc/ias-da-sessao.ts:189-201` tem `trocasDeProvedor(chamadas)`, que lê
+troca de provedor dentro de uma sessão. Só que sessão, ali, é por **execução**, não por card:
+`idDaSessao` monta `<card>-<carimbo>` com carimbo de precisão de segundo (`:23-29`), e `abrirSessao`
+sobrescreve o registro anterior (`:41-46`). Some-se a isso o fallback de cota
+(`motor/osw/executar.ts:309-314`): ele grava `provider_override_implement` e **retorna sem mudar o
+status**. O card continua em `EXECUTING`, a fila o redespacha, `handleExecute` chama `abrirSessao` de
+novo — e as duas chamadas, a que falhou por cota e a que rodou no provedor novo, caem em **ledgers
+diferentes**. `trocasDeProvedor` nunca vê nenhuma das duas pontas junta. O próprio teste do módulo
+diz isso no título: `test/euc/ias-da-sessao.test.ts:35-43`, "a sessao de um card e estavel entre
+chamadas, e uma nova execucao abre outra".
+
+Some-se ainda que o escritor da escolha de provedor está do lado errado da costura
+(`motor/mir/escolher-ia.ts`), que o `provider_override_implement` tem um único escritor de produção
+(`motor/osw/executar.ts:312`) e que `implement` (`motor/cic/agente.ts:187`) não aceita override por
+parâmetro — lê do frontmatter em `:190`. O daemon não troca de IA no meio de um card porque a
+capacidade de escolher nunca esteve no motor.
+
+**O que fazer, em ordem, e onde mexer.**
+
+1. Fazer a sessão cobrir o card, e não a execução. `abrirSessao` (`euc/ias-da-sessao.ts:41`) passa a
+   reaproveitar a sessão existente do card em vez de abrir outra. É o pré-requisito de tudo: sem
+   isso, nenhuma leitura de travessia entre provedores é confiável, inclusive a que já existe.
+2. Fazer o fallback de cota mudar o status ao retornar (`osw/executar.ts:309-314`). Hoje ele é um dos
+   `return` sem transição que a PENDÊNCIA anterior sobre laço quente já enumera — e é o mesmo defeito.
+3. Promover `attemptHistory` a briefing de passagem explícito: um campo no card dizendo qual provedor
+   escreveu cada tentativa, para o texto reinjetado dizer de quem veio o bastão. `Fields` é
+   `Record<string, string>` (`motor/cdl/tipos.ts:11`), então campo novo não muda tipo.
+4. Levar a escolha de provedor para o motor, deixando `mir/escolher-ia.ts` como cliente.
+
+**O que fica em aberto.** O contrato de sessão completo foi escrito três vezes e reprovado nas três
+pelo crivo — não por otimismo sobre o handoff, que foi corretamente recusado nas três, mas por erros
+de fato em cima da premissa de que a sessão já cobria o card. Corrigido o item 1 acima, o desenho
+volta a ser possível sobre terreno verdadeiro. Também fica em aberto a incorporação dos comandos
+nativos de cada IA: `motor/tmd/map/comandos.ts` já enumera manifestos `.md` por provedor, mas
+`comandosDaIaAtiva` (`:137`) olha só `providerNameFor('implement')`, nunca mescla provedores, e não
+tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
+entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
+no repositório: `MCP_PREFIX` em `motor/tmd/pnt/mcp.ts:6`.
+
+
+---
+
+## PENDÊNCIA — o motor desfaz a parada humana, e a sonda cura o que não diagnosticou
+
+Três mecanismos independentes que produzem o mesmo sintoma — "a tarefa ficou travada
+em loop" — e que a rodada do PR #28 **não** corrigiu. Ficam aqui com âncora porque
+cada um é trabalho próprio, e o primeiro é o mais grave do repositório hoje.
+
+**1. `updateCard` grava sem compare-and-set.** `motor/cdl/store.ts:43-65` é o único
+ponto de escrita de card, e ele conhece o par (estado anterior, estado novo) — a
+linha 54 chama `conferirTransicao(before.status, resolvedFields.status, id)`. Só que
+o retorno é **ignorado**: `conferirTransicao` observa, registra a deriva e devolve;
+o laço logo abaixo escreve `fm[k] = v` de qualquer jeito. Há `withFileLock`, então
+não é corrida de escrita — é ausência de política. Ninguém pergunta "esta transição
+é permitida a partir do estado que eu li?" nem "o card ainda está onde eu esperava?".
+
+Consequência medida, no card 001 em disco: `17:17:08 CORRECTING->HALTED parado pelo
+humano`, e às `17:20:30` o mesmo card volta para `URL` pela mão de
+`motor/cic/corrigir.ts:126-134` — o job que já estava em voo terminou e escreveu por
+cima. **Toda parada humana durante um job em voo é silenciosamente desfeita.** Para
+quem está olhando a TUI, isso é exatamente "eu mandei parar e ele continuou".
+
+O conserto não é barrar transição não declarada em produção — isso trocaria deriva
+silenciosa por card travado, e o comentário de `motor/nmy/deriva-de-transicao.ts`
+já diz isso. O conserto é o job em voo **reler o estado antes de escrever** e desistir
+quando o card saiu de baixo dele, que é o que `HALTED` e `PAUSED` significam.
+
+**2. A sonda de saúde não tem relação causal com a falha que ela libera.**
+`motor/cic/rpr/espera.ts:69` chama `probeProviderHealth(provider)`, que cai em
+`motor/tmd/registro.ts:112-115` — e ali harness desconhecido devolve `true`
+incondicionalmente. Quando o harness é conhecido, a sonda é
+`alcancavelPorHttp` (`motor/tmd/sonda.ts:8-16`), que faz `curl` numa URL e aceita
+`code > 0 && code < 500`: **429 e 403 contam como saudável.**
+
+Card 002 é a prova: entrou em `WAITING` às 13:20:03 por *timeout de 900s do CLI*, e
+às 13:20:33 foi acordado com "sonda de saude ok". Um GET de cinco segundos numa URL
+declarou curado um binário que não respondeu em quinze minutos. O que falhou e o que
+foi medido não têm relação nenhuma — e o card volta para a fila para falhar de novo,
+que é a forma mais cara possível de loop.
+
+**3. `resume_from` atravessa a correção e faz o fecho pular todos os passos.**
+`motor/euc/metricas-de-fecho.ts:57` grava `resume_from: RESUME_POST_STEPS` ao pausar
+para confirmação. Se o humano responde "não resolveu", `motor/mir/acoes.ts:145-149`
+manda o card para `CORRECTING` **sem limpar o campo**, e o fluxo de sucesso de
+`motor/cic/corrigir.ts` também não limpa. Quando o card volta a `URL_OK`,
+`motor/qlb/ctr/fechar.ts:92-93` lê `resume_from` e o repassa a `resumeStart`
+(`motor/qlb/ctr/retomar.ts:9`), que devolve `steps.length` — e o `for` de
+`fechar.ts:200` **itera zero vezes**. O card sai "polido" sem ter rodado passo nenhum.
+
+Precisão importante: `fechar.ts:93` limpa o campo ao lê-lo, então o pulo acontece uma
+vez só, não para sempre. Uma vez basta — é justamente o card que voltou da correção,
+o que mais precisa dos passos, que os perde.
+
+**Onde mexer, em ordem:** o item 1 primeiro, porque enquanto ele existir qualquer
+parada é ilusória e os outros dois são difíceis de observar. Depois o 2, trocando a
+sonda por uma que meça o que falhou (o binário, não uma URL) e que trate 429 como
+indisponível. O 3 é uma linha em cada handler do meio.
+
+---
+
+## ESTADO — as duas trilhas de teste passam, e o que foi preciso para isso
+
+Ponto de partida: `bun run test` — o comando que o `package.json` declara e que todo
+mundo digita — estava **vermelho**, e o critério real de verde era `bun run test:node`,
+o que não estava escrito em lugar nenhum. Hoje as duas passam:
+
+| Trilha | Comando | Resultado |
+|---|---|---|
+| bun | `bun run test` | **248 arquivos, 2710 testes, 0 falhas** |
+| node | `bun run test:node` | **2704 testes, 0 falhas** |
+
+Foram três defeitos distintos, e vale registrar cada um porque nenhum era o que
+parecia à primeira vista.
+
+**1. A fachada de teste ignorava metade do próprio propósito.**
+`test/apoio/runner.ts` se anunciava como ponte sobre `bun:test` e `node:test`, e
+importava **só** `node:test`. Sob `bun test`, a suíte usava o *shim* de `node:test` do
+Bun em vez do runner nativo — e esse shim tem a guarda `checkNotInsideTest`, que
+proíbe registrar teste enquanto outro roda. Como **140 dos 248 arquivos** fazem
+`await import(...)` no topo, o módulo suspende, o runner começa a executar o que já
+registrou, e quando o módulo volta para chamar `test()` a guarda dispara. Eram 125
+erros e só 1566 dos 2704 testes chegando a rodar. A fachada passou a escolher o runner
+nativo de cada plataforma em tempo de execução.
+
+**2. `bun test` não dá isolamento por arquivo, e a suíte depende disso.**
+`node --test` roda cada arquivo num processo próprio; `bun test` roda os 248 num
+processo só. A suíte assume o primeiro modelo em vários pontos: **66 arquivos escrevem
+`process.env` no topo do módulo**, e os testes que sobem servidor HTTP, que leem a
+trava de instância ou que mexem em `PATH` pisam uns nos outros.
+
+O sintoma media a **ordem**, não o código: um teste de socket que rodasse tarde falhava
+com `ConnectionRefused` mesmo com `listen` bem-sucedido, evento `listening` emitido e
+porta válida — e ao trocar a ordem dos diretórios a falha mudava de dono. Reproduzido
+igual em bun 1.3.14 e 1.4.0, então não era versão. Excluir diretórios não ajudava:
+tirar `test/qlb/` fazia aparecerem falhas novas na trava de instância.
+
+A alternativa seria tornar 248 arquivos herméticos num processo compartilhado.
+`scripts/test-bun.mjs` roda **um processo por arquivo** — a mesma garantia que a trilha
+node já dava — e sai mais rápido que a rodada em processo único (1m22s contra 1m13s de
+uma rodada que nem terminava verde).
+
+**3. Dois defeitos que só a trilha bun podia ver**, e o segundo é de produção:
+
+- **`classifyFailure` não reconhecia binário ausente sob Bun.** O padrão em
+  `motor/cic/rpr/classe-de-falha.ts:16` cobria `ENOENT` (a forma do node) e não
+  `Executable not found in $PATH` (a forma do bun). E **Bun é o runtime em que o motor
+  roda** (`.bun-version`, `bin/hii.ts`). Em produção, provedor não instalado caía na
+  última linha do classificador e o operador lia "falha nao reconhecida" em vez do
+  motivo real. O teste que devia pegar isso amarrava a asserção à string do node —
+  passava verde afirmando o comportamento do runtime errado.
+- **A pós-condição da tarefa-ouro dependia de quem hospedava a suíte.**
+  `test/osw/tarefa-ouro.test.ts` rodava a suíte do repo-alvo com `process.execPath`,
+  que sob `bun test` é o bun. A pós-condição media o runner, não o trabalho da IA.
+
+**O que fica em aberto.** As 66 escritas de `process.env` em topo de módulo continuam
+lá — o isolamento por processo as torna inofensivas, não corretas. Se algum dia a
+suíte precisar rodar em processo compartilhado (paralelismo dentro de um worker, por
+exemplo), elas voltam a morder. E `.bun-version` pede 1.4.0: rodar com outra versão
+faz `test/cdl/scripts-existem.test.ts` acusar, por desenho.
+
+**Instabilidade por carga.** `test/mir/tempo-de-pintura.test.ts` e
+`test/mir/tui-sob-carga.test.ts` medem tempo absoluto de parede e ficam vermelhos com
+a máquina carregada — observado com *load average* 22, verde de novo com 12, mesmo
+código. A `RECOMENDAÇÃO` sobre `truncVisible` acima já aponta a saída: asserção por
+**razão** entre dois tamanhos, não por milissegundo. Isso deixa de ser detalhe agora
+que existe suíte E2E paralela: ela satura a máquina e derruba testes que não têm nada
+a ver com ela.
+
+---
+
+## PENDÊNCIA — o que ficou em aberto no cassete e na trilha cara
+
+O PR #28 entregou `test/apoio/cassete.ts` e `test/apoio/e2e.ts`, e corrigiu dois
+defeitos que o crivo confirmou (o modo `regravar` destruía sequência multi-chamada; o
+teto de gasto era inutilizável com `codex` e `kimi`, que declaram
+`reportsCostUsd:false`). Ficou em aberto, tudo apontado pelo crivo e nenhum corrigido:
+
+- **O gravador nunca consulta o teto.** `test/apoio/cassete.ts` grava e
+  `test/apoio/e2e.ts` conta gasto, mas a ligação entre os dois existe só como frase na
+  mensagem de erro. Uma gravação nova pode estourar o teto sem que a rodada perceba.
+- **`formatoVersao: 1` é gravado e nunca validado na leitura.** Cassete de formato
+  antigo será lido como se fosse do formato corrente.
+- **Gravação concorrente perde entrada.** É read-modify-write sem trava; dois testes
+  gravando o mesmo arquivo em paralelo derrubam um ao outro. Hoje ninguém faz isso, o
+  que torna o defeito invisível até o dia em que alguém fizer.
+- **`<DIR:n>` é posicional.** Repositórios diferentes que caem na mesma posição da
+  lista colidem na mesma chave — dois pedidos distintos servidos pelo mesmo cassete.
+- **O cassete envolve `Harness.run`, e é um degrau acima de onde o defeito mora.**
+  A pesquisa que embasou o desenho já avisava: gravar `AgentRequest -> AgentResult`
+  pula o parser de cada harness (`claude-stream.ts`, `codex.ts`), e foi exatamente num
+  parser que o argv errado do kimi sobreviveu verde. Gravar stdout/stderr/exit-code do
+  subprocesso exercitaria o parser de verdade, ao custo de uma costura por harness.
+- **Não há como o motor receber o harness envolvido.** `motor/tmd/registro.ts:13-16` é
+  `ReadonlyMap` const e os oito chamadores resolvem por `providerFor()` internamente.
+  A costura de percurso que o repo de fato usa é `ExecuteDeps`
+  (`test/osw/executar-custo.test.ts:51-54`) — é por ali que um teste ponta a ponta
+  entra hoje, não envolvendo o harness.
+
+---
+
+## ESTADO — os cortes de custo da RECOMENDAÇÃO, e o que travou o quarto
+
+Da ordem de corte registrada na `RECOMENDAÇÃO` acima, três entraram no PR #28, cada
+um com teste que foi conferido dos dois lados:
+
+1. **Feito.** O custo do passo e o da correção passam a ir para `cost_usd`/
+   `tokens_total`, e não só para o texto do diário.
+2. **Feito.** O teto de orçamento é conferido no topo do laço de passos
+   (`motor/qlb/ctr/fechar.ts`), e não só na entrada do handler.
+4. **Feito.** `motor/cic/passo-com-gate.ts` e `repararAteOTeto` comparam a assinatura
+   do veredicto com a da volta anterior e param na primeira repetição. Dois testes que
+   diziam medir o teto na verdade mediam isto — os roteiros repetiam a mesma frase
+   em todas as voltas — e foram separados.
+
+**O item 3 não entrou, e não é falta de código.** `config/model-tier.json` mapeia
+**ação → tier** e não tem uma única linha ligando tier a provedor, modelo ou esforço.
+`motor/osw/rui.ts:40-63` computa `EscolhaDeTier`, `registrarTier` manda para
+`anexarEvento` e acaba ali. Decidir que `tier3_barato` é o `ollama` local — que roda
+de graça em dólar — e que `tier1_caro` é o `claude` é decisão de negócio, não de
+engenharia. Com o mapa escrito no arquivo de governança, o resto é ligar
+`providerFor`/`modelFor`/`effortFor` ao tier já computado.
+
+---
+
+## DECISÃO PENDENTE — virar provedor de IAs e cobrar por isso
+
+Registrado porque muda o alvo do motor, e **estacionado por decisão do dono**: primeiro
+fazer funcionar, depois pôr preço.
+
+**O bloqueio é contratual antes de ser técnico.** Os harnesses conectados hoje são
+CLIs autenticadas por assento, com a conta de quem roda. Assinatura por assento não dá
+direito de revender acesso; cobrar de terceiros por trabalho que passa pela sua sessão
+do `claude` é o tipo de coisa que encerra conta. Vender exige acesso comercial por API
+com direito de uso para terceiros. Isso se resolve fora do código e vem antes de
+qualquer arquitetura.
+
+**São dois produtos, e o hii hoje é só um.** O motor de execução precisa do repositório
+do cliente, do git, do `gh` e de servidor de desenvolvimento — roda na máquina dele. Um
+roteador de IAs que se cobra por token roda no seu servidor, multi-inquilino, sem tocar
+em repositório nenhum. Compartilham o roteador e quase nada mais. Mover a execução para
+o servidor obrigaria a hospedar código-fonte e credencial de terceiro, que é
+responsabilidade maior do que a que se queria evitar.
+
+**A convergência que vale notar:** o requisito de trocar de IA no meio do prompt e o
+objetivo de cobrar pedem a mesma peça — um harness por **API** ao lado dos de CLI. Com
+o histórico na mão (e não dentro de um binário opaco), a troca no meio da tarefa deixa
+de ser handoff por bastão escrito e vira o que a `PENDÊNCIA` sobre revezamento diz hoje
+ser impossível. E a medição por token, que a cobrança exige, passa a existir de verdade
+— hoje `codex` e `kimi` declaram `reportsCostUsd:false` e não têm o que medir.
+
+**O que não existe e o produto exigiria:** inquilino (não há conceito de usuário),
+medição por cliente (há por card, em `AgentResult` e no ledger de
+`motor/euc/ias-da-sessao.ts` — a matéria-prima existe), cota por cliente
+(`motor/euc/tsr/orcamento.ts` tem teto por card) e limite de taxa.
+
+**Sobre proteger o código, que foi a pergunta de origem:** se o produto virar uma API
+medida, o cliente nunca recebe fonte e o servidor é a fronteira natural. Enquanto o
+produto for o motor local, o caminho barato é compilar — o Bun gera executável único —
+e não subir servidor nenhum.

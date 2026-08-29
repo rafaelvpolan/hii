@@ -4,6 +4,7 @@ import { maxReajuste, GATE_RETRIES } from '../cdl/ali/config.ts'
 import { patchCard } from '../cdl/store.ts'
 import { runStep } from './agente.ts'
 import { runGatedReview, withGateRetry } from './crv/gate.ts'
+import { assinaturaDeVeredicto } from './reparo.ts'
 import { anexarEvento } from '../euc/eventos.ts'
 import { abrirPrompt, anexarInstrucao, montar } from '../tmd/eco/prefixo.ts'
 import type { GateResult } from './crv/gate.ts'
@@ -51,6 +52,12 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
   let motivoDoGate = ''
   let motivoDaFalha = ''
   let ultimaFalhaDoAgente: { failureClass?: FailureClass; failureReason?: string; provider?: string } | null = null
+  // A reprovacao da volta anterior, normalizada. O teto de `maxReajuste()` conta
+  // voltas e nao progresso: um agente que devolve a mesma coisa tres vezes paga
+  // tres vezes e o diario ainda diz "esgotou reajustes", como se cada volta
+  // tivesse tentado algo novo. Guardar a assinatura permite parar na SEGUNDA
+  // reprovacao identica, que e o primeiro instante em que da para saber.
+  let assinaturaDoGateAnterior = ''
   let attempt = 0
   const metric = (): StepMetric => ({ time: Math.max(0, Math.round((Date.now() - t0) / 1000) - tempoNoGate), cost, tokens, costMeasured })
   const metricaDoGate = (): StepMetric => ({ time: tempoNoGate, cost: custoDoGate, tokens: tokensDoGate, costMeasured: medidoNoGate })
@@ -125,6 +132,13 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'aprovada' })
       return { metric: metric(), metricaDoGate: metricaDoGate(), ok: true, text, reason: '' }
     }
+    const assinatura = assinaturaDeVeredicto(gate.reason)
+    if (assinatura && assinatura === assinaturaDoGateAnterior) {
+      anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `sem progresso: crivo repetiu a mesma reprovacao na tentativa ${attempt + 1}` })
+      patchCard(id, {}, `${isoNow()} gate crivo [${label}]: MESMA reprovacao da volta anterior — parando antes do teto de ${maxReajuste()} reajuste(s), porque a volta seguinte pagaria para receber este mesmo veredicto`)
+      return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `o crivo reprovou com o MESMO motivo em duas voltas seguidas (sem progresso): ${gate.reason}` }
+    }
+    assinaturaDoGateAnterior = assinatura
     motivoDoGate = gate.reason
     motivoDaFalha = ''
     ultimaFalhaDoAgente = null
