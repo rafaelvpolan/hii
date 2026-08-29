@@ -47,8 +47,27 @@ RTX 3060 Ti (8 GB VRAM), 16 cores, **7 GB RAM**. Consequência medida:
   completou uma classificação de 88 linhas em 18+ minutos. Não usar aqui.
 - `qwen2.5-coder:7b` cabe na GPU: mesma triagem em **60 s** (1198 tok entrada /
   2281 saída), casos de borda em **15 s**. É o modelo de trabalho local.
-- `qwen3:8b` (5,2 GB) também instalado — alternativa com mais raciocínio geral.
+- `qwen3:8b` (5,2 GB) também instalado: mesma triagem em 108 s, aderência de
+  formato igual (88/88 linhas válidas).
 - `llama3`/`gemma` (8-9B, já instalados) servem para classificação e resumo curto.
+
+## Aprendizados do 2º ciclo (observando a execução)
+
+1. **Nenhum dos dois modelos sabe contar o próprio output.** Ambos erraram a
+   linha RESUMO da triagem (qwen2.5 disse A=57/B=10/C=4, o real era A=51/B=23/C=14).
+   Ajuste aplicado: prompts não pedem mais placar — a contagem é feita com
+   `awk`/`grep` em cima das linhas. Regra geral: **nunca delegar aritmética ao
+   modelo; o determinístico conta, o generativo classifica**.
+2. **Dois modelos 7-8B divergem em metade das classificações** (46 concordam,
+   43 divergem; ex.: `gauntlet.ts` A num e B no outro). Conclusão processal:
+   um modelo só não classifica — o padrão útil é **concordância entre modelos
+   vira priorização automática; divergência vai para o humano**.
+3. **Formato rígido no prompt funciona** (3 linhas obrigatórias por cenário
+   recuperou a aderência em `cota.ts`), mas **qualidade de julgamento varia por
+   tipo de módulo**: CRUD/arquivo (`tentativas.ts`) saiu cenário útil citando
+   funções reais; lógica temporal/de cota (`cota.ts`) virou fuzzing numérico
+   superficial com comportamento esperado vago. Cenário para lógica temporal
+   continua sendo trabalho de tier1/humano.
 
 ## Frentes e onde cada uma encaixa
 
