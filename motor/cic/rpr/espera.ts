@@ -2,7 +2,7 @@ import { isoAt, isoNow } from '../../cdl/index.ts'
 import type { Fields } from '../../cdl/index.ts'
 import { maxWaitingAttempts } from '../../cdl/ali/config.ts'
 import { cardsByStatus, patchCard, patchCardWith } from '../../cdl/store.ts'
-import { probeProviderHealth } from '../../tmd/registro.ts'
+import { probeProviderHealth, sabeSondarProvedor } from '../../tmd/registro.ts'
 import { backoffMsFor } from './politica.ts'
 
 function isDue(waitUntil: string): boolean {
@@ -10,14 +10,20 @@ function isDue(waitUntil: string): boolean {
   return !Number.isFinite(t) || t <= Date.now()
 }
 
-async function wake(id: string, resumeStatus: string): Promise<void> {
+function porQueAcordou(provider: string, sondado: boolean): string {
+  return sondado
+    ? `sonda de saude de ${provider} respondeu alcancavel`
+    : `sem sonda para ${provider || 'provedor nao registrado no card'} — o backoff venceu e o card volta SEM prova de que a causa passou`
+}
+
+async function wake(id: string, resumeStatus: string, provider: string, sondado: boolean): Promise<void> {
   patchCard(id, {
     status: resumeStatus || 'EXECUTING',
     wait_reason: '',
     wait_until: '',
     wait_resume_status: '',
     wait_provider: '',
-  }, `${isoNow()} WAITING->${resumeStatus || 'EXECUTING'} sonda de saude ok — retomando automaticamente`)
+  }, `${isoNow()} WAITING->${resumeStatus || 'EXECUTING'} ${porQueAcordou(provider, sondado)} — retomando automaticamente`)
   process.stdout.write(`[runner] #${id}: WAITING->${resumeStatus || 'EXECUTING'} (retomado automaticamente)\n`)
 }
 
@@ -66,7 +72,7 @@ let acordando = false
 
 export type SondaDeSaude = (provedor: string) => Promise<boolean>
 
-export async function wakeDueWaiting(sonda: SondaDeSaude = probeProviderHealth): Promise<void> {
+export async function wakeDueWaiting(sonda: SondaDeSaude = probeProviderHealth, sabeSondar: (p: string) => boolean = sabeSondarProvedor): Promise<void> {
   if (acordando) return
   acordando = true
   try {
@@ -79,7 +85,7 @@ export async function wakeDueWaiting(sonda: SondaDeSaude = probeProviderHealth):
         await reschedule(id, provider)
         continue
       }
-      await wake(id, c.wait_resume_status ?? '')
+      await wake(id, c.wait_resume_status ?? '', provider, sabeSondar(provider))
     }
   } finally {
     acordando = false

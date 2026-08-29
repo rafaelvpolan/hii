@@ -98,3 +98,21 @@ test('card sem custo previo comeca a contar do zero (nao gera NaN)', async () =>
   expect(card?.fm.cost_usd).toBe('0.0500')
   expect(card?.fm.tokens_total).toBe('30')
 }, TEMPO_COM_GIT_MS)
+
+test('REGRESSAO: implement bem-sucedido APAGA o override de cota — sem isso um estouro gruda o fallback no card para sempre', async () => {
+  const id = createCard({
+    title: 'tarefa que ja caiu no fallback',
+    status: 'EXECUTING',
+    repo: 'org/repo',
+    surface: 'none',
+    clarified: 'true',
+    worktree: worktreeParaTeste(),
+    provider_override_implement: 'codex',
+  }, '## Objetivo\nseguir depois do fallback\n')
+
+  expect(readCard(id)?.fm.provider_override_implement, 'o fallback de cota grava isto e nunca limpava').toBe('codex')
+
+  await handleExecute(id, agente)
+
+  expect(readCard(id)?.fm.provider_override_implement, 'a cota pode ter voltado; o card nao pode ficar cravado no fallback').toBe('')
+}, TEMPO_COM_GIT_MS)

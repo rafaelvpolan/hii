@@ -114,6 +114,10 @@ export async function probeProviderHealth(nome: string): Promise<boolean> {
   return h ? h.healthCheck() : true
 }
 
+export function sabeSondarProvedor(nome: string): boolean {
+  return harnessSeExistir(nome) !== undefined
+}
+
 export function modelFor(role: AgentRole, override?: string): string | undefined {
   const name = providerNameFor(role, override)
   const escolhido = name === providerNameFor(role) ? preferenciaDoPapel(role).model : undefined

@@ -22,8 +22,10 @@ mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
-const { createCard, readCard } = await import('../../motor/cdl/store.ts')
+const { createCard, readCard, patchCard } = await import('../../motor/cdl/store.ts')
 const core = await import('../../motor/mir/acoes.ts')
+const fecho = await import('../../motor/euc/metricas-de-fecho.ts')
+const retomar = await import('../../motor/qlb/ctr/retomar.ts')
 
 function cardEmConfirmacao(): string {
   return createCard({
@@ -95,4 +97,59 @@ test('so card em CONFIRM aceita as duas acoes — nao da para encerrar o que nao
   expect(core.confirmarFecho(id).ok).toBe(false)
   expect(core.recusarFecho(id, 'falta coisa').ok).toBe(false)
   expect(readCard(id)?.fm.status).toBe('TESTS_GREEN')
+})
+
+
+function passo(label: string) {
+  return { id: label.toLowerCase(), label, kind: 'agent', agent: 'rufus', state: 'URL_OK', gate: 'none', enabled: true, instruction: '' }
+}
+
+const PASSOS = [passo('Arquitetura'), passo('Testes'), passo('Seguranca')] as never[]
+
+function ondeORetomarComeca(id: string): number {
+  const fm = readCard(id)?.fm
+  return retomar.resumeStart(PASSOS, PASSOS, fm?.resume_from ?? '', id, 'completo')
+}
+
+const WORKTREE = join(BASE, 'wt')
+mkdirSync(join(WORKTREE, '.git'), { recursive: true })
+
+function cardEmConfirmacaoComWorktree(): string {
+  const id = cardEmConfirmacao()
+  patchCard(id, { worktree: WORKTREE })
+  return id
+}
+
+test('REGRESSAO: recusar o fecho COM worktree (vai para CORRECTING) apaga o sentinela — era o caminho que pulava todos os passos', () => {
+  const id = cardEmConfirmacaoComWorktree()
+  fecho.pauseForConfirmation(id, { fm: readCard(id)?.fm ?? {}, body: '', file: '' } as never, {} as never, 'parou para confirmar', retomar.RESUME_POST_STEPS)
+
+  const r = core.recusarFecho(id, 'o conflito voltou no index.html')
+
+  expect(r.ok, r.reason).toBe(true)
+  expect(readCard(id)?.fm.status, 'com worktree a recusa corrige em vez de refazer do zero').toBe('CORRECTING')
+  expect(readCard(id)?.fm.resume_from, 'o sentinela e da parada anterior; a recusa o torna mentira').toBe('')
+  expect(ondeORetomarComeca(id), 'depois da correcao os passos tem de RODAR, comecando do primeiro').toBe(0)
+})
+
+test('REGRESSAO: recusar o fecho SEM worktree (vai para EXECUTING) tambem apaga o sentinela', () => {
+  const id = cardEmConfirmacao()
+  fecho.pauseForConfirmation(id, { fm: readCard(id)?.fm ?? {}, body: '', file: '' } as never, {} as never, 'parou para confirmar', retomar.RESUME_POST_STEPS)
+
+  expect(readCard(id)?.fm.resume_from, 'a parada grava o sentinela — e daqui que o defeito partia').toBe(retomar.RESUME_POST_STEPS)
+  expect(ondeORetomarComeca(id), 'com o sentinela, o laco de passos comeca DEPOIS do ultimo — zero voltas').toBe(PASSOS.length)
+
+  const r = core.recusarFecho(id, 'o conflito voltou no index.html')
+
+  expect(r.ok, r.reason).toBe(true)
+  expect(readCard(id)?.fm.resume_from, 'o sentinela e da parada anterior; a recusa o torna mentira').toBe('')
+  expect(ondeORetomarComeca(id), 'depois da correcao os passos tem de RODAR, comecando do primeiro').toBe(0)
+})
+
+test('confirmar o fecho PRESERVA o sentinela — quem disse que resolveu nao paga os passos de novo', () => {
+  const id = cardEmConfirmacao()
+  fecho.pauseForConfirmation(id, { fm: readCard(id)?.fm ?? {}, body: '', file: '' } as never, {} as never, 'parou para confirmar', retomar.RESUME_POST_STEPS)
+
+  expect(core.confirmarFecho(id).ok).toBe(true)
+  expect(ondeORetomarComeca(id)).toBe(PASSOS.length)
 })

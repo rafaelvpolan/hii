@@ -137,13 +137,13 @@ export function recusarFecho(id: string, motivo: string): GuardedResult {
   }
   if (!temWorktree) {
     const r = updateCard(id, {
-      fields: { correction: razao, status: 'EXECUTING', refazer: 'true' },
+      fields: { correction: razao, status: 'EXECUTING', refazer: 'true', resume_from: '' },
       log: () => `${isoNow()} CONFIRM->EXECUTING nao resolveu (${razao}) — worktree ja nao existe, refazendo do zero`,
     })
     return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
   }
   const r = updateCard(id, {
-    fields: { correction: razao, correction_file: '', correction_line: '', correction_line_text: '', status: 'CORRECTING' },
+    fields: { correction: razao, correction_file: '', correction_line: '', correction_line_text: '', status: 'CORRECTING', resume_from: '' },
     log: () => `${isoNow()} CONFIRM->CORRECTING nao resolveu: ${razao}`,
   })
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }

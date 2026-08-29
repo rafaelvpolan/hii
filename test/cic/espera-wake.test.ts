@@ -110,3 +110,35 @@ test('REGRESSAO: chamadas concorrentes de wakeDueWaiting nao processam o mesmo c
   atrasoMs = 0
   expect(readCard(id)?.fm.wait_attempts).toBe('1')
 })
+
+function logDoCard(id: string): string {
+  const c = readCard(id)
+  return `${c?.fm.status ?? ''}|${(c as unknown as { body?: string })?.body ?? ''}`
+}
+
+test('REGRESSAO: card acordado SEM provedor sondavel nao pode registrar "sonda de saude ok" — o motor nao mediu nada', async () => {
+  saudavel = true
+  const id = createCard({
+    title: 'sem provedor', status: 'WAITING', repo: 'org/repo',
+    wait_until: isoIn(-1000), wait_resume_status: 'EXECUTING', wait_provider: '',
+    wait_attempts: '0', wait_reason: 'timeout do CLI',
+  }, '## Objetivo\nalgo\n')
+
+  await wakeDueWaiting(sonda, () => false)
+
+  const registro = logDoCard(id)
+  expect(registro).toContain('EXECUTING')
+  expect(registro, 'afirmar sonda ok sem sondar e diagnostico falso — foi assim que um timeout de 900s foi "curado" por um GET de 5s').not.toContain('sonda de saude de')
+  expect(registro).toContain('SEM prova de que a causa passou')
+})
+
+test('card acordado COM provedor sondavel diz que sondou, e diz quem', async () => {
+  saudavel = true
+  const id = waitingCard(-1000)
+
+  await wakeDueWaiting(sonda, () => true)
+
+  const registro = logDoCard(id)
+  expect(registro).toContain('EXECUTING')
+  expect(registro).toContain('sonda de saude de claude respondeu alcancavel')
+})

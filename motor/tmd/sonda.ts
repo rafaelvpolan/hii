@@ -3,6 +3,8 @@ import { noProxyArgs } from '../qlb/alf/loopback.ts'
 
 const PROBE_TIMEOUT_MS = Number(process.env.HICODE_HEALTH_PROBE_TIMEOUT_MS || 5000)
 
+const CODIGOS_DE_INDISPONIBILIDADE = new Set([403, 408, 429])
+
 // Helper compartilhado. Quem decide QUAL url sondar e cada harness, no proprio
 // arquivo — assim harness novo nao precisa editar tabela central nenhuma.
 export async function alcancavelPorHttp(url: string): Promise<boolean> {
@@ -11,7 +13,7 @@ export async function alcancavelPorHttp(url: string): Promise<boolean> {
   const { err, stdout } = await run('curl', args, { timeout: PROBE_TIMEOUT_MS + 2000 })
   if (err) return false
   const code = Number(stdout.trim()) || 0
-  return code > 0 && code < 500
+  return code > 0 && code < 500 && !CODIGOS_DE_INDISPONIBILIDADE.has(code)
 }
 
 export function urlDoOllama(): string {

@@ -369,7 +369,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
-  patchCard(id, { wait_attempts: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
+  patchCard(id, { wait_attempts: '', provider_override_implement: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {
