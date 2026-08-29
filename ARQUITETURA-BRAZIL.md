@@ -72,7 +72,7 @@ Ao mapear o motor antes de nomear, cinco itens do roadmap se revelaram parcialme
 | Código | Nome | Referência | Comportamento | Âncora |
 |---|---|---|---|---|
 | **OSW** | Oswaldo | Oswaldo Cruz | Orquestrador — dono único do ciclo de vida do card | `lib/runner/execute.ts`, `lib/runner/queue.ts` |
-| **RUI** | Rui | Rui Barbosa | Estratégia — política acima da execução (perfil, tier, orçamento) | difuso hoje; consolida em `motor/osw/rui.ts` |
+| **RUI** | Rui | Rui Barbosa | Estratégia — política acima da execução (perfil, tier, orçamento) | difuso hoje; consolida em `motor/oswaldo/rui.ts` |
 | **RTA** | Rota | rotas e integração territorial | Router determinístico — quais passos, qual provedor, zero token | `lib/runner/analyze.ts:planSteps`, `lib/ai/registry.ts:providerNameFor` |
 | **NMY** | Niemeyer | Oscar Niemeyer | Topologia como **dado** — nós, transições permitidas, validação | `lib/runner/pipeline/{config,types}.ts` |
 | **LUC** | Lúcio | Lúcio Costa | Planejamento estrutural antes de executar — ondas, plano, matriz | `lib/runner/pipeline/waves.ts`, `lib/core/plan.ts` |
@@ -207,79 +207,79 @@ hii/
 ├── runner.ts                   entrypoint do daemon — não muda de nome
 │
 ├── motor/
-│   ├── osw/                    ORQUESTRAÇÃO
+│   ├── oswaldo/                    ORQUESTRAÇÃO
 │   │   ├── osw.ts                    OSW  ciclo de vida do card
 │   │   ├── executar.ts               OSW  handleExecute
 │   │   ├── rui.ts                    RUI  estratégia (perfil, tier, orçamento)   NOVO
 │   │   ├── despacho-de-agentes.ts    OSW  orchestrator-workers numa fase        NOVO
-│   │   ├── rta/                      RTA  router determinístico
-│   │   └── mtr/                      MTR  fila, daemon, locks, paralelismo
+│   │   ├── rota/                      RTA  router determinístico
+│   │   └── mutirao/                      MTR  fila, daemon, locks, paralelismo
 │   │
-│   ├── nmy/                    GRAFO E PLANO
+│   ├── niemeyer/                    GRAFO E PLANO
 │   │   ├── tipos.ts                  NMY  PipelineStep, GateKind
 │   │   ├── config.ts                 NMY  leitura de config/pipeline.json
 │   │   ├── topologia.ts              NMY  valida transição contra topologia.json NOVO
 │   │   ├── passos.ts                 NMY
-│   │   ├── luc/                      LUC  ondas, plano, matriz de entendimento
-│   │   └── tjl/                      TJL  execução em blocos                     NOVO
+│   │   ├── lucio/                      LUC  ondas, plano, matriz de entendimento
+│   │   └── tijolo/                      TJL  execução em blocos                     NOVO
 │   │
-│   ├── cic/                    LOOPS E JULGAMENTO
+│   ├── ciclo/                    LOOPS E JULGAMENTO
 │   │   ├── agente.ts                 CIC  invocação de papel (implement/runStep)
 │   │   ├── passo-com-gate.ts         CIC  runGatedStep
 │   │   ├── reparo.ts                 CIC  runWithRepair genérico                 NOVO
 │   │   ├── corrigir.ts               CIC  handleCorrect
-│   │   ├── crv/                      CRV  gate determinístico + critério escrito
-│   │   ├── cnd/                      CND  gauntlet loop                          NOVO
-│   │   ├── rpr/                      RPR  retry, backoff, tentativas, reparadores
+│   │   ├── crivo/                      CRV  gate determinístico + critério escrito
+│   │   ├── canudos/                      CND  gauntlet loop                          NOVO
+│   │   ├── reprise/                      RPR  retry, backoff, tentativas, reparadores
 │   │   ├── rtd.ts                    RTD  fallback / escalonamento
-│   │   ├── rda.ts                    RDA  consenso                               NOVO
+│   │   ├── roda.ts                    RDA  consenso                               NOVO
 │   │   ├── arn.ts                    ARN  debate                                 NOVO
-│   │   └── vto.ts                    VTO  voto                                   NOVO
+│   │   └── voto.ts                    VTO  voto                                   NOVO
 │   │
-│   ├── tmd/                    HARNESS E FERRAMENTAS
+│   ├── tomada/                    HARNESS E FERRAMENTAS
 │   │   ├── tipos.ts                  TMD  Harness, HarnessCapabilities
 │   │   ├── registro.ts               TMD  Record<id, Harness>
 │   │   ├── sonda.ts                  TMD  healthCheck por harness
 │   │   ├── harness/                  TMD  claude, codex, kimi, ollama, qwen…
-│   │   ├── pnt/                      PNT  MCP + tarefas externas
-│   │   ├── map/                      MAP  registro de ferramentas
+│   │   ├── ponte/                      PNT  MCP + tarefas externas
+│   │   ├── mapa/                      MAP  registro de ferramentas
 │   │   └── eco/                      ECO  memo + prefixo estável de prompt
 │   │
-│   ├── euc/                    REGISTRO, TELEMETRIA, CUSTO
+│   ├── euclides/                    REGISTRO, TELEMETRIA, CUSTO
 │   │   ├── diario.ts                 EUC  append-only, escreve e não decide
 │   │   ├── eventos.ts                EUC  evento por fase (JSONL)                NOVO
 │   │   ├── registros.ts              EUC  runs.ts
 │   │   ├── recuperar.ts              EUC  retomada a partir do diário            NOVO
-│   │   ├── rdr/                      RDR  saúde, doctor, /health
-│   │   └── tsr/                      TSR  custo, cota, janela, tier, orçamento
+│   │   ├── radar/                      RDR  saúde, doctor, /health
+│   │   └── tesouro/                      TSR  custo, cota, janela, tier, orçamento
 │   │
-│   ├── qlb/                    ISOLAMENTO E FRONTEIRAS
+│   ├── quilombo/                    ISOLAMENTO E FRONTEIRAS
 │   │   ├── git.ts                    QLB  worktree, branch, commit
 │   │   ├── limites.ts                QLB  teto de CPU/memória por worktree       NOVO
-│   │   ├── ctr/                      CTR  PR, merge, aprovações humanas
-│   │   ├── alf/                      ALF  refs, download, SSRF, redirect
-│   │   ├── slv/                      SLV  idempotência e compensação             NOVO
-│   │   └── cfr/                      CFR  segredos                               NOVO
+│   │   ├── cartorio/                      CTR  PR, merge, aprovações humanas
+│   │   ├── alfandega/                      ALF  refs, download, SSRF, redirect
+│   │   ├── salvo-conduto/                      SLV  idempotência e compensação             NOVO
+│   │   └── cofre/                      CFR  segredos                               NOVO
 │   │
-│   ├── cdl/                    CARD E CONTRATOS
+│   ├── cordel/                    CARD E CONTRATOS
 │   │   ├── tipos.ts                  CDL  Status, Card, Run, ChamadaDeIa
 │   │   ├── store.ts                  CDL  leitura/escrita do card
-│   │   ├── bss/                      BSS  contrato do repo-alvo
-│   │   └── ali/                      ALI  contrato de ambiente do motor
+│   │   ├── bussola/                      BSS  contrato do repo-alvo
+│   │   └── alicerce/                      ALI  contrato de ambiente do motor
 │   │
-│   ├── csd/                    CONHECIMENTO E REGRA
+│   ├── cascudo/                    CONHECIMENTO E REGRA
 │   │   ├── acervo.ts                 CSD  loader de SKILL.md                     NOVO
 │   │   ├── resolver.ts               CSD  _native + _sources → _resolved         NOVO
 │   │   ├── memoria.ts                CSD  memória de projeto
-│   │   ├── fre/                      FRE  aprendiz, assinatura, promoção         NOVO
+│   │   ├── freire/                      FRE  aprendiz, assinatura, promoção         NOVO
 │   │   └── lei/                      LEI  guarda determinística de regra         NOVO
 │   │
 │   ├── agentes/                PAPÉIS
 │   │   ├── registro.ts               loadouts lidos de .claude/agents/*.md
-│   │   ├── rnd/  dum/  ass/  sen/  drm/  tsl/  prt/  clr/
-│   │   └── vtb/  chg/  lna/  amc/  emb/
+│   │   ├── rondon/  dumont/  assis/  senna/  drummond/  tarsila/  portinari/  clarice/
+│   │   └── vital/  chagas/  lina/  amilcar/  embarque/
 │   │
-│   └── mir/                    INTERFACE HUMANA
+│   └── mirante/                    INTERFACE HUMANA
 │       ├── despacho.ts               MIR  dispatch do REPL
 │       ├── sessao.ts                 MIR
 │       ├── comandos-manuais.ts       MIR  /orquestrador-* e /layout             NOVO
@@ -319,155 +319,155 @@ Fonte de verdade da Onda 1. `scripts/renomear-brazil.mjs` consome exatamente est
 
 | Hoje | Destino | Código |
 |---|---|---|
-| `lib/ai/types.ts` | `motor/tmd/tipos.ts` | TMD |
-| `lib/ai/registry.ts` | `motor/tmd/registro.ts` | TMD |
-| `lib/ai/provider-config.ts` | `motor/tmd/config.ts` | TMD |
-| `lib/ai/preferencias.ts` | `motor/tmd/preferencias.ts` | TMD |
-| `lib/ai/modos.ts` | `motor/tmd/modos.ts` | TMD |
-| `lib/ai/catalogo.ts` | `motor/tmd/catalogo.ts` | TMD |
-| `lib/ai/disponibilidade.ts` | `motor/tmd/disponibilidade.ts` | TMD |
-| `lib/ai/health-probe.ts` | `motor/tmd/sonda.ts` | TMD |
-| `lib/ai/usage.ts` | `motor/tmd/uso.ts` | TMD |
-| `lib/ai/adapters/claude.ts` | `motor/tmd/harness/claude.ts` | TMD |
-| `lib/ai/adapters/claude-argv.ts` | `motor/tmd/harness/claude-argv.ts` | TMD |
-| `lib/ai/adapters/claude-stream.ts` | `motor/tmd/harness/claude-stream.ts` | TMD |
-| `lib/ai/adapters/codex.ts` | `motor/tmd/harness/codex.ts` | TMD |
-| `lib/ai/adapters/kimi.ts` | `motor/tmd/harness/kimi.ts` | TMD |
-| `lib/ai/adapters/ollama.ts` | `motor/tmd/harness/ollama.ts` | TMD |
-| `lib/ai/ollama-estado.ts` | `motor/tmd/harness/ollama-estado.ts` | TMD |
-| `lib/ai/mcp.ts` | `motor/tmd/pnt/mcp.ts` | PNT |
-| `lib/ai/mcp-estado.ts` | `motor/tmd/pnt/estado.ts` | PNT |
-| `lib/ai/comandos-da-ia.ts` | `motor/tmd/map/comandos.ts` | MAP |
+| `lib/ai/types.ts` | `motor/tomada/tipos.ts` | TMD |
+| `lib/ai/registry.ts` | `motor/tomada/registro.ts` | TMD |
+| `lib/ai/provider-config.ts` | `motor/tomada/config.ts` | TMD |
+| `lib/ai/preferencias.ts` | `motor/tomada/preferencias.ts` | TMD |
+| `lib/ai/modos.ts` | `motor/tomada/modos.ts` | TMD |
+| `lib/ai/catalogo.ts` | `motor/tomada/catalogo.ts` | TMD |
+| `lib/ai/disponibilidade.ts` | `motor/tomada/disponibilidade.ts` | TMD |
+| `lib/ai/health-probe.ts` | `motor/tomada/sonda.ts` | TMD |
+| `lib/ai/usage.ts` | `motor/tomada/uso.ts` | TMD |
+| `lib/ai/adapters/claude.ts` | `motor/tomada/harness/claude.ts` | TMD |
+| `lib/ai/adapters/claude-argv.ts` | `motor/tomada/harness/claude-argv.ts` | TMD |
+| `lib/ai/adapters/claude-stream.ts` | `motor/tomada/harness/claude-stream.ts` | TMD |
+| `lib/ai/adapters/codex.ts` | `motor/tomada/harness/codex.ts` | TMD |
+| `lib/ai/adapters/kimi.ts` | `motor/tomada/harness/kimi.ts` | TMD |
+| `lib/ai/adapters/ollama.ts` | `motor/tomada/harness/ollama.ts` | TMD |
+| `lib/ai/ollama-estado.ts` | `motor/tomada/harness/ollama-estado.ts` | TMD |
+| `lib/ai/mcp.ts` | `motor/tomada/ponte/mcp.ts` | PNT |
+| `lib/ai/mcp-estado.ts` | `motor/tomada/ponte/estado.ts` | PNT |
+| `lib/ai/comandos-da-ia.ts` | `motor/tomada/mapa/comandos.ts` | MAP |
 | `lib/ai/agentes-nexus.ts` | `motor/agentes/registro.ts` | — |
-| `lib/ai/failure.ts` | `motor/cic/rpr/classe-de-falha.ts` | RPR |
-| `lib/ai/cost.ts` | `motor/euc/tsr/custo.ts` | TSR |
-| `lib/ai/consumo.ts` | `motor/euc/tsr/consumo.ts` | TSR |
-| `lib/ai/janelas.ts` | `motor/euc/tsr/janelas.ts` | TSR |
-| `lib/ai/planos.ts` | `motor/euc/tsr/planos.ts` | TSR |
+| `lib/ai/failure.ts` | `motor/ciclo/reprise/classe-de-falha.ts` | RPR |
+| `lib/ai/cost.ts` | `motor/euclides/tesouro/custo.ts` | TSR |
+| `lib/ai/consumo.ts` | `motor/euclides/tesouro/consumo.ts` | TSR |
+| `lib/ai/janelas.ts` | `motor/euclides/tesouro/janelas.ts` | TSR |
+| `lib/ai/planos.ts` | `motor/euclides/tesouro/planos.ts` | TSR |
 
 ### 5.2 `lib/card/`, `lib/contract/`, `lib/spec/`, `lib/tasks/` → 14 arquivos
 
 | Hoje | Destino | Código |
 |---|---|---|
-| `lib/card/index.ts` | `motor/cdl/index.ts` | CDL |
-| `lib/card/types.ts` | `motor/cdl/tipos.ts` | CDL |
-| `lib/card/frontmatter.ts` | `motor/cdl/frontmatter.ts` | CDL |
-| `lib/card/text.ts` | `motor/cdl/texto.ts` | CDL |
-| `lib/card/util.ts` | `motor/cdl/util.ts` | CDL |
-| `lib/contract/types.ts` | `motor/cdl/bss/tipos.ts` | BSS |
-| `lib/contract/detect.ts` | `motor/cdl/bss/detectar.ts` | BSS |
-| `lib/contract/probe.ts` | `motor/cdl/bss/sondar.ts` | BSS |
-| `lib/contract/store.ts` | `motor/cdl/bss/armazenar.ts` | BSS |
-| `lib/spec/openspec.ts` | `motor/nmy/luc/openspec.ts` | LUC |
-| `lib/tasks/types.ts` | `motor/tmd/pnt/tarefas/tipos.ts` | PNT |
-| `lib/tasks/registry.ts` | `motor/tmd/pnt/tarefas/registro.ts` | PNT |
-| `lib/tasks/sync.ts` | `motor/tmd/pnt/tarefas/sync.ts` | PNT |
-| `lib/tasks/adapters/github-issues.ts` | `motor/tmd/pnt/tarefas/github-issues.ts` | PNT |
+| `lib/card/index.ts` | `motor/cordel/index.ts` | CDL |
+| `lib/card/types.ts` | `motor/cordel/tipos.ts` | CDL |
+| `lib/card/frontmatter.ts` | `motor/cordel/frontmatter.ts` | CDL |
+| `lib/card/text.ts` | `motor/cordel/texto.ts` | CDL |
+| `lib/card/util.ts` | `motor/cordel/util.ts` | CDL |
+| `lib/contract/types.ts` | `motor/cordel/bussola/tipos.ts` | BSS |
+| `lib/contract/detect.ts` | `motor/cordel/bussola/detectar.ts` | BSS |
+| `lib/contract/probe.ts` | `motor/cordel/bussola/sondar.ts` | BSS |
+| `lib/contract/store.ts` | `motor/cordel/bussola/armazenar.ts` | BSS |
+| `lib/spec/openspec.ts` | `motor/niemeyer/lucio/openspec.ts` | LUC |
+| `lib/tasks/types.ts` | `motor/tomada/ponte/tarefas/tipos.ts` | PNT |
+| `lib/tasks/registry.ts` | `motor/tomada/ponte/tarefas/registro.ts` | PNT |
+| `lib/tasks/sync.ts` | `motor/tomada/ponte/tarefas/sync.ts` | PNT |
+| `lib/tasks/adapters/github-issues.ts` | `motor/tomada/ponte/tarefas/github-issues.ts` | PNT |
 
 ### 5.3 `lib/runner/` → 64 arquivos
 
 | Hoje | Destino | Código |
 |---|---|---|
-| `lib/runner/execute.ts` | `motor/osw/executar.ts` | OSW |
-| `lib/runner/queue.ts` | `motor/osw/mtr/fila.ts` | MTR |
-| `lib/runner/queue-state.ts` | `motor/osw/mtr/estado-da-fila.ts` | MTR |
-| `lib/runner/file-lock.ts` | `motor/osw/mtr/trava-arquivo.ts` | MTR |
-| `lib/runner/instance-lock.ts` | `motor/osw/mtr/trava-instancia.ts` | MTR |
-| `lib/runner/analyze.ts` | `motor/osw/rta/perfil.ts` | RTA |
-| `lib/runner/classify.ts` | `motor/osw/rta/superficie.ts` | RTA |
-| `lib/runner/externo.ts` | `motor/osw/rta/externo.ts` | RTA |
-| `lib/runner/pipeline/types.ts` | `motor/nmy/tipos.ts` | NMY |
-| `lib/runner/pipeline/config.ts` | `motor/nmy/config.ts` | NMY |
-| `lib/runner/pipeline/waves.ts` | `motor/nmy/luc/ondas.ts` | LUC |
-| `lib/runner/spec-phase.ts` | `motor/nmy/luc/fase-spec.ts` | LUC |
-| `lib/runner/agent.ts` | `motor/cic/agente.ts` | CIC |
-| `lib/runner/gated.ts` | `motor/cic/passo-com-gate.ts` | CIC |
-| `lib/runner/correct.ts` | `motor/cic/corrigir.ts` | CIC |
-| `lib/runner/codefox-gate.ts` | `motor/cic/crv/gate.ts` | CRV |
-| `lib/runner/eval.ts` | `motor/cic/crv/avaliar.ts` | CRV |
-| `lib/runner/finish-gates.ts` | `motor/cic/crv/portoes-de-fecho.ts` | CRV |
-| `lib/runner/url-vivo.ts` | `motor/cic/crv/url-viva.ts` | CRV |
-| `lib/runner/attempts.ts` | `motor/cic/rpr/tentativas.ts` | RPR |
-| `lib/runner/failure-policy.ts` | `motor/cic/rpr/politica.ts` | RPR |
-| `lib/runner/waiting.ts` | `motor/cic/rpr/espera.ts` | RPR |
-| `lib/runner/url-ajuste.ts` | `motor/cic/rpr/url-ajuste.ts` | RPR |
-| `lib/runner/provider-trust.ts` | `motor/tmd/confianca.ts` | TMD |
-| `lib/runner/runs.ts` | `motor/euc/registros.ts` | EUC |
-| `lib/runner/sessao.ts` | `motor/euc/sessao.ts` | EUC |
-| `lib/runner/ias-da-sessao.ts` | `motor/euc/ias-da-sessao.ts` | EUC |
-| `lib/runner/estado-em-disco.ts` | `motor/euc/estado-em-disco.ts` | EUC |
-| `lib/runner/finish-metrics.ts` | `motor/euc/metricas-de-fecho.ts` | EUC |
-| `lib/runner/podar-registros.ts` | `motor/euc/podar.ts` | EUC |
-| `lib/runner/health.ts` | `motor/euc/rdr/tick.ts` | RDR |
-| `lib/runner/progress.ts` | `motor/euc/rdr/progresso.ts` | RDR |
-| `lib/runner/cost-gap.ts` | `motor/euc/tsr/lacuna.ts` | TSR |
-| `lib/runner/cost-trust.ts` | `motor/euc/tsr/confianca.ts` | TSR |
-| `lib/runner/git.ts` | `motor/qlb/git.ts` | QLB |
-| `lib/runner/finish.ts` | `motor/qlb/ctr/fechar.ts` | CTR |
-| `lib/runner/finish-pr.ts` | `motor/qlb/ctr/pr.ts` | CTR |
-| `lib/runner/finish-sync.ts` | `motor/qlb/ctr/sync.ts` | CTR |
-| `lib/runner/finish-resume.ts` | `motor/qlb/ctr/retomar.ts` | CTR |
-| `lib/runner/merge.ts` | `motor/qlb/ctr/merge.ts` | CTR |
-| `lib/runner/responder-pergunta.ts` | `motor/qlb/ctr/responder-pergunta.ts` | CTR |
-| `lib/runner/refs.ts` | `motor/qlb/alf/refs.ts` | ALF |
-| `lib/runner/refs-anexo.ts` | `motor/qlb/alf/anexo.ts` | ALF |
-| `lib/runner/ref-trust.ts` | `motor/qlb/alf/confianca.ts` | ALF |
-| `lib/runner/download.ts` | `motor/qlb/alf/download.ts` | ALF |
-| `lib/runner/private-net.ts` | `motor/qlb/alf/rede-privada.ts` | ALF |
-| `lib/runner/redirect.ts` | `motor/qlb/alf/redirect.ts` | ALF |
-| `lib/runner/url-guard.ts` | `motor/qlb/alf/url-guard.ts` | ALF |
-| `lib/runner/host-resolve.ts` | `motor/qlb/alf/host.ts` | ALF |
-| `lib/runner/ipv4.ts` | `motor/qlb/alf/ipv4.ts` | ALF |
-| `lib/runner/loopback.ts` | `motor/qlb/alf/loopback.ts` | ALF |
-| `lib/runner/card-store.ts` | `motor/cdl/store.ts` | CDL |
-| `lib/runner/config.ts` | `motor/cdl/ali/config.ts` | ALI |
-| `lib/runner/environment-contract.ts` | `motor/cdl/ali/contrato.ts` | ALI |
-| `lib/runner/hicode-home.ts` | `motor/cdl/ali/home.ts` | ALI |
-| `lib/runner/hooks.ts` | `motor/cdl/ali/hooks.ts` | ALI |
-| `lib/runner/ambiente.ts` | `motor/cdl/ali/ambiente.ts` | ALI |
-| `lib/runner/memory.ts` | `motor/csd/memoria.ts` | CSD |
-| `lib/runner/auditoria.ts` | `motor/agentes/ass/auditoria.ts` | ASS |
-| `lib/runner/clarify.ts` | `motor/agentes/clr/clarificar.ts` | CLR |
-| `lib/runner/design.ts` | `motor/agentes/tsl/design.ts` | TSL |
-| `lib/runner/ideate-run.ts` | `motor/agentes/tsl/ideate-run.ts` | TSL |
-| `lib/runner/commands.ts` | `motor/mir/comandos.ts` | MIR |
-| `lib/runner/clipboard.ts` | `motor/mir/clipboard.ts` | MIR |
+| `lib/runner/execute.ts` | `motor/oswaldo/executar.ts` | OSW |
+| `lib/runner/queue.ts` | `motor/oswaldo/mutirao/fila.ts` | MTR |
+| `lib/runner/queue-state.ts` | `motor/oswaldo/mutirao/estado-da-fila.ts` | MTR |
+| `lib/runner/file-lock.ts` | `motor/oswaldo/mutirao/trava-arquivo.ts` | MTR |
+| `lib/runner/instance-lock.ts` | `motor/oswaldo/mutirao/trava-instancia.ts` | MTR |
+| `lib/runner/analyze.ts` | `motor/oswaldo/rota/perfil.ts` | RTA |
+| `lib/runner/classify.ts` | `motor/oswaldo/rota/superficie.ts` | RTA |
+| `lib/runner/externo.ts` | `motor/oswaldo/rota/externo.ts` | RTA |
+| `lib/runner/pipeline/types.ts` | `motor/niemeyer/tipos.ts` | NMY |
+| `lib/runner/pipeline/config.ts` | `motor/niemeyer/config.ts` | NMY |
+| `lib/runner/pipeline/waves.ts` | `motor/niemeyer/lucio/ondas.ts` | LUC |
+| `lib/runner/spec-phase.ts` | `motor/niemeyer/lucio/fase-spec.ts` | LUC |
+| `lib/runner/agent.ts` | `motor/ciclo/agente.ts` | CIC |
+| `lib/runner/gated.ts` | `motor/ciclo/passo-com-gate.ts` | CIC |
+| `lib/runner/correct.ts` | `motor/ciclo/corrigir.ts` | CIC |
+| `lib/runner/codefox-gate.ts` | `motor/ciclo/crivo/gate.ts` | CRV |
+| `lib/runner/eval.ts` | `motor/ciclo/crivo/avaliar.ts` | CRV |
+| `lib/runner/finish-gates.ts` | `motor/ciclo/crivo/portoes-de-fecho.ts` | CRV |
+| `lib/runner/url-vivo.ts` | `motor/ciclo/crivo/url-viva.ts` | CRV |
+| `lib/runner/attempts.ts` | `motor/ciclo/reprise/tentativas.ts` | RPR |
+| `lib/runner/failure-policy.ts` | `motor/ciclo/reprise/politica.ts` | RPR |
+| `lib/runner/waiting.ts` | `motor/ciclo/reprise/espera.ts` | RPR |
+| `lib/runner/url-ajuste.ts` | `motor/ciclo/reprise/url-ajuste.ts` | RPR |
+| `lib/runner/provider-trust.ts` | `motor/tomada/confianca.ts` | TMD |
+| `lib/runner/runs.ts` | `motor/euclides/registros.ts` | EUC |
+| `lib/runner/sessao.ts` | `motor/euclides/sessao.ts` | EUC |
+| `lib/runner/ias-da-sessao.ts` | `motor/euclides/ias-da-sessao.ts` | EUC |
+| `lib/runner/estado-em-disco.ts` | `motor/euclides/estado-em-disco.ts` | EUC |
+| `lib/runner/finish-metrics.ts` | `motor/euclides/metricas-de-fecho.ts` | EUC |
+| `lib/runner/podar-registros.ts` | `motor/euclides/podar.ts` | EUC |
+| `lib/runner/health.ts` | `motor/euclides/radar/tick.ts` | RDR |
+| `lib/runner/progress.ts` | `motor/euclides/radar/progresso.ts` | RDR |
+| `lib/runner/cost-gap.ts` | `motor/euclides/tesouro/lacuna.ts` | TSR |
+| `lib/runner/cost-trust.ts` | `motor/euclides/tesouro/confianca.ts` | TSR |
+| `lib/runner/git.ts` | `motor/quilombo/git.ts` | QLB |
+| `lib/runner/finish.ts` | `motor/quilombo/cartorio/fechar.ts` | CTR |
+| `lib/runner/finish-pr.ts` | `motor/quilombo/cartorio/pr.ts` | CTR |
+| `lib/runner/finish-sync.ts` | `motor/quilombo/cartorio/sync.ts` | CTR |
+| `lib/runner/finish-resume.ts` | `motor/quilombo/cartorio/retomar.ts` | CTR |
+| `lib/runner/merge.ts` | `motor/quilombo/cartorio/merge.ts` | CTR |
+| `lib/runner/responder-pergunta.ts` | `motor/quilombo/cartorio/responder-pergunta.ts` | CTR |
+| `lib/runner/refs.ts` | `motor/quilombo/alfandega/refs.ts` | ALF |
+| `lib/runner/refs-anexo.ts` | `motor/quilombo/alfandega/anexo.ts` | ALF |
+| `lib/runner/ref-trust.ts` | `motor/quilombo/alfandega/confianca.ts` | ALF |
+| `lib/runner/download.ts` | `motor/quilombo/alfandega/download.ts` | ALF |
+| `lib/runner/private-net.ts` | `motor/quilombo/alfandega/rede-privada.ts` | ALF |
+| `lib/runner/redirect.ts` | `motor/quilombo/alfandega/redirect.ts` | ALF |
+| `lib/runner/url-guard.ts` | `motor/quilombo/alfandega/url-guard.ts` | ALF |
+| `lib/runner/host-resolve.ts` | `motor/quilombo/alfandega/host.ts` | ALF |
+| `lib/runner/ipv4.ts` | `motor/quilombo/alfandega/ipv4.ts` | ALF |
+| `lib/runner/loopback.ts` | `motor/quilombo/alfandega/loopback.ts` | ALF |
+| `lib/runner/card-store.ts` | `motor/cordel/store.ts` | CDL |
+| `lib/runner/config.ts` | `motor/cordel/alicerce/config.ts` | ALI |
+| `lib/runner/environment-contract.ts` | `motor/cordel/alicerce/contrato.ts` | ALI |
+| `lib/runner/hicode-home.ts` | `motor/cordel/alicerce/home.ts` | ALI |
+| `lib/runner/hooks.ts` | `motor/cordel/alicerce/hooks.ts` | ALI |
+| `lib/runner/ambiente.ts` | `motor/cordel/alicerce/ambiente.ts` | ALI |
+| `lib/runner/memory.ts` | `motor/cascudo/memoria.ts` | CSD |
+| `lib/runner/auditoria.ts` | `motor/agentes/assis/auditoria.ts` | ASS |
+| `lib/runner/clarify.ts` | `motor/agentes/clarice/clarificar.ts` | CLR |
+| `lib/runner/design.ts` | `motor/agentes/tarsila/design.ts` | TSL |
+| `lib/runner/ideate-run.ts` | `motor/agentes/tarsila/ideate-run.ts` | TSL |
+| `lib/runner/commands.ts` | `motor/mirante/comandos.ts` | MIR |
+| `lib/runner/clipboard.ts` | `motor/mirante/clipboard.ts` | MIR |
 
 ### 5.4 `lib/core/` → 61 arquivos
 
 | Hoje | Destino | Código |
 |---|---|---|
-| `lib/core/daemon.ts` | `motor/osw/mtr/daemon.ts` | MTR |
-| `lib/core/passos.ts` | `motor/nmy/passos.ts` | NMY |
-| `lib/core/plan.ts` | `motor/nmy/luc/plano.ts` | LUC |
-| `lib/core/cache.ts` | `motor/tmd/eco/memo.ts` | ECO |
-| `lib/core/cota.ts` | `motor/euc/tsr/cota.ts` | TSR |
-| `lib/core/cota-runs.ts` | `motor/euc/tsr/cota-runs.ts` | TSR |
-| `lib/core/saude.ts` | `motor/euc/rdr/saude.ts` | RDR |
-| `lib/core/doctor.ts` | `motor/euc/rdr/doctor.ts` | RDR |
-| `lib/core/archive.ts` | `motor/cdl/arquivar.ts` | CDL |
-| `lib/core/remover.ts` | `motor/cdl/remover.ts` | CDL |
-| `lib/core/repos.ts` | `motor/cdl/repos.ts` | CDL |
-| `lib/core/projetos-conhecidos.ts` | `motor/cdl/projetos-conhecidos.ts` | CDL |
-| `lib/core/config-snapshot.ts` | `motor/cdl/ali/snapshot.ts` | ALI |
-| `lib/core/ideate.ts` | `motor/agentes/tsl/ideacao.ts` | TSL |
-| `lib/core/dispatch.ts` | `motor/mir/despacho.ts` | MIR |
-| `lib/core/session.ts` | `motor/mir/sessao.ts` | MIR |
-| `lib/core/actions.ts` | `motor/mir/acoes.ts` | MIR |
-| `lib/core/activity.ts` | `motor/mir/atividade.ts` | MIR |
-| `lib/core/comandos-de-tarefa.ts` | `motor/mir/comandos-de-tarefa.ts` | MIR |
-| `lib/core/complete.ts` | `motor/mir/completar.ts` | MIR |
-| `lib/core/escolher-ia.ts` | `motor/mir/escolher-ia.ts` | MIR |
-| `lib/core/estado-json.ts` | `motor/mir/estado-json.ts` | MIR |
-| `lib/core/estado-vazio.ts` | `motor/mir/estado-vazio.ts` | MIR |
-| `lib/core/historico.ts` | `motor/mir/historico.ts` | MIR |
-| `lib/core/instruir.ts` | `motor/mir/instruir.ts` | MIR |
-| `lib/core/progresso.ts` | `motor/mir/progresso.ts` | MIR |
-| `lib/core/refs-comando.ts` | `motor/mir/refs-comando.ts` | MIR |
-| `lib/core/responder.ts` | `motor/mir/responder.ts` | MIR |
-| `lib/core/watch.ts` | `motor/mir/watch.ts` | MIR |
-| `lib/core/render/**` (24 arquivos) | `motor/mir/render/**` | MIR |
-| `lib/core/tui/**` (8 arquivos) | `motor/mir/tui/**` | MIR |
+| `lib/core/daemon.ts` | `motor/oswaldo/mutirao/daemon.ts` | MTR |
+| `lib/core/passos.ts` | `motor/niemeyer/passos.ts` | NMY |
+| `lib/core/plan.ts` | `motor/niemeyer/lucio/plano.ts` | LUC |
+| `lib/core/cache.ts` | `motor/tomada/eco/memo.ts` | ECO |
+| `lib/core/cota.ts` | `motor/euclides/tesouro/cota.ts` | TSR |
+| `lib/core/cota-runs.ts` | `motor/euclides/tesouro/cota-runs.ts` | TSR |
+| `lib/core/saude.ts` | `motor/euclides/radar/saude.ts` | RDR |
+| `lib/core/doctor.ts` | `motor/euclides/radar/doctor.ts` | RDR |
+| `lib/core/archive.ts` | `motor/cordel/arquivar.ts` | CDL |
+| `lib/core/remover.ts` | `motor/cordel/remover.ts` | CDL |
+| `lib/core/repos.ts` | `motor/cordel/repos.ts` | CDL |
+| `lib/core/projetos-conhecidos.ts` | `motor/cordel/projetos-conhecidos.ts` | CDL |
+| `lib/core/config-snapshot.ts` | `motor/cordel/alicerce/snapshot.ts` | ALI |
+| `lib/core/ideate.ts` | `motor/agentes/tarsila/ideacao.ts` | TSL |
+| `lib/core/dispatch.ts` | `motor/mirante/despacho.ts` | MIR |
+| `lib/core/session.ts` | `motor/mirante/sessao.ts` | MIR |
+| `lib/core/actions.ts` | `motor/mirante/acoes.ts` | MIR |
+| `lib/core/activity.ts` | `motor/mirante/atividade.ts` | MIR |
+| `lib/core/comandos-de-tarefa.ts` | `motor/mirante/comandos-de-tarefa.ts` | MIR |
+| `lib/core/complete.ts` | `motor/mirante/completar.ts` | MIR |
+| `lib/core/escolher-ia.ts` | `motor/mirante/escolher-ia.ts` | MIR |
+| `lib/core/estado-json.ts` | `motor/mirante/estado-json.ts` | MIR |
+| `lib/core/estado-vazio.ts` | `motor/mirante/estado-vazio.ts` | MIR |
+| `lib/core/historico.ts` | `motor/mirante/historico.ts` | MIR |
+| `lib/core/instruir.ts` | `motor/mirante/instruir.ts` | MIR |
+| `lib/core/progresso.ts` | `motor/mirante/progresso.ts` | MIR |
+| `lib/core/refs-comando.ts` | `motor/mirante/refs-comando.ts` | MIR |
+| `lib/core/responder.ts` | `motor/mirante/responder.ts` | MIR |
+| `lib/core/watch.ts` | `motor/mirante/watch.ts` | MIR |
+| `lib/core/render/**` (24 arquivos) | `motor/mirante/render/**` | MIR |
+| `lib/core/tui/**` (8 arquivos) | `motor/mirante/tui/**` | MIR |
 
 ### 5.5 `bin/` → 8 arquivos movidos + 3 inalterados
 
@@ -476,14 +476,14 @@ Fonte de verdade da Onda 1. `scripts/renomear-brazil.mjs` consome exatamente est
 | `bin/hii.ts` | *inalterado* | — |
 | `bin/repl.ts` | *inalterado* | — |
 | `runner.ts` | *inalterado* | — |
-| `bin/lib/board-tui.ts` | `motor/mir/cli/board-tui.ts` | MIR |
-| `bin/lib/comandos.ts` | `motor/mir/cli/comandos.ts` | MIR |
-| `bin/lib/dados.ts` | `motor/mir/cli/dados.ts` | MIR |
-| `bin/lib/estado.ts` | `motor/mir/cli/estado.ts` | MIR |
-| `bin/lib/preflight.ts` | `motor/mir/cli/preflight.ts` | MIR |
-| `bin/lib/rodape-tui.ts` | `motor/mir/cli/rodape-tui.ts` | MIR |
-| `bin/lib/saida.ts` | `motor/mir/cli/saida.ts` | MIR |
-| `bin/lib/tela-tarefa.ts` | `motor/mir/cli/tela-tarefa.ts` | MIR |
+| `bin/lib/board-tui.ts` | `motor/mirante/cli/board-tui.ts` | MIR |
+| `bin/lib/comandos.ts` | `motor/mirante/cli/comandos.ts` | MIR |
+| `bin/lib/dados.ts` | `motor/mirante/cli/dados.ts` | MIR |
+| `bin/lib/estado.ts` | `motor/mirante/cli/estado.ts` | MIR |
+| `bin/lib/preflight.ts` | `motor/mirante/cli/preflight.ts` | MIR |
+| `bin/lib/rodape-tui.ts` | `motor/mirante/cli/rodape-tui.ts` | MIR |
+| `bin/lib/saida.ts` | `motor/mirante/cli/saida.ts` | MIR |
+| `bin/lib/tela-tarefa.ts` | `motor/mirante/cli/tela-tarefa.ts` | MIR |
 
 ### 5.6 O que reescrita de import NÃO alcança
 
@@ -497,7 +497,7 @@ em vez de deixá-los quebrar em silêncio; os demais foram varridos à mão.
 | Caminho montado por segmentos em `join()` | `test/refs-recusa-no-card.ts`, `test/provedor-removido.ts`, `test/daemon-arranque.ts` | `join(REPO, 'lib', 'runner', 'agent')` — não existe string única para casar |
 | Import de runtime concatenado | `.claude/skills/verificar/SKILL.md:52` | `import(process.cwd() + "/lib/runner/auditoria.ts")` — a barra inicial quebra o casamento exato |
 | Raiz de varredura de ferramenta | `tsconfig.json` (`include`), `scripts/check-no-any.mjs` (`ROOTS`) | É diretório, não módulo. Durante a Onda 1 apontam para os **dois** lados; `lib` sai no commit 1.10 |
-| Caminho como **dado** entre aspas | `motor/cdl/ali/contrato.ts` (`resolvidoPor: ['…']`) | Não é import — mas `test/environment-contract.test.ts:45` valida que o caminho existe em disco, então tem de acompanhar. O script cobre isso |
+| Caminho como **dado** entre aspas | `motor/cordel/alicerce/contrato.ts` (`resolvidoPor: ['…']`) | Não é import — mas `test/environment-contract.test.ts:45` valida que o caminho existe em disco, então tem de acompanhar. O script cobre isso |
 | Prosa em documentação | `README.md`, `.claude/skills/*/SKILL.md` | Cobertos pelo passo de caminho-como-dado quando entre aspas ou crases; o resto é manual |
 
 **Testes movidos na Onda 1b:** `test/` passou a espelhar os dez domínios de
@@ -533,17 +533,17 @@ Rename de arquivo é mecânico. Rename de símbolo é semântico e vale só onde
 
 | Hoje | Vira | Onde | Por quê | Estado |
 |---|---|---|---|---|
-| `AiProvider` | `Harness` | `motor/tmd/tipos.ts` | É o contrato TMD. "Provider" confunde com o serviço; "Harness" é o encaixe | ✅ feito |
-| `AiProviderName` | `HarnessId` | `motor/tmd/tipos.ts` | Passa a aceitar id arbitrário (qwen, deepseek) sem editar união | ✅ feito |
-| `ProviderLimits` | `HarnessCapabilities` | `motor/tmd/tipos.ts` | Vira o que o harness **pode**, não só o que não pode. Ganha `mcp: boolean` | ✅ feito |
-| `providerFor` / `providerNameFor` | `harnessPara` / `harnessDoPapel` | `motor/tmd/registro.ts` | Consistência de idioma com o resto do motor | ⏳ pendente |
-| `runGatedStep` | `passoComCrivo` | `motor/cic/passo-com-gate.ts` | Diz quem julga | ⏳ pendente |
-| `runGatedReview` | `julgarComCrivo` | `motor/cic/crv/gate.ts` | Idem | ⏳ pendente |
-| `planSteps` | `rotearPassos` | `motor/osw/rta/perfil.ts` | É RTA decidindo rota | ⏳ pendente |
-| `waves` | `ondas` | `motor/nmy/luc/ondas.ts` | Idioma | ⏳ pendente |
-| `writeRun` / `readRunSteps` | `anexarNoDiario` / `lerPassosDoDiario` | `motor/euc/registros.ts` | Deixa explícito que EUC é append-only | ⏳ pendente |
-| `AgentRole` | `Papel` | `motor/cdl/tipos.ts` | Idioma; e `PapelDeChamada` já existe em português no mesmo arquivo | ⏳ pendente |
-| `maxReajuste()` | `tetoDeReprise()` | `motor/cdl/ali/config.ts` | Amarra ao código RPR | ⏳ pendente |
+| `AiProvider` | `Harness` | `motor/tomada/tipos.ts` | É o contrato TMD. "Provider" confunde com o serviço; "Harness" é o encaixe | ✅ feito |
+| `AiProviderName` | `HarnessId` | `motor/tomada/tipos.ts` | Passa a aceitar id arbitrário (qwen, deepseek) sem editar união | ✅ feito |
+| `ProviderLimits` | `HarnessCapabilities` | `motor/tomada/tipos.ts` | Vira o que o harness **pode**, não só o que não pode. Ganha `mcp: boolean` | ✅ feito |
+| `providerFor` / `providerNameFor` | `harnessPara` / `harnessDoPapel` | `motor/tomada/registro.ts` | Consistência de idioma com o resto do motor | ⏳ pendente |
+| `runGatedStep` | `passoComCrivo` | `motor/ciclo/passo-com-gate.ts` | Diz quem julga | ⏳ pendente |
+| `runGatedReview` | `julgarComCrivo` | `motor/ciclo/crivo/gate.ts` | Idem | ⏳ pendente |
+| `planSteps` | `rotearPassos` | `motor/oswaldo/rota/perfil.ts` | É RTA decidindo rota | ⏳ pendente |
+| `waves` | `ondas` | `motor/niemeyer/lucio/ondas.ts` | Idioma | ⏳ pendente |
+| `writeRun` / `readRunSteps` | `anexarNoDiario` / `lerPassosDoDiario` | `motor/euclides/registros.ts` | Deixa explícito que EUC é append-only | ⏳ pendente |
+| `AgentRole` | `Papel` | `motor/cordel/tipos.ts` | Idioma; e `PapelDeChamada` já existe em português no mesmo arquivo | ⏳ pendente |
+| `maxReajuste()` | `tetoDeReprise()` | `motor/cordel/alicerce/config.ts` | Amarra ao código RPR | ⏳ pendente |
 
 O que **não** muda de nome, de propósito: `Status`, `Card`, `Run`, `StepMetric`, `Usage`, `FailureClass` — já estão certos, aparecem em dezenas de testes, e renomear compra risco sem comprar clareza.
 
@@ -555,41 +555,41 @@ Tudo aqui é `NOVO`. Coluna **Item** = número no roadmap consolidado do `MODERN
 
 | Código | Arquivo | O que faz | Item |
 |---|---|---|---|
-| TMD | `motor/tmd/tipos.ts` (estende) | `healthCheck()` na interface, `capabilities().mcp` | 1 |
-| TMD | `motor/tmd/sonda.ts` (estende) | Probe real do `kimi` — hoje é `return true` | Parte I §3.7 |
-| RUI | `motor/osw/rui.ts` | Estratégia: escolhe perfil, tier e orçamento antes de RTA rotear | 19 |
-| OSW | `motor/osw/despacho-de-agentes.ts` | Orchestrator-workers dentro de uma fase; paralelo quando as skills não tocam os mesmos arquivos | 11 |
-| NMY | `motor/nmy/topologia.ts` + `config/topologia.json` | Grafo declarado como **dado**. Valida transição, não executa | 24 |
-| LUC | `motor/nmy/luc/matriz-entendimento.ts` | Artefato obrigatório antes da Fase 5 — Pilar 1 | 20 |
-| TJL | `motor/nmy/tjl/blocos.ts` | Bloco → valida → próximo. Para cedo em base quebrada | 18 |
-| CIC | `motor/cic/reparo.ts` | `runWithRepair` genérico, generalizando `passoComCrivo` | Parte I §3.2 |
-| CRV | `motor/cic/crv/criterios.ts` + `config/review-criteria.json` | Critério escrito e versionado + matriz de cenário | 8, 21 |
-| CND | `motor/cic/cnd/gauntlet.ts` | Comparação cega contra referência externa concreta. **Só liga com `orcamentoPorCard` (TSR) ativo** | 23 |
-| RPR | `motor/cic/rpr/reparadores/*.ts` | Um `BuildRepairer` por domínio: laravel, go, rust, unity, godot | 6 |
-| RDA/ARN/VTO | `motor/cic/{rda,arn,vto}.ts` | Consenso, debate e voto entre críticos do CND | 23 |
-| ECO | `motor/tmd/eco/prefixo.ts` | Prefixo byte-idêntico entre chamadas do mesmo card. `narrowFix` **anexa**, nunca reescreve | 17 |
-| EUC | `motor/euc/eventos.ts` | Evento por fase em JSONL: `gate_start`, `repair_attempt`, `gate_verdict`, `human_checkpoint`, `orfao` | Parte I §3.8, 27 |
-| EUC | `motor/euc/recuperar.ts` | No restart, reconstrói a fase de cada card sem evento final | 26 |
-| RDR | `motor/euc/rdr/servidor.ts` | `GET /health` + shutdown gracioso em `SIGTERM` | 30 |
+| TMD | `motor/tomada/tipos.ts` (estende) | `healthCheck()` na interface, `capabilities().mcp` | 1 |
+| TMD | `motor/tomada/sonda.ts` (estende) | Probe real do `kimi` — hoje é `return true` | Parte I §3.7 |
+| RUI | `motor/oswaldo/rui.ts` | Estratégia: escolhe perfil, tier e orçamento antes de RTA rotear | 19 |
+| OSW | `motor/oswaldo/despacho-de-agentes.ts` | Orchestrator-workers dentro de uma fase; paralelo quando as skills não tocam os mesmos arquivos | 11 |
+| NMY | `motor/niemeyer/topologia.ts` + `config/topologia.json` | Grafo declarado como **dado**. Valida transição, não executa | 24 |
+| LUC | `motor/niemeyer/lucio/matriz-entendimento.ts` | Artefato obrigatório antes da Fase 5 — Pilar 1 | 20 |
+| TJL | `motor/niemeyer/tijolo/blocos.ts` | Bloco → valida → próximo. Para cedo em base quebrada | 18 |
+| CIC | `motor/ciclo/reparo.ts` | `runWithRepair` genérico, generalizando `passoComCrivo` | Parte I §3.2 |
+| CRV | `motor/ciclo/crivo/criterios.ts` + `config/review-criteria.json` | Critério escrito e versionado + matriz de cenário | 8, 21 |
+| CND | `motor/ciclo/canudos/gauntlet.ts` | Comparação cega contra referência externa concreta. **Só liga com `orcamentoPorCard` (TSR) ativo** | 23 |
+| RPR | `motor/ciclo/reprise/reparadores/*.ts` | Um `BuildRepairer` por domínio: laravel, go, rust, unity, godot | 6 |
+| RDA/ARN/VTO | `motor/ciclo/{rda,arn,vto}.ts` | Consenso, debate e voto entre críticos do CND | 23 |
+| ECO | `motor/tomada/eco/prefixo.ts` | Prefixo byte-idêntico entre chamadas do mesmo card. `narrowFix` **anexa**, nunca reescreve | 17 |
+| EUC | `motor/euclides/eventos.ts` | Evento por fase em JSONL: `gate_start`, `repair_attempt`, `gate_verdict`, `human_checkpoint`, `orfao` | Parte I §3.8, 27 |
+| EUC | `motor/euclides/recuperar.ts` | No restart, reconstrói a fase de cada card sem evento final | 26 |
+| RDR | `motor/euclides/radar/servidor.ts` | `GET /health` + shutdown gracioso em `SIGTERM` | 30 |
 | TSR | `config/model-tier.json` | Tier por ação, `regraDeSubida`, `orcamentoPorCard.tetoUsd` | 19 |
-| SLV | `motor/qlb/slv/idempotencia.ts` | `hash(card + fase + tipo_operacao)`. Grava **antes** de considerar concluída | 25 |
-| SLV | `motor/qlb/slv/compensacao.ts` | Saga: `pr_orfao`, `notificacao_incerta` | 27 |
-| CFR | `motor/qlb/cfr/segredos.ts` | `EnvSecretProvider` sempre funciona; cofre de nuvem é opcional | 29 |
-| QLB | `motor/qlb/limites.ts` | Teto de CPU/memória por worktree paralelo | 32 |
-| CSD | `motor/csd/acervo.ts` + `motor/csd/resolver.ts` | Loader de `SKILL.md` + fusão `_native` + `_sources` → `_resolved` | 3, 10, 15 |
+| SLV | `motor/quilombo/salvo-conduto/idempotencia.ts` | `hash(card + fase + tipo_operacao)`. Grava **antes** de considerar concluída | 25 |
+| SLV | `motor/quilombo/salvo-conduto/compensacao.ts` | Saga: `pr_orfao`, `notificacao_incerta` | 27 |
+| CFR | `motor/quilombo/cofre/segredos.ts` | `EnvSecretProvider` sempre funciona; cofre de nuvem é opcional | 29 |
+| QLB | `motor/quilombo/limites.ts` | Teto de CPU/memória por worktree paralelo | 32 |
+| CSD | `motor/cascudo/acervo.ts` + `motor/cascudo/resolver.ts` | Loader de `SKILL.md` + fusão `_native` + `_sources` → `_resolved` | 3, 10, 15 |
 | CSD | `skills/` + `config/skill-sources.json` | Packs: `common`, `backend-web`, `frontend-web`, `mobile`, `systems-languages`, `games-multiplatform`, `data-ml`, `devops-deploy` | 3, 7, 10, 15 |
-| FRE | `motor/csd/fre/aprendiz.ts` | Roda 1x no fechamento. Lê o diário EUC, **não** o código. Extrai `ProblemSignature` deterministicamente | 12 |
+| FRE | `motor/cascudo/freire/aprendiz.ts` | Roda 1x no fechamento. Lê o diário EUC, **não** o código. Extrai `ProblemSignature` deterministicamente | 12 |
 | FRE | `.hii/candidatos-regras/` | Acumula sem efeito no gate até N cards (default 3) | 12 |
-| LEI | `motor/csd/lei/guarda.ts` + `config/regras-inegociaveis.json` | Guarda de risco sobre o diff. **Card pode subir o rigor, nunca baixar** | 2, 13, 22 |
-| VTB | `motor/agentes/vtb/auditoria-harness.ts` | Grep determinístico por prompt injection em `SKILL.md`, `mcp.json`, hooks | 14 |
+| LEI | `motor/cascudo/lei/guarda.ts` + `config/regras-inegociaveis.json` | Guarda de risco sobre o diff. **Card pode subir o rigor, nunca baixar** | 2, 13, 22 |
+| VTB | `motor/agentes/vital/auditoria-harness.ts` | Grep determinístico por prompt injection em `SKILL.md`, `mcp.json`, hooks | 14 |
 | VTB | `config/security-checklist/<stack>.json` | Checklist versionado por stack | 7 |
-| CHG | `motor/agentes/chg/red-primeiro.ts` | RED antes do GREEN obrigatório no perfil `completo` | 5 |
-| CLR | `motor/agentes/clr/doc-updater.ts` | Docs atualizadas quando a mudança afeta contrato público | 9 |
+| CHG | `motor/agentes/chagas/red-primeiro.ts` | RED antes do GREEN obrigatório no perfil `completo` | 5 |
+| CLR | `motor/agentes/clarice/doc-updater.ts` | Docs atualizadas quando a mudança afeta contrato público | 9 |
 | RND | `skills/_resolved/common/search-first/SKILL.md` | Procurar antes de codar | 3 |
 | EMB | `Dockerfile`, `docker-stack.yml` | Uma imagem, roda igual em VPS/AWS/Azure/GCP. **Zero SDK de nuvem no motor**. Compose e PROIBIDO (r-0001): ele ignora `deploy.resources.limits` e o teto do item 32 viraria decorativo | 28, 31, 32 |
-| MIR | `motor/mir/comandos-manuais.ts` | `/orquestrador-{jogos,dev-web,android,devops}` + `/layout`. São **atalhos de intake**, não orquestradores novos | 16 |
-| CTR | `motor/qlb/ctr/aprovar-plano.ts` | Parede humana na Fase 4, antes de implementar | 4 |
-| BSS | `motor/cdl/bss/setup-ferramental.ts` | Projeto/feature nova não avança sem teste rodando e debug documentado — Pilar 3 | 22 |
+| MIR | `motor/mirante/comandos-manuais.ts` | `/orquestrador-{jogos,dev-web,android,devops}` + `/layout`. São **atalhos de intake**, não orquestradores novos | 16 |
+| CTR | `motor/quilombo/cartorio/aprovar-plano.ts` | Parede humana na Fase 4, antes de implementar | 4 |
+| BSS | `motor/cordel/bussola/setup-ferramental.ts` | Projeto/feature nova não avança sem teste rodando e debug documentado — Pilar 3 | 22 |
 
 ---
 
@@ -654,11 +654,11 @@ Colisões de prefixo de 2 letras que **existem** e foram avaliadas como aceitáv
 
 | Par | Códigos | Domínios | Por que passa |
 |---|---|---|---|
-| `AL` | ALF (Alfândega) / ALI (Alicerce) | `qlb/` vs `cdl/ali/` | Fronteira de entrada vs. fundação de ambiente. Nunca no mesmo import |
-| `RD` | RDA (Roda) / RDR (Radar) | `cic/` vs `euc/rdr/` | Consenso entre críticos vs. telemetria |
-| `RT` | RTA (Rota) / RTD (Retirada) | `osw/rta/` vs `cic/` | Router vs. fallback |
-| `TS` | TSL (Tarsila) / TSR (Tesouro) | `agentes/tsl/` vs `euc/tsr/` | Agente criativo vs. governança de custo |
-| `VT` | VTB (Vital) / VTO (Voto) | `agentes/vtb/` vs `cic/` | Agente de segurança vs. seleção entre alternativas |
+| `AL` | ALF (Alfândega) / ALI (Alicerce) | `quilombo/` vs `cordel/alicerce/` | Fronteira de entrada vs. fundação de ambiente. Nunca no mesmo import |
+| `RD` | RDA (Roda) / RDR (Radar) | `ciclo/` vs `euclides/radar/` | Consenso entre críticos vs. telemetria |
+| `RT` | RTA (Rota) / RTD (Retirada) | `oswaldo/rota/` vs `ciclo/` | Router vs. fallback |
+| `TS` | TSL (Tarsila) / TSR (Tesouro) | `agentes/tarsila/` vs `euclides/tesouro/` | Agente criativo vs. governança de custo |
+| `VT` | VTB (Vital) / VTO (Voto) | `agentes/vital/` vs `ciclo/` | Agente de segurança vs. seleção entre alternativas |
 
 Cinco colisões de prefixo de duas letras, todas entre domínios diferentes — nenhuma pode aparecer no mesmo `import`. Verificação mecânica (deve imprimir exatamente estes cinco pares):
 

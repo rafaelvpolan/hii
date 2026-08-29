@@ -29,7 +29,7 @@ LOCKFILE="${HICODE_RUNNER_LOCK:-$ROOT/.runner.lock}"
 ARRANQUE_ESPERAS=60
 ARRANQUE_INTERVALO=0.05
 
-# Mesma politica de motor/cdl/ali/runtime.ts, e pelo mesmo motivo: HICODE_RUNTIME manda;
+# Mesma politica de motor/cordel/alicerce/runtime.ts, e pelo mesmo motivo: HICODE_RUNTIME manda;
 # sem ele, bun se estiver no PATH, senao node. Este script prendia `bun` em tres pontos
 # (a cmdline aceita, o pgrep e o nohup do start) enquanto a imagem de producao e
 # node:24-slim com COM_BUN=0 por padrao — ou seja, no container o daemon nao subia.

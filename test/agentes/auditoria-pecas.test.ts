@@ -1,14 +1,14 @@
 import { test, expect, lerArquivo } from '../apoio/runner.ts'
-import { coberturaDeTeste, coberturaFecha, selecionarAuditoria } from '../../motor/agentes/ass/auditoria.ts'
+import { coberturaDeTeste, coberturaFecha, selecionarAuditoria } from '../../motor/agentes/assis/auditoria.ts'
 // Importa os MODULOS, e nao so a fachada. A cobertura do proprio auditor e medida
 // por import (`coberturaDeTeste`), entao um teste que le apenas o reexport deixa
 // as pecas reais aparecendo como "sem teste correspondente" — o auditor acusando
 // a si mesmo por um defeito que e do teste, nao do codigo.
-import { MAX_LINHAS, GOD_FUNCS, GOD_EXPORTS, LABEL_FORA, RANK_GRAVIDADE, orcamentoValido, tetoDeLotes } from '../../motor/agentes/ass/tipos.ts'
-import { ehArquivoDeTeste, extensaoDe, stemDe } from '../../motor/agentes/ass/cobertura.ts'
-import { metricasDe, rejeitarPorCaminho } from '../../motor/agentes/ass/metricas.ts'
-import { ordenarPorRisco } from '../../motor/agentes/ass/plano.ts'
-import { coberturaFecha as coberturaFechaDoRelato } from '../../motor/agentes/ass/relato.ts'
+import { MAX_LINHAS, GOD_FUNCS, GOD_EXPORTS, LABEL_FORA, RANK_GRAVIDADE, orcamentoValido, tetoDeLotes } from '../../motor/agentes/assis/tipos.ts'
+import { ehArquivoDeTeste, extensaoDe, stemDe } from '../../motor/agentes/assis/cobertura.ts'
+import { metricasDe, rejeitarPorCaminho } from '../../motor/agentes/assis/metricas.ts'
+import { ordenarPorRisco } from '../../motor/agentes/assis/plano.ts'
+import { coberturaFecha as coberturaFechaDoRelato } from '../../motor/agentes/assis/relato.ts'
 
 // A divisao de auditoria.ts (402 linhas, quatro assuntos num arquivo) foi feita
 // porque o auditor reprova arquivo nesse formato — ferramenta que se isenta do
@@ -40,8 +40,8 @@ test('cobertura: extensao, stem e reconhecimento de teste', () => {
   expect(extensaoDe('a/b/c.test.ts')).toBe('ts')
   expect(extensaoDe('Dockerfile')).toBe('')
   expect(stemDe('motor/x/board.test.ts')).toBe('board')
-  expect(ehArquivoDeTeste('test/mir/board.test.ts')).toBe(true)
-  expect(ehArquivoDeTeste('motor/mir/render/board.ts')).toBe(false)
+  expect(ehArquivoDeTeste('test/mirante/board.test.ts')).toBe(true)
+  expect(ehArquivoDeTeste('motor/mirante/render/board.ts')).toBe(false)
   expect(ehArquivoDeTeste('app/tests/servico_test.py')).toBe(true)
 })
 
@@ -74,13 +74,13 @@ test('ordenarPorRisco poe o risco maior primeiro, e desempata estavel', () => {
   expect(ordenado.map(a => a.path)).toEqual(['a.ts', 'b.ts', 'c.ts'])
 })
 
-test('o proprio auditor passa no criterio dele: nenhuma peca de ass/ e monolito nem god-file', async () => {
+test('o proprio auditor passa no criterio dele: nenhuma peca de assis/ e monolito nem god-file', async () => {
   const { readdirSync, readFileSync: ler } = await import('node:fs')
   const cobertura = coberturaDeTeste([], () => null)
-  const pecas = readdirSync('motor/agentes/ass').filter(n => n.endsWith('.ts'))
+  const pecas = readdirSync('motor/agentes/assis').filter(n => n.endsWith('.ts'))
   expect(pecas.length, 'a divisao tem de ter deixado mais de um arquivo').toBeGreaterThan(4)
   for (const nome of pecas) {
-    const m = metricasDe(`motor/agentes/ass/${nome}`, ler(`motor/agentes/ass/${nome}`, 'utf8'), cobertura)
+    const m = metricasDe(`motor/agentes/assis/${nome}`, ler(`motor/agentes/assis/${nome}`, 'utf8'), cobertura)
     expect(m.excedeLinhas, `${nome} voltou a ser monolito`).toBe(false)
     expect(m.godFile, `${nome} virou god-file`).toBe(false)
   }

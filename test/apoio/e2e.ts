@@ -1,4 +1,4 @@
-import type { AgentResult, Harness } from '../../motor/tmd/tipos.ts'
+import type { AgentResult, Harness } from '../../motor/tomada/tipos.ts'
 
 export const ENV_TRILHA_CARA_HABILITADA = 'HICODE_E2E_MODELO_REAL'
 export const ENV_TETO_DE_GASTO_USD = 'HICODE_E2E_TETO_USD'

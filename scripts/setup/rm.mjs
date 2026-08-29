@@ -1,5 +1,5 @@
-import { planejarLote, removerLote } from '../../motor/cdl/remover.ts'
-import { renderRemocao, renderResultado } from '../../motor/mir/render/remocao.ts'
+import { planejarLote, removerLote } from '../../motor/cordel/remover.ts'
+import { renderRemocao, renderResultado } from '../../motor/mirante/render/remocao.ts'
 
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'

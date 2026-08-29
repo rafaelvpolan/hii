@@ -1,7 +1,7 @@
-import { followRedirects, MAX_REDIRECTS } from '../../motor/qlb/alf/redirect.ts'
-import type { FinalHop, FollowResult, HopFetcher, HopResponse } from '../../motor/qlb/alf/redirect.ts'
-import type { AddressPin, HostResolver } from '../../motor/qlb/alf/host.ts'
-import type { Refusal } from '../../motor/qlb/alf/url-guard.ts'
+import { followRedirects, MAX_REDIRECTS } from '../../motor/quilombo/alfandega/redirect.ts'
+import type { FinalHop, FollowResult, HopFetcher, HopResponse } from '../../motor/quilombo/alfandega/redirect.ts'
+import type { AddressPin, HostResolver } from '../../motor/quilombo/alfandega/host.ts'
+import type { Refusal } from '../../motor/quilombo/alfandega/url-guard.ts'
 
 export const PUBLICO = '93.184.216.34'
 export const PUBLICO_V6 = '2606:2800:220:1:248:1893:25c8:1946'

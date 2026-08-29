@@ -16,7 +16,7 @@
           "**/compose.y*ml"
         ]
       },
-      "exigencia": "remover o arquivo de compose e usar docker-stack.yml; ver test/cdl/sem-compose.test.ts, que reprova a suite",
+      "exigencia": "remover o arquivo de compose e usar docker-stack.yml; ver test/cordel/sem-compose.test.ts, que reprova a suite",
       "origem": {
         "cards": [],
         "promovidoEm": "2026-08-23",

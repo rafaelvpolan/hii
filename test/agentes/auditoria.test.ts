@@ -15,7 +15,7 @@ import {
   temTesteCorrespondente,
   type AchadoAuditoria,
   type LoteAuditoria,
-  type PlanoAuditoria, coberturaDeTeste } from '../../motor/agentes/ass/auditoria.ts'
+  type PlanoAuditoria, coberturaDeTeste } from '../../motor/agentes/assis/auditoria.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-auditoria-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
@@ -150,10 +150,10 @@ test('arquivo sem teste correspondente sobe na ordem', async () => {
 })
 
 test('stem de teste casa com o fonte por nome, inclusive com sufixo', () => {
-  const stems = stemsDeTeste(['test/card-store.test.ts', 'test/fechar-cost.test.ts', 'motor/qlb/ctr/fechar.ts'])
-  expect(temTesteCorrespondente('motor/cdl/store.ts', stems)).toBe(true)
-  expect(temTesteCorrespondente('motor/qlb/ctr/fechar.ts', stems)).toBe(true)
-  expect(temTesteCorrespondente('motor/cic/crv/url.ts', stems)).toBe(false)
+  const stems = stemsDeTeste(['test/card-store.test.ts', 'test/fechar-cost.test.ts', 'motor/quilombo/cartorio/fechar.ts'])
+  expect(temTesteCorrespondente('motor/cordel/store.ts', stems)).toBe(true)
+  expect(temTesteCorrespondente('motor/quilombo/cartorio/fechar.ts', stems)).toBe(true)
+  expect(temTesteCorrespondente('motor/ciclo/crivo/url.ts', stems)).toBe(false)
   expect(temTesteCorrespondente('test/card-store.test.ts', stems)).toBe(true)
 })
 
@@ -332,35 +332,35 @@ test('achados saem ordenados por gravidade', () => {
 })
 
 test('REGRESSAO fonte renomeado com teste de nome antigo NAO e reportado como sem teste', () => {
-  // O cenario exato da Onda 1: motor/qlb/ctr/fechar.ts nasceu como finish.ts, e
+  // O cenario exato da Onda 1: motor/quilombo/cartorio/fechar.ts nasceu como finish.ts, e
   // test/finish-cost.test.ts manteve o nome. Por stem, `fechar` nao casa com
   // `finish-cost` e o auditor mentia "sem teste correspondente".
-  const listados = ['motor/qlb/ctr/fechar.ts', 'test/finish-cost.test.ts']
+  const listados = ['motor/quilombo/cartorio/fechar.ts', 'test/finish-cost.test.ts']
   const fontes: Record<string, string> = {
-    'motor/qlb/ctr/fechar.ts': 'export const x = 1\n',
-    'test/finish-cost.test.ts': "import { handleFinish } from '../../motor/qlb/ctr/fechar.ts'\n",
+    'motor/quilombo/cartorio/fechar.ts': 'export const x = 1\n',
+    'test/finish-cost.test.ts': "import { handleFinish } from '../../motor/quilombo/cartorio/fechar.ts'\n",
   }
   const cobertura = coberturaDeTeste(listados, p => fontes[p] ?? null)
-  expect(temTesteCorrespondente('motor/qlb/ctr/fechar.ts', cobertura)).toBe(true)
+  expect(temTesteCorrespondente('motor/quilombo/cartorio/fechar.ts', cobertura)).toBe(true)
   expect([...cobertura.stems]).toContain('finish-cost')
 })
 
 test('import dinamico tambem conta — metade da suite usa await import()', () => {
-  const listados = ['motor/euc/registros.ts', 'test/x.test.ts']
+  const listados = ['motor/euclides/registros.ts', 'test/x.test.ts']
   const fontes: Record<string, string> = {
-    'motor/euc/registros.ts': 'export const x = 1\n',
-    'test/x.test.ts': "const m = await import('../../motor/euc/registros.ts')\n",
+    'motor/euclides/registros.ts': 'export const x = 1\n',
+    'test/x.test.ts': "const m = await import('../../motor/euclides/registros.ts')\n",
   }
-  expect(temTesteCorrespondente('motor/euc/registros.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
+  expect(temTesteCorrespondente('motor/euclides/registros.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
 })
 
 test('import de diretorio resolve pelo index', () => {
-  const listados = ['motor/cdl/index.ts', 'test/y.test.ts']
+  const listados = ['motor/cordel/index.ts', 'test/y.test.ts']
   const fontes: Record<string, string> = {
-    'motor/cdl/index.ts': 'export const x = 1\n',
-    'test/y.test.ts': "import type { Card } from '../../motor/cdl/index.ts'\n",
+    'motor/cordel/index.ts': 'export const x = 1\n',
+    'test/y.test.ts': "import type { Card } from '../../motor/cordel/index.ts'\n",
   }
-  expect(temTesteCorrespondente('motor/cdl/index.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
+  expect(temTesteCorrespondente('motor/cordel/index.ts', coberturaDeTeste(listados, p => fontes[p] ?? null))).toBe(true)
 })
 
 test('arquivo que ninguem importa nem casa por nome continua sendo sem teste', () => {

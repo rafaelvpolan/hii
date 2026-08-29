@@ -26,8 +26,8 @@ import { spawn } from 'node:child_process'
 import { cpus } from 'node:os'
 
 const SENSIVEIS_A_CARGA = new Set([
-  join('test', 'mir', 'tempo-de-pintura.test.ts'),
-  join('test', 'mir', 'tui-sob-carga.test.ts'),
+  join('test', 'mirante', 'tempo-de-pintura.test.ts'),
+  join('test', 'mirante', 'tui-sob-carga.test.ts'),
 ])
 
 const LARGURA_DA_PISCINA = Math.max(1, Number(process.env.HICODE_TEST_JOBS || 0) || cpus().length - 1)

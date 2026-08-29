@@ -88,7 +88,7 @@ test('--branch com superficie VAZIA nao audita o repo inteiro rotulado como bran
 
 test('--branch com superficie de verdade diz QUANTOS arquivos o recorte cobre', async () => {
   const { planoDaAuditoria } = await import('../../scripts/auditar.ts')
-  const git = (args: string[]): string => (args[0] === 'status' ? ' M motor/cdl/store.ts\n' : '')
+  const git = (args: string[]): string => (args[0] === 'status' ? ' M motor/cordel/store.ts\n' : '')
   const texto = (await planoDaAuditoria(
     { escopo: '', branch: true, base: 'main', lotes: 0, orcamento: 0 },
     git,

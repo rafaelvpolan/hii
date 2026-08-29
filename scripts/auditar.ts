@@ -16,7 +16,7 @@
 import { execFileSync } from 'node:child_process'
 import {
   renderLote, resumoAuditoria, selecionarAuditoria,
-} from '../motor/agentes/ass/auditoria.ts'
+} from '../motor/agentes/assis/auditoria.ts'
 
 export interface Argumentos {
   readonly escopo: string

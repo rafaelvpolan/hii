@@ -159,7 +159,7 @@ Nenhum token de IA é gasto nisso — é determinístico.
 | `hii run` | roda em **foreground**, sem daemonizar — é aqui que se depura |
 | `hii once` | processa a fila **uma vez** e sai (bom para cron) |
 
-Uma instância por estado, garantida por lock (`motor/osw/mtr/trava-instancia.ts`). O lock discrimina
+Uma instância por estado, garantida por lock (`motor/oswaldo/mutirao/trava-instancia.ts`). O lock discrimina
 errno: só `EEXIST` espera; qualquer outro erro **sobe**, em vez de virar espera infinita.
 
 ### Acompanhamento
@@ -396,7 +396,7 @@ INBOX → READY → [CLARIFY] → [SPECCED] → PLAN_APPROVED → EXECUTING → 
       → REVIEWED → CLEANED → PR_OPEN ┃ parede ┃ MERGED → DEPLOYED
 ```
 
-`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Lista completa em `motor/cdl/tipos.ts`.
+`WAITING`, `PAUSED`, `CORRECTING` e `HALTED` são transversais. Lista completa em `motor/cordel/tipos.ts`.
 
 ### 1. Executar primeiro
 
@@ -406,7 +406,7 @@ URL aprovada: valida-se a **intenção** cedo, quando errar é barato.
 ### 2. A URL
 
 O app sobe no worktree e o card recebe `url: http://localhost:<porta>`. Quem decide se há URL é
-`motor/osw/rta/superficie.ts`, determinístico:
+`motor/oswaldo/rota/superficie.ts`, determinístico:
 
 | Superfície | Quando | URL? |
 |---|---|---|
@@ -466,7 +466,7 @@ Passos configuráveis em `config/pipeline.json` (override por alvo em `<alvo>/.h
 | review | crivo | — | `REVIEWED` |
 | limpeza | pura | — | `CLEANED` |
 
-**Quais** rodam sai de `motor/osw/rta/perfil.ts` (determinístico, zero token), na ordem em que
+**Quais** rodam sai de `motor/oswaldo/rota/perfil.ts` (determinístico, zero token), na ordem em que
 `profileOf` decide — o primeiro que casa ganha:
 
 | Perfil | Quando | O que roda |
@@ -484,7 +484,7 @@ No card: `steps: all` força tudo, `steps: <ids>` roda só esses, `steps: auto` 
 
 ### 4. O gate é vinculante e fecha em disco
 
-Build, teste e o gate **codefox** (`motor/cic/crv/gate.ts`) fecham lendo **exit code real em
+Build, teste e o gate **codefox** (`motor/ciclo/crivo/gate.ts`) fecham lendo **exit code real em
 disco**, não a afirmação do modelo. Veredito ausente, diff que falhou ao montar ou agente que
 estourou timeout contam como **não concluído** — o gate **falha fechado**.
 
@@ -493,7 +493,7 @@ estourou timeout contam como **não concluído** — o gate **falha fechado**.
 O motor abre o PR e para em `PR_OPEN`.
 
 > **Merge é SEMPRE humano.** Não existe `gh pr merge` no motor. `MERGED` só aparece quando
-> `motor/qlb/ctr/merge.ts` **observa** no GitHub que uma pessoa mergeou. PR fechada sem merge marca
+> `motor/quilombo/cartorio/merge.ts` **observa** no GitHub que uma pessoa mergeou. PR fechada sem merge marca
 > `pr_closed` e mantém o card em `PR_OPEN`.
 
 ---
@@ -503,15 +503,15 @@ O motor abre o PR e para em `PR_OPEN`.
 Papéis: `implement`, `verify`, `gate`, `step` — cada um escolhe provedor por env. Provedores:
 `claude` (default), `codex`, `ollama`, `kimi`. Veja tudo com `/config` na TUI.
 
-Capacidade é **declarada**, não presumida: `providerLimits` (`motor/tmd/registro.ts`) diz quem restringe
+Capacidade é **declarada**, não presumida: `providerLimits` (`motor/tomada/registro.ts`) diz quem restringe
 tools, isola leitura, reporta custo e aceita nível de esforço; `recusaPorLimite`
-(`motor/euc/tsr/confianca.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
+(`motor/euclides/tesouro/confianca.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
 vez de mandar e tratar o lixo que volta como resultado.
 
 **Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo
 e qualidade sem ninguém autorizar. Travado por teste.
 
-Saúde é sondada antes do uso (`motor/tmd/sonda.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
+Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
 `claude` e `codex` por alcançabilidade da API, timeout de 5 s
 (`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** provedor fora desse mapa — hoje `kimi` —
 cai no `return true` e é reportado como saudável sem ter sido testado.
@@ -521,7 +521,7 @@ cai no `return true` e é reportado como saudável sem ter sido testado.
 ## Contrato de ambiente (estado fora do clone)
 
 O motor resolve `cards/`, `config/repos.json` e `config/ia.json` relativo ao próprio `ROOT`. Para
-apontar noutro lugar, use as variáveis do contrato — `motor/cdl/ali/contrato.ts` é a fonte
+apontar noutro lugar, use as variáveis do contrato — `motor/cordel/alicerce/contrato.ts` é a fonte
 da verdade de quais existem, quem as resolve e de que **lado** vivem:
 
 | Variável | Lado | Precisa ser a mesma nos dois clones |

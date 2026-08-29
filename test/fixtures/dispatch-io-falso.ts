@@ -1,4 +1,4 @@
-import type { DispatchIO } from '../../motor/mir/despacho.ts'
+import type { DispatchIO } from '../../motor/mirante/despacho.ts'
 
 function naoProvido(nome: string): never {
   throw new Error(`DispatchIO.${nome} nao foi provido por este teste`)

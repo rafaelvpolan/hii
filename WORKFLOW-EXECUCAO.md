@@ -133,7 +133,7 @@ bun run typecheck      # zero erro
 bun run lint:types     # zero any
 bun run lint:clone     # clone limpo
 bun run test:unit      # 151 suítes verdes
-git log --follow motor/cic/passo-com-gate.ts | wc -l   # > 1: histórico preservado
+git log --follow motor/ciclo/passo-com-gate.ts | wc -l   # > 1: histórico preservado
 ```
 
 ### Gate de saída da onda
@@ -159,21 +159,21 @@ grep -rn "lib/" README.md tsconfig.json scripts/setup/*.mjs .claude/skills/*/SKI
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 1 | `healthCheck(): Promise<boolean>` na interface `Harness` | `motor/tmd/tipos.ts` |
-| 1 | `HarnessCapabilities` com `mcp: boolean`, substituindo `ProviderLimits` | `motor/tmd/tipos.ts` |
-| 1 | `HarnessId` como `string` registrável, não união fechada | `motor/tmd/{tipos,registro}.ts` |
-| 1 | `recusaPorLimite` consulta `capabilities()`, não nome de provedor | `motor/tmd/registro.ts` |
-| §3.7 | Probe real do `kimi` — hoje cai em `return true` | `motor/tmd/sonda.ts` |
+| 1 | `healthCheck(): Promise<boolean>` na interface `Harness` | `motor/tomada/tipos.ts` |
+| 1 | `HarnessCapabilities` com `mcp: boolean`, substituindo `ProviderLimits` | `motor/tomada/tipos.ts` |
+| 1 | `HarnessId` como `string` registrável, não união fechada | `motor/tomada/{tipos,registro}.ts` |
+| 1 | `recusaPorLimite` consulta `capabilities()`, não nome de provedor | `motor/tomada/registro.ts` |
+| §3.7 | Probe real do `kimi` — hoje cai em `return true` | `motor/tomada/sonda.ts` |
 | 24 | `config/topologia.json` — nós, transições permitidas, checkpoints humanos | `config/topologia.json` |
-| 24 | Validador de transição, chamado no `OSW` | `motor/nmy/topologia.ts` |
+| 24 | Validador de transição, chamado no `OSW` | `motor/niemeyer/topologia.ts` |
 
 ### Prova de que o item 1 fechou
 
-Um harness novo entra sem tocar em `osw/`, `cic/` ou `nmy/`:
+Um harness novo entra sem tocar em `oswaldo/`, `ciclo/` ou `niemeyer/`:
 
 ```
-motor/tmd/harness/qwen.ts    # arquivo novo
-motor/tmd/registro.ts        # +1 linha
+motor/tomada/harness/qwen.ts    # arquivo novo
+motor/tomada/registro.ts        # +1 linha
 ```
 
 ### Gate de saída
@@ -201,13 +201,13 @@ durante a Onda 2:
 
 | Onde | O quê |
 |---|---|
-| `motor/tmd/modos.ts` | `CATALOGO: Record<HarnessId, CatalogoDeModo>` |
-| `motor/tmd/map/comandos.ts` | `CORES_DE_MARCA: Record<HarnessId, Rgb>` |
-| `motor/tmd/disponibilidade.ts` | `BINARIO`, `COMANDO_DE_LOGIN`, e `if (nome === …)` na mensagem de instalação |
-| `motor/euc/tsr/planos.ts` | `COM_LEITOR_DE_PLANO` + `if (nome === …)` para leitor de plano e autenticação |
-| `motor/euc/rdr/doctor.ts` | `n !== 'ollama'`, `n === 'claude'` |
-| `motor/cdl/ali/ambiente.ts` | `SEMPRE = ['claude', 'codex', 'ollama', …]` |
-| `motor/cdl/ali/snapshot.ts` | `nome === 'ollama'` |
+| `motor/tomada/modos.ts` | `CATALOGO: Record<HarnessId, CatalogoDeModo>` |
+| `motor/tomada/mapa/comandos.ts` | `CORES_DE_MARCA: Record<HarnessId, Rgb>` |
+| `motor/tomada/disponibilidade.ts` | `BINARIO`, `COMANDO_DE_LOGIN`, e `if (nome === …)` na mensagem de instalação |
+| `motor/euclides/tesouro/planos.ts` | `COM_LEITOR_DE_PLANO` + `if (nome === …)` para leitor de plano e autenticação |
+| `motor/euclides/radar/doctor.ts` | `n !== 'ollama'`, `n === 'claude'` |
+| `motor/cordel/alicerce/ambiente.ts` | `SEMPRE = ['claude', 'codex', 'ollama', …]` |
+| `motor/cordel/alicerce/snapshot.ts` | `nome === 'ollama'` |
 
 Enquanto isso não migrar para o descritor do harness, abrir `HarnessId` só
 trocaria erro de compilação por erro de runtime — pior que o estado atual.
@@ -216,21 +216,21 @@ trocaria erro de compilação por erro de runtime — pior que o estado atual.
 
 | Entrega | Arquivo |
 |---|---|
-| `Harness` ganha `modos`, `cor`, `binario`, `comandoDeLogin`, `leitorDePlano`, `autenticado()` | `motor/tmd/tipos.ts` |
-| Cada harness passa a declarar os seus | `motor/tmd/harness/*.ts` |
+| `Harness` ganha `modos`, `cor`, `binario`, `comandoDeLogin`, `leitorDePlano`, `autenticado()` | `motor/tomada/tipos.ts` |
+| Cada harness passa a declarar os seus | `motor/tomada/harness/*.ts` |
 | Tabelas centrais e cadeias `if (nome === …)` somem | os 7 arquivos acima |
-| `HarnessId = string`; `PROVIDERS` vira `Map` | `motor/tmd/{tipos,registro}.ts` |
+| `HarnessId = string`; `PROVIDERS` vira `Map` | `motor/tomada/{tipos,registro}.ts` |
 
 ### Gate de saída
 
 ```bash
 bun run test
 bun test ./test/harness-novo.test.ts   # harness ficticio registrado no Map funciona ponta a ponta
-# INVARIANTE da onda: nome de harness so aparece dentro de tmd/harness/
-grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v '^motor/tmd/harness/'
+# INVARIANTE da onda: nome de harness so aparece dentro de tomada/harness/
+grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v '^motor/tomada/harness/'
 ```
 
-**Reprova se:** sobrar nome de harness fora de `motor/tmd/harness/`.
+**Reprova se:** sobrar nome de harness fora de `motor/tomada/harness/`.
 
 ---
 
@@ -244,12 +244,12 @@ grep -rn "'claude'\|'codex'\|'kimi'\|'ollama'" motor/ --include='*.ts' | grep -v
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| §3.8 | Evento por fase em JSONL append-only: `gate_start`, `repair_attempt`, `gate_verdict`, `human_checkpoint`, `orfao` | `motor/euc/eventos.ts` |
-| 25 | `executarComIdempotencia` — `hash(card + fase + tipo_operacao)`, grava **antes** de considerar concluída | `motor/qlb/slv/idempotencia.ts` |
-| 25 | Toda operação com efeito externo passa por SLV: `git commit`, abrir PR, webhook, notificar, gravar custo | `motor/qlb/ctr/*.ts`, `motor/qlb/git.ts` |
-| 26 | `retomarAoIniciar()` — reconstrói a fase de cada card sem evento final | `motor/euc/recuperar.ts` |
-| 27 | Compensação por tipo: worktree órfão descarta, commit sem PR retoma, **PR órfão nunca abre um segundo** | `motor/qlb/slv/compensacao.ts` |
-| 30 | `GET /health` + shutdown gracioso em `SIGTERM` | `motor/euc/rdr/servidor.ts`, `motor/osw/mtr/daemon.ts` |
+| §3.8 | Evento por fase em JSONL append-only: `gate_start`, `repair_attempt`, `gate_verdict`, `human_checkpoint`, `orfao` | `motor/euclides/eventos.ts` |
+| 25 | `executarComIdempotencia` — `hash(card + fase + tipo_operacao)`, grava **antes** de considerar concluída | `motor/quilombo/salvo-conduto/idempotencia.ts` |
+| 25 | Toda operação com efeito externo passa por SLV: `git commit`, abrir PR, webhook, notificar, gravar custo | `motor/quilombo/cartorio/*.ts`, `motor/quilombo/git.ts` |
+| 26 | `retomarAoIniciar()` — reconstrói a fase de cada card sem evento final | `motor/euclides/recuperar.ts` |
+| 27 | Compensação por tipo: worktree órfão descarta, commit sem PR retoma, **PR órfão nunca abre um segundo** | `motor/quilombo/salvo-conduto/compensacao.ts` |
+| 30 | `GET /health` + shutdown gracioso em `SIGTERM` | `motor/euclides/radar/servidor.ts`, `motor/oswaldo/mutirao/daemon.ts` |
 
 ### Tabela de compensação (Parte VI §3)
 
@@ -280,7 +280,7 @@ curl -sf localhost:$PORTA/health            # exit 0
 | `SIGTERM` | **Encontrou defeito** — ver abaixo |
 | 3 tentativas de `gh pr create` após crash simulado | **1 PR** criado (`hicode-site#22`), duas seguintes reaproveitaram a url do diário. Confirmado pela API do GitHub, e o PR descartável foi fechado |
 
-**O defeito que só o processo real acharia.** `holdInstanceLock()` registrava um handler de `SIGTERM` com `process.exit(0)` — e como ele é registrado *antes* de `instalarShutdownGracioso`, o daemon morria sem drenar a fila. **Todo teste unitário passava**, porque chamavam `encerrarComGraca` diretamente, sem passar pelo despacho de sinal. A trava agora cede a vez quando há um dono do encerramento, e `test/osw/mtr-shutdown-processo-real.test.ts` sobe o `runner.ts` de verdade para guardar isso — verificado que ele reprova quando a guarda é removida.
+**O defeito que só o processo real acharia.** `holdInstanceLock()` registrava um handler de `SIGTERM` com `process.exit(0)` — e como ele é registrado *antes* de `instalarShutdownGracioso`, o daemon morria sem drenar a fila. **Todo teste unitário passava**, porque chamavam `encerrarComGraca` diretamente, sem passar pelo despacho de sinal. A trava agora cede a vez quando há um dono do encerramento, e `test/oswaldo/mutirao-shutdown-processo-real.test.ts` sobe o `runner.ts` de verdade para guardar isso — verificado que ele reprova quando a guarda é removida.
 
 ---
 
@@ -292,12 +292,12 @@ curl -sf localhost:$PORTA/health            # exit 0
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| §3.2 | `runWithRepair(gate, ctx, harness, maxAttempts)` genérico, generalizando `passoComCrivo` | `motor/cic/reparo.ts` |
-| §3.2 | Aplicado em `testes`, `seguranca` e `review` — hoje só existe pra URL | `motor/nmy/config.ts`, `motor/cic/crv/*.ts` |
-| 6 | Registro de `BuildRepairer` por domínio | `motor/cic/rpr/reparadores/` |
-| 6 | Primeiro reparador: Laravel/PHP (o stack real de uso) | `motor/cic/rpr/reparadores/laravel-php.ts` |
-| 17 | Prefixo estável: `narrowFix` **anexa**, nunca reescreve o prompt | `motor/tmd/eco/prefixo.ts` |
-| 18 | `executarEmBlocos` — bloco → valida → próximo, para cedo em base quebrada | `motor/nmy/tjl/blocos.ts` |
+| §3.2 | `runWithRepair(gate, ctx, harness, maxAttempts)` genérico, generalizando `passoComCrivo` | `motor/ciclo/reparo.ts` |
+| §3.2 | Aplicado em `testes`, `seguranca` e `review` — hoje só existe pra URL | `motor/niemeyer/config.ts`, `motor/ciclo/crivo/*.ts` |
+| 6 | Registro de `BuildRepairer` por domínio | `motor/ciclo/reprise/reparadores/` |
+| 6 | Primeiro reparador: Laravel/PHP (o stack real de uso) | `motor/ciclo/reprise/reparadores/laravel-php.ts` |
+| 17 | Prefixo estável: `narrowFix` **anexa**, nunca reescreve o prompt | `motor/tomada/eco/prefixo.ts` |
+| 18 | `executarEmBlocos` — bloco → valida → próximo, para cedo em base quebrada | `motor/niemeyer/tijolo/blocos.ts` |
 
 ### As duas economias são diferentes — manter separadas no código
 
@@ -312,7 +312,7 @@ curl -sf localhost:$PORTA/health            # exit 0
 bun run test
 bun test ./test/reparo-generico.test.ts     # 1 tentativa estreita; teto respeitado; relato do que tentou
 bun test ./test/eco-prefixo.test.ts         # prefixo byte-idêntico entre chamadas do mesmo card
-bun test ./test/tjl-blocos.test.ts          # bloco 2 falho → blocos 3..N não executam
+bun test ./test/tijolo-blocos.test.ts          # bloco 2 falho → blocos 3..N não executam
 bun test ./test/reparador-laravel.test.ts   # domínio detectado; e o portão de build o consulta de fato
 ```
 
@@ -324,11 +324,11 @@ bun test ./test/reparador-laravel.test.ts   # domínio detectado; e o portão de
 
 O `MODERNIZATION.md` (Parte I, §3.2) diz que o repair loop *"só está aplicado a um caso (subida do servidor)"*. Não está: o motor já tinha **quatro** cópias — `buildWithReajuste`, `testGate`, `passoComCrivo` e o conserto de URL. Eram estruturalmente iguais e já divergiam no que importa: só uma tinha veredicto `inconclusivo`, nenhuma levava o relato do que foi tentado ao humano, nenhuma escrevia no diário.
 
-Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/cic/reparo.ts` é a versão única; `buildWithReajuste` e `testGate` passaram a chamá-la e viraram um portão só, parametrizado.
+Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/ciclo/reparo.ts` é a versão única; `buildWithReajuste` e `testGate` passaram a chamá-la e viraram um portão só, parametrizado.
 
 ### TJL ainda não tem chamador — e isso é dependência real, não esquecimento
 
-`motor/nmy/tjl/blocos.ts` está pronto e testado, mas nada o invoca ainda: **quem fatia uma tarefa em blocos é o `core/agent-executor.ts` do item 11**, que é Onda 10. Ligar TJL antes disso exigiria inventar aqui um critério de fatiamento que o item 11 vai definir — e aí seriam dois critérios brigando.
+`motor/niemeyer/tijolo/blocos.ts` está pronto e testado, mas nada o invoca ainda: **quem fatia uma tarefa em blocos é o `core/agent-executor.ts` do item 11**, que é Onda 10. Ligar TJL antes disso exigiria inventar aqui um critério de fatiamento que o item 11 vai definir — e aí seriam dois critérios brigando.
 
 ---
 
@@ -340,14 +340,14 @@ Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/cic
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 2 | `riscoPeloDiff(files)` — heurística sobre o diff, independente do que o card diz | `motor/csd/lei/guarda.ts` |
-| 2, 13 | **O card pode subir o rigor, nunca baixar** — invariante testada | `motor/csd/lei/guarda.ts` |
-| 13 | `config/regras-inegociaveis.json` + `regrasQueBatem(files, regras)` | `config/`, `motor/csd/lei/guarda.ts` |
+| 2 | `riscoPeloDiff(files)` — heurística sobre o diff, independente do que o card diz | `motor/cascudo/lei/guarda.ts` |
+| 2, 13 | **O card pode subir o rigor, nunca baixar** — invariante testada | `motor/cascudo/lei/guarda.ts` |
+| 13 | `config/regras-inegociaveis.json` + `regrasQueBatem(files, regras)` | `config/`, `motor/cascudo/lei/guarda.ts` |
 | 8 | `config/review-criteria.json` — checklist objetivo, versionado, auditável | `config/` |
-| 8 | `CRV` roda contra o critério; reprovar volta ao implementador **com o motivo** | `motor/cic/crv/criterios.ts` |
+| 8 | `CRV` roda contra o critério; reprovar volta ao implementador **com o motivo** | `motor/ciclo/crivo/criterios.ts` |
 | 21 | Matriz de cenário: acerto, erro conhecido, borda, validação de entrada, validação de saída | `config/review-criteria.json` |
-| 5 | RED antes de GREEN obrigatório no perfil `completo`, com evidência anexada ao card | `motor/agentes/chg/red-primeiro.ts` |
-| 22 | Projeto/feature nova não avança da Fase 1 sem teste rodando e debug documentado | `motor/cdl/bss/setup-ferramental.ts` |
+| 5 | RED antes de GREEN obrigatório no perfil `completo`, com evidência anexada ao card | `motor/agentes/chagas/red-primeiro.ts` |
+| 22 | Projeto/feature nova não avança da Fase 1 sem teste rodando e debug documentado | `motor/cordel/bussola/setup-ferramental.ts` |
 
 ### Gate de saída
 
@@ -355,9 +355,9 @@ Então o trabalho do §3.2 foi **deduplicar**, não criar o primeiro. `motor/cic
 bun run test
 bun test ./test/lei-guarda-de-risco.test.ts   # diff em migrations/ força perfil completo mesmo com risk: low
 bun test ./test/lei-nunca-baixa.test.ts       # INVARIANTE: nenhuma entrada faz o card perder exigência
-bun test ./test/crv-criterio.test.ts          # reprovação cita o critério violado por id
-bun test ./test/chg-red-primeiro.test.ts      # GREEN sem RED registrado é reprovado
-bun test ./test/bss-setup-ferramental.test.ts # projeto novo sem config de teste não sai da Fase 1
+bun test ./test/crivo-criterio.test.ts          # reprovação cita o critério violado por id
+bun test ./test/chagas-red-primeiro.test.ts      # GREEN sem RED registrado é reprovado
+bun test ./test/bussola-setup-ferramental.test.ts # projeto novo sem config de teste não sai da Fase 1
 ```
 
 **Reprova se:** existir qualquer caminho em que `regras-inegociaveis.json` deixe de ser cobrado. O teste da invariante "só sobe, nunca baixa" é o mais importante desta onda — ele roda `aplicarLei` contra os quatro perfis e cobra que nenhum passo que ia rodar deixe de rodar.
@@ -380,8 +380,8 @@ bun test ./test/bss-setup-ferramental.test.ts # projeto novo sem config de teste
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| — | Loader de `SKILL.md` com frontmatter (`id`, `appliesToRoles`, `trigger`) | `motor/csd/acervo.ts` |
-| — | Resolver `_native` + `_sources` → `_resolved`, determinístico e versionado | `motor/csd/resolver.ts` |
+| — | Loader de `SKILL.md` com frontmatter (`id`, `appliesToRoles`, `trigger`) | `motor/cascudo/acervo.ts` |
+| — | Resolver `_native` + `_sources` → `_resolved`, determinístico e versionado | `motor/cascudo/resolver.ts` |
 | — | `config/skill-sources.json` + `resolutionOrder` (`_native` sempre primeiro) | `config/` |
 | — | `ORIGIN.json` + `LICENSE.txt` por origem externa | `skills/_sources/<origem>/` |
 | 3 | Pack `common/`: `coding-standards`, `git-workflow`, `api-design`, `security-baseline`, **`search-first`** | `skills/_native/common/` |
@@ -400,17 +400,17 @@ bun test ./test/bss-setup-ferramental.test.ts # projeto novo sem config de teste
 
 ```bash
 bun run test
-bun test ./test/csd/acervo.test.ts          # frontmatter inválido = erro de carga; gatilho puro; acervo ligado
-bun test ./test/csd/resolver.test.ts        # _native vence; empate sem _native derruba o build
-bun test ./test/agentes/vtb-checklist.test.ts
+bun test ./test/cascudo/acervo.test.ts          # frontmatter inválido = erro de carga; gatilho puro; acervo ligado
+bun test ./test/cascudo/resolver.test.ts        # _native vence; empate sem _native derruba o build
+bun test ./test/agentes/vital-checklist.test.ts
 bun run lint:clone                          # _resolved/ é gerada, não versionada
 ```
 
-O teste de trigger não virou arquivo próprio: a pureza do gatilho é invariante do acervo e vive em `csd/acervo.test.ts`, junto do resto do contrato.
+O teste de trigger não virou arquivo próprio: a pureza do gatilho é invariante do acervo e vive em `cascudo/acervo.test.ts`, junto do resto do contrato.
 
 ### Onde o acervo pluga
 
-Skill é conteúdo; papel é quem age. `motor/cic/agente.ts` injeta as skills cujo gatilho bate — no prompt do implementador **e** nos passos de polimento, cada agente mapeado ao seu papel por uma tabela explícita (agente sem entrada não recebe skill, em vez de receber a errada). O contexto do gatilho vem do disco: arquivos que o card já tocou no worktree, mais framework e linguagem detectados no contrato do alvo.
+Skill é conteúdo; papel é quem age. `motor/ciclo/agente.ts` injeta as skills cujo gatilho bate — no prompt do implementador **e** nos passos de polimento, cada agente mapeado ao seu papel por uma tabela explícita (agente sem entrada não recebe skill, em vez de receber a errada). O contexto do gatilho vem do disco: arquivos que o card já tocou no worktree, mais framework e linguagem detectados no contrato do alvo.
 
 O checklist de stack (item 7) só entra no papel `seguranca` — um checklist de Laravel num passo de limpeza seria ruído caro.
 
@@ -424,15 +424,15 @@ O checklist de stack (item 7) só entra no papel `seguranca` — um checklist de
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 20 | `matriz-entendimento-<card>.md` — requisito, contrato de entrada, contrato de saída, casos de borda, dependência/risco, definição de pronto | `motor/nmy/luc/matriz-entendimento.ts` |
-| 4 | Fase 4: humano aprova ou edita o plano antes da implementação começar | `motor/qlb/ctr/aprovar-plano.ts` |
-| 16 | `/orquestrador-{jogos,dev-web,android,devops}` — **atalhos de intake**, não orquestradores | `motor/mir/comandos-manuais.ts` |
-| 16 | `/layout` como método padrão de entrada na Fase 3 | `motor/mir/comandos-manuais.ts` |
+| 20 | `matriz-entendimento-<card>.md` — requisito, contrato de entrada, contrato de saída, casos de borda, dependência/risco, definição de pronto | `motor/niemeyer/lucio/matriz-entendimento.ts` |
+| 4 | Fase 4: humano aprova ou edita o plano antes da implementação começar | `motor/quilombo/cartorio/aprovar-plano.ts` |
+| 16 | `/orquestrador-{jogos,dev-web,android,devops}` — **atalhos de intake**, não orquestradores | `motor/mirante/comandos-manuais.ts` |
+| 16 | `/layout` como método padrão de entrada na Fase 3 | `motor/mirante/comandos-manuais.ts` |
 
 ### Estado
 
-**Item 20 — feito.** `motor/nmy/luc/matriz-entendimento.ts` + 24 testes em
-`test/nmy/luc-matriz-entendimento.test.ts`. Suíte 1907 → 1931, zero falha.
+**Item 20 — feito.** `motor/niemeyer/lucio/matriz-entendimento.ts` + 24 testes em
+`test/niemeyer/lucio-matriz-entendimento.test.ts`. Suíte 1907 → 1931, zero falha.
 A escrita do template passa pela chave de idempotência do item 25
 (`<card>:luc:matriz_criada`), então reexecutar o card nunca sobrescreve o que o
 humano respondeu, e falha real de disco propaga em vez de virar efeito
@@ -446,8 +446,8 @@ palavra de 3+ letras que não seja marcador de adiamento nem eco do texto que o
 próprio motor escreveu. O que ela **não** faz está registrado em `PENDENCIAS.md`:
 não julga semântica, porque isso exigiria um modelo dentro do gate.
 
-**Item 4 — feito.** `motor/qlb/ctr/aprovar-plano.ts` + 14 testes em
-`test/qlb/aprovar-plano.test.ts`. `approvePlan` (`motor/mir/acoes.ts:101`) passa
+**Item 4 — feito.** `motor/quilombo/cartorio/aprovar-plano.ts` + 14 testes em
+`test/quilombo/aprovar-plano.test.ts`. `approvePlan` (`motor/mirante/acoes.ts:101`) passa
 a consultar a parede **antes** de transicionar, grava
 `matriz_entendimento: ok|incompleta` no card sempre, e só **recusa** com
 `HICODE_RIGOR_ESTRITO=1` — mesma política dos itens 5 e 22. Recusar deixa o card
@@ -467,7 +467,7 @@ citando a matriz, e depois de respondida a aprovação passa.
 `mobile/` (Android/Kotlin, iOS/Swift, multiplataforma, publicação) e
 `devops-deploy/` (pipeline, imagem, estratégia de deploy, SLO e alerta) — quatro
 skills cada, 27 no acervo, zero colisão de id. Com eles,
-`motor/mir/comandos-manuais.ts` liga `/orquestrador-{jogos,dev-web,android,devops}`
+`motor/mirante/comandos-manuais.ts` liga `/orquestrador-{jogos,dev-web,android,devops}`
 e `/layout`.
 
 **O problema que o item resolve, e que só aparece em greenfield.** A escolha de
@@ -484,7 +484,7 @@ trabalho começa.
 
 **A guarda que manteve o item adiado virou teste.** `validarComandosManuais()`
 lança se um comando apontar para pack fora do acervo, e
-`test/mir/comandos-manuais.test.ts` prova que a guarda reprova de verdade
+`test/mirante/comandos-manuais.test.ts` prova que a guarda reprova de verdade
 removendo `mobile` de um acervo de mentira. Atalho que pré-carrega vazio parece
 que carregou alguma coisa.
 
@@ -504,7 +504,7 @@ dois caminhos e compara os cards: `status`, `risk`, `repo` e `title` batem, e a
 bun run test
 bun test ./test/luc-matriz.test.ts             # matriz incompleta trava a saída da Fase 4
 bun test ./test/ctr-aprovar-plano.test.ts      # sem aprovação humana o card não entra em EXECUTING
-bun test ./test/mir/comandos-manuais.test.ts   # comando manual só pré-carrega packs; pipeline é o mesmo
+bun test ./test/mirante/comandos-manuais.test.ts   # comando manual só pré-carrega packs; pipeline é o mesmo
 ```
 
 **Reprova se:** um comando manual criar caminho de execução paralelo. Ele carrega conteúdo diferente, roda o mesmo pipeline (R5).
@@ -521,14 +521,14 @@ bun test ./test/mir/comandos-manuais.test.ts   # comando manual só pré-carrega
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 23 | Gauntlet Loop: comparação **cega** contra referência externa concreta e buscável | `motor/cic/cnd/gauntlet.ts` |
-| 23 | Múltiplos críticos com lentes distintas → `RDA` consenso / `VTO` voto | `motor/cic/{rda,vto}.ts` |
-| 23 | Boundary obrigatório: recusa iniciar sem `orcamentoPorCard.tetoUsd` configurado | `motor/cic/cnd/gauntlet.ts` |
+| 23 | Gauntlet Loop: comparação **cega** contra referência externa concreta e buscável | `motor/ciclo/canudos/gauntlet.ts` |
+| 23 | Múltiplos críticos com lentes distintas → `RDA` consenso / `VTO` voto | `motor/ciclo/{rda,vto}.ts` |
+| 23 | Boundary obrigatório: recusa iniciar sem `orcamentoPorCard.tetoUsd` configurado | `motor/ciclo/canudos/gauntlet.ts` |
 
 ### Estado
 
-Os três mecanismos existem e têm teste: `motor/cic/vto.ts` (apuração),
-`motor/cic/rda.ts` (consenso) e `motor/cic/cnd/gauntlet.ts` (cegueira, boundary
+Os três mecanismos existem e têm teste: `motor/ciclo/voto.ts` (apuração),
+`motor/ciclo/roda.ts` (consenso) e `motor/ciclo/canudos/gauntlet.ts` (cegueira, boundary
 e gatilho de domínio). **Ainda não estão ligados ao pipeline** — falta o passo
 que colhe candidatos e chama os críticos, e ele depende de existir de onde tirar
 a referência externa (captura de tela de produto real, exemplo publicado). Sem
@@ -550,10 +550,10 @@ assumir infinito.
 
 ```bash
 bun run test
-bun test ./test/cic/cnd-boundary.test.ts        # sem teto legível, CND recusa iniciar
-bun test ./test/cic/cnd-comparacao-cega.test.ts # o crítico não sabe qual candidato é o do motor
-bun test ./test/cic/cnd-dominio.test.ts         # domínio de lógica pura NÃO habilita gauntlet
-bun test ./test/cic/rda-vto.test.ts             # empate não elege ninguém; votação vazia lança
+bun test ./test/ciclo/canudos-boundary.test.ts        # sem teto legível, CND recusa iniciar
+bun test ./test/ciclo/canudos-comparacao-cega.test.ts # o crítico não sabe qual candidato é o do motor
+bun test ./test/ciclo/canudos-dominio.test.ts         # domínio de lógica pura NÃO habilita gauntlet
+bun test ./test/ciclo/roda-voto.test.ts             # empate não elege ninguém; votação vazia lança
 ```
 
 > Os caminhos acima corrigem os que este documento trazia (`test/cnd-*.test.ts`):
@@ -573,20 +573,20 @@ bun test ./test/cic/rda-vto.test.ts             # empate não elege ninguém; vo
 | Item | Entrega | Arquivo |
 |---|---|---|
 | 19 | `config/model-tier.json` com `tier` **e `motivo`** por ação | `config/` |
-| 19 | `regraDeSubida`: card ou regra LEI pode forçar tier acima do padrão, **nunca abaixo** | `motor/osw/rui.ts` |
-| 19 | `orcamentoPorCard.tetoUsd` + `acaoAoEstourar: "pausar e notificar humano"` | `motor/euc/tsr/orcamento.ts` |
-| 19 | Evento `model_tier_selected` com o motivo, no diário EUC | `motor/euc/eventos.ts` |
-| 14 | `auditoria_harness` — grep determinístico por prompt injection em `SKILL.md`, `mcp.json`, hooks | `motor/agentes/vtb/auditoria-harness.ts` |
-| 14 | Roda **antes** de qualquer skill nova (humana ou promovida por FRE) carregar em produção | `motor/csd/acervo.ts` |
+| 19 | `regraDeSubida`: card ou regra LEI pode forçar tier acima do padrão, **nunca abaixo** | `motor/oswaldo/rui.ts` |
+| 19 | `orcamentoPorCard.tetoUsd` + `acaoAoEstourar: "pausar e notificar humano"` | `motor/euclides/tesouro/orcamento.ts` |
+| 19 | Evento `model_tier_selected` com o motivo, no diário EUC | `motor/euclides/eventos.ts` |
+| 14 | `auditoria_harness` — grep determinístico por prompt injection em `SKILL.md`, `mcp.json`, hooks | `motor/agentes/vital/auditoria-harness.ts` |
+| 14 | Roda **antes** de qualquer skill nova (humana ou promovida por FRE) carregar em produção | `motor/cascudo/acervo.ts` |
 
 ### Gate de saída
 
 ```bash
 bun run test
 bun test ./test/tsr-tier.test.ts            # tier vem do arquivo; toda seleção grava motivo no diário
-bun test ./test/tsr-orcamento.test.ts       # estourar o teto pausa o card e notifica; não continua
+bun test ./test/tesouro-orcamento.test.ts       # estourar o teto pausa o card e notifica; não continua
 bun test ./test/rui-nunca-baixa.test.ts     # INVARIANTE: nada rebaixa tier abaixo do padrão da ação
-bun test ./test/vtb-auditoria-harness.test.ts  # SKILL.md com "ignore as instruções anteriores" é barrada
+bun test ./test/vital-auditoria-harness.test.ts  # SKILL.md com "ignore as instruções anteriores" é barrada
 ```
 
 ---
@@ -599,13 +599,13 @@ bun test ./test/vtb-auditoria-harness.test.ts  # SKILL.md com "ignore as instru�
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 9 | `doc-updater` — docs atualizadas quando a mudança afeta contrato público | `motor/agentes/clr/doc-updater.ts` |
-| 11 | `despacharAgentesNaFase(specs)` — orchestrator-workers dentro de uma fase | `motor/osw/despacho-de-agentes.ts` |
-| 11 | Quem decide `specs` é função determinística sobre diff/card. **Nunca "a IA decide se chama outro agente"** | `motor/osw/despacho-de-agentes.ts` |
-| 12 | `aprendiz` — roda 1x no fechamento do card, depois do merge | `motor/csd/fre/aprendiz.ts` |
-| 12 | Lê o **diário EUC**, não o código. Audita como o card se comportou | `motor/csd/fre/aprendiz.ts` |
-| 12 | `ProblemSignature` = `hash(dominio + tipo_falha + causa_raiz)`, com evidência do diário — nunca opinião do modelo | `motor/csd/fre/assinatura.ts` |
-| 12 | `.hii/candidatos-regras/<assinatura>.json` — acumula sem efeito no gate até N cards (default 3) | `motor/csd/fre/candidatos.ts` |
+| 9 | `doc-updater` — docs atualizadas quando a mudança afeta contrato público | `motor/agentes/clarice/doc-updater.ts` |
+| 11 | `despacharAgentesNaFase(specs)` — orchestrator-workers dentro de uma fase | `motor/oswaldo/despacho-de-agentes.ts` |
+| 11 | Quem decide `specs` é função determinística sobre diff/card. **Nunca "a IA decide se chama outro agente"** | `motor/oswaldo/despacho-de-agentes.ts` |
+| 12 | `aprendiz` — roda 1x no fechamento do card, depois do merge | `motor/cascudo/freire/aprendiz.ts` |
+| 12 | Lê o **diário EUC**, não o código. Audita como o card se comportou | `motor/cascudo/freire/aprendiz.ts` |
+| 12 | `ProblemSignature` = `hash(dominio + tipo_falha + causa_raiz)`, com evidência do diário — nunca opinião do modelo | `motor/cascudo/freire/assinatura.ts` |
+| 12 | `.hii/candidatos-regras/<assinatura>.json` — acumula sem efeito no gate até N cards (default 3) | `motor/cascudo/freire/candidatos.ts` |
 
 ### A regra de ouro do FRE
 
@@ -615,11 +615,11 @@ Nenhuma das duas trilhas — instinto macio ou regra dura — é lida de volta c
 
 ```bash
 bun run test
-bun test ./test/csd/fre-assinatura.test.ts        # mesma causa raiz em cards diferentes = mesma assinatura
-bun test ./test/csd/fre-limiar.test.ts            # 2 ocorrências não promovem; 3 propõem; promoção exige humano
-bun test ./test/csd/fre-nao-executa.test.ts       # candidato NUNCA é lido de volta para dentro de prompt
-bun test ./test/osw/despacho-de-agentes.test.ts   # specs vêm de função pura; paralelo só sem sobreposição
-bun test ./test/agentes/clr-doc-updater.test.ts   # contrato público vs. mudança de corpo de função
+bun test ./test/cascudo/freire-assinatura.test.ts        # mesma causa raiz em cards diferentes = mesma assinatura
+bun test ./test/cascudo/freire-limiar.test.ts            # 2 ocorrências não promovem; 3 propõem; promoção exige humano
+bun test ./test/cascudo/freire-nao-executa.test.ts       # candidato NUNCA é lido de volta para dentro de prompt
+bun test ./test/oswaldo/despacho-de-agentes.test.ts   # specs vêm de função pura; paralelo só sem sobreposição
+bun test ./test/agentes/clarice-doc-updater.test.ts   # contrato público vs. mudança de corpo de função
 ```
 
 > Caminhos corrigidos: o gate original apontava para `test/fre-*.test.ts` na raiz
@@ -656,11 +656,11 @@ comportamento.
 
 | Peça | Onde | O que passa a acontecer |
 |---|---|---|
-| Item 14 — `auditoria_harness` | `motor/csd/acervo.ts` (`lerSkill`) | Skill com instrução de injeção **não carrega**. A auditoria roda no parse, onde o texto já está em mão — custo zero a mais |
-| Item 12 — `aprendiz` | `motor/qlb/ctr/merge.ts` (`aoMergear`) | No merge, o aprendiz lê o diário e registra candidato a regra |
-| **Defeito** — `card_fechado` | `motor/qlb/ctr/merge.ts` | Era tipo de evento que **ninguém escrevia**: `recuperar.ts` filtrava por ele e nunca filtrava nada, então a retomada varria todo card que algum dia teve diário, para sempre. Exatamente a degradação que a Parte VI marca como o erro mais comum de checkpoint |
-| Item 9 — `doc-updater` | `motor/qlb/ctr/fechar.ts` | Cada card registra `contrato_publico: mudou\|estavel` antes do PR |
-| **Recomendação 1** — diário do conflito | `motor/qlb/ctr/sync.ts` | O laço de conflito passa a emitir `repair_attempt` por tentativa e `gate_verdict` nas três saídas. Era a última cópia de reparo invisível ao diário — e sem ela o `aprendiz` não conseguia contar conflito recorrente como padrão |
+| Item 14 — `auditoria_harness` | `motor/cascudo/acervo.ts` (`lerSkill`) | Skill com instrução de injeção **não carrega**. A auditoria roda no parse, onde o texto já está em mão — custo zero a mais |
+| Item 12 — `aprendiz` | `motor/quilombo/cartorio/merge.ts` (`aoMergear`) | No merge, o aprendiz lê o diário e registra candidato a regra |
+| **Defeito** — `card_fechado` | `motor/quilombo/cartorio/merge.ts` | Era tipo de evento que **ninguém escrevia**: `recuperar.ts` filtrava por ele e nunca filtrava nada, então a retomada varria todo card que algum dia teve diário, para sempre. Exatamente a degradação que a Parte VI marca como o erro mais comum de checkpoint |
+| Item 9 — `doc-updater` | `motor/quilombo/cartorio/fechar.ts` | Cada card registra `contrato_publico: mudou\|estavel` antes do PR |
+| **Recomendação 1** — diário do conflito | `motor/quilombo/cartorio/sync.ts` | O laço de conflito passa a emitir `repair_attempt` por tentativa e `gate_verdict` nas três saídas. Era a última cópia de reparo invisível ao diário — e sem ela o `aprendiz` não conseguia contar conflito recorrente como padrão |
 
 A ordem em `aoMergear` tem teste: **aprendiz primeiro, fechamento depois**.
 Fechar antes esconderia dele exatamente o rastro que ele existe para auditar.
@@ -696,7 +696,7 @@ foi fechado.
 
 O **registro de efeitos externos** (Onda 9) reprovou até o `aprendiz` ser
 declarado como terceiro chamador de `executarComIdempotencia`. O **contrato de
-ambiente** (`test/cdl/ali-contrato.test.ts`) reprovou quando `HICODE_SKILLS_DIR`
+ambiente** (`test/cordel/alicerce-contrato.test.ts`) reprovou quando `HICODE_SKILLS_DIR`
 passou a ser resolvido em `config.ts` e a declaração ainda apontava para
 `acervo.ts`.
 
@@ -714,25 +714,25 @@ Nenhum dos dois foi lembrança: foram gates fechando por sinal real.
 |---|---|---|
 | 28 | `Dockerfile` único, **sem SDK de nuvem nenhum no motor** | `Dockerfile` |
 | 28 | `docker-stack.yml` para docker swarm — **compose e PROIBIDO** (r-0001) | `docker-stack.yml` |
-| 28 | Config via variável de ambiente (12-factor); estado em volume externo ao container | `motor/cdl/ali/` |
-| 29 | `EnvSecretProvider` como caminho **sempre funcional**; cofre de nuvem opcional e plugável | `motor/qlb/cfr/segredos.ts` |
+| 28 | Config via variável de ambiente (12-factor); estado em volume externo ao container | `motor/cordel/alicerce/` |
+| 29 | `EnvSecretProvider` como caminho **sempre funcional**; cofre de nuvem opcional e plugável | `motor/quilombo/cofre/segredos.ts` |
 | 31 | Snapshot do volume (diário, worktrees) + `skills/` e regras **sempre em git**, nunca só no disco de produção | `scripts/snapshot-estado.sh` |
-| 32 | Teto de CPU/memória por worktree paralelo | `docker-stack.yml`, `motor/qlb/limites.ts` |
+| 32 | Teto de CPU/memória por worktree paralelo | `docker-stack.yml`, `motor/quilombo/limites.ts` |
 
 ### Gate de saída
 
 ```bash
 bun run test
 docker build -t hii:brazil .                          # exit 0 — verificado
-bun test ./test/qlb/cfr-segredos.test.ts              # segredo ausente = erro claro, nunca fallback silencioso
-bun test ./test/qlb/limites.test.ts                   # concorrência derivada do orçamento, nunca zero
-bun test ./test/cdl/ali-runtime.test.ts               # nenhum spawn de bun fixo, nenhuma API Bun.*
-bun test ./test/cdl/sem-compose.test.ts               # compose reprova a suíte
-bun test ./test/cdl/estado-em-git.test.ts             # regra, critério e acervo versionados
+bun test ./test/quilombo/cofre-segredos.test.ts              # segredo ausente = erro claro, nunca fallback silencioso
+bun test ./test/quilombo/limites.test.ts                   # concorrência derivada do orçamento, nunca zero
+bun test ./test/cordel/alicerce-runtime.test.ts               # nenhum spawn de bun fixo, nenhuma API Bun.*
+bun test ./test/cordel/sem-compose.test.ts               # compose reprova a suíte
+bun test ./test/cordel/estado-em-git.test.ts             # regra, critério e acervo versionados
 ```
 
 > O invariante de "zero SDK de nuvem" virou teste
-> (`test/qlb/cfr-segredos.test.ts`) em vez de `grep` no gate: grep num documento
+> (`test/quilombo/cofre-segredos.test.ts`) em vez de `grep` no gate: grep num documento
 > ninguém roda, teste na suíte roda sempre.
 
 ### Divergências conscientes do esboço da Parte VI
@@ -742,12 +742,12 @@ correções, todas com motivo:
 
 **Node 24, e o motor deixou de exigir Bun.** O esboço ignorava que o motor
 *spawnava* `bun` em seis lugares e usava `Bun.serve` no `/health`. Agora
-`motor/cdl/ali/runtime.ts` decide o runtime por `HICODE_RUNTIME` (bun ou node) e
+`motor/cordel/alicerce/runtime.ts` decide o runtime por `HICODE_RUNTIME` (bun ou node) e
 o servidor de saúde usa `node:http`, que roda nos dois. Sem isso, "a mesma imagem
 em qualquer lugar" era promessa que a primeira imagem sem Bun desmentia.
 
 **Compose está proibido, não substituído.** `config/regras-inegociaveis.json`
-(r-0001) declara e `test/cdl/sem-compose.test.ts` reprova. O motivo é técnico:
+(r-0001) declara e `test/cordel/sem-compose.test.ts` reprova. O motivo é técnico:
 compose **ignora** `deploy.resources.limits`, então o teto do item 32 seria
 decorativo — e teto decorativo é pior que teto nenhum.
 
@@ -797,20 +797,20 @@ design, mas descreve o evento, não o comportamento de ramificar.
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/enquadramentos.json`, `motor/cic/mcn/enquadramentos.ts` |
-| 33 | `despacharDivergencia(enunciado, frames)` — N invocações **sem contexto compartilhado**; teste prova que nenhum ramo enxerga o outro | `motor/cic/mcn/divergir.ts` |
-| 33 | Convergência **reusa** `CRV` (critério escrito) e `VTO`; nenhum juiz novo | `motor/cic/mcn/convergir.ts` |
-| 33 | Teto obrigatório: recusa iniciar sem `orcamentoPorCard` — N ramos multiplicam custo por N | `motor/cic/mcn/divergir.ts` |
-| 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/osw/rta/perfil.ts`, `motor/nmy/luc/plano.ts` |
+| 33 | `config/enquadramentos.json` — os frames como **dado versionado**, com nome e lente, nunca hardcoded | `config/enquadramentos.json`, `motor/ciclo/macunaima/enquadramentos.ts` |
+| 33 | `despacharDivergencia(enunciado, frames)` — N invocações **sem contexto compartilhado**; teste prova que nenhum ramo enxerga o outro | `motor/ciclo/macunaima/divergir.ts` |
+| 33 | Convergência **reusa** `CRV` (critério escrito) e `VTO`; nenhum juiz novo | `motor/ciclo/macunaima/convergir.ts` |
+| 33 | Teto obrigatório: recusa iniciar sem `orcamentoPorCard` — N ramos multiplicam custo por N | `motor/ciclo/macunaima/divergir.ts` |
+| 33 | Gatilho determinístico: só entra onde a resposta é aberta (arquitetura, naming, design de API), nunca em cálculo com resposta única | `motor/oswaldo/rota/perfil.ts`, `motor/niemeyer/lucio/plano.ts` |
 
 ### Como conferir
 
 ```bash
-bun test ./test/cic/mcn-divergir.test.ts       # isolamento: nenhum ramo cita ou lê outro
-bun test ./test/cic/mcn-enquadramentos.test.ts # lente é dado versionado; ausente/vazio/duplicado LANÇA
-bun test ./test/cic/mcn-convergir.test.ts      # nenhum juiz novo — delega a VTO e RDA
-bun test ./test/osw/rta-divergencia.test.ts    # gatilho: FECHADO vence ABERTO, e o padrão é não divergir
-bun test ./test/nmy/luc-plano-render.test.ts   # a divergência aparece no plano que o humano aprova
+bun test ./test/ciclo/macunaima-divergir.test.ts       # isolamento: nenhum ramo cita ou lê outro
+bun test ./test/ciclo/macunaima-enquadramentos.test.ts # lente é dado versionado; ausente/vazio/duplicado LANÇA
+bun test ./test/ciclo/macunaima-convergir.test.ts      # nenhum juiz novo — delega a VTO e RDA
+bun test ./test/oswaldo/rota-divergencia.test.ts    # gatilho: FECHADO vence ABERTO, e o padrão é não divergir
+bun test ./test/niemeyer/lucio-plano-render.test.ts   # a divergência aparece no plano que o humano aprova
 ```
 
 > **O isolamento é estrutural, não prometido.** `promptDoRamo()` recebe **um**
@@ -858,7 +858,7 @@ de custo é a forma mais rápida de queimar orçamento.
 
 > **Origem:** pedido de teste completo de controle da TUI. Item **34**, novo.
 
-**O que já existe:** ~50 arquivos em `test/mir/` cobrindo board, `tui-app`,
+**O que já existe:** ~50 arquivos em `test/mirante/` cobrindo board, `tui-app`,
 `tui-input`, `tui-layout`, `tui-pintura`, `tui-rolagem`, `tui-fluxo`, widgets,
 paleta, largura, help e cada render. A cobertura de **comportamento** é boa.
 
@@ -866,25 +866,25 @@ paleta, largura, help e cada render. A cobertura de **comportamento** é boa.
 
 | Item | Entrega | Arquivo |
 |---|---|---|
-| 34 | Varredura que prova que **todo** comando de `COMMANDS` tem teste — comando novo sem teste reprova | `test/mir/mapa-de-comandos.test.ts` |
-| 34 | Percurso end-to-end por todos os menus/modos/layouts numa tela virtual, sem exceção não tratada | `test/mir/percurso-completo.test.ts` |
-| 34 | **Orçamento de tempo por quadro**: pintura e rolagem sob teto medido, não "parece rápido" — mesmo princípio do Core Web Vitals virar número | `test/mir/tempo-de-pintura.test.ts` |
-| 34 | Guarda contra travamento: nenhuma operação de render pode bloquear além de N ms com estado grande (muitos cards, log longo, terminal estreito) | `test/mir/tui-sob-carga.test.ts` |
-| 34 | Redimensionamento extremo (largura mínima, altura 1 linha) não estoura nem corta o rodapé | `test/mir/largura.test.ts` (estende) |
+| 34 | Varredura que prova que **todo** comando de `COMMANDS` tem teste — comando novo sem teste reprova | `test/mirante/mapa-de-comandos.test.ts` |
+| 34 | Percurso end-to-end por todos os menus/modos/layouts numa tela virtual, sem exceção não tratada | `test/mirante/percurso-completo.test.ts` |
+| 34 | **Orçamento de tempo por quadro**: pintura e rolagem sob teto medido, não "parece rápido" — mesmo princípio do Core Web Vitals virar número | `test/mirante/tempo-de-pintura.test.ts` |
+| 34 | Guarda contra travamento: nenhuma operação de render pode bloquear além de N ms com estado grande (muitos cards, log longo, terminal estreito) | `test/mirante/tui-sob-carga.test.ts` |
+| 34 | Redimensionamento extremo (largura mínima, altura 1 linha) não estoura nem corta o rodapé | `test/mirante/largura.test.ts` (estende) |
 
 ### Como conferir
 
 ```bash
-bun test ./test/mir/mapa-de-comandos.test.ts   # comando sem teste reprova
-bun test ./test/mir/percurso-completo.test.ts  # entrada × estado × layout, sem exceção
-bun test ./test/mir/tempo-de-pintura.test.ts   # teto em ms + custo O(área visível)
-bun test ./test/mir/tui-sob-carga.test.ts      # 200k linhas, 1 coluna, rodapé de 5k
-bun test ./test/mir/largura.test.ts            # redimensionamento extremo
+bun test ./test/mirante/mapa-de-comandos.test.ts   # comando sem teste reprova
+bun test ./test/mirante/percurso-completo.test.ts  # entrada × estado × layout, sem exceção
+bun test ./test/mirante/tempo-de-pintura.test.ts   # teto em ms + custo O(área visível)
+bun test ./test/mirante/tui-sob-carga.test.ts      # 200k linhas, 1 coluna, rodapé de 5k
+bun test ./test/mirante/largura.test.ts            # redimensionamento extremo
 ```
 
 > **A varredura encontrou o que devia.** `/ia`, `/model`, `/effort` e `/mode` —
 > os quatro comandos que decidem qual modelo gasta o token — não tinham teste
-> nenhum. `test/mir/comandos-de-modelo.test.ts` fechou a lacuna antes de o
+> nenhum. `test/mirante/comandos-de-modelo.test.ts` fechou a lacuna antes de o
 > invariante ficar verde.
 
 ### O teto que aperta de verdade não é o de milissegundos
