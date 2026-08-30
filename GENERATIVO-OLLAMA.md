@@ -128,6 +128,23 @@ RTX 3060 Ti (8 GB VRAM), 16 cores, **7 GB RAM**. Consequência medida:
 4. Consenso A final, fila real de trabalho: `tesouro/custo.ts`,
    `alfandega/confianca.ts`, `cartorio/responder-pergunta.ts`.
 
+## 6º ciclo (fila consenso-A vira teste)
+
+- **`tesouro/custo.ts` e `alfandega/confianca.ts` testados** (9 testes novos,
+  gate 2740 verde). Revisão dos rascunhos: 2/8 expectativas erradas em
+  `custo.ts` (o modelo achou que negativo era desconhecido e que decimal
+  truncava — o código passa ambos intactos); em `confianca.ts` o "motivo
+  vazio" é irrepresentável (`RefusalReason` é união fechada — o typecheck é a
+  proteção, não o runtime).
+- **`cartorio/responder-pergunta.ts` fica para um card próprio**: a superfície
+  testável é o prompt montado e o mapeamento do resultado, mas
+  `runProvider` chama um provedor de verdade — teste honesto pede a
+  infraestrutura de cassete (`test/tomada/cassete.test.ts`), não mock
+  improvisado. Consenso A do modelo não muda essa realidade.
+- **Lição de processo: rodar o gate cedo.** O runtime perdoou `Refusal` sem
+  `ok: false` (9/9 verdes no `node --test`), o `tsc --noEmit` barrou. O gate
+  completo é a única barra que vale.
+
 ## Frentes e onde cada uma encaixa
 
 1. **Geração de testes (tier2, "escopo definido pela matriz")** — viável.

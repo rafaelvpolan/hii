@@ -1,0 +1,25 @@
+Voce e um engenheiro de testes. Abaixo esta o codigo de motor/quilombo/alfandega/confianca.ts. Liste ate 8 cenarios de borda cobrindo os ramos reais.
+FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
+- **Cenario:** nome curto (cite a funcao)
+  - **Entrada/Condicao:** estado CONCRETO. PROIBIDO "qualquer valor".
+  - **Comportamento Esperado:** retorno/efeito especifico, derivado do codigo.
+REGRAS: nao invente comportamento. Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta.
+Contexto extra: clip(s) = String(s).replace(/[\r\n\t]+/g,' ').slice(0,160). markRefsRefused chama patchCard(id, {}, linha) para cada outcome com refusal; patchCard anexa a linha no diario do card em disco.
+
+CODIGO:
+import { isoNow } from '../../cordel/index.ts'
+import { clip } from './url-guard.ts'
+import type { Refusal } from './url-guard.ts'
+import { patchCard } from '../../cordel/store.ts'
+import type { RefOutcome } from './refs.ts'
+
+export function refRefusalLine(source: string, refusal: Refusal): string {
+  return `${isoNow()} referencia recusada: ${clip(source)} (${refusal.reason}) — ${clip(refusal.detail)} — implementando sem ela`
+}
+
+export function markRefsRefused(id: string, outcomes: RefOutcome[]): void {
+  if (!id) return
+  for (const o of outcomes) {
+    if (o.refusal) patchCard(id, {}, refRefusalLine(o.source, o.refusal))
+  }
+}

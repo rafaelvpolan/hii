@@ -1,8 +1,8 @@
 {
-  "gerado_em": "2026-08-30T16:36:06.757Z",
+  "gerado_em": "2026-08-30T19:08:21.496Z",
   "heuristica": "import direto (estatico/dinamico) em test/**/*.ts, expandido por re-exports (barrels); indiretos nao contam",
   "total_motor": 228,
-  "exercitados": 210,
+  "exercitados": 212,
   "por_dominio": {
     "agentes": {
       "total": 15,
@@ -22,7 +22,7 @@
     },
     "euclides": {
       "total": 23,
-      "exercitados": 21
+      "exercitados": 22
     },
     "mirante": {
       "total": 62,
@@ -38,7 +38,7 @@
     },
     "quilombo": {
       "total": 23,
-      "exercitados": 20
+      "exercitados": 21
     },
     "tomada": {
       "total": 27,
@@ -50,14 +50,12 @@
     "motor/ciclo/crivo/portoes-de-fecho.ts",
     "motor/ciclo/reprise/reparadores/laravel-php.ts",
     "motor/euclides/sessao.ts",
-    "motor/euclides/tesouro/custo.ts",
     "motor/mirante/cli/comandos.ts",
     "motor/mirante/cli/saida.ts",
     "motor/mirante/cli/situacao-cli.ts",
     "motor/mirante/render/config/tipos.ts",
     "motor/mirante/render/disco.ts",
     "motor/mirante/watch.ts",
-    "motor/quilombo/alfandega/confianca.ts",
     "motor/quilombo/alfandega/ipv4.ts",
     "motor/quilombo/cartorio/responder-pergunta.ts",
     "motor/tomada/confianca.ts",

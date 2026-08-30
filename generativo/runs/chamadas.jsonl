@@ -15,3 +15,5 @@
 {"ts":"2026-08-30T16:24:44.072Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-frontmatter.txt","tokens_in":481,"tokens_out":809,"dur_ms":26149,"ok":true}
 {"ts":"2026-08-30T16:37:39.514Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":462,"tokens_out":395,"dur_ms":12469,"ok":true}
 {"ts":"2026-08-30T16:38:20.755Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":443,"tokens_out":1610,"dur_ms":41186,"ok":true}
+{"ts":"2026-08-30T19:06:57.514Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-custo-tesouro.txt","tokens_in":352,"tokens_out":386,"dur_ms":20894,"ok":true}
+{"ts":"2026-08-30T19:07:07.915Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-confianca-alfandega.txt","tokens_in":412,"tokens_out":642,"dur_ms":10358,"ok":true}

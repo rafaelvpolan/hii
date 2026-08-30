@@ -1,0 +1,22 @@
+Voce e um engenheiro de testes. Abaixo esta o codigo de motor/euclides/tesouro/custo.ts. Liste ate 8 cenarios de borda cobrindo os ramos reais.
+FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
+- **Cenario:** nome curto (cite a funcao)
+  - **Entrada/Condicao:** estado CONCRETO. PROIBIDO "qualquer valor".
+  - **Comportamento Esperado:** retorno/efeito especifico, derivado do codigo.
+REGRAS: nao invente comportamento. Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta.
+Contexto extra: clip(s) = String(s).replace(/[\r\n\t]+/g,' ').slice(0,160). markRefsRefused chama patchCard(id, {}, linha) para cada outcome com refusal; patchCard anexa a linha no diario do card em disco.
+
+CODIGO:
+export interface CostReading {
+  readonly cost: number
+  readonly costMeasured: boolean
+}
+
+export const COST_UNKNOWN: CostReading = { cost: 0, costMeasured: false }
+
+export const COST_FREE_LOCAL: CostReading = { cost: 0, costMeasured: true }
+
+export function readReportedCost(reported: number | undefined): CostReading {
+  if (typeof reported !== 'number' || !Number.isFinite(reported)) return COST_UNKNOWN
+  return { cost: reported, costMeasured: true }
+}
