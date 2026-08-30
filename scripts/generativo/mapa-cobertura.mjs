@@ -17,7 +17,10 @@ function* walk(dir) {
 
 const motor = [...walk('motor')].map(p => relative('.', p))
 const referenciados = new Set()
-const IMPORT_RE = /from\s+['"]([^'"]*motor\/[^'"]+)['"]/g
+// Import estatico E dinamico: 137 dos 248 arquivos da suite usam `await import()`
+// no topo (para configurar env antes do modulo carregar); olhar so `from` subconta
+// a cobertura massivamente — foi o falso positivo que pos politica.ts na lista.
+const IMPORT_RE = /(?:from\s+|import\(\s*)['"]([^'"]*motor\/[^'"]+)['"]/g
 
 function normaliza(spec, testFile) {
   // resolve o specifier relativo ao teste para caminho de repo
@@ -32,6 +35,29 @@ for (const t of walk('test')) {
   for (const m of fonte.matchAll(IMPORT_RE)) referenciados.add(normaliza(m[1], t))
 }
 
+// Barrels: teste que importa motor/<dominio>/index.ts exercita os arquivos que
+// o index re-exporta (frontmatter.ts so apareceu "sem teste" por causa disto).
+// BFS pelos re-exports, um nivel nao basta: index -> sub/index -> arquivo.
+const REEXPORT_RE = /export\s+(?:\*|\{[^}]*\})\s+from\s+['"](\.[^'"]+)['"]/g
+const reexporta = new Map()
+for (const f of motor) {
+  const fonte = readFileSync(f, 'utf8')
+  const alvos = []
+  for (const m of fonte.matchAll(REEXPORT_RE)) {
+    let p = join(f, '..', m[1])
+    if (!p.endsWith('.ts')) p += '.ts'
+    alvos.push(relative('.', p).replaceAll('\\', '/'))
+  }
+  if (alvos.length) reexporta.set(f, alvos)
+}
+const fila = [...referenciados]
+while (fila.length) {
+  const f = fila.pop()
+  for (const alvo of reexporta.get(f) ?? []) {
+    if (!referenciados.has(alvo)) { referenciados.add(alvo); fila.push(alvo) }
+  }
+}
+
 const porDominio = {}
 const semTeste = []
 for (const f of motor) {
@@ -44,7 +70,7 @@ for (const f of motor) {
 
 const rel = {
   gerado_em: new Date().toISOString(),
-  heuristica: 'import direto em test/**/*.ts; indiretos nao contam',
+  heuristica: 'import direto (estatico/dinamico) em test/**/*.ts, expandido por re-exports (barrels); indiretos nao contam',
   total_motor: motor.length,
   exercitados: motor.length - semTeste.length,
   por_dominio: porDominio,

@@ -21,19 +21,23 @@ entra no resíduo que exige julgamento (classificar lacunas, inventar cenários)
 Isso é o que "scripts que eliminam parte do trabalho da IA" significa na prática —
 cada linha determinística é uma linha que nenhum modelo precisa acertar.
 
-## O que já rodou (2026-08-29, qwen2.5-coder:7b)
+## O que já rodou
 
-- **Mapa de cobertura determinístico**: 228 arquivos em `motor/`, 140 com import
-  direto em teste, 88 sem. Piores razões: `euclides` 6/23, `ciclo` 13/24,
-  `quilombo` 10/23. JSON em `generativo/runs/cobertura-*.json`.
-- **Triagem das 88 lacunas pelo Ollama**: classificação A (teste unitário) / B
-  (fio condutor, coberto indireto) / C (fronteira de IO) em
-  `generativo/runs/triagem-cobertura-*.md` — saída para revisão humana, não verdade
-  (o RESUMO do modelo saiu com contagem errada; confira o corpo, não o placar).
-- **Casos de borda gerados** para `motor/ciclo/reprise/politica.ts` em
-  `generativo/runs/casos-politica-*.md` — candidatos a virar teste; atenção: o
-  modelo afirmou números de backoff (30s/1min/2min/5min) que precisam ser
-  conferidos contra o código antes de virar expectativa de teste.
+- **Mapa de cobertura determinístico** (corrigido no 5º ciclo): 228 arquivos em
+  `motor/`, **210 exercitados, 18 sem teste** (a primeira versão dizia 88 —
+  falso positivo de import dinâmico e barrel, ver 5º ciclo). JSON em
+  `generativo/runs/cobertura-*.json`. Fila A por consenso: `tesouro/custo.ts`,
+  `alfandega/confianca.ts`, `cartorio/responder-pergunta.ts`.
+- **Testes novos nascidos do pipeline**: 8 casos de borda em
+  `test/cordel/frontmatter.test.ts`, com 4 expectativas do rascunho generativo
+  corrigidas na revisão.
+- **Triagem das lacunas pelo Ollama** (2 modelos, vários ciclos): classificação
+  A (teste unitário) / B (fio condutor) / C (fronteira de IO) em
+  `generativo/runs/triagem-cobertura-*.md` — saída para revisão humana, não
+  verdade. Divergências em `divergencias-triagem-*.md`.
+- **Casos de borda gerados** para `politica.ts`, `tentativas.ts`, `cota.ts` e
+  `frontmatter.ts` em `generativo/runs/casos-*.md` — `politica.ts` e
+  `tentativas.ts` se mostraram já cobertos quando o mapa foi corrigido.
 - **Receitas**: `receipts.jsonl` hoje tem 4014 linhas, **todas sem assinatura e
   com `tool` vazio** — não há sinal para a IA analisar. A recomendação real nesta
   frente é primeiro enriquecer o recibo (tool, custo, desfecho), só depois
@@ -104,6 +108,25 @@ RTX 3060 Ti (8 GB VRAM), 16 cores, **7 GB RAM**. Consequência medida:
 - **Concordância final estável em ~50%** (44/44 de 88). Meio a meio é o número
   honesto para consenso entre dois 7-8B; a fila de revisão humana é a outra
   metade. Artefato atualizado em `divergencias-triagem-*.md`.
+
+## 5º ciclo (o mapa é que estava errado; pipeline ponta a ponta)
+
+1. **O falso positivo estava na heurística, não no modelo.** Dos 88 "sem
+   teste", a maioria era import dinâmico (`await import`, 137 arquivos da
+   suíte) e barrel (`motor/cordel/index.ts` re-exportando). Corrigido no
+   `mapa-cobertura.mjs`: 88 → 22 → **18 arquivos realmente sem teste**
+   (210/228 exercitados). Lição: audite o instrumento antes de agir sobre a
+   medida — os 4 primeiros ciclos triavam uma lista meio falsa.
+2. **Pipeline completo demonstrado em `frontmatter.ts`**: mapa → triagem
+   (consenso A) → cenários gerados → **revisão achou 4 expectativas erradas
+   em 10** (ordem alfabética inventada, fm vazio, linha em branco omitida) →
+   8 testes novos escritos com o comportamento verificado no código, em
+   `test/cordel/frontmatter.test.ts`. O funil segurou: nada do rascunho entrou
+   sem verificação.
+3. **Prompt exigindo caminho completo cura o deslize de prefixo** (o coder
+   tinha respondido só basenames): 18/18 linhas válidas nos dois modelos.
+4. Consenso A final, fila real de trabalho: `tesouro/custo.ts`,
+   `alfandega/confianca.ts`, `cartorio/responder-pergunta.ts`.
 
 ## Frentes e onde cada uma encaixa
 

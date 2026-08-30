@@ -10,3 +10,8 @@
 {"ts":"2026-08-29T19:06:23.926Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-cota.txt","tokens_in":1978,"tokens_out":2249,"dur_ms":37827,"ok":true}
 {"ts":"2026-08-29T19:11:01.687Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":1185,"tokens_out":3684,"dur_ms":77159,"ok":true}
 {"ts":"2026-08-29T19:11:35.732Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-cota.txt","tokens_in":1989,"tokens_out":1226,"dur_ms":34005,"ok":true}
+{"ts":"2026-08-30T16:22:51.843Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":462,"tokens_out":263,"dur_ms":24810,"ok":true}
+{"ts":"2026-08-30T16:23:37.187Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":443,"tokens_out":1554,"dur_ms":37770,"ok":true}
+{"ts":"2026-08-30T16:24:44.072Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-casos-frontmatter.txt","tokens_in":481,"tokens_out":809,"dur_ms":26149,"ok":true}
+{"ts":"2026-08-30T16:37:39.514Z","model":"qwen2.5-coder:7b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":462,"tokens_out":395,"dur_ms":12469,"ok":true}
+{"ts":"2026-08-30T16:38:20.755Z","model":"qwen3:8b","prompt_file":"generativo/runs/prompt-triagem.txt","tokens_in":443,"tokens_out":1610,"dur_ms":41186,"ok":true}
