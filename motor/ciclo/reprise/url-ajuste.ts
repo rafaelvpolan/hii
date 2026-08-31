@@ -1,4 +1,4 @@
-import { numeroDeEnv } from '../../cordel/alicerce/config.ts'
+import { numeroDeEnv, URL_WAIT_S } from '../../cordel/alicerce/config.ts'
 import { ensureUrl, waitHttp } from '../crivo/url-viva.ts'
 import { anexarEvento } from '../../euclides/eventos.ts'
 
@@ -62,7 +62,7 @@ export function relatoDoAjuste(t: TentativaDeUrl): string {
   return `url nao subiu depois de ${t.ajustes.length} ajuste(s) — precisa de olho humano`
 }
 
-export function esperarPorPid(porta: number, segundos = 30): (pid: number) => Promise<boolean> {
+export function esperarPorPid(porta: number, segundos = URL_WAIT_S): (pid: number) => Promise<boolean> {
   return async (pid: number): Promise<boolean> => (pid ? waitHttp(`http://localhost:${porta}`, segundos) : false)
 }
 

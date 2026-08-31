@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
-import { cardsDir, ROOT, PREVIEW_BASE_PORT } from '../../cordel/alicerce/config.ts'
+import { cardsDir, ROOT, PREVIEW_BASE_PORT, URL_PROBE_INTERVAL_MS, URL_PROBE_TIMEOUT_MS, URL_INSPECT_TIMEOUT_MS, URL_FREEPORT_SETTLE_MS } from '../../cordel/alicerce/config.ts'
 import { run } from '../../quilombo/git.ts'
 import { readContract } from '../../cordel/bussola/armazenar.ts'
 import { devCommand, devCwd, hasCommand } from '../../mirante/comandos.ts'
@@ -24,7 +24,7 @@ export function hasDevServer(target: string): boolean {
 
 export async function freePort(port: number): Promise<void> {
   await run('bash', ['-c', `fuser -k ${port}/tcp 2>/dev/null; exit 0`], { timeout: 8000 })
-  await new Promise(r => setTimeout(r, 400))
+  await new Promise(r => setTimeout(r, URL_FREEPORT_SETTLE_MS))
 }
 
 export function startUrl(wt: string, port: number, target: string): number {
@@ -76,15 +76,15 @@ export function probeArgs(url: string): string[] {
 }
 
 export async function httpOk(url: string): Promise<boolean> {
-  const r = await run('curl', probeArgs(url), { timeout: 4000 })
+  const r = await run('curl', probeArgs(url), { timeout: URL_PROBE_TIMEOUT_MS })
   return String(r.stdout || '').trim() === '200'
 }
 
 export async function waitHttp(url: string, tries: number): Promise<boolean> {
   for (let i = 0; i < tries; i++) {
-    const r = await run('curl', probeArgs(url), { timeout: 5000 })
+    const r = await run('curl', probeArgs(url), { timeout: URL_PROBE_TIMEOUT_MS })
     if (String(r.stdout || '').trim() === '200') return true
-    await new Promise(res => setTimeout(res, 1000))
+    await new Promise(res => setTimeout(res, URL_PROBE_INTERVAL_MS))
   }
   return false
 }
@@ -93,7 +93,7 @@ export async function inspectUrl(id: string, url: string, capture: boolean): Pro
   const dir = join(cardsDir(), 'urls', String(id))
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const out = capture ? join(dir, 'url.png') : ''
-  const r = await run(runtimeDeScript(), [join(ROOT, 'scripts', 'inspect-preview.mjs'), url, out], { cwd: ROOT, timeout: 60000 })
+  const r = await run(runtimeDeScript(), [join(ROOT, 'scripts', 'inspect-preview.mjs'), url, out], { cwd: ROOT, timeout: URL_INSPECT_TIMEOUT_MS })
   try {
     const j = JSON.parse(String(r.stdout || '')) as { ok?: boolean; conclusive?: boolean; detail?: string }
     return { ok: !!j.ok, conclusive: !!j.conclusive, detail: String(j.detail || '') }

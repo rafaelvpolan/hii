@@ -549,6 +549,13 @@ hii status
 Outras variáveis úteis: `HICODE_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
 (orçamento do diff no gate), `HICODE_OLLAMA_URL`, `HICODE_TASK_SYNC`.
 
+**Ritmo da URL de preview.** Quanto o motor espera o dev-server responder e a que ritmo sonda:
+`HICODE_URL_WAIT_S` (orçamento total, default 30), `HICODE_URL_PROBE_INTERVAL_MS` (intervalo entre
+sondas, default 1000), `HICODE_URL_PROBE_TIMEOUT_MS` (teto de cada sonda curl, default 5000),
+`HICODE_URL_INSPECT_TIMEOUT_MS` (teto da inspeção playwright, default 60000) e
+`HICODE_URL_FREEPORT_SETTLE_MS` (pausa após matar a porta, default 400). Reduzir intervalo/teto
+acelera a detecção de "URL no ar"; aumentar ajuda em máquina lenta ou dev-server pesado.
+
 **Janelas de limite por IA.** Cada IA tem sua janela: `HICODE_JANELAS_CLAUDE` (default `5h,7d`),
 `HICODE_JANELAS_CODEX`, `HICODE_JANELAS_KIMI`. Aceita `4h`, `30m`, `7d`. IA local não tem janela.
 

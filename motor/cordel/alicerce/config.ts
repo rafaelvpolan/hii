@@ -47,6 +47,14 @@ export const PREVIEW_BASE_PORT = numeroDeEnv('HICODE_PREVIEW_BASE', 5200)
 export const POLL_MS = numeroDeEnv('HICODE_POLL_MS', 5000)
 export const RUN_TIMEOUT_MS = numeroDeEnv('HICODE_RUN_TIMEOUT_MS', 900000)
 export const MAX_CONCURRENCY = numeroDeEnv('HICODE_CONCURRENCY', 3)
+// Orcamento da URL de preview: quanto o motor espera o dev-server responder,
+// a que ritmo sonda, e o teto da inspecao via playwright. Tudo com o default
+// de antes — parametrizar nao muda comportamento, so expoe o botao.
+export const URL_WAIT_S = numeroDeEnv('HICODE_URL_WAIT_S', 30)
+export const URL_PROBE_INTERVAL_MS = numeroDeEnv('HICODE_URL_PROBE_INTERVAL_MS', 1000)
+export const URL_PROBE_TIMEOUT_MS = numeroDeEnv('HICODE_URL_PROBE_TIMEOUT_MS', 5000)
+export const URL_INSPECT_TIMEOUT_MS = numeroDeEnv('HICODE_URL_INSPECT_TIMEOUT_MS', 60000)
+export const URL_FREEPORT_SETTLE_MS = numeroDeEnv('HICODE_URL_FREEPORT_SETTLE_MS', 400)
 // Liga as exigencias da Onda 5 que BARRAM em vez de so registrar: RED antes do
 // GREEN (item 5) e setup ferramental em area nova (item 22). Desligado por
 // padrao porque nenhum card existente satisfaz as duas, e ligar hoje pararia
