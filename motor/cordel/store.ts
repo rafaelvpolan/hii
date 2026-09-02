@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
-import { splitFrontMatter, serializeCard, appendLog, isoNow } from './/index.ts'
+import { splitFrontMatter, serializeCard, appendLog, ehClasseDeParada, isoNow, PARADA_SEM_CLASSE } from './/index.ts'
 import type { Card, Fields } from './/index.ts'
 import { cardsDir, reposFile, ROOT } from './alicerce/config.ts'
 import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
@@ -47,6 +47,23 @@ function tiraCardDaParada(antes: string | undefined, depois: string | undefined)
   return PARADAS_HUMANAS.includes(antes ?? '') && depois !== undefined && depois !== antes
 }
 
+function gravarCampo(fm: Fields, order: string[], campo: string, valor: string): void {
+  fm[campo] = valor
+  if (!order.includes(campo)) order.push(campo)
+}
+
+function textoDoCampo(valor: string | undefined): string {
+  return String(valor ?? '').trim()
+}
+
+// A linha de diario de toda parada tem o formato `<iso> <origem>->HALTED <motivo>`.
+// Colher o motivo aqui poupa repetir o texto em todo sitio de parada, e o vazio e o
+// fallback de proposito: campo em branco e honesto, campo com a mensagem inteira
+// (carimbo de hora e seta incluidos) seria ruido dentro do frontmatter.
+function motivoDaParada(linha: string | undefined): string {
+  return String(linha ?? '').split('->HALTED ')[1]?.trim() ?? ''
+}
+
 export function updateCard(id: string, patch: CardPatch): Fields | null {
   const name = findCardFile(id)
   if (!name) return null
@@ -68,14 +85,38 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     // Unico ponto do motor que conhece o PAR (estado anterior, estado novo). A
     // topologia declarada e conferida aqui, nao por grep no texto-fonte.
     if (resolvedFields.status !== undefined) conferirTransicao(before.status, resolvedFields.status, id)
+    const mudouStatus = resolvedFields.status !== undefined && resolvedFields.status !== before.status
     for (const [k, v] of Object.entries(resolvedFields)) {
-      fm[k] = v
-      if (!order.includes(k)) order.push(k)
+      gravarCampo(fm, order, k, v)
     }
     fm.updated = isoNow()
-    let nb = patch.body ? patch.body(body, before) : body
+    // `status_since` e o unico campo de tempo do card que nao mente, e existe porque
+    // `updated` acima e gravado em TODO patchCard — inclusive nos que so acrescentam
+    // linha de diario (ciclo/passo-com-gate.ts:32,107,119). Card em laco de reparo
+    // renovava `updated` a cada volta e aparentava idade de dois minutos enquanto
+    // lacava havia horas; card 001 esta em URL desde 24/08 e nada sabia dizer "aberto
+    // ha 9 dias". Gravado SO na mudanca de status, e nunca em patch que so loga.
+    if (mudouStatus) gravarCampo(fm, order, 'status_since', String(fm.updated))
+    // O HALT tem UM ponto de estrangulamento, e e este: aqui se conhece o par
+    // (estado anterior, estado novo). Carimbar a classe aqui garante o invariante
+    // "nenhum HALTED sem classe" sem depender de cada sitio de parada lembrar — e a
+    // linha de diario existe para o carimbo ser BARULHENTO. Sentinela silenciosa seria
+    // pior que campo ausente: pareceria classificacao.
+    //
+    // `halt_at` e `halt_reason` sao carimbados no mesmo lugar e pelo mesmo motivo. Os
+    // dois SOBRESCREVEM: parada nova com carimbo velho contaria a historia da parada
+    // anterior.
     const line = typeof patch.log === 'function' ? patch.log(before) : patch.log
+    const paradaSemClasse = resolvedFields.status === 'HALTED' && !ehClasseDeParada(textoDoCampo(resolvedFields.halt_class))
+    if (resolvedFields.status === 'HALTED') {
+      if (paradaSemClasse) gravarCampo(fm, order, 'halt_class', PARADA_SEM_CLASSE)
+      if (!textoDoCampo(resolvedFields.halt_at)) gravarCampo(fm, order, 'halt_at', String(fm.updated))
+      const motivo = textoDoCampo(resolvedFields.halt_reason) ? '' : motivoDaParada(line)
+      if (motivo) gravarCampo(fm, order, 'halt_reason', motivo)
+    }
+    let nb = patch.body ? patch.body(body, before) : body
     if (line) nb = appendLog(nb, line)
+    if (paradaSemClasse) nb = appendLog(nb, `${isoNow()} DEFEITO: esta escrita levou o card a HALTED sem halt_class — carimbado como ${PARADA_SEM_CLASSE}. Quem parou o card tem de dizer a classe (motor/cordel/tipos.ts, CLASSES_DE_PARADA), senao /health nao sabe se isto e cota, orcamento, escopo ou voce`)
     if (desfariaParada) nb = appendLog(nb, `${isoNow()} escrita descartada: o card esta em ${before.status} e um job em voo tentou leva-lo para ${resolvedStatus(pedidos)} — parada humana so sai por decisao humana`)
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
     return { ...fm, file: name }
@@ -133,7 +174,11 @@ function slugify(s: string): string {
 export function createCard(fields: Fields, body: string): string {
   const id = nextId()
   const slug = fields.slug || slugify(fields.title || '')
-  const fm: Fields = { id, slug, status: 'READY', ...fields, updated: isoNow() }
+  const agora = isoNow()
+  // `status_since` nasce com o card: sem semente aqui, todo card ficaria sem idade
+  // mensuravel ate a PRIMEIRA transicao — exatamente na janela em que ele esta
+  // esperando alguem (READY, e depois CLARIFY/URL).
+  const fm: Fields = { id, slug, status: 'READY', status_since: agora, ...fields, updated: agora }
   const order = Object.keys(fm)
   garantirCardsDir()
   writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n')

@@ -174,8 +174,15 @@ export function approvePlan(id: string): GuardedResult {
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
 }
 
+// A unica parada com classe `humano`, e a razao de nao usar `transition` e que ele
+// grava so o status: parada pedida por pessoa era indistinguivel de parada por cota
+// no frontmatter.
 export function halt(id: string, reason: string): ActionResult {
-  return transition(id, 'HALTED', reason)
+  return updateCard(id, {
+    apesarDaParada: true,
+    fields: { status: 'HALTED', halt_class: 'humano', halt_reason: reason, halt_at: isoNow() },
+    log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED${reason ? ' ' + reason : ''}`,
+  })
 }
 
 export function requestCorrection(id: string, file: string, instruction: string, line = '', lineText = ''): ActionResult {

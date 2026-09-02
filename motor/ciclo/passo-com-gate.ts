@@ -1,5 +1,5 @@
 import { isoNow } from '../cordel/index.ts'
-import type { FailureClass, StepMetric } from '../cordel/index.ts'
+import type { ClasseDeEspera, FailureClass, StepMetric } from '../cordel/index.ts'
 import { maxReajuste, GATE_RETRIES } from '../cordel/alicerce/config.ts'
 import { patchCard } from '../cordel/store.ts'
 import { runStep } from './agente.ts'
@@ -24,6 +24,7 @@ export interface GatedResult {
   reason: string
   failureClass?: FailureClass
   failureReason?: string
+  waitClass?: ClasseDeEspera
   provider?: string
 }
 
@@ -51,7 +52,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
   // para sempre, inclusive depois de um BLOCKED legitimo.
   let motivoDoGate = ''
   let motivoDaFalha = ''
-  let ultimaFalhaDoAgente: { failureClass?: FailureClass; failureReason?: string; provider?: string } | null = null
+  let ultimaFalhaDoAgente: { failureClass?: FailureClass; failureReason?: string; waitClass?: ClasseDeEspera; provider?: string } | null = null
   // A reprovacao da volta anterior, normalizada. O teto de `maxReajuste()` conta
   // voltas e nao progresso: um agente que devolve a mesma coisa tres vezes paga
   // tres vezes e o diario ainda diz "esgotou reajustes", como se cada volta
@@ -92,7 +93,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
         // fase_fim aqui tambem: sem ele, uma falha LIMPA pareceria fase
         // interrompida por crash na leitura do diario (motor/euclides/recuperar.ts).
         anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `agente falhou: ${r.failureClass}` })
-        return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `agente ${agent} falhou (${r.failureReason ?? 'erro'})`, failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
+        return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `agente ${agent} falhou (${r.failureReason ?? 'erro'})`, failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider }
       }
       // A causa ja classificada (agente.ts:309) ia para o lixo aqui: nem o prompt
       // nem o diario do card recebiam r.failureReason, e o humano lia so
@@ -110,7 +111,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
       // applyStepFailurePolicy e o diario do card dizia "gate crivo reprovou apos
       // N reajuste(s): agente X nao concluiu" — reprovacao atribuida ao CRIVO que
       // nunca existiu. O conserto anterior arrumou o PROMPT e nao o retorno.
-      ultimaFalhaDoAgente = { failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
+      ultimaFalhaDoAgente = { failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider }
       patchCard(id, {}, `${isoNow()} step [${label}] ${agent}: NAO CONCLUIU (tentativa ${attempt + 1}) — ${r.failureReason ?? r.failureClass ?? 'sem detalhe'}`)
       attempt++
       continue
@@ -126,7 +127,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
     patchCard(id, {}, `${isoNow()} gate crivo [${label}]: ${gate.ok ? gate.verdict : 'NAO EXECUTOU'}${gate.reason ? ` — ${gate.reason}` : ''}`)
     if (!gate.ok) {
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'crivo indisponivel' })
-      return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `crivo indisponivel apos ${GATE_RETRIES + 1} tentativa(s): ${gate.reason}`, failureClass: gate.failureClass, failureReason: gate.failureReason, provider: gate.provider }
+      return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `crivo indisponivel apos ${GATE_RETRIES + 1} tentativa(s): ${gate.reason}`, failureClass: gate.failureClass, failureReason: gate.failureReason, waitClass: gate.waitClass, provider: gate.provider }
     }
     if (gate.verdict !== 'BLOCKED') {
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'aprovada' })
@@ -155,6 +156,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
       reason: `o agente nao concluiu em ${attempt} tentativa(s) — o crivo nao reprovou nada: ${motivoFinal}`,
       failureClass: ultimaFalhaDoAgente.failureClass ?? 'transient',
       failureReason: ultimaFalhaDoAgente.failureReason ?? motivoFinal,
+      waitClass: ultimaFalhaDoAgente.waitClass,
       provider: ultimaFalhaDoAgente.provider ?? '',
     }
   }

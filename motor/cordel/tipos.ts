@@ -120,6 +120,51 @@ export function ehClasseDeFalha(valor: string | undefined): valor is FailureClas
   return !!valor && (CLASSES_DE_FALHA as readonly string[]).includes(valor)
 }
 
+// Sub-classe de `transient`, e existe por causa do BACKOFF. `FailureClass` nao serve
+// para escalar espera: `quota` e `terminal` vao direto a HALT
+// (motor/ciclo/reprise/politica.ts), entao tudo o que chega a WAITING e `transient` —
+// escalar por um valor constante nao escala nada. O que distingue e o que a falha
+// CUSTOU: card 002 entrou em WAITING as 13:20:03 por timeout de 900 s do CLI e foi
+// acordado as 13:20:33, trinta segundos depois. Um timeout de quinze minutos
+// retentado em trinta segundos e a parte cara.
+// `halt_class` precisa de vocabulario MAIS LARGO que FailureClass, e a falta disso e
+// a razao pela qual 29 das 31 escritas de `status: 'HALTED'` no motor nao traziam
+// classe nenhuma: card para por motivo que nao e falha de chamada de IA. O card 002
+// e a prova — frontmatter sem `halt_class`, sem `halt_at`, sem `halt_reason`, ultimo
+// log em texto livre, e `porHalts` (euclides/radar/saude.ts) descartando o card
+// porque so olha `quota` e `transient`. Motor parado respondendo "ocioso".
+//
+//   transient | quota | terminal  falha de chamada de IA, ja classificada por
+//                                 ciclo/reprise/classe-de-falha.ts
+//   orcamento                     o portao de custo barrou; gastar mais e decisao sua
+//   escopo                        o trabalho nao passou a exigencia declarada (crivo,
+//                                 teste, RED antes do GREEN, area nova, escopo de
+//                                 arquivos)
+//   humano                        a parada foi PEDIDA por uma pessoa
+//   excecao                       erro nao previsto que chegou ao catch
+//   nao_classificado              sentinela: alguem gravou HALTED sem classe. Nao e
+//                                 resposta, e defeito a consertar — e por isso a
+//                                 escrita dele deixa linha no diario do card.
+export const PARADA_SEM_CLASSE = 'nao_classificado'
+
+export const CLASSES_DE_PARADA = [
+  'transient', 'quota', 'terminal', 'orcamento', 'escopo', 'humano', 'excecao', PARADA_SEM_CLASSE,
+] as const
+
+export type ClasseDeParada = (typeof CLASSES_DE_PARADA)[number]
+
+export function ehClasseDeParada(valor: string | undefined): valor is ClasseDeParada {
+  return !!valor && (CLASSES_DE_PARADA as readonly string[]).includes(valor)
+}
+
+export const CLASSES_DE_ESPERA = ['timeout', 'taxa', 'rede'] as const
+
+export type ClasseDeEspera = (typeof CLASSES_DE_ESPERA)[number]
+
+export function ehClasseDeEspera(valor: string | undefined): valor is ClasseDeEspera {
+  return !!valor && (CLASSES_DE_ESPERA as readonly string[]).includes(valor)
+}
+
 export interface VerifyResult {
   ok: boolean
   reason: string
@@ -139,6 +184,7 @@ export interface ImplementResult {
   timedOut?: boolean
   failureClass?: FailureClass
   failureReason?: string
+  waitClass?: ClasseDeEspera
   provider?: string
   model?: string
 }

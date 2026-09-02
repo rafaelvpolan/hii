@@ -1,4 +1,4 @@
-import type { FailureClass } from '../../cordel/index.ts'
+import type { ClasseDeEspera, FailureClass } from '../../cordel/index.ts'
 import type { Harness, SinalDeFalha, SinaisDoHarness } from '../../tomada/tipos.ts'
 
 export interface FailureContext {
@@ -10,6 +10,18 @@ export interface FailureContext {
 export interface FailureClassification {
   failureClass: FailureClass
   reason: string
+  classeDeEspera: ClasseDeEspera
+}
+
+// 429 e o unico transitorio com janela PROPRIA: esperar menos que a janela devolve
+// 429 de novo. O resto (5xx, reset de conexao, dns) nao tem janela declarada e fica
+// na escada atual. Casa contra o TEXTO do provedor, nao contra o motivo traduzido,
+// porque a tabela de sinais de cada harness escreve o motivo com as palavras dela.
+const SINAL_DE_TAXA = /\b429\b|too many requests|rate.?limit|limite de taxa/i
+
+export function classeDeEsperaDe(ctx: { timedOut?: boolean; texto?: string }): ClasseDeEspera {
+  if (ctx.timedOut) return 'timeout'
+  return SINAL_DE_TAXA.test(ctx.texto ?? '') ? 'taxa' : 'rede'
 }
 
 const TERMINAL_GENERIC: SinalDeFalha[] = [
@@ -46,14 +58,15 @@ function firstMatch(haystack: string, signals: readonly SinalDeFalha[]): SinalDe
 export type FonteDeSinais = Pick<Harness, 'sinaisDeFalha'>
 
 export function classifyFailure(harness: FonteDeSinais, ctx: FailureContext): FailureClassification {
-  if (ctx.timedOut) return { failureClass: 'transient', reason: 'timeout — provedor nao respondeu a tempo' }
+  if (ctx.timedOut) return { failureClass: 'transient', reason: 'timeout — provedor nao respondeu a tempo', classeDeEspera: 'timeout' }
   const haystack = `${ctx.detail}\n${ctx.text}`.slice(0, 4000)
+  const classeDeEspera = classeDeEsperaDe({ timedOut: ctx.timedOut, texto: haystack })
   const table: SinaisDoHarness = harness.sinaisDeFalha()
   const terminal = firstMatch(haystack, table.terminal) ?? firstMatch(haystack, TERMINAL_GENERIC)
-  if (terminal) return { failureClass: 'terminal', reason: terminal.reason }
+  if (terminal) return { failureClass: 'terminal', reason: terminal.reason, classeDeEspera }
   const quota = firstMatch(haystack, table.quota) ?? firstMatch(haystack, QUOTA_GENERIC)
-  if (quota) return { failureClass: 'quota', reason: quota.reason }
+  if (quota) return { failureClass: 'quota', reason: quota.reason, classeDeEspera }
   const transient = firstMatch(haystack, table.transient) ?? firstMatch(haystack, TRANSIENT_GENERIC)
-  if (transient) return { failureClass: 'transient', reason: transient.reason }
-  return { failureClass: 'terminal', reason: 'falha nao reconhecida — tratada como terminal (mais barato parar que repetir para sempre)' }
+  if (transient) return { failureClass: 'transient', reason: transient.reason, classeDeEspera }
+  return { failureClass: 'terminal', reason: 'falha nao reconhecida — tratada como terminal (mais barato parar que repetir para sempre)', classeDeEspera }
 }

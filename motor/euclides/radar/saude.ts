@@ -1,14 +1,24 @@
-import type { Fields } from '../../cordel/index.ts'
-import { isoAt } from '../../cordel/index.ts'
+import type { ClasseDeEspera, ClasseDeParada, Fields } from '../../cordel/index.ts'
+import { ehClasseDeEspera, ehClasseDeParada, isoAt, PARADA_SEM_CLASSE } from '../../cordel/index.ts'
 import { allCards } from '../../cordel/store.ts'
 import { maxWaitingAttempts } from '../../cordel/alicerce/config.ts'
-import { backoffMsFor } from '../../ciclo/reprise/politica.ts'
+import { CLASSE_DE_ESPERA_PADRAO, backoffMsFor } from '../../ciclo/reprise/politica.ts'
 import { readDaemonHealth } from './tick.ts'
 import { isActive } from '../../mirante/render/phases.ts'
 import { PROVEDOR_DESCONHECIDO, lerCota } from '../tesouro/cota.ts'
 import type { LeituraDeCota } from '../tesouro/cota.ts'
 
-export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'esperando-provedor' | 'trabalhando' | 'ocioso'
+export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'esperando-provedor' | 'parado' | 'trabalhando' | 'ocioso'
+
+// Os estados que o motor NAO tira sozinho. `PR_OPEN` fica de fora porque TEM
+// consumidor automatico (quilombo/cartorio/merge.ts, a cada 30 s), e `WAITING` tambem
+// (ciclo/reprise/espera.ts o acorda).
+//
+// Nao vem de `checkpointsHumanos` em config/topologia.json de proposito: aquela lista
+// declara ["URL","CONFIRM","PR_OPEN"] — inclui PR_OPEN, que tem consumidor, e omite
+// READY, CLARIFY e PAUSED, que nao tem. Corrigi-la mexe no invariante de
+// test/niemeyer/topologia.test.ts:126, e e item proprio em PENDENCIAS.md.
+const SEM_CONSUMIDOR_AUTOMATICO: readonly string[] = ['READY', 'CLARIFY', 'PAUSED', 'CONFIRM', 'URL']
 
 export interface EsperaPorFalha {
   card: string
@@ -33,6 +43,28 @@ export interface ProvedorIndisponivel {
   limiteDeCota: boolean
 }
 
+// `desdeConhecido` segue o padrao de `provedorIdentificado` acima: card gravado antes
+// de `halt_at`/`status_since` existirem nao tem idade mensuravel, e devolver zero
+// afirmaria "parou agora". Leia o booleano antes do numero.
+export interface ParadaDeCard {
+  card: string
+  titulo: string
+  classe: ClasseDeParada
+  motivo: string
+  desde: string
+  desdeConhecido: boolean
+  idadeMs: number
+}
+
+export interface CheckpointAberto {
+  card: string
+  titulo: string
+  estado: string
+  desde: string
+  desdeConhecido: boolean
+  idadeMs: number
+}
+
 export interface SaudeDoTick {
   falhasSeguidas: number
   ultimoErro: string
@@ -44,6 +76,12 @@ export interface SaudeDoMotor {
   esperas: EsperaPorFalha[]
   provedoresIndisponiveis: ProvedorIndisponivel[]
   paradosPorCota: string[]
+  // Toda parada, de qualquer classe. `provedoresIndisponiveis` acima so enxerga
+  // `quota` e `transient`, porque e um mapa de indisponibilidade de PROVEDOR — parada
+  // por orcamento, escopo, excecao ou por voce nao pertence a ele, e era assim que o
+  // card 002 sumia da leitura de saude inteira.
+  paradas: ParadaDeCard[]
+  esperandoVoce: CheckpointAberto[]
   tick: SaudeDoTick
   cota: LeituraDeCota
 }
@@ -52,15 +90,23 @@ function texto(fm: Fields, campo: string): string {
   return String(fm[campo] ?? '').trim()
 }
 
-function somaDosBackoffs(tentativas: number): number {
+// Precisa da classe: desde que o backoff tem piso por classe, somar a escada nua
+// devolveria um inicio de espera ADIANTADO para todo card que esperou por timeout —
+// e "esperando desde" e o numero que o operador usa para decidir se intervem.
+function somaDosBackoffs(tentativas: number, classe: ClasseDeEspera): number {
   let total = 0
-  for (let i = 1; i <= tentativas; i += 1) total += backoffMsFor(i)
+  for (let i = 1; i <= tentativas; i += 1) total += backoffMsFor(i, classe)
   return total
+}
+
+function classeDaEspera(fm: Fields): ClasseDeEspera {
+  const gravada = texto(fm, 'wait_class')
+  return ehClasseDeEspera(gravada) ? gravada : CLASSE_DE_ESPERA_PADRAO
 }
 
 function inicioDaEsperaMs(fm: Fields, proximaMs: number, tentativas: number, agoraMs: number): number {
   const ancora = Number.isFinite(proximaMs) ? proximaMs : (Date.parse(texto(fm, 'updated')) || agoraMs)
-  return Math.min(ancora - somaDosBackoffs(tentativas), agoraMs)
+  return Math.min(ancora - somaDosBackoffs(tentativas, classeDaEspera(fm)), agoraMs)
 }
 
 function esperaDoCard(fm: Fields, agoraMs: number): EsperaPorFalha {
@@ -142,10 +188,46 @@ function porCota(mapa: Map<string, ProvedorIndisponivel>, cota: LeituraDeCota, h
   return semMarcacao
 }
 
-function estadoMaisGrave(tick: SaudeDoTick, paradosPorCota: string[], esperas: EsperaPorFalha[], emVoo: boolean): EstadoDoMotor {
+function idade(desde: string, agoraMs: number): Pick<ParadaDeCard, 'desde' | 'desdeConhecido' | 'idadeMs'> {
+  const ms = Date.parse(desde)
+  if (!desde || !Number.isFinite(ms)) return { desde: '', desdeConhecido: false, idadeMs: 0 }
+  return { desde, desdeConhecido: true, idadeMs: Math.max(0, agoraMs - ms) }
+}
+
+function paradaDoCard(fm: Fields, agoraMs: number): ParadaDeCard {
+  const classe = texto(fm, 'halt_class')
+  return {
+    card: texto(fm, 'id'),
+    titulo: texto(fm, 'title'),
+    // `halt_at` primeiro, `status_since` como segunda opcao: os dois nascem na mesma
+    // escrita hoje, mas card parado antes desta mudanca tem os dois vazios — e o
+    // fallback NAO desce para `updated`, que e reescrito em todo patchCard e daria
+    // "parado ha dois minutos" para um card parado ha uma semana.
+    classe: ehClasseDeParada(classe) ? classe : PARADA_SEM_CLASSE,
+    motivo: texto(fm, 'halt_reason'),
+    ...idade(texto(fm, 'halt_at') || texto(fm, 'status_since'), agoraMs),
+  }
+}
+
+function checkpointDoCard(fm: Fields, agoraMs: number): CheckpointAberto {
+  return {
+    card: texto(fm, 'id'),
+    titulo: texto(fm, 'title'),
+    estado: texto(fm, 'status'),
+    ...idade(texto(fm, 'status_since'), agoraMs),
+  }
+}
+
+function estadoMaisGrave(tick: SaudeDoTick, paradosPorCota: string[], esperas: EsperaPorFalha[], paradas: ParadaDeCard[], emVoo: boolean): EstadoDoMotor {
   if (tick.falhasSeguidas > 0) return 'tick-falhando'
   if (paradosPorCota.length) return 'cota-esgotada'
   if (esperas.length) return 'esperando-provedor'
+  // Antes de `paradas` existir, este ramo nao existia: card parado por orcamento,
+  // escopo, excecao ou por decisao humana caia direto no ternario abaixo e o motor
+  // respondia 'ocioso'. Ocioso e "nao tenho o que fazer"; parado e "tenho e nao
+  // consigo" — e vem ANTES de 'trabalhando' porque um card devolvido a voce nao para
+  // de precisar de voce so porque outro card esta rodando.
+  if (paradas.length) return 'parado'
   return emVoo ? 'trabalhando' : 'ocioso'
 }
 
@@ -161,6 +243,14 @@ export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {
   const haltados = new Set(cards.filter(c => texto(c, 'status') === 'HALTED').map(c => texto(c, 'id')))
   const marcados = porHalts(mapa, cards)
   const paradosPorCota = [...new Set([...marcados, ...porCota(mapa, cota, haltados)])]
+  const paradas = cards
+    .filter(c => texto(c, 'status') === 'HALTED')
+    .map(c => paradaDoCard(c, agoraMs))
+    .sort((a, b) => Number(a.card) - Number(b.card))
+  const esperandoVoce = cards
+    .filter(c => SEM_CONSUMIDOR_AUTOMATICO.includes(texto(c, 'status')))
+    .map(c => checkpointDoCard(c, agoraMs))
+    .sort((a, b) => b.idadeMs - a.idadeMs)
   const daemon = readDaemonHealth()
   const tick: SaudeDoTick = {
     falhasSeguidas: daemon.consecutiveFailures,
@@ -172,10 +262,12 @@ export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {
     return status !== 'WAITING' && isActive(status)
   })
   return {
-    estado: estadoMaisGrave(tick, paradosPorCota, esperas, emVoo),
+    estado: estadoMaisGrave(tick, paradosPorCota, esperas, paradas, emVoo),
     esperas,
     provedoresIndisponiveis: [...mapa.values()].sort((a, b) => a.provedor.localeCompare(b.provedor)),
     paradosPorCota,
+    paradas,
+    esperandoVoce,
     tick,
     cota,
   }

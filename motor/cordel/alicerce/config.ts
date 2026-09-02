@@ -2,6 +2,7 @@ import { join, dirname, resolve } from 'node:path'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT, ENV_SKILLS_DIR } from './contrato.ts'
+import type { ClasseDeEspera } from '../tipos.ts'
 
 const MARCADORES = ['runner.ts', 'cards', join('config', 'repos.json')]
 
@@ -48,10 +49,17 @@ export const POLL_MS = numeroDeEnv('HICODE_POLL_MS', 5000)
 export const RUN_TIMEOUT_MS = numeroDeEnv('HICODE_RUN_TIMEOUT_MS', 900000)
 export const MAX_CONCURRENCY = numeroDeEnv('HICODE_CONCURRENCY', 3)
 // Liga as exigencias da Onda 5 que BARRAM em vez de so registrar: RED antes do
-// GREEN (item 5) e setup ferramental em area nova (item 22). Desligado por
-// padrao porque nenhum card existente satisfaz as duas, e ligar hoje pararia
-// todo trabalho em voo — a ativacao e decisao de operacao, nao de codigo.
-// Enquanto desligado, as duas exigencias ficam REGISTRADAS no card, o que ja
+// GREEN (item 5), setup ferramental em area nova (item 22) e matriz de
+// entendimento antes de aprovar o plano (item 4).
+//
+// Opt-in no CODIGO por decisao, e nao por pendencia: ligar e ato de operacao, e
+// quem liga escolhe o momento em que os cards em voo podem parar. Em producao ja
+// esta LIGADO, declarado em docker-stack.yml (`HICODE_RIGOR_ESTRITO:-1`), onde o
+// momento e o deploy. Local e suite seguem desligados; `export HICODE_RIGOR_ESTRITO=1`
+// liga.
+//
+// Enquanto desligado, as tres exigencias ficam REGISTRADAS no card
+// (`red_antes_do_green`, `setup_ferramental`, `matriz_entendimento`), o que ja
 // torna visivel quem passou sem provar.
 export function rigorEstrito(): boolean {
   return process.env.HICODE_RIGOR_ESTRITO === '1'
@@ -75,6 +83,20 @@ export const EVAL = (process.env.HICODE_EVAL || 'on') !== 'off'
 export const PROJECT_MEMORY = (process.env.HICODE_PROJECT_MEMORY || 'on') !== 'off'
 export function maxWaitingAttempts(): number {
   return numeroDeEnv('HICODE_WAITING_MAX_ATTEMPTS', 8)
+}
+
+// PISO da espera, por classe — nao substitui a escada de backoff, so a levanta.
+// `rede` devolve 0 de proposito: e o comportamento de hoje, intacto, e por isso a
+// mudanca nunca piora nada (o default de quem nao informa classe e `rede`).
+//
+// O piso de `timeout` e o proprio RUN_TIMEOUT_MS, e o criterio e simetria: se o
+// provedor consumiu o teto INTEIRO sem responder, retentar antes de ter esperado o
+// mesmo tanto e pagar de novo pela mesma parede. Se o operador aumenta o teto de
+// execucao, o piso acompanha sozinho.
+export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
+  if (classe === 'timeout') return numeroDeEnv('HICODE_ESPERA_PISO_TIMEOUT_MS', RUN_TIMEOUT_MS)
+  if (classe === 'taxa') return numeroDeEnv('HICODE_ESPERA_PISO_TAXA_MS', 60_000)
+  return 0
 }
 export function quotaFallbackLigado(): boolean {
   return (process.env.HICODE_QUOTA_FALLBACK || 'off') === 'on'

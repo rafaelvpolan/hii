@@ -26,7 +26,10 @@ export async function runJob(job: Job): Promise<void> {
     else if (job.kind === 'spec') await handleSpec(job.id)
     else await handleCorrect(job.id)
   } catch (e) {
-    patchCard(job.id, { status: 'HALTED' }, `${isoNow()} HALTED erro: ${String((e as Error)?.message ?? e)}`)
+    // `excecao`, nao `terminal`: aqui nao se sabe NADA sobre a causa — e um erro que
+    // escapou de todo handler. Chamar isso de terminal seria afirmar que repetir nao
+    // resolve, e ninguem mediu isso.
+    patchCard(job.id, { status: 'HALTED', halt_class: 'excecao' }, `${isoNow()} ${job.kind}->HALTED erro nao previsto: ${String((e as Error)?.message ?? e)}`)
   } finally {
     liberar(job.id)
   }

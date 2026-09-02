@@ -22,6 +22,26 @@ services:
     image: ${HII_IMAGEM:?defina HII_IMAGEM com a imagem publicada}
     environment:
       HICODE_RUNTIME: ${HICODE_RUNTIME:-node}
+      # Onda 5, itens 5/22/4: LIGADO. As tres exigencias que so BARRAM com este
+      # interruptor sao RED antes do GREEN no perfil completo (`red_antes_do_green`),
+      # comando de teste no contrato quando a area e nova (`setup_ferramental`) e
+      # matriz de entendimento respondida antes de aprovar o plano
+      # (`matriz_entendimento`). Desligado elas ja escreviam o veredicto no card, o que
+      # tornava visivel quem passava sem provar — e nunca barrava ninguem.
+      #
+      # Ficou desligado por padrao no codigo (motor/cordel/alicerce/config.ts) porque
+      # "ligar hoje pararia todo trabalho em voo", e isso deixou de valer: ligar aqui
+      # vale a partir do proximo deploy, que e o momento que o operador escolhe.
+      #
+      # O que mudou para ser seguro: o item 5 cobrava a coisa errada enquanto a
+      # consulta rodava ANTES do produtor da evidencia, e todo card `completo` fazia
+      # HALT mesmo com TDD real. Hoje `registrarRed` roda dentro de `testGate`
+      # (motor/ciclo/crivo/portoes-de-fecho.ts:97), a consulta vem depois
+      # (motor/quilombo/cartorio/fechar.ts:295) e ha um segundo produtor a partir do
+      # relato do agente (`:278`).
+      #
+      # Saida de emergencia: `HICODE_RIGOR_ESTRITO=0 docker stack deploy ...`.
+      HICODE_RIGOR_ESTRITO: ${HICODE_RIGOR_ESTRITO:-1}
       # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
       # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
       # decidir quantos worktrees abre em paralelo. Quem le: orcamentoDeRecurso e

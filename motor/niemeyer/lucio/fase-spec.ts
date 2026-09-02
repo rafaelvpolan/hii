@@ -42,7 +42,7 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
   const slug = card.fm.slug ?? ''
   const target = repoPath(repoName)
   if (!existsSync(target)) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED repo nao encontrado: ${target}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} SPECCED->HALTED repo nao encontrado: ${target}`)
     return
   }
   const base = repoBase(repoName)
@@ -53,7 +53,7 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
     const info = await deps.ensureWorktree(target, wt, branch, base)
     patchCard(id, { base_commit: info.baseCommit }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}`)
   } catch (e) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'excecao' }, `${isoNow()} SPECCED->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
     return
   }
   if (!(await deps.openspecAvailable())) {
@@ -77,12 +77,12 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
   // executar/corrigir/fechar para sempre.
   const gastoAnterior = gastoDoCard(card.fm.cost_usd)
   if (gastoAnterior === null) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — nao vou gastar na fase de spec sem saber o que o card ja custou`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} SPECCED->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — nao vou gastar na fase de spec sem saber o que o card ja custou`)
     return
   }
   const tetoDoSpec = tetoDoCard()
   if (tetoDoSpec > 0 && gastoAnterior > tetoDoSpec) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED orcamento excedido (US$${gastoAnterior.toFixed(4)} > US$${tetoDoSpec}) antes da fase de spec — decida se continua`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} SPECCED->HALTED orcamento excedido (US$${gastoAnterior.toFixed(4)} > US$${tetoDoSpec}) antes da fase de spec — decida se continua`)
     return
   }
   let custoUsd = gastoAnterior
@@ -97,7 +97,7 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
     // A fase ACUMULA custo, entao o teto tem de ser conferido a cada volta: sem
     // isso o laco de reajuste podia passar do orcamento antes de alguem olhar.
     if (tetoDoSpec > 0 && custoUsd > tetoDoSpec) {
-      patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED orcamento excedido na fase de spec (US$${custoUsd.toFixed(4)} > US$${tetoDoSpec}) — decida se continua`)
+      patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} SPECCED->HALTED orcamento excedido na fase de spec (US$${custoUsd.toFixed(4)} > US$${tetoDoSpec}) — decida se continua`)
       return
     }
     if (!r.ok) {
@@ -110,18 +110,18 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
     attempt++
   }
   if (falhaDoAgente) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED o agente do spec NAO concluiu — o spec nunca foi gerado, entao nao houve validacao nenhuma: ${falhaDoAgente} (worktree mantido p/ inspecao)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} SPECCED->HALTED o agente do spec NAO concluiu — o spec nunca foi gerado, entao nao houve validacao nenhuma: ${falhaDoAgente} (worktree mantido p/ inspecao)`)
     return
   }
   if (!v.ok) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED spec reprovado no openspec validate --strict apos ${maxReajuste()} reajuste(s): ${v.issues.slice(0, 3).join('; ')} (worktree mantido p/ inspecao)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'escopo' }, `${isoNow()} SPECCED->HALTED spec reprovado no openspec validate --strict apos ${maxReajuste()} reajuste(s): ${v.issues.slice(0, 3).join('; ')} (worktree mantido p/ inspecao)`)
     return
   }
   await stageAll(wt)
   const cm = await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', `spec: openspec change ${name} (#${id})`])
   if (cm.err && !/nothing to commit|nada a submeter/i.test(String(cm.stdout || cm.stderr || ''))) {
     const motivo = String(cm.stderr || cm.stdout || '').split('\n')[0] ?? ''
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} SPECCED->HALTED commit do spec falhou: ${motivo} (worktree mantido p/ inspecao)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} SPECCED->HALTED commit do spec falhou: ${motivo} (worktree mantido p/ inspecao)`)
     return
   }
   patchCard(id, { status: 'EXECUTING', spec_done: 'true' }, `${isoNow()} SPECCED->EXECUTING (plano aprovado: openspec validate --strict passou; spec commitado)`)

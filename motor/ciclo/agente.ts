@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { lerEscopo, SEM_ESCOPO } from '../oswaldo/rota/escopo.ts'
 import type { EscopoDeEscrita } from '../oswaldo/rota/escopo.ts'
 import { extractObjetivo } from '../cordel/index.ts'
-import type { Card, FailureClass, ImplementResult, VerifyResult } from '../cordel/index.ts'
+import type { Card, ClasseDeEspera, FailureClass, ImplementResult, VerifyResult } from '../cordel/index.ts'
 import { cardsDir, ROOT, RUN_TIMEOUT_MS, PROJECT_MEMORY } from '../cordel/alicerce/config.ts'
 import { isProviderName, modelFor, providerFor, effortFor, modoFor } from '../tomada/registro.ts'
 import { sumTokens } from '../tomada/uso.ts'
@@ -40,6 +40,7 @@ export interface StepResult {
   ok: boolean
   failureClass?: FailureClass
   failureReason?: string
+  waitClass?: ClasseDeEspera
   provider?: string
 }
 
@@ -256,7 +257,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
       ? `${provider.name} is_error: ${firstLine(res.text, 140)}`
       : `${provider.name} ${res.timedOut ? 'timeout' : 'falhou: ' + res.detail}`
     const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
-    return { ok: false, reason, cost, costMeasured: res.costMeasured, usage: res.usage, timedOut: res.timedOut, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name, model }
+    return { ok: false, reason, cost, costMeasured: res.costMeasured, usage: res.usage, timedOut: res.timedOut, failureClass: cls.failureClass, failureReason: cls.reason, waitClass: cls.classeDeEspera, provider: provider.name, model }
   }
   return { ok: true, resultText: firstLine(res.text, 140), fullText: String(res.text || '').slice(0, 8000), cost, costMeasured: res.costMeasured, usage: res.usage, provider: provider.name, model }
 }
@@ -370,7 +371,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
   const tokens = sumTokens(res.usage)
   if (!res.ok) {
     const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
-    return { time, cost: res.cost, costMeasured: res.costMeasured, tokens, text: firstLine(res.text, 120) || res.detail, ok: false, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
+    return { time, cost: res.cost, costMeasured: res.costMeasured, tokens, text: firstLine(res.text, 120) || res.detail, ok: false, failureClass: cls.failureClass, failureReason: cls.reason, waitClass: cls.classeDeEspera, provider: provider.name }
   }
   return { time, cost: res.cost, costMeasured: res.costMeasured, tokens, text: firstLine(res.text, 120), ok: true, provider: provider.name }
 }

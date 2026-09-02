@@ -1,9 +1,16 @@
-import { isoAt, isoNow } from '../../cordel/index.ts'
-import type { Fields } from '../../cordel/index.ts'
+import { ehClasseDeEspera, isoAt, isoNow } from '../../cordel/index.ts'
+import type { ClasseDeEspera, Fields } from '../../cordel/index.ts'
 import { maxWaitingAttempts } from '../../cordel/alicerce/config.ts'
 import { cardsByStatus, patchCard, patchCardWith } from '../../cordel/store.ts'
 import { probeProviderHealth, sabeSondarProvedor } from '../../tomada/registro.ts'
-import { backoffMsFor } from './politica.ts'
+import { CLASSE_DE_ESPERA_PADRAO, backoffMsFor } from './politica.ts'
+
+// Card gravado antes de `wait_class` existir cai no padrao, que e o backoff de
+// antes: reagendar um card antigo nao muda de comportamento por causa desta leitura.
+function classeDeEsperaDoCard(fm: Fields): ClasseDeEspera {
+  const gravada = String(fm.wait_class ?? '').trim()
+  return ehClasseDeEspera(gravada) ? gravada : CLASSE_DE_ESPERA_PADRAO
+}
 
 function isDue(waitUntil: string): boolean {
   const t = Date.parse(waitUntil)
@@ -20,6 +27,7 @@ async function wake(id: string, resumeStatus: string, provider: string, sondado:
   patchCard(id, {
     status: resumeStatus || 'EXECUTING',
     wait_reason: '',
+    wait_class: '',
     wait_until: '',
     wait_resume_status: '',
     wait_provider: '',
@@ -45,12 +53,13 @@ function rescheduleFields(outcome: RescheduleOutcome, fm: Fields, provider: stri
       halt_at: isoNow(),
       wait_attempts: '',
       wait_reason: '',
+      wait_class: '',
       wait_until: '',
       wait_resume_status: '',
       wait_provider: '',
     }
   }
-  outcome.until = isoAt(Date.now() + backoffMsFor(outcome.attempts))
+  outcome.until = isoAt(Date.now() + backoffMsFor(outcome.attempts, classeDeEsperaDoCard(fm)))
   return { wait_attempts: String(outcome.attempts), wait_until: outcome.until }
 }
 

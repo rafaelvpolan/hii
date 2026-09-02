@@ -169,7 +169,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   abrirSessao(id)
   const gastoLido = gastoDoCard(card.fm.cost_usd)
   if (gastoLido === null) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a (re)execucao paga sem saber o que o card ja custou`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} EXECUTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a (re)execucao paga sem saber o que o card ja custou`)
     return
   }
   const baseCost = gastoLido
@@ -178,7 +178,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const tempoAcumulado = (): string => String(baseTempo + sumStepTime(asStepMap(steps)))
   const teto = tetoDoCard()
   if (teto > 0 && baseCost > teto) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -188,7 +188,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const slug = card.fm.slug ?? ''
   const target = repoPath(repoName)
   if (!existsSync(target)) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED repo nao encontrado: ${target}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} EXECUTING->HALTED repo nao encontrado: ${target}`)
     return
   }
   const surface = resolveSurface(card, target)
@@ -260,7 +260,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       await runGit(wt, ['clean', '-fd', '-e', 'node_modules'])
       const up = await refreshFromBase(wt, base)
       if (!up.ok) {
-        patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED nao consegui partir de ${base} atualizado: ${up.detail}`)
+        patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} EXECUTING->HALTED nao consegui partir de ${base} atualizado: ${up.detail}`)
         return
       }
       patchCard(id, {}, `${isoNow()} base: ${up.detail} (worktree reaproveitado — o trabalho ja commitado foi mantido)`)
@@ -269,7 +269,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       patchCard(id, { base_commit: info.baseCommit, refazer: '' }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}${refazerDoZero ? ' (refazendo do zero, a pedido)' : ''}`)
     }
   } catch (e) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} EXECUTING->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'excecao' }, `${isoNow()} EXECUTING->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
     return
   }
   process.stdout.write(`[runner] #${id}: implementando em worktree ${wt}\n`)
@@ -321,6 +321,9 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       provider: res.provider ?? '',
       failureClass,
       failureReason,
+      // O caso do card 002: `res.timedOut` e o unico sinal de que o CLI consumiu os
+      // 900 s sem responder, e sem ele a espera voltava a 30 s.
+      waitClass: res.waitClass,
       technicalDetail,
       extraFields: totals,
     })
@@ -358,6 +361,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     }, toSeconds(Date.now() - t0), asStepMap(steps))
     patchCard(id, {
       status: 'HALTED',
+      halt_class: 'escopo',
       // Teto: `escopo_violado` vai para o frontmatter numa linha so. Sem limite, uma
       // violacao em massa (diretorio inteiro) tornaria o card ilegivel.
       escopo_violado: violou.slice(0, 20).join(',') + (violou.length > 20 ? ` +${violou.length - 20}` : ''),
