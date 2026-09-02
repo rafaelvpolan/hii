@@ -10,15 +10,28 @@ import type { LeituraDeCota } from '../tesouro/cota.ts'
 
 export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'esperando-provedor' | 'parado' | 'trabalhando' | 'ocioso'
 
-// Os estados que o motor NAO tira sozinho. `PR_OPEN` fica de fora porque TEM
-// consumidor automatico (quilombo/cartorio/merge.ts, a cada 30 s), e `WAITING` tambem
-// (ciclo/reprise/espera.ts o acorda).
+// Os estados que NINGUEM tira do lugar — nem o tick, nem o boot. Sao cinco, e o
+// numero nao e palpite: `test/euclides/estados-sem-consumidor.test.ts` DERIVA o
+// conjunto das fontes reais e reprova se esta lista divergir. Os quatro grupos que
+// sobram de STATUSES, e onde cada um esta escrito:
+//
+//   consumido no tick     EXECUTING, URL_OK, CORRECTING, SPECCED (`porStatus` em
+//                         oswaldo/mutirao/estado-da-fila.ts), WAITING
+//                         (ciclo/reprise/espera.ts), PR_OPEN
+//                         (quilombo/cartorio/merge.ts, a cada 30 s)
+//   recuperado no boot    REFINED, TESTS_GREEN, SEC_CLEARED, REVIEWED, CLEANED
+//                         (FINISH_STATES) e EXECUTED, em `reconcileStranded`
+//   nunca escrito         INBOX, PLAN_APPROVED, EXECUTED, DEPLOYED, REVIEWED,
+//                         declarados em config/topologia.json (`semEscritaNoMotor`)
+//   terminal de fato      MERGED e DEPLOYED — a unica saida de MERGED e DEPLOYED, que
+//                         o motor nunca escreve
+//   parada                HALTED, que tem leitura propria em `paradas[]`
 //
 // Nao vem de `checkpointsHumanos` em config/topologia.json de proposito: aquela lista
 // declara ["URL","CONFIRM","PR_OPEN"] — inclui PR_OPEN, que tem consumidor, e omite
 // READY, CLARIFY e PAUSED, que nao tem. Corrigi-la mexe no invariante de
 // test/niemeyer/topologia.test.ts:126, e e item proprio em PENDENCIAS.md.
-const SEM_CONSUMIDOR_AUTOMATICO: readonly string[] = ['READY', 'CLARIFY', 'PAUSED', 'CONFIRM', 'URL']
+export const SEM_CONSUMIDOR_AUTOMATICO: readonly string[] = ['READY', 'CLARIFY', 'PAUSED', 'CONFIRM', 'URL']
 
 export interface EsperaPorFalha {
   card: string
@@ -223,12 +236,21 @@ function estadoMaisGrave(tick: SaudeDoTick, paradosPorCota: string[], esperas: E
   if (paradosPorCota.length) return 'cota-esgotada'
   if (esperas.length) return 'esperando-provedor'
   // Antes de `paradas` existir, este ramo nao existia: card parado por orcamento,
-  // escopo, excecao ou por decisao humana caia direto no ternario abaixo e o motor
-  // respondia 'ocioso'. Ocioso e "nao tenho o que fazer"; parado e "tenho e nao
-  // consigo" — e vem ANTES de 'trabalhando' porque um card devolvido a voce nao para
-  // de precisar de voce so porque outro card esta rodando.
+  // escopo, excecao ou por decisao humana nao caia em ramo nenhum e o motor respondia
+  // 'ocioso'. Ocioso e "nao tenho o que fazer"; parado e "tenho e nao consigo".
+  //
+  // `parado` fica ABAIXO de `trabalhando`, e o criterio e o que os tres degraus acima
+  // tem em comum: todos dizem "o motor nao consegue prosseguir". Card devolvido a uma
+  // pessoa nao e isso — o motor prossegue com os outros cards. A primeira versao punha
+  // `parado` na frente, e o efeito era saturacao: `cards/002-*.md` esta em HALTED desde
+  // 25/08, entao toda leitura respondia 'parado' e 'trabalhando' deixava de ser
+  // observavel ate alguem limpar aquele card.
+  //
+  // A pergunta "algo precisa de mim?" tem resposta propria e nao-escalar no payload:
+  // `paradas[]`. Um escalar nao responde duas perguntas sem apagar uma delas.
+  if (emVoo) return 'trabalhando'
   if (paradas.length) return 'parado'
-  return emVoo ? 'trabalhando' : 'ocioso'
+  return 'ocioso'
 }
 
 export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {

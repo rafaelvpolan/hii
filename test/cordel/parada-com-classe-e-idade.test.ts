@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, afterAll } from '../apoio/runner.ts'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -187,10 +187,61 @@ test('PR_OPEN nao conta como esperando voce: tem consumidor automatico a cada 30
   expect(lerSaudeDoMotor(Date.now()).esperandoVoce).toHaveLength(0)
 })
 
+// O degrau entre `parado` e `trabalhando` foi contestado na review do PR #31: com
+// `parado` na frente, uma parada antiga nao resolvida saturava o escalar e
+// `trabalhando` deixava de ser observavel. Os dois testes abaixo congelam a decisao.
+test('card parado NAO apaga o fato de o motor estar trabalhando', () => {
+  const parado = card('EXECUTING')
+  patchCard(parado, { status: 'HALTED', halt_class: 'orcamento' }, 'x EXECUTING->HALTED orcamento')
+  card('EXECUTING')
+  const saude = lerSaudeDoMotor(Date.now())
+  expect(saude.estado, 'parado na frente de trabalhando satura o escalar e some com a liveness do motor').toBe('trabalhando')
+  expect(saude.paradas, 'e a parada continua visivel no payload, que e onde ela pertence').toHaveLength(1)
+  expect(saude.paradas[0]?.card).toBe(parado)
+})
+
+test('sem nada em voo, a parada assume o escalar — nao volta a ser ocioso', () => {
+  const id = card('EXECUTING')
+  patchCard(id, { status: 'HALTED', halt_class: 'escopo' }, 'x EXECUTING->HALTED escreveu fora do escopo')
+  expect(lerSaudeDoMotor(Date.now()).estado).toBe('parado')
+})
+
 test('REGRESSAO nada parado e nada em voo continua ocioso', () => {
   card('READY')
   const saude = lerSaudeDoMotor(Date.now())
   expect(saude.estado).toBe('ocioso')
   expect(saude.paradas).toHaveLength(0)
   expect(saude.esperandoVoce).toHaveLength(1)
+})
+
+// O catch-all de `runJob` gravava `${job.kind}->HALTED` — 'execute'/'finish'/'correct'/
+// 'spec' nao estao em STATUSES, entao a etiqueta narrava transicao a partir de um estado
+// em que o card nunca esteve. Contestado na review do PR #31, e o mesmo defeito que
+// quilombo/cartorio/fechar.ts:149-150 ja documenta ter pago uma vez.
+//
+// Os dois testes se dividem porque o caminho NAO e executavel de fora: `runJob` nao
+// aceita dependencia injetada, e todo handler ja captura a propria excecao — o catch da
+// fila e ultimo recurso. A primeira versao deste teste chamava `runJob` de verdade e
+// media o HALT do `handleExecute` ("repo nao encontrado", classe `terminal`), sem nunca
+// tocar no catch. Entao: um teste prova o MECANISMO com dado de verdade, e o outro prova
+// que o CALL SITE usa esse mecanismo.
+
+test('o mecanismo grava a origem REAL do card quando o log e funcao do frontmatter', () => {
+  const id = card('EXECUTING')
+  updateCard(id, {
+    fields: { status: 'HALTED', halt_class: 'excecao' },
+    log: fm => `${'2026-09-02T10:00:00Z'} ${fm.status || 'INBOX'}->HALTED erro nao previsto (execute): boom`,
+  })
+  const c = readCard(id)
+  expect(c?.fm.halt_class).toBe('excecao')
+  expect(c?.fm.halt_reason).toBe('erro nao previsto (execute): boom')
+  expect(c?.body, 'a origem tem de ser um STATUS, nunca um JobKind').not.toContain('execute->HALTED')
+  expect(c?.body).toContain('EXECUTING->HALTED')
+})
+
+test('INVARIANTE o catch-all da fila nao usa job.kind como origem da transicao', () => {
+  const fonte = readFileSync('motor/oswaldo/mutirao/fila.ts', 'utf8')
+  expect(fonte, 'job.kind nao esta em STATUSES: como origem, a etiqueta e afirmacao falsa').not.toContain('${job.kind}->HALTED')
+  expect(fonte, 'a origem tem de vir do frontmatter, o que exige log em funcao').toMatch(/log: fm => .*\$\{fm\.status \|\| 'INBOX'\}->HALTED/)
+  expect(fonte, 'job.kind segue na mensagem, onde e informacao e nao afirmacao').toContain('(${job.kind})')
 })
