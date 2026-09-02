@@ -1,4 +1,4 @@
-import type { Card, StepMap, StepMetric } from '../cordel/index.ts'
+import type { Card, ClasseDeParada, StepMap, StepMetric } from '../cordel/index.ts'
 import { patchCard } from '../cordel/store.ts'
 import { updateRunSteps } from './registros.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
@@ -39,10 +39,14 @@ export function accumulatedTotals(card: Card, fsteps: StepMap): TotaisDoCard {
   return { cost_usd: cost.toFixed(4), tokens_total: String(tokens), tempo_s: String(tempo) }
 }
 
-export function haltForInspection(id: string, card: Card, fsteps: StepMap, message: string, resumeStep: string): void {
+// `classe` e OBRIGATORIA, e de proposito: este e o caminho de parada mais usado do
+// polimento (nove chamadores em quilombo/cartorio/fechar.ts) e era o maior produtor de
+// HALT mudo. Parametro opcional deixaria o esquecimento passar no typecheck.
+export function haltForInspection(id: string, card: Card, fsteps: StepMap, message: string, resumeStep: string, classe: ClasseDeParada): void {
   updateRunSteps(id, fsteps)
   patchCard(id, {
     status: 'HALTED',
+    halt_class: classe,
     retomar_em: 'URL_OK',
     resume_from: resumeStep,
     ...accumulatedTotals(card, fsteps),

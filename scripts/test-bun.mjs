@@ -2,9 +2,9 @@
 //
 // Por que um processo por arquivo: `node --test` da isolamento por arquivo de graca —
 // cada arquivo roda num processo proprio. `bun test` roda os 248 arquivos num processo
-// so, e a suite depende desse isolamento em varios pontos: 75 arquivos escrevem
-// `process.env` no topo do modulo, e os testes que sobem servidor HTTP, que leem a
-// trava de instancia ou que mexem em PATH pisam uns nos outros.
+// so, e a suite depende desse isolamento em varios pontos: 129 arquivos ESCREVEM
+// `process.env` (353 escritas, 113 no topo do modulo), e os testes que sobem servidor
+// HTTP, que leem a trava de instancia ou que mexem em PATH pisam uns nos outros.
 //
 // O sintoma media a ORDEM, nao o codigo: com a suite inteira num processo, o teste
 // de socket que rodava tarde falhava com ConnectionRefused mesmo com `listen` bem
@@ -20,6 +20,15 @@
 // com load average 22, verde de novo com 12, mesmo codigo). Paraleliza-los seria
 // fabricar a carga que os derruba. Rodam por ultimo, sozinhos, com a piscina vazia.
 
+// Por que o TETO POR TESTE vem daqui e nao do default: `bun test` corta cada teste
+// em 5.000 ms se ninguem disser outra coisa, enquanto a trilha node declara
+// `--test-timeout=60000` (package.json). Com a piscina cheia, os dois testes que
+// SOBEM SUBPROCESSO estouravam os 5 s e a trilha bun ficava vermelha por saturacao,
+// nao por defeito — `bun run test` reprovava com 2727 pass / 2 fail, e os mesmos
+// dois arquivos passavam sozinhos em 1,2 s e 3,2 s (medido com load average 12,8
+// numa maquina de 8 nucleos). Teto que difere 12x entre as trilhas nao e um teto: e
+// um verde que depende de quem esta rodando junto. As duas trilhas passam a declarar
+// o MESMO numero, e test/cordel/tetos-das-trilhas.test.ts reprova se divergirem.
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
@@ -31,6 +40,7 @@ const SENSIVEIS_A_CARGA = new Set([
 ])
 
 const LARGURA_DA_PISCINA = Math.max(1, Number(process.env.HICODE_TEST_JOBS || 0) || cpus().length - 1)
+const TETO_POR_TESTE_MS = Number(process.env.HICODE_TEST_TIMEOUT_MS || 0) || 60_000
 
 const reprovados = []
 let totalPass = 0
@@ -46,7 +56,7 @@ function arquivosDeTeste(raiz) {
 
 function rodar(arquivo) {
   return new Promise((pronto) => {
-    const filho = spawn('bun', ['test', `./${arquivo}`])
+    const filho = spawn('bun', ['test', '--timeout', String(TETO_POR_TESTE_MS), `./${arquivo}`])
     let saida = ''
     filho.stdout.on('data', (pedaco) => { saida += pedaco })
     filho.stderr.on('data', (pedaco) => { saida += pedaco })

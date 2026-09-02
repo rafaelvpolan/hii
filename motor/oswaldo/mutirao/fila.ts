@@ -2,7 +2,7 @@ import { isoNow } from '../../cordel/index.ts'
 import type { Job } from '../../cordel/index.ts'
 import { MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
 import { tetoDeParalelismo } from '../../quilombo/limites.ts'
-import { patchCard } from '../../cordel/store.ts'
+import { updateCard } from '../../cordel/store.ts'
 import { pending, marcarEmVoo, liberar, quantosEmVoo } from './estado-da-fila.ts'
 import { handleExecute } from '../executar.ts'
 import { handleFinish } from '../../quilombo/cartorio/fechar.ts'
@@ -26,7 +26,22 @@ export async function runJob(job: Job): Promise<void> {
     else if (job.kind === 'spec') await handleSpec(job.id)
     else await handleCorrect(job.id)
   } catch (e) {
-    patchCard(job.id, { status: 'HALTED' }, `${isoNow()} HALTED erro: ${String((e as Error)?.message ?? e)}`)
+    // `excecao`, nao `terminal`: aqui nao se sabe NADA sobre a causa — e um erro que
+    // escapou de todo handler. Chamar isso de terminal seria afirmar que repetir nao
+    // resolve, e ninguem mediu isso.
+    //
+    // `updateCard` e nao `patchCard` porque a etiqueta precisa da ORIGEM REAL, e ela
+    // so existe dentro da escrita (`log` recebe o frontmatter de antes). A primeira
+    // versao usava `job.kind`, que e 'execute'|'finish'|'correct'|'spec' e nao esta em
+    // STATUSES: gravava `execute->HALTED`, narrando transicao a partir de um estado em
+    // que o card nunca esteve. E o mesmo defeito que quilombo/cartorio/fechar.ts:149-150
+    // ja documenta ter pago uma vez — agravado por `motivoDaParada`
+    // (cordel/store.ts), que agora LE esta linha para preencher `halt_reason`.
+    // `job.kind` continua na mensagem, onde e informacao, e sai de onde era afirmacao.
+    updateCard(job.id, {
+      fields: { status: 'HALTED', halt_class: 'excecao' },
+      log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e)}`,
+    })
   } finally {
     liberar(job.id)
   }

@@ -11,9 +11,19 @@ as ondas D–H e as três rodadas de crivo, o roadmap dos 34 itens, `truncVisibl
 evidência de RED pela opção 2, e os itens 1, 2 e 4 da ordem de corte de custo. O que
 restou abaixo foi reconferido arquivo por arquivo — cada seção diz onde está a prova.
 
+**Podado de novo em 02/09/2026**, depois de reconferir cada item aberto contra o código.
+Saíram: o teto por teste da trilha bun e o isolamento dos testes sensíveis a carga na
+trilha node (as duas trilhas passam a declarar o mesmo número, guardado por
+`test/cordel/tetos-das-trilhas.test.ts`); `status_since` e `halt_class` obrigatório, com
+as 33 escritas de `HALTED` classificadas e consumidor em `lerSaudeDoMotor`
+(`test/cordel/parada-com-classe-e-idade.test.ts`); o backoff por classe de espera
+(`test/ciclo/backoff-por-classe-de-espera.test.ts`); e o `HICODE_RIGOR_ESTRITO`, ligado
+em `docker-stack.yml`. Três afirmações desta lista estavam **vencidas** e foram
+corrigidas onde aparecem: a medição de custo, o card 006 e o aviso sobre o item 5.
+
 ---
 
-## PENDÊNCIA — a sonda ainda mede a coisa errada, e o backoff não escala com a falha
+## PENDÊNCIA — a sonda ainda mede a coisa errada (o backoff já escala, saiu em 02/09)
 
 Dos três mecanismos que produziam "a tarefa ficou travada em loop", dois saíram: a
 escrita sem compare-and-set (`motor/cordel/store.ts` agora recusa tirar da parada quem
@@ -33,20 +43,24 @@ do CLI, e às 13:20:33 foi acordado — um GET de cinco segundos declarando cura
 processo que não respondeu em quinze minutos. Mesmo com 429 fora, um 200 da API não prova
 que a CLI volta a responder.
 
-Duas saídas, e as duas mudam política:
+**A segunda metade saiu em 02/09.** O backoff escala pela classe de espera:
+`CLASSES_DE_ESPERA` (`motor/cordel/tipos.ts`) é sub-classe de `transient`, porque
+`FailureClass` não servia — `quota` e `terminal` vão direto a HALT, então tudo o que
+chega a `WAITING` é `transient` e escalar por um valor constante não escalava nada.
+`classifyFailure` devolve `classeDeEspera`, `politica.ts` grava `wait_class` no card,
+`backoffMsFor(tentativa, classe)` aplica piso por classe (`pisoDeEsperaMs` em
+`alicerce/config.ts`) e `espera.ts` lê o campo para o reagendamento, que roda noutro
+processo. O piso de `timeout` é o próprio `RUN_TIMEOUT_MS`, por simetria: quem consumiu
+o teto inteiro sem responder não é retentado antes de ter esperado o mesmo tanto. Quem
+não informa classe cai em `rede`, cujo piso é zero — a mudança é aditiva e nenhum
+caminho ficou mais curto.
 
-1. **Sondar o que falhou.** Trocar `alcancavelPorHttp` por uma sonda do binário
-   (`<cli> --version` com teto curto) no `healthCheck()` de cada harness. Mede o que
-   quebrou, custa um spawn por card devido, e exige uma costura por harness — os quatro
-   hoje chamam `alcancavelPorHttp` (`claude.ts:70`, `codex.ts:92`, `ollama.ts:74`,
-   `kimi.ts:145`).
-2. **Escalar o backoff pela classe da falha.** Um timeout de 900 s ser retentado 30 s
-   depois é a parte cara, e independe da sonda. `politica.ts` já tem `failureClass` na
-   mão ao gravar `WAITING`; falta gravá-la (`wait_class`) e fazer `backoffMsFor` lê-la.
-
-A segunda é a que corta dinheiro primeiro e é mais barata. As duas juntas fecham o caso.
-Nenhuma é óbvia o bastante para sair sem sua palavra: a primeira pode transformar
-provedor lento em provedor "morto", e a segunda muda quanto tempo um card fica parado.
+**O que continua aberto, e é decisão:** sondar o que falhou. Trocar `alcancavelPorHttp`
+por uma sonda do binário (`<cli> --version` com teto curto) no `healthCheck()` de cada
+harness. Mede o que quebrou, custa um spawn por card devido, e exige uma costura por
+harness — os quatro hoje chamam `alcancavelPorHttp` (`claude.ts:70`, `codex.ts:92`,
+`ollama.ts:74`, `kimi.ts:145`). Não é óbvia o bastante para sair sem sua palavra: pode
+transformar provedor lento em provedor "morto".
 
 ## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
 
@@ -134,10 +148,11 @@ CORVINUS, hash de `gate.reason` entre voltas).
 não-progresso — **já foi feito** e saiu da lista: `motor/ciclo/reparo.ts:48-50`
 (`assinaturaDeVeredicto`) e `:84-93` comparam a volta anterior e quebram o laço, e
 `motor/ciclo/passo-com-gate.ts:60,136-141` fazem o mesmo antes do teto de `maxReajuste()`.
-O que continua aberto nesta seção é o resto: `status_since` (zero ocorrências no
-repositório), `halt_class` (2 escritores contra ~26 escritas de `HALTED`),
-os 6 pares de transição fora de `topologia.json`, e a ausência de cooldown por card em
-`motor/oswaldo/mutirao/fila.ts`.
+
+**Reconferido em 02/09:** `status_since` e `halt_class` **saíram** — ver a seção de
+diagnosticabilidade abaixo. O que continua aberto nesta seção são os 6 pares de
+transição fora de `topologia.json` e a ausência de cooldown por card em
+`motor/oswaldo/mutirao/fila.ts` (`:97` só filtra `emVoo`).
 
 ---
 
@@ -219,7 +234,15 @@ Os itens 1, 2 e 4 da ordem de corte anterior entraram no PR #28 e saíram desta 
 O que sobrou é o item 3 — e a medição abaixo, que não existia quando a ordem foi
 escrita, muda a prioridade dele de "quando der" para "primeiro".
 
-**Somando todo `cards/runs/*.ias.jsonl` em disco: 27 chamadas, US$ 19,80.**
+> **Medição vencida, reconferida em 02/09/2026.** Os números abaixo não reproduzem mais:
+> somando `cards/runs/*.ias.jsonl` hoje dá **9 chamadas, US$ 6,13** (implement 4,01 ·
+> ideação 1,00 · step 0,69 · gate 0,44). Os ledgers dos cards 003–006 foram apagados do
+> disco, e **o card 006 não existe mais** — `cards/` tem só 001 e 002. A tabela fica como
+> registro do que foi medido, não como linha de base: quem for otimizar o gate **precisa
+> remedir antes**, porque com uma única chamada de gate no ledger a conclusão sobre
+> consumo de contexto não é mais verificável.
+
+**Somando todo `cards/runs/*.ias.jsonl` em disco: 27 chamadas, US$ 19,80** (medido em 29/08).
 
 | papel | n | US$ | % do custo | tokens de cache | tokens de saída | segundos |
 |---|---|---|---|---|---|---|
@@ -274,33 +297,49 @@ em `HALTED` não diz por quê. O script que responde `/health` faz `lerSaude()` 
 `recordTickSuccess()` zera o contador de falhas sempre que o `tick` não lança exceção — mesmo que nenhum
 card tenha mudado de estado. Não há campo que meça "ciclos improdutivos seguidos".
 
-`halt_class` é escrito em apenas 2 sítios (`motor/ciclo/reprise/espera.ts:36`, `politica.ts:35`) e lido em 1
-(`motor/euclides/radar/saude.ts:115`). Os outros ~26 `HALT` (via `motor/mirante/acoes.ts:173`, `executar.ts:172,181,191,263,272,359`,
-`corrigir.ts:90,94,104`, `fechar.ts:73,77,89,97,109,121,138,151,365,391`, `fase-spec.ts:45,56,80,85,100,113,117,124`,
-`metricas-de-fecho.ts:44-49`) cravam `status: HALTED` sem classe. Card 002 (`cards/002-faca-outro-modelo-de-ranking-current-ses.md:4`)
-prova: frontmatter sem `halt_class`, `halt_at`, `halt_reason`. O último log é texto livre. `porHalts`
-ignora o card e retorna "ocioso". Motor responde verde.
+**Os dois primeiros saíram em 02/09.**
 
-`status_since` não existe no frontmatter. `updated` é gravado **incondicionalmente** em todo `patchCard`,
-inclusive nos que não mudam campo nenhum (`motor/ciclo/passo-com-gate.ts:32,107,119`). Um card em laço de
-reparo renova `updated` a cada log → idade aparente ≤ 2 min → invisível enquanto está laçando. Os
-6 estados sem consumidor automático (`READY`, `CLARIFY`, `PAUSED`, `CONFIRM`, `HALTED`, `URL`) estão
-ausentes de `isActive()` (`motor/mirante/render/phases.ts:34-36`) — nenhum deles aparece em rodapé com
-idade. Lista "esperando você" não tem coluna de tempo. Um card em `URL` há 4 dias renderiza idêntico a
-um lá há 4 segundos.
+`halt_class` era escrito em 2 sítios e ~26 `HALT` cravavam `status: HALTED` sem classe.
+Agora as **33 escritas de `status: 'HALTED'` do motor carregam classe**, com vocabulário
+próprio e mais largo que `FailureClass` (`CLASSES_DE_PARADA` em `motor/cordel/tipos.ts`:
+`transient`/`quota`/`terminal` para falha de chamada de IA, mais `orcamento`, `escopo`,
+`humano`, `excecao`, e a sentinela `nao_classificado`). O invariante não depende de
+ninguém lembrar: `motor/cordel/store.ts` é o ponto de estrangulamento e carimba a
+sentinela **com linha de diário dizendo DEFEITO** quando a escrita chega sem classe —
+sentinela silenciosa seria pior que campo ausente, porque pareceria classificação. O
+mesmo ponto preenche `halt_at` e extrai `halt_reason` da linha de diário
+(`<iso> <origem>->HALTED <motivo>`), o que dispensou repetir o motivo nos 33 sítios.
+`motor/mirante/acoes.ts` deixou de usar `transition` no `halt()`: parada pedida por
+pessoa é `humano`, e era indistinguível de parada por cota no frontmatter.
+
+`status_since` não existia. Agora é gravado **só quando o status muda**, no mesmo ponto
+de estrangulamento, e semeado em `createCard` — sem semente, card nenhum teria idade até
+a primeira transição, que é exatamente a janela em que ele espera alguém. `updated`
+continua sendo reescrito em todo `patchCard`, de propósito: não foi ele que mudou.
+
+O consumidor está em `lerSaudeDoMotor` (`motor/euclides/radar/saude.ts`), sem o qual os
+dois campos seriam decorativos: `paradas[]` (toda parada, de qualquer classe, com motivo
+e idade) e `esperandoVoce[]` (os estados sem consumidor automático, com idade a partir de
+`status_since`). E `estado` ganhou `'parado'` — era aqui que o card 002 sumia da leitura
+inteira e o motor respondia `ocioso` com card travado. `provedoresIndisponiveis` continua
+vendo só `quota` e `transient`, correto: é mapa de indisponibilidade de **provedor**, e
+parada por orçamento ou escopo não pertence a ele.
+
+Os campos `desde`/`desdeConhecido`/`idadeMs` seguem o padrão de `provedorIdentificado`:
+card gravado antes desta mudança não tem idade mensurável, e devolver zero afirmaria
+"parou agora". Leia o booleano antes do número.
+
+**O que continua aberto aqui:** `isActive()` (`motor/mirante/render/phases.ts:34-36`)
+ainda não inclui os estados sem consumidor, então a TUI segue sem coluna de tempo —
+o dado existe agora, falta quem o desenhe.
 
 O tipo `'human_checkpoint'` de evento existe em `TIPOS_DE_EVENTO` (`motor/euclides/eventos.ts:19`) e é citado
 como implementado em docs, mas **grep encontra zero emissores** de `anexarEvento` com esse tipo. `checkpointsHumanos`
 em `config/topologia.json:74` está tipado e parseado, com zero consumidores de produção. Nada sabe que
 `URL` *é* checkpoint, nada pode ter timeout.
 
-**Sinal que falta, em ordem de impacto:**
+**Sinal que falta, em ordem de impacto** (os itens 1 e 2 saíram em 02/09 e estão descritos acima):
 
-1. `status_since` no frontmatter — gravado só quando status muda (não em todo `patchCard`). Em
-   `motor/cordel/store.ts:53`, onde já há `resolvedFields.status !== undefined` e chamada de `conferirTransicao`.
-2. `halt_class` obrigatório em toda escrita `HALTED` — com classes novas (`humano`, `excecao`, `orcamento`,
-   `escopo`) para casos hoje mudos. Ponto de estrangulamento único: `motor/cordel/store.ts:43-65` confere
-   status antes de gravar; ali se recusa/carimba HALT sem classe.
 3. Evento `human_checkpoint` emitido **no ponto de entrada** do checkpoint (`motor/cordel/store.ts:53`,
    onde já se sabe se é transição) com `chave` = status e `resultado` = `aberto`. Emitido também na
    **saída** (`motor/mirante/acoes.ts:81-90` approveUrl, `acoes.ts:115-125` confirmar, `motor/quilombo/cartorio/merge.ts:23`
@@ -566,21 +605,40 @@ teto de gasto era inutilizável com `codex` e `kimi`, que declaram
 
 ## ESTADO — o que ficou aberto nas duas trilhas de teste
 
-As duas trilhas passam (`bun run test:unit` e `bun run test:node`), e os três defeitos
-que impediam isso saíram desta lista com o PR #28. O que continua aberto:
+`bun run test` passa inteiro desde 02/09 — `EXIT=0`, 2767 pass na trilha bun e 2761 na
+node, zero fail. **Não passava** quando esta seção foi escrita, e a seção afirmava que
+passava: dois defeitos de infraestrutura de trilha derrubavam o gate local e saíram nesta
+rodada.
+
+O primeiro era o **teto por teste**: `bun test` corta em 5.000 ms por padrão e a trilha
+bun nunca declarava outro, enquanto a node declarava `--test-timeout=60000` — 12x de
+diferença. Com a piscina cheia, os dois arquivos que sobem subprocesso estouravam
+(`import-com-extensao` em 5.108 ms, `percurso-completo` em 7.330 ms) e passavam sozinhos
+em 1,2 s e 3,2 s.
+
+O segundo era o **isolamento dos sensíveis a carga**. `scripts/test-bun.mjs` já rodava
+`tempo-de-pintura` e `tui-sob-carga` por último e sozinhos desde 29/08; a trilha node
+não, e `node --test` paraleliza por padrão. Observado aqui: `quadro 50x200 levou 14,3 ms,
+teto 8 ms` com load average 11, e **seis rodadas verdes do mesmo código** com load 5,6.
+Agora `test:node` tem duas invocações — a piscina, e os sensíveis a carga com
+`--test-concurrency=1`. `test/cordel/tetos-das-trilhas.test.ts` reprova se as duas
+trilhas divergirem no teto ou no conjunto isolado.
+
+O que continua aberto:
 
 - **75 arquivos de teste escrevem `process.env` no topo do módulo** (124 ocorrências).
   O isolamento por processo — um processo por arquivo nas duas trilhas — as torna
   inofensivas, **não corretas**. Se algum dia a suíte rodar em processo compartilhado,
   elas voltam a morder. Exemplos: `test/mirante/tui-sob-carga.test.ts:15`,
   `test/mirante/tempo-de-pintura.test.ts:29-31`.
-- **Duas asserções ainda medem milissegundo absoluto**, e ficam vermelhas com a máquina
-  carregada (observado com *load average* 22, verde de novo com 12, mesmo código):
-  `test/mirante/tempo-de-pintura.test.ts:29-31` (`TETO_QUADRO_MS`, `TETO_QUADRO_CJK_MS`,
-  `TETO_PINTURA_MS`) e `test/mirante/tui-sob-carga.test.ts:15` (`TETO_MS`). As duas já
-  convivem com asserções por **razão** nos mesmos arquivos, que é a forma estável — a
-  absoluta é deliberada e sobrescrevível por env, mas é ela que derruba a suíte quando
-  a trilha E2E satura a máquina em paralelo.
+- **Duas asserções ainda medem milissegundo absoluto**: `test/mirante/tempo-de-pintura.test.ts:29-31`
+  (`TETO_QUADRO_MS`, `TETO_QUADRO_CJK_MS`, `TETO_PINTURA_MS`) e
+  `test/mirante/tui-sob-carga.test.ts:15` (`TETO_MS`). As duas já convivem com asserções
+  por **razão** nos mesmos arquivos, que é a forma estável. **Deixaram de derrubar o
+  gate** em 02/09, porque as duas trilhas agora as rodam sozinhas — mas a asserção
+  continua absoluta, então ainda reprova sob carga externa (outro processo pesado na
+  máquina, que o isolamento da suíte não controla). Trocar por razão é o conserto de
+  verdade; o isolamento só tirou a suíte de ser a causa da própria carga.
 - **`.bun-version` pede 1.4.0**: rodar com outra versão faz
   `test/cordel/scripts-existem.test.ts` acusar, por desenho. O pino é do CI
   (`ci.yml:20-22`) e existe porque `expect([NaN]).toContain(NaN)` passa no bun 1.3.14
@@ -588,24 +646,31 @@ que impediam isso saíram desta lista com o PR #28. O que continua aberto:
 
 ---
 
-## ESTADO — o que está atrás de `HICODE_RIGOR_ESTRITO=1`
+## ESTADO — `HICODE_RIGOR_ESTRITO`, ligado em produção em 02/09
 
-Decidido: **LIGAR**. O interruptor é `HICODE_RIGOR_ESTRITO=1` no ambiente — não há
-mudança de código a fazer, e por isso ligar é ato de operação, não de commit: quem
-liga escolhe o momento em que os cards em voo podem parar.
+**LIGADO onde o motor roda:** `docker-stack.yml` declara
+`HICODE_RIGOR_ESTRITO: ${HICODE_RIGOR_ESTRITO:-1}`. O momento passa a ser o deploy, e a
+saída de emergência é `HICODE_RIGOR_ESTRITO=0 docker stack deploy ...`.
 
-O que mudou nesta rodada é que o interruptor ficou **utilizável de verdade**. O Chagas
-(item 5) foi consertado na Onda C, e nesta rodada `test/agentes/chagas-red-primeiro.test.ts`
-passou a provar a ordem certa com guarda contra o `-1` — antes o invariante
-certificava a ordem invertida. Até a Onda C, ligar pararia todo card no perfil
-`completo`, porque `red_antes_do_green` era constante `nao`.
+**O default no código continua opt-in, por decisão** (`motor/cordel/alicerce/config.ts`,
+`=== '1'`): ligar é ato de operação, e virar o default tiraria de quem liga a escolha do
+momento — além de mudar o significado de "variável ausente" para local e para a suíte.
+Local liga com `export HICODE_RIGOR_ESTRITO=1`.
 
-**Antes de ligar, saiba o que passa a barrar:** os três itens abaixo. O item 5
-**funciona mas cobra a coisa errada** — veja a seção anterior: card `completo` com
-suíte verde vai fazer HALT. O 22 e o 4 escrevem o veredicto no card e nunca
-barraram ninguém, então o primeiro card `completo` depois de ligar é o primeiro
-teste real deles. Ligar num momento de fila vazia é mais barato que ligar no meio
-de uma onda.
+**O aviso que estava aqui estava vencido, e é por isso que ligar era seguro.** A versão
+anterior desta seção dizia que o item 5 "funciona mas cobra a coisa errada — card
+`completo` com suíte verde vai fazer HALT", e remetia a uma seção que já havia sido
+podada. Aquilo descrevia o bug de ANTES da Onda C, quando a consulta rodava antes do
+produtor da evidência e `red.satisfeito` era constante `false`. Reconferido no código:
+`registrarRed` roda **dentro** de `testGate` (`motor/ciclo/crivo/portoes-de-fecho.ts:97`),
+a consulta vem depois (`motor/quilombo/cartorio/fechar.ts:295`) e há um segundo produtor
+a partir do relato do agente (`:278`). `test/agentes/chagas-red-primeiro.test.ts` passa
+com 20 asserções, provando a ordem certa com guarda contra o `-1`.
+
+**O que passa a barrar:** os três itens abaixo. Os três escrevem o veredicto no card e
+nunca barraram ninguém, então o primeiro card `completo` depois do deploy é o primeiro
+teste real deles. A fila está vazia (só 001 em `URL` e 002 em `HALTED`, ambos já
+parados), o que torna este o momento barato.
 
 Três exigências já escrevem o veredicto no card e só barram com o interruptor
 ligado:
@@ -617,7 +682,7 @@ ligado:
 | 4 | matriz de entendimento respondida antes de aprovar o plano | `matriz_entendimento` |
 
 Enquanto desligado dá para ver, card a card, quem passou sem provar — que é o
-insumo para decidir quando apertar. Ligar hoje pararia todo trabalho em voo.
+insumo para decidir quando apertar.
 
 ---
 

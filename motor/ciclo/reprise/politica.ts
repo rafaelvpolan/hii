@@ -1,6 +1,6 @@
 import { isoAt, isoNow } from '../../cordel/index.ts'
-import type { Fields, FailureClass } from '../../cordel/index.ts'
-import { maxWaitingAttempts } from '../../cordel/alicerce/config.ts'
+import type { ClasseDeEspera, Fields, FailureClass } from '../../cordel/index.ts'
+import { maxWaitingAttempts, pisoDeEsperaMs } from '../../cordel/alicerce/config.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
 import { appendFailureAttempt } from './tentativas.ts'
 import type { FailureOutcome } from './tentativas.ts'
@@ -18,15 +18,26 @@ export interface FailurePolicyInput {
   failureClass: FailureClass
   failureReason: string
   technicalDetail: string
+  // Opcional, e o default e o comportamento de hoje: quem nao informa cai em `rede`,
+  // cujo piso e zero. Informar so melhora — nenhum caminho fica mais curto do que
+  // era.
+  waitClass?: ClasseDeEspera
   resumeStep?: string
   extraFields?: Fields
 }
 
 const BACKOFF_STEPS_MS = [30_000, 60_000, 120_000, 300_000, 600_000]
 
-export function backoffMsFor(attempt: number): number {
+export const CLASSE_DE_ESPERA_PADRAO: ClasseDeEspera = 'rede'
+
+// A escada continua sendo a escada; a classe so LEVANTA o degrau. Sem classe, o piso
+// e zero e o resultado e identico ao de antes desta funcao ter segundo parametro —
+// e e assim que `somaDosBackoffs` em euclides/radar/saude.ts, que reconstroi o
+// passado, nao passa a mentir sobre cards gravados antes de `wait_class` existir.
+export function backoffMsFor(attempt: number, classe: ClasseDeEspera = CLASSE_DE_ESPERA_PADRAO): number {
   const idx = Math.min(Math.max(attempt, 1), BACKOFF_STEPS_MS.length) - 1
-  return BACKOFF_STEPS_MS[idx] ?? 600_000
+  const escada = BACKOFF_STEPS_MS[idx] ?? 600_000
+  return Math.max(escada, pisoDeEsperaMs(classe))
 }
 
 function haltFields(input: FailurePolicyInput): Fields {
@@ -38,6 +49,7 @@ function haltFields(input: FailurePolicyInput): Fields {
     halt_at: isoNow(),
     wait_attempts: '',
     wait_reason: '',
+    wait_class: '',
     wait_until: '',
     wait_resume_status: '',
     wait_provider: '',
@@ -84,17 +96,22 @@ function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutco
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED esgotou ${maxWaitingAttempts()} tentativas de espera (${input.failureReason}) — ultimo erro: ${input.technicalDetail}`)
     return 'halt'
   }
-  const until = isoAt(Date.now() + backoffMsFor(attempts))
+  const classeDeEspera = input.waitClass ?? CLASSE_DE_ESPERA_PADRAO
+  const atrasoMs = backoffMsFor(attempts, classeDeEspera)
+  const until = isoAt(Date.now() + atrasoMs)
   const fields: Fields = {
     status: 'WAITING',
     wait_reason: input.failureReason,
     wait_attempts: String(attempts),
+    // Gravada porque a espera SEGUINTE e decidida em outro processo
+    // (reprise/espera.ts, no tick do daemon), que so tem o frontmatter na mao.
+    wait_class: classeDeEspera,
     wait_until: until,
     wait_resume_status: input.resumeStatus,
     wait_provider: input.provider,
     ...(input.resumeStep ? { resume_from: input.resumeStep } : {}),
     ...input.extraFields,
   }
-  patchCard(input.id, fields, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) ${input.failureReason} — proxima tentativa as ${until}`)
+  patchCard(input.id, fields, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) ${input.failureReason} [espera: ${classeDeEspera}] — proxima tentativa as ${until}, em ${Math.round(atrasoMs / 1000)}s`)
   return 'waiting'
 }

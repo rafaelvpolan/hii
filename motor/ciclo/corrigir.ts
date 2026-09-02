@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { isoNow } from '../cordel/index.ts'
-import type { FailureClass, Usage, VerifyResult } from '../cordel/index.ts'
+import type { ClasseDeEspera, FailureClass, Usage, VerifyResult } from '../cordel/index.ts'
 import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { readCard, patchCard, repoPath } from '../cordel/store.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
@@ -24,6 +24,7 @@ interface StepOutcome {
   tokens: number
   failureClass?: FailureClass
   failureReason?: string
+  waitClass?: ClasseDeEspera
   provider?: string
 }
 
@@ -73,12 +74,12 @@ function attemptHistory(id: string): string {
 
 async function redoUrl(card: NonNullable<ReturnType<typeof readCard>>, wt: string, instruction: string, implementar: typeof implement): Promise<StepOutcome> {
   const r = await implementar(card, wt, `${attemptHistory(card.fm.id ?? '')}O url anterior foi REJEITADO pelo revisor. Refaça a tarefa atendendo exatamente: "${instruction}".`, card.fm.surface === 'visual')
-  return { ok: r.ok, text: r.resultText ?? r.reason ?? '', fullText: r.fullText ?? r.resultText ?? r.reason ?? '', cost: parseFloat(r.cost) || 0, tokens: tokensOf(r.usage), failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
+  return { ok: r.ok, text: r.resultText ?? r.reason ?? '', fullText: r.fullText ?? r.resultText ?? r.reason ?? '', cost: parseFloat(r.cost) || 0, tokens: tokensOf(r.usage), failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider }
 }
 
 async function scopedFix(wt: string, instruction: string, file: string, line: string, lineText: string, id: string, alvo: string, executar: typeof runStep): Promise<StepOutcome> {
   const r = await executar(wt, 'limpio', scopedInstruction(instruction, file, line, lineText), id, alvo)
-  return { ok: r.ok, text: r.text, fullText: r.text, cost: r.cost, tokens: r.tokens, failureClass: r.failureClass, failureReason: r.failureReason, provider: r.provider }
+  return { ok: r.ok, text: r.text, fullText: r.text, cost: r.cost, tokens: r.tokens, failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider }
 }
 
 export async function handleCorrect(id: string, deps: CorrectDeps = { implement, runStep }): Promise<void> {
@@ -87,11 +88,11 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const teto = tetoDoCard()
   const gasto = gastoDoCard(card.fm.cost_usd)
   if (gasto === null) {
-    patchCard(id, { status: 'HALTED', correction: '' }, `${isoNow()} CORRECTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a refacao paga sem saber o que o card ja custou`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', correction: '' }, `${isoNow()} CORRECTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a refacao paga sem saber o que o card ja custou`)
     return
   }
   if (teto > 0 && gasto > teto) {
-    patchCard(id, { status: 'HALTED', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de refazer — decida se continua`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de refazer — decida se continua`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -101,7 +102,7 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const lineText = card.fm.correction_line_text ?? ''
   const wt = card.fm.worktree ?? ''
   if (!wt || !existsSync(join(wt, '.git'))) {
-    patchCard(id, { status: 'HALTED', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED correção sem worktree valido`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', correction: '', correction_file: '', correction_line: '', correction_line_text: '' }, `${isoNow()} CORRECTING->HALTED correção sem worktree valido`)
     return
   }
   const target = repoPath(card.fm.repo ?? '')
@@ -117,6 +118,7 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
       provider: r.provider ?? '',
       failureClass: r.failureClass ?? 'terminal',
       failureReason: r.failureReason ?? 'falha nao classificada',
+      waitClass: r.waitClass,
       technicalDetail: r.text,
     })
     if (outcome === 'halt') patchCard(id, { correction: '', correction_file: '', correction_line: '', correction_line_text: '' })

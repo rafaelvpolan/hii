@@ -1,5 +1,5 @@
 import { isoNow } from '../../cordel/index.ts'
-import type { FailureClass } from '../../cordel/index.ts'
+import type { ClasseDeEspera, FailureClass } from '../../cordel/index.ts'
 import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cordel/alicerce/config.ts'
 import { runGit, stageAll } from '../../quilombo/git.ts'
 import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
@@ -35,6 +35,7 @@ export interface GateResult {
   tokens: number
   failureClass?: FailureClass
   failureReason?: string
+  waitClass?: ClasseDeEspera
   provider?: string
 }
 
@@ -270,7 +271,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
   const tokens = sumTokens(res.usage)
   if (res.failed) {
     const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
-    return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, provider: provider.name }
+    return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, waitClass: cls.classeDeEspera, provider: provider.name }
   }
   const parsed = buildParsed(res.text, res.cost, tokens)
   if (!parsed.found) {

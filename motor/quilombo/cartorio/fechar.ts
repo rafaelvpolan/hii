@@ -70,11 +70,11 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const teto = tetoDoCard()
   const gasto = gastoDoCard(card.fm.cost_usd)
   if (gasto === null) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — tratar isso como "gastou 0" liberaria o polimento pago sem saber o que o card ja custou`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — tratar isso como "gastou 0" liberaria o polimento pago sem saber o que o card ja custou`)
     return
   }
   if (teto > 0 && gasto > teto) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes do polimento — decida se continua`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes do polimento — decida se continua`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -86,7 +86,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const wt = card.fm.worktree || worktreePath(target, id, slug)
   const msg = `feat: ${card.fm.title ?? ''} (#${id})`
   if (!existsSync(wt)) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED worktree ausente: ${wt}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} URL_OK->HALTED worktree ausente: ${wt}`)
     return
   }
   const resumeFrom = card.fm.resume_from ?? ''
@@ -94,7 +94,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const preflight = podeAbrirPr(target, repoName)
   if (preflight.severidade === 'erro') {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
     process.stdout.write(`[runner] #${id}: HALTED preflight — ${preflight.detalhe}\n`)
     return
   }
@@ -106,7 +106,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // ganhava "contrato_publico: estavel" como fato positivo derivado de zero dado.
   const diffNomes = await runGit(wt, ['diff', '--name-only', `origin/${base}...HEAD`])
   if (diffNomes.err) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED nao consegui LER o diff vs origin/${base} — sem ele a LEI, a checagem de area nova e o contrato publico decidiriam sobre zero dado: ${String(diffNomes.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 160) ?? diffNomes.err.message}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED nao consegui LER o diff vs origin/${base} — sem ele a LEI, a checagem de area nova e o contrato publico decidiriam sobre zero dado: ${String(diffNomes.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 160) ?? diffNomes.err.message}`)
     return
   }
   const changed = diffNomes.stdout.split('\n').filter(Boolean)
@@ -120,6 +120,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   if (violouEscopo.length) {
     patchCard(id, {
       status: 'HALTED',
+      halt_class: 'escopo',
       escopo_violado: violouEscopo.slice(0, 20).join(',') + (violouEscopo.length > 20 ? ` +${violouEscopo.length - 20}` : ''),
     }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED o branch tocou caminho que o pedido marcou como referencia: ${violouEscopo.slice(0, 10).join(', ')} — worktree e url mantidos para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`)
     process.stdout.write(`[runner] #${id}: HALTED — o branch escreveu fora do escopo: ${violouEscopo.slice(0, 5).join(', ')}\n`)
@@ -135,7 +136,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // trabalho num repo legado travaria aqui para sempre.
   const diffCriados = await runGit(wt, ['diff', '--name-only', '--diff-filter=A', `origin/${base}...HEAD`])
   if (diffCriados.err) {
-    patchCard(id, { status: 'HALTED' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED nao consegui listar os arquivos CRIADOS vs origin/${base}, e sem isso "area nova" seria um palpite: ${String(diffCriados.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 160) ?? diffCriados.err.message}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED nao consegui listar os arquivos CRIADOS vs origin/${base}, e sem isso "area nova" seria um palpite: ${String(diffCriados.stderr || '').split('\n').filter(Boolean)[0]?.slice(0, 160) ?? diffCriados.err.message}`)
     return
   }
   const criados = diffCriados.stdout.split('\n').filter(Boolean)
@@ -148,7 +149,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       // Este bloco roda ANTES de qualquer passo do pipeline: o card ainda esta em
       // URL_OK, e a etiqueta "CLEANED->HALTED" narrava uma transicao a partir de
       // um estado em que ele nunca esteve.
-      patchCard(id, { status: 'HALTED' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED area nova sem comando de teste no contrato do alvo`)
+      patchCard(id, { status: 'HALTED', halt_class: 'escopo' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED area nova sem comando de teste no contrato do alvo`)
       process.stdout.write(`[runner] #${id}: HALTED — area nova sem comando de teste\n`)
       return
     }
@@ -207,7 +208,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     // gastou nesta passagem — a soma dos dois e o gasto real ate aqui.
     const gastoAteAqui = Number(accumulatedTotals(card, fsteps).cost_usd)
     if (teto > 0 && gastoAteAqui > teto) {
-      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED orcamento excedido (US$${gastoAteAqui.toFixed(4)} > US$${teto}) dentro do laco de passos — parou antes de pagar ${step.label}`, step.label)
+      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED orcamento excedido (US$${gastoAteAqui.toFixed(4)} > US$${teto}) dentro do laco de passos — parou antes de pagar ${step.label}`, step.label, 'orcamento')
       process.stdout.write(`[runner] #${id}: HALTED — orcamento estourou dentro do laco (US$${gastoAteAqui.toFixed(4)} > US$${teto})\n`)
       return
     }
@@ -235,6 +236,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
             provider: g.provider ?? '',
             failureClass: g.failureClass,
             failureReason: g.failureReason ?? 'falha nao classificada',
+            waitClass: g.waitClass,
             technicalDetail: g.reason,
           })
           return
@@ -242,7 +244,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         // A frase nao pode atribuir ao CRIVO uma reprovacao que ele nao emitiu:
         // esgotar tentativas por falha do agente chega aqui tambem, e agora vem
         // classificado (o bloco acima trata) — este caminho e o BLOCKED de verdade.
-        haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED o crivo reprovou apos ${maxReajuste()} reajuste(s): ${g.reason}`, step.label)
+        haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED o crivo reprovou apos ${maxReajuste()} reajuste(s): ${g.reason}`, step.label, 'escopo')
         return
       }
     } else {
@@ -256,6 +258,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
           provider: sr.provider ?? '',
           failureClass: sr.failureClass ?? 'terminal',
           failureReason: sr.failureReason ?? 'falha nao classificada',
+          waitClass: sr.waitClass,
           technicalDetail: `agente ${step.agent}: ${sr.text}`,
         })
         return
@@ -277,7 +280,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       patchCard(id, {}, `${isoNow()} Chagas: evidencia de RED do passo de testes — ${relato.aceito ? 'ACEITA' : 'RECUSADA'}: ${relato.motivo}`)
     }
     if (step.gate === 'test' && !(await testGate(id, wt, ctx, fsteps, step.label, deps.runStep))) {
-      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`, step.label)
+      haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED testes falharam apos reajuste(s)`, step.label, 'escopo')
       return
     }
     if (step.gate === 'test') {
@@ -295,7 +298,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       if (red.exigido) {
         patchCard(id, { red_antes_do_green: red.satisfeito ? 'sim' : 'nao' }, `${isoNow()} Chagas: ${red.motivo}`)
         if (!red.satisfeito && rigorEstrito()) {
-          haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED ${red.motivo}`, step.label)
+          haltForInspection(id, card, fsteps, `${isoNow()} ${step.label}->HALTED ${red.motivo}`, step.label, 'escopo')
           process.stdout.write(`[runner] #${id}: HALTED — sem RED antes do GREEN\n`)
           return
         }
@@ -313,7 +316,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     process.stdout.write(`[runner] #${id}: ${step.label} (${step.agent}) $${r.cost.toFixed(4)}\n`)
   }
   if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Testes', 'Reajuste', deps.runStep))) {
-    haltForInspection(id, card, fsteps, `${isoNow()} build->HALTED build falhou apos reajuste(s)`, RESUME_POST_STEPS)
+    haltForInspection(id, card, fsteps, `${isoNow()} build->HALTED build falhou apos reajuste(s)`, RESUME_POST_STEPS, 'escopo')
     return
   }
   await commitAll(wt, `chore: qualidade Nexus (#${id})`)
@@ -329,19 +332,19 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     // resolvido apos Nx", entao fetch quebrado ou merge que NAO e conflito viravam
     // diagnostico falso de conflito E contagem falsa de tentativas que nunca
     // aconteceram. Quem classifica e o syncWithBase; aqui so se relata.
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED nao integrei ${base}: ${sync.detail || `conflito nao resolvido apos ${MAX_CONFLICT}x`} (precisa de voce)`, RESUME_POST_STEPS)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED nao integrei ${base}: ${sync.detail || `conflito nao resolvido apos ${MAX_CONFLICT}x`} (precisa de voce)`, RESUME_POST_STEPS, 'terminal')
     process.stdout.write(`[runner] #${id}: HALTED nao integrei ${base} — ${sync.detail || 'conflito'}\n`)
     return
   }
   if (sync.changed) {
     if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Conflito', 'Conflito', deps.runStep))) {
-      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED build falhou apos merge com ${base}`, RESUME_POST_STEPS)
+      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED build falhou apos merge com ${base}`, RESUME_POST_STEPS, 'escopo')
       return
     }
     await commitAll(wt, `chore: integra ${base} (#${id})`)
   }
   if (!(await revalidate(id, card, wt, target, fsteps))) {
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + url mantidos p/ inspecao)`, RESUME_POST_STEPS)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED revalidacao falhou pos-merge: objetivo nao confirmado (worktree + url mantidos p/ inspecao)`, RESUME_POST_STEPS, 'escopo')
     process.stdout.write(`[runner] #${id}: HALTED revalidacao (pos-merge)\n`)
     return
   }
@@ -366,12 +369,13 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         provider: gate.provider ?? '',
         failureClass: gate.failureClass,
         failureReason: gate.failureReason ?? 'falha nao classificada',
+        waitClass: gate.waitClass,
         technicalDetail: gateHaltReason(gate),
       })
       process.stdout.write(`[runner] #${id}: codefox gate final nao concluiu (classificado)\n`)
       return
     }
-    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED ${gateHaltReason(gate)} (worktree mantido p/ inspecao)`, RESUME_POST_STEPS)
+    haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED ${gateHaltReason(gate)} (worktree mantido p/ inspecao)`, RESUME_POST_STEPS, 'escopo')
     process.stdout.write(`[runner] #${id}: HALTED ${gate.ok ? 'codefox gate BLOCKED' : 'codefox gate nao concluiu'}\n`)
     return
   }
@@ -381,7 +385,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const push = await pushOwnedBranch(wt, branch, String(card.fm.pushed_sha ?? '').trim(), donoComprovado)
   if (!push.ok) {
     const diagnostico = pushFailureDiagnostico(push)
-    patchCard(id, { status: 'HALTED', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED ${diagnostico} (worktree mantido p/ inspecao)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED ${diagnostico} (worktree mantido p/ inspecao)`)
     return
   }
   patchCard(id, { pushed_sha: push.pushedSha }, push.forced
@@ -407,7 +411,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     patchCard(id, {}, `${isoNow()} PR ja constava no diario de execucao (${url}) — nao foi aberto de novo`)
   }
   if (!url) {
-    patchCard(id, { status: 'HALTED', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
     return
   }
   stopUrl(card.fm.url_pid)

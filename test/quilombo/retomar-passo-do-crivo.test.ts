@@ -43,10 +43,11 @@ test('REGRESSAO crivo reprova no meio do pipeline: o card grava ONDE retomar', (
 
   const card = readCard(id)
   expect(card).not.toBe(null)
-  haltForInspection(id, card!, SEM_METRICA, 'Seguranca->HALTED o crivo reprovou apos 2 reajuste(s)', 'Seguranca')
+  haltForInspection(id, card!, SEM_METRICA, 'Seguranca->HALTED o crivo reprovou apos 2 reajuste(s)', 'Seguranca', 'escopo')
 
   const parado = readCard(id)
   expect(parado?.fm.status).toBe('HALTED')
+  expect(parado?.fm.halt_class, 'HALT sem classe deixa /health sem saber se foi cota, orcamento ou exigencia nao cumprida').toBe('escopo')
   expect(parado?.fm.retomar_em).toBe('URL_OK')
   expect(parado?.fm.resume_from, 'sem este campo a retomada refaz Arquitetura e Testes ja aprovados').toBe('Seguranca')
 })
