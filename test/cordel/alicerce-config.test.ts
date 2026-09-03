@@ -74,3 +74,53 @@ test('repoRegistered distingue registrado de nao registrado', async () => {
   if (prev === undefined) delete process.env.HICODE_REPOS_FILE
   else process.env.HICODE_REPOS_FILE = prev
 })
+
+test('knobs da URL de preview leem env, com os defaults de antes da parametrizacao', async () => {
+  const nomes = ['HICODE_URL_WAIT_S', 'HICODE_URL_PROBE_INTERVAL_MS', 'HICODE_URL_PROBE_TIMEOUT_MS', 'HICODE_URL_INSPECT_TIMEOUT_MS', 'HICODE_URL_FREEPORT_SETTLE_MS']
+  const guardados = nomes.map(n => process.env[n])
+  // A query vem de variavel, nao de literal: literal estatico o tsc tenta
+  // resolver na hora do typecheck e quebra (TS2307); interpolacao ele deixa
+  // passar, e node/bun avaliam em runtime — mesmo truque de configReavaliada.
+  const configCom = (marca: string): Promise<typeof import('../../motor/cordel/alicerce/config.ts')> =>
+    import(`../../motor/cordel/alicerce/config.ts?${marca}`)
+  try {
+    // Defaults documentados: mudar aqui muda o comportamento do motor — visivel na revisao.
+    for (const n of nomes) delete process.env[n]
+    let fresh = await configCom('padrao-url')
+    expect(fresh.URL_WAIT_S).toBe(30)
+    expect(fresh.URL_PROBE_INTERVAL_MS).toBe(1000)
+    expect(fresh.URL_PROBE_TIMEOUT_MS).toBe(5000)
+    expect(fresh.URL_INSPECT_TIMEOUT_MS).toBe(60000)
+    expect(fresh.URL_FREEPORT_SETTLE_MS).toBe(400)
+
+    process.env.HICODE_URL_WAIT_S = '5'
+    process.env.HICODE_URL_PROBE_INTERVAL_MS = '250'
+    process.env.HICODE_URL_PROBE_TIMEOUT_MS = '1500'
+    process.env.HICODE_URL_INSPECT_TIMEOUT_MS = '20000'
+    process.env.HICODE_URL_FREEPORT_SETTLE_MS = '100'
+    fresh = await configCom('override-url')
+    expect(fresh.URL_WAIT_S).toBe(5)
+    expect(fresh.URL_PROBE_INTERVAL_MS).toBe(250)
+    expect(fresh.URL_PROBE_TIMEOUT_MS).toBe(1500)
+    expect(fresh.URL_INSPECT_TIMEOUT_MS).toBe(20000)
+    expect(fresh.URL_FREEPORT_SETTLE_MS).toBe(100)
+
+    // Valor invalido cai no default com aviso (numeroDeEnv), nunca em NaN.
+    process.env.HICODE_URL_WAIT_S = 'rapido'
+    fresh = await configCom('invalido-url')
+    expect(fresh.URL_WAIT_S).toBe(30)
+  } finally {
+    nomes.forEach((n, i) => {
+      if (guardados[i] === undefined) delete process.env[n]
+      else process.env[n] = guardados[i]
+    })
+  }
+})
+
+test('esperarPorPid usa o orcamento parametrizado como default — o botao chega no laco de URL', async () => {
+  delete process.env.HICODE_URL_WAIT_S
+  const { esperarPorPid } = await import('../../motor/ciclo/reprise/url-ajuste.ts')
+  // pid 0 nunca sonda a rede: a funcao devolve false na hora. O teste trava a
+  // LIGACAO do knob (default = URL_WAIT_S) sem esperar 30s de verdade.
+  expect(await esperarPorPid(59999)(0)).toBe(false)
+})

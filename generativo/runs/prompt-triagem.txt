@@ -1,0 +1,27 @@
+Voce e um engenheiro de testes. Abaixo esta a lista de arquivos de motor/ (motor de execucao autonoma em TypeScript/Bun) que NENHUM teste importa (nem diretamente, nem via barrel/index). Classifique cada arquivo em UMA categoria:
+A) precisa de teste unitario proprio (logica com ramos, regras de negocio);
+B) fio condutor/tipo/orquestrador — coberto indiretamente, teste direto seria fragil;
+C) fronteira de IO (disco, rede, subprocesso) — pede teste de integracao ou contrato, nao unitario.
+Responda SOMENTE com uma linha por arquivo, no formato exato: CAMINHO_COMPLETO | A/B/C | motivo de ate 12 palavras.
+CAMINHO_COMPLETO = o caminho inteiro comecando com motor/ — nunca so o nome do arquivo.
+Sem resumo, sem contagem, sem cabecalho — so as linhas, uma por arquivo da lista.
+
+ARQUIVOS:
+motor/agentes/tarsila/design.ts
+motor/ciclo/crivo/portoes-de-fecho.ts
+motor/ciclo/reprise/reparadores/laravel-php.ts
+motor/euclides/sessao.ts
+motor/euclides/tesouro/custo.ts
+motor/mirante/cli/comandos.ts
+motor/mirante/cli/saida.ts
+motor/mirante/cli/situacao-cli.ts
+motor/mirante/render/config/tipos.ts
+motor/mirante/render/disco.ts
+motor/mirante/watch.ts
+motor/quilombo/alfandega/confianca.ts
+motor/quilombo/alfandega/ipv4.ts
+motor/quilombo/cartorio/responder-pergunta.ts
+motor/tomada/confianca.ts
+motor/tomada/harness/claude-stream.ts
+motor/tomada/ponte/tarefas/tipos.ts
+motor/tomada/sonda.ts

@@ -8,7 +8,11 @@ export interface AgenteInjetado {
   description: string
   prompt: string
   model?: string
-  tools?: string
+  // Array, nao a string crua do frontmatter: o --agents do claude CLI valida o
+  // JSON e recusa tools em string ("expected array, received string" — erro que
+  // derrubou um card inteiro no restart). O .md no disco continua com a lista
+  // em string, que e o formato do Claude Code; a conversao e na borda, aqui.
+  tools?: string[]
 }
 
 const TTL_MS = 30_000
@@ -47,7 +51,7 @@ export function lerAgente(texto: string): AgenteLido | null {
   const model = campos.get('model')
   const tools = campos.get('tools')
   if (model) agente.model = model
-  if (tools) agente.tools = tools
+  if (tools) agente.tools = tools.split(',').map(t => t.trim()).filter(t => t.length > 0)
   return { nome, agente }
 }
 
@@ -87,8 +91,7 @@ export function agentesNexusJson(): string {
 
 function comFerramentasExtra(agente: AgenteInjetado, extras: readonly string[]): AgenteInjetado {
   if (!extras.length || !agente.tools) return agente
-  const declaradas = agente.tools.split(',').map(t => t.trim()).filter(t => t.length > 0)
-  return { ...agente, tools: Array.from(new Set([...declaradas, ...extras])).join(', ') }
+  return { ...agente, tools: Array.from(new Set([...agente.tools, ...extras])) }
 }
 
 export function agentesNexusPor(nomes: readonly string[], ferramentasExtra: readonly string[] = []): Record<string, AgenteInjetado> {

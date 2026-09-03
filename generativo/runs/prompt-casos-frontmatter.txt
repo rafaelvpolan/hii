@@ -1,0 +1,35 @@
+Voce e um engenheiro de testes. Abaixo esta o codigo de motor/cordel/frontmatter.ts (parse/serializacao do front-matter dos cards).
+Liste ate 10 cenarios de borda cobrindo os ramos reais das funcoes.
+FORMATO OBRIGATORIO — cada cenario tem TRES linhas:
+- **Cenario:** nome curto (cite a funcao)
+  - **Entrada/Condicao:** estado CONCRETO de entrada. PROIBIDO "qualquer valor".
+  - **Comportamento Esperado:** retorno/efeito especifico.
+REGRAS: nao invente comportamento — derive do codigo abaixo. Se ambiguo, marque [VERIFICAR]. Sem codigo na resposta.
+
+CODIGO:
+import type { Fields, Parsed } from './tipos.ts'
+
+export function splitFrontMatter(text: string): Parsed {
+  const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
+  if (!m) return { fm: {}, order: [], body: text }
+  const fm: Fields = {}
+  const order: string[] = []
+  for (const line of (m[1] ?? '').split('\n')) {
+    const i = line.indexOf(':')
+    if (i > 0) {
+      const k = line.slice(0, i).trim()
+      fm[k] = line.slice(i + 1).trim()
+      order.push(k)
+    }
+  }
+  return { fm, order, body: m[2] ?? '' }
+}
+
+export function umaLinha(valor: string | undefined): string {
+  return (valor ?? '').replace(/\r?\n+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+export function serializeCard(fm: Fields, order: string[], body: string): string {
+  const keys = order.length ? order : Object.keys(fm)
+  return `---\n${keys.map(k => `${k}: ${umaLinha(fm[k])}`).join('\n')}\n---\n\n${body.replace(/^\n+/, '')}`
+}
