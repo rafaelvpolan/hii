@@ -36,6 +36,15 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/hii-design': 'design/visual — sem passo de polimento, so o crivo do fecho',
   '/hii-dev-web': 'web front+back — roda Arquitetura e Testes',
   '/hii-backend': 'backend — roda Testes e Seguranca',
+  // Pipeline manual (padrao apos aprovar a url): um comando por passo, e a
+  // suite que roda o restante e fecha. Quem executa e o runner — o comando so
+  // grava o pedido no card (cartorio/passos-manuais.ts).
+  '/arquitetura': 'roda so o passo de arquitetura do card e pausa de novo',
+  '/polimento': 'apelido de /arquitetura — primeiro passo do pipeline',
+  '/testes': 'roda so o passo de testes do card e pausa de novo',
+  '/seguranca': 'roda so o passo de seguranca do card e pausa de novo',
+  '/limpeza': 'roda so o passo de limpeza do card e pausa de novo',
+  '/hii': 'roda o pipeline restante de uma vez e segue para build, gates e PR',
 }
 
 export interface GrupoDeSugestao {

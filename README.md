@@ -556,6 +556,15 @@ sondas, default 1000), `HICODE_URL_PROBE_TIMEOUT_MS` (teto de cada sonda curl, d
 `HICODE_URL_FREEPORT_SETTLE_MS` (pausa após matar a porta, default 400). Reduzir intervalo/teto
 acelera a detecção de "URL no ar"; aumentar ajuda em máquina lenta ou dev-server pesado.
 
+**Pipeline manual (padrão).** Depois da URL aprovada, o card **pausa** (`PAUSED`) em vez de disparar
+os passos de polimento em sequência — cada passo roda por pedido: `/arquitetura` (apelido
+`/polimento`), `/testes`, `/seguranca`, `/limpeza` na TUI (sem id, vale a tarefa aberta) ou
+`hii passo <id> <passo>` no terminal. `/hii` (TUI), ENTER no card pausado ou `hii pipeline <id>`
+rodam o restante de uma vez e seguem para o fecho (build, gates, PR). Passos já rodados ficam em
+`pipeline_feitos` no frontmatter e **não são pagos de novo**. O motor respeita as dependências do
+`pipeline.json` (`/seguranca` antes de `/arquitetura` é recusado com o motivo). Para o comportamento
+antigo (tudo em sequência): campo `pipeline: auto` no card (vence o env) ou `HICODE_PIPELINE=auto`.
+
 **Janelas de limite por IA.** Cada IA tem sua janela: `HICODE_JANELAS_CLAUDE` (default `5h,7d`),
 `HICODE_JANELAS_CODEX`, `HICODE_JANELAS_KIMI`. Aceita `4h`, `30m`, `7d`. IA local não tem janela.
 

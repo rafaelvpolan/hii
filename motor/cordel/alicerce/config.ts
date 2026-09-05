@@ -73,6 +73,18 @@ export function rigorEstrito(): boolean {
   return process.env.HICODE_RIGOR_ESTRITO === '1'
 }
 
+// Pipeline de polimento MANUAL por padrao: url aprovada, o card para em PAUSED
+// e cada passo (arquitetura, testes, seguranca, limpeza) so roda quando o humano
+// pede (/polimento, /testes, ... na TUI, ou `hii passo <id> <passo>`); /hii ou
+// ENTER rodam o restante de uma vez. Saiu da observacao do card #005: o motor
+// gastava os quatro passos pagos em sequencia sem o humano ter visto a url.
+// Opt-in de volta ao automatico: campo `pipeline: auto` no card (por tarefa) ou
+// HICODE_PIPELINE=auto (global). O campo do card vence o env quando presente.
+export function pipelineManual(fm?: { pipeline?: string }): boolean {
+  const modo = fm?.pipeline || process.env.HICODE_PIPELINE || 'manual'
+  return modo !== 'auto'
+}
+
 export function maxReajuste(): number {
   return numeroDeEnv('HICODE_REAJUSTE_RETRIES', 2)
 }

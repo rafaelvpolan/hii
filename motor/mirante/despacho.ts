@@ -1,4 +1,5 @@
 import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
+import { pedirPassoManual, pedirSuiteManual } from '../quilombo/cartorio/passos-manuais.ts'
 import { perguntaDeFecho } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { readCard, allCards, normalizeId, listRepos, repoPath, patchCard } from '../cordel/store.ts'
 import { isoNow } from '../cordel/util.ts'
@@ -289,6 +290,13 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         io.log(`#${id} esta em ${status} — nao ha o que retomar`)
         return state
       }
+      // Pipeline manual: ENTER no card pausado libera a suite — roda o que falta
+      // e segue para o fecho. O aviso de daemon offline vale para os dois caminhos.
+      if (status === 'PAUSED' && card.fm.pipeline_pausa === 'manual') {
+        const p = pedirSuiteManual(id)
+        io.log(`${p.mensagem}${io.daemonOnline() ? '' : ` — ${AVISO_DAEMON_OFFLINE}`}`)
+        return state
+      }
       // "segue de onde parou" era literalmente falso: ia sempre para EXECUTING, que
       // refaz worktree, implement e pipeline. Card que parou no FECHO volta ao fecho.
       const alvo = String(card.fm.retomar_em ?? '') || 'EXECUTING'
@@ -296,6 +304,19 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       if (r) patchCard(id, { retomar_em: '' })
       io.log(r ? `#${id} retomado em ${alvo}${alvo === 'URL_OK' ? ' — o trabalho ja feito e aproveitado' : ''}` : `nao consegui retomar #${id}`)
       return state
+    }
+    case 'pipeline-step': {
+      // O passo NAO roda aqui: a TUI so grava o pedido no card e quem executa e
+      // o runner (mesmo handleFinish, mesmos gates e mesma contabilidade). Um
+      // agente rodando dentro do dispatch travaria a interface por minutos.
+      const p = pedirPassoManual(id, texto)
+      io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
+      return p.ok ? seguir(state, id) : state
+    }
+    case 'pipeline-suite': {
+      const p = pedirSuiteManual(id)
+      io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
+      return p.ok ? seguir(state, id) : state
     }
     case 'submit':
       return criarCardEEnfileirar(texto, state, io, {})

@@ -19,6 +19,7 @@ import { snapshotDoMotor, revisaoDoEstado } from '../motor/mirante/estado-json.t
 import { executarAcao, criarTarefa } from '../motor/mirante/comandos-de-tarefa.ts'
 import type { AcaoDeTarefa } from '../motor/mirante/comandos-de-tarefa.ts'
 import { prepararMatriz } from '../motor/quilombo/cartorio/aprovar-plano.ts'
+import { pedirPassoManual, pedirSuiteManual } from '../motor/quilombo/cartorio/passos-manuais.ts'
 import { runtimeDeScript } from '../motor/cordel/alicerce/runtime.ts'
 import { ajudaDeComandosManuais } from '../motor/mirante/comandos-manuais.ts'
 
@@ -118,6 +119,28 @@ async function matriz(extra: string[]): Promise<number> {
   return r.parede.satisfeito ? 0 : 1
 }
 
+function passoPipeline(extra: string[]): number {
+  const [id, passo] = extra.filter(a => !a.startsWith('--'))
+  if (!id || !passo) {
+    process.stderr.write('uso: hii passo <id> <arquitetura|polimento|testes|seguranca|limpeza>\n')
+    return 2
+  }
+  const r = pedirPassoManual(id, passo)
+  process[r.ok ? 'stdout' : 'stderr'].write(`${r.mensagem}\n`)
+  return r.ok ? 0 : 1
+}
+
+function suitePipeline(extra: string[]): number {
+  const id = extra.filter(a => !a.startsWith('--'))[0] ?? ''
+  if (!id) {
+    process.stderr.write('uso: hii pipeline <id>\n')
+    return 2
+  }
+  const r = pedirSuiteManual(id)
+  process[r.ok ? 'stdout' : 'stderr'].write(`${r.mensagem}\n`)
+  return r.ok ? 0 : 1
+}
+
 async function tarefaNova(extra: string[]): Promise<number> {
   const repo = valorDaFlag(extra, '--repo')
   const texto = extra.filter(a => !a.startsWith('--') && a !== repo).join(' ')
@@ -175,6 +198,11 @@ function usage(): void {
     '  approve <id> --plan      aprova o plano e enfileira (READY -> EXECUTING)',
     '  reject <id> [o que]      rejeita; com motivo, pede correcao',
     '  halt <id> [motivo]       para o card',
+    '',
+    'Pipeline manual (padrao apos aprovar a url — HICODE_PIPELINE=auto volta ao sequencial):',
+    '  passo <id> <passo>       roda um passo do pipeline e pausa: arquitetura (apelido: polimento),',
+    '                           testes, seguranca, limpeza',
+    '  pipeline <id>            roda o restante de uma vez e segue para build, gates e PR',
     '',
     'Repo-alvo (deterministico, 0 token) — "project" e sinonimo de "repo":',
     '  repo add <owner/nome>    registra o alvo, valida o clone, provisiona .hii/',
@@ -284,6 +312,11 @@ async function main(): Promise<number> {
       return script('repo', args.slice(1))
     case 'matriz':
       return matriz(args.slice(1))
+    case 'passo':
+    case 'step':
+      return passoPipeline(args.slice(1))
+    case 'pipeline':
+      return suitePipeline(args.slice(1))
     case 'approve':
     case 'aprovar':
       return tarefa(args.includes('--plan') || args.includes('--plano') ? 'aprovar-plano' : 'aprovar-url', args.slice(1))

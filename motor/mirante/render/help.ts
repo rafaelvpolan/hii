@@ -72,6 +72,17 @@ const SECOES: Secao[] = [
     ],
   },
   {
+    titulo: 'pipeline (apos aprovar a url, um passo por vez)',
+    itens: [
+      { chave: '/arquitetura', arg: '[id]', texto: 'roda so a arquitetura (rufus) e pausa de novo — /polimento e apelido' },
+      { chave: '/polimento', arg: '[id]', texto: 'apelido de /arquitetura' },
+      { chave: '/testes', arg: '[id]', texto: 'roda so os testes (testudo) e pausa de novo' },
+      { chave: '/seguranca', arg: '[id]', texto: 'roda so a seguranca (escudo) e pausa de novo' },
+      { chave: '/limpeza', arg: '[id]', texto: 'roda so a limpeza (pura) e pausa de novo' },
+      { chave: '/hii', arg: '[id]', texto: 'roda o restante de uma vez e segue para build, gates e PR' },
+    ],
+  },
+  {
     titulo: 'projeto',
     itens: [
       { chave: '/ia', arg: '[papel] <ia>', texto: 'escolhe a ia que roda cada papel' },

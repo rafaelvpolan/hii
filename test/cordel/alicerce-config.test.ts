@@ -1,7 +1,7 @@
 import { test, expect } from '../apoio/runner.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, cardsDir, reposFile } from '../../motor/cordel/alicerce/config.ts'
+import { ROOT, cardsDir, pipelineManual, reposFile } from '../../motor/cordel/alicerce/config.ts'
 
 const SUFIXO_SEM_CACHE = 'forced'
 
@@ -123,4 +123,20 @@ test('esperarPorPid usa o orcamento parametrizado como default — o botao chega
   // pid 0 nunca sonda a rede: a funcao devolve false na hora. O teste trava a
   // LIGACAO do knob (default = URL_WAIT_S) sem esperar 30s de verdade.
   expect(await esperarPorPid(59999)(0)).toBe(false)
+})
+
+test('pipelineManual: manual por padrao, auto por card ou por env — e o campo do card vence o env', () => {
+  const prev = process.env.HICODE_PIPELINE
+  delete process.env.HICODE_PIPELINE
+  try {
+    expect(pipelineManual(), 'default e manual').toBe(true)
+    expect(pipelineManual({}), 'card sem o campo segue o default').toBe(true)
+    expect(pipelineManual({ pipeline: 'auto' }), 'opt-in por card').toBe(false)
+    process.env.HICODE_PIPELINE = 'auto'
+    expect(pipelineManual(), 'opt-in global por env').toBe(false)
+    expect(pipelineManual({ pipeline: 'manual' }), 'o card vence o env — ninguem liga o sequencial para um card que pediu manual').toBe(true)
+  } finally {
+    if (prev === undefined) delete process.env.HICODE_PIPELINE
+    else process.env.HICODE_PIPELINE = prev
+  }
 })
