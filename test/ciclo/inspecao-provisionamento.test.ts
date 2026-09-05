@@ -5,7 +5,7 @@
 // frase generica. Agora cada modo de falha tem o proprio veredito parseavel, e o
 // de provisionamento diz o conserto (--build-arg COM_PREVIEW=1).
 import { test, expect, rodar } from '../apoio/runner.ts'
-import { copyFileSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -27,7 +27,7 @@ async function rodarScript(caminho: string, url: string): Promise<VereditoDaInsp
 
 test('sem playwright alcancavel, o veredito nomeia PROVISIONAMENTO e traz o conserto — nao culpa a pagina', async () => {
   const copiado = join(FORA, 'inspect-preview.mjs')
-  copyFileSync(SCRIPT, copiado)
+  writeFileSync(copiado, readFileSync(SCRIPT, 'utf8').replace("import('playwright')", "import('/pacote-que-nao-existe/playwright.mjs')"))
   const v = await rodarScript(copiado, 'http://127.0.0.1:1')
   expect(v.ok).toBe(false)
   expect(v.conclusive).toBe(false)

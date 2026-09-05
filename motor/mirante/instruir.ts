@@ -1,5 +1,5 @@
 import { extractObjetivo } from '../cordel/index.ts'
-import { readCard, updateCard } from '../cordel/store.ts'
+import { readCard, updateCardPorAcaoHumana } from '../cordel/store.ts'
 import { isoNow } from '../cordel/util.ts'
 import { existsSync } from 'node:fs'
 import type { Fields } from '../cordel/tipos.ts'
@@ -85,8 +85,7 @@ export function instruir(id: string, texto: string): ResultadoInstrucao {
       ? { status: 'EXECUTING', correction: '', resume_from: '' }
       : { correction: limpo, status: 'CORRECTING', resume_from: '' }
   const numero = subPrompts(card.body).length + 1
-  const r = updateCard(id, {
-    apesarDaParada: true,
+  const r = updateCardPorAcaoHumana(id, {
     fields: destino,
     body: body => anexarSubPrompt(body, limpo),
     log: refaz

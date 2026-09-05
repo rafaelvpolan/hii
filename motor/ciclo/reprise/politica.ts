@@ -47,6 +47,8 @@ function haltFields(input: FailurePolicyInput): Fields {
     halt_provider: input.provider,
     halt_reason: input.failureReason,
     halt_at: isoNow(),
+    pipeline_liberado: '',
+    pipeline_passo: '',
     wait_attempts: '',
     wait_reason: '',
     wait_class: '',

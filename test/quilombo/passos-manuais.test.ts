@@ -106,7 +106,7 @@ test('url aprovada em modo manual PAUSA sem rodar nenhum passo — e o diario di
   expect(c?.body).toContain('/testes')
 }, TEMPO_COM_GIT_MS)
 
-test('pedido de passo roda SO ele e volta a pausar, com o label em pipeline_feitos', async () => {
+test('pedido de passo roda SO ele e volta a pausar, com o ID em pipeline_feitos (labels legados seguem aceitos)', async () => {
   const { id } = await cardPronto({ pipeline_feitos: 'Arquitetura,Testes,Seguranca' })
   const pedido = pedirPassoManual(id, 'limpeza')
   expect(pedido.ok).toBe(true)
@@ -124,7 +124,7 @@ test('pedido de passo roda SO ele e volta a pausar, com o label em pipeline_feit
   const c = readCard(id)
   expect(agentes).toEqual(['pura'])
   expect(c?.fm.status).toBe('PAUSED')
-  expect(c?.fm.pipeline_feitos).toBe('Arquitetura,Testes,Seguranca,Limpeza')
+  expect(c?.fm.pipeline_feitos).toBe('Arquitetura,Testes,Seguranca,limpeza')
   expect(c?.fm.pipeline_passo).toBe('')
   expect(c?.fm.cost_usd).toBe('0.0010')
   expect(c?.body).toContain('pipeline completo')
@@ -161,6 +161,43 @@ test('suite liberada com todos os passos feitos vai ao fecho (PR_OPEN) e limpa o
   expect(c?.fm.pipeline_liberado).toBe('')
   expect(c?.fm.pipeline_feitos).toBe('')
   expect(c?.fm.pipeline_passo).toBe('')
+}, TEMPO_COM_GIT_MS)
+
+test('passo unico VENCE a liberacao que ficou gravada: roda so ele, limpa pipeline_liberado e pausa', async () => {
+  const { id } = await cardPronto({
+    status: 'PAUSED',
+    pipeline_pausa: 'manual',
+    pipeline_liberado: 'true',
+    pipeline_feitos: 'arquitetura,testes,Seguranca',
+  })
+  const pedido = pedirPassoManual(id, 'limpeza')
+  expect(pedido.ok).toBe(true)
+
+  const agentes: string[] = []
+  const deps: FinishDeps = {
+    runStep: (_wt: string, agent: string) => {
+      agentes.push(agent)
+      return Promise.resolve({ ok: true, time: 1, cost: 0.001, tokens: 10, costMeasured: true, text: 'limpo' })
+    },
+    runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_APROVADO),
+  }
+  await handleFinish(id, deps)
+  const c = readCard(id)
+  expect(agentes, 'a liberacao grudada nao pode transformar o pedido de UM passo na suite inteira').toEqual(['pura'])
+  expect(c?.fm.status).toBe('PAUSED')
+  expect(c?.fm.pipeline_liberado, 'a suite completa so roda com um novo /hii').toBe('')
+  expect(c?.body).toContain('vence a liberacao')
+}, TEMPO_COM_GIT_MS)
+
+test('pedido manual limpa resume_from — replay velho nao recusa o passo pedido', async () => {
+  const { id } = await cardPronto({
+    status: 'PAUSED',
+    pipeline_pausa: 'manual',
+    resume_from: '__apos_passos__',
+  })
+  const pedido = pedirPassoManual(id, 'arquitetura')
+  expect(pedido.ok).toBe(true)
+  expect(String(readCard(id)?.fm.resume_from ?? ''), 'com o resume_from velho, o fecho fatiava os passos e respondia "nao esta no plano"').toBe('')
 }, TEMPO_COM_GIT_MS)
 
 test('modo automatico (pipeline: auto no card) NAO pausa — vai direto ao fecho como antes', async () => {

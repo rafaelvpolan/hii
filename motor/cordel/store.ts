@@ -132,6 +132,10 @@ function semStatus(f: Fields): Fields {
   return resto
 }
 
+export function updateCardPorAcaoHumana(id: string, patch: Omit<CardPatch, 'apesarDaParada'>): Fields | null {
+  return updateCard(id, { ...patch, apesarDaParada: true })
+}
+
 export function patchCard(id: string, fields: Fields, logLine?: string): void {
   updateCard(id, { fields, log: logLine })
 }
