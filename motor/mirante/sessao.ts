@@ -6,6 +6,7 @@ export type EffectKind =
   | 'approve-url' | 'reject-url' | 'reopen-repo'
   | 'confirm-close' | 'reject-close'
   | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake'
+  | 'pipeline-step' | 'pipeline-suite'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -63,10 +64,30 @@ export function canonico(comando: string): string {
 }
 
 export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
+  // Pipeline manual: um comando por passo + a suite. Mesma implementacao do CLI
+  // (`hii passo`, `hii pipeline`) — cartorio/passos-manuais.ts.
+  '/arquitetura', '/polimento', '/testes', '/seguranca', '/limpeza', '/hii',
   // Item 16 — atalhos de intake. Entram na MESMA lista porque sao comandos como
   // qualquer outro: o que muda e o conteudo pre-carregado, nunca o pipeline.
   '/orquestrador-jogos', '/orquestrador-dev-web', '/orquestrador-android', '/orquestrador-devops', '/layout',
   '/hii-design', '/hii-dev-web', '/hii-backend'] as const
+
+// Comandos do pipeline manual → id do passo no pipeline.json. `/polimento` e o
+// apelido conversado do primeiro passo (arquitetura); a forma `/hii:code:X`
+// veio da referencia de uso e vale igual. Quem resolve de verdade e o
+// canonicoDoPasso do cartorio — aqui so se reconhece a digitacao.
+const PASSOS_MANUAIS: Record<string, string> = {
+  arquitetura: 'arquitetura',
+  polimento: 'polimento',
+  testes: 'testes',
+  seguranca: 'seguranca',
+  limpeza: 'limpeza',
+  'hii:code:arquitetura': 'arquitetura',
+  'hii:code:polimento': 'polimento',
+  'hii:code:testes': 'testes',
+  'hii:code:seguranca': 'seguranca',
+  'hii:code:limpeza': 'limpeza',
+}
 
 export function newSession(repo = ''): SessionState {
   return { tela: '', repo, pendingPlan: '', seguindo: '', perguntando: '', perguntaVista: '', removendo: '', retomando: '', escolhendo: false, aprovando: '', comentando: '', conversa: [] }
@@ -167,6 +188,21 @@ function command(line: string, state: SessionState): Reply {
     return intake.texto
       ? reply({ kind: 'intake', text: intake.texto, raw: intake.comando }, cleared)
       : reply({ kind: 'error', text: `uso: ${intake.comando} <o que fazer> — cria a tarefa com o conhecimento do dominio ja carregado` }, state)
+  }
+  // Pipeline manual: um passo por vez, ou a suite com /hii. Sem id, vale a
+  // tarefa aberta — o caso comum e estar olhando para ela quando o card pausa.
+  const passoManual = head ? PASSOS_MANUAIS[head] : undefined
+  if (passoManual) {
+    const alvo = rest[0] || state.seguindo
+    return alvo
+      ? reply({ kind: 'pipeline-step', id: alvo, text: passoManual }, cleared)
+      : reply({ kind: 'error', text: `uso: /${head} <id> — roda so esse passo do pipeline e pausa de novo (sem id, vale a tarefa aberta)` }, state)
+  }
+  if (head === 'hii') {
+    const alvo = rest[0] || state.seguindo
+    return alvo
+      ? reply({ kind: 'pipeline-suite', id: alvo }, cleared)
+      : reply({ kind: 'error', text: 'uso: /hii <id> — roda o pipeline restante de uma vez e segue para o fecho (sem id, vale a tarefa aberta)' }, state)
   }
   switch (head) {
     case 'help':

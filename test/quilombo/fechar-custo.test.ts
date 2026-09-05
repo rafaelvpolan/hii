@@ -143,6 +143,9 @@ test('REGRESSAO o teto de orcamento e conferido DENTRO do laco de passos, e o cu
     surface: 'none',
     clarified: 'true',
     steps: 'passo_um,passo_dois',
+    // O pipeline virou manual por padrao (pausa antes do primeiro passo); este
+    // teste existe para o LACO automatico, entao declara o modo que exercita.
+    pipeline: 'auto',
     worktree: wt,
   }, '## Objetivo\ndois passos\n')
 
