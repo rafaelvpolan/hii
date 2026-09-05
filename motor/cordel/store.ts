@@ -172,17 +172,20 @@ function slugify(s: string): string {
 }
 
 export function createCard(fields: Fields, body: string): string {
-  const id = nextId()
   const slug = fields.slug || slugify(fields.title || '')
   const agora = isoNow()
   // `status_since` nasce com o card: sem semente aqui, todo card ficaria sem idade
   // mensuravel ate a PRIMEIRA transicao — exatamente na janela em que ele esta
   // esperando alguem (READY, e depois CLARIFY/URL).
-  const fm: Fields = { id, slug, status: 'READY', status_since: agora, ...fields, updated: agora }
-  const order = Object.keys(fm)
+  const semId: Fields = { slug, status: 'READY', status_since: agora, ...fields, updated: agora }
   garantirCardsDir()
-  writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n')
-  return id
+  return withFileLock(join(cardsDir(), '.criacao'), () => {
+    const id = nextId()
+    const fm: Fields = { id, ...semId }
+    const order = Object.keys(fm)
+    writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n', { flag: 'wx' })
+    return id
+  })
 }
 
 function loadRepos(): RepoConfig[] {

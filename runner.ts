@@ -1,5 +1,6 @@
 import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './motor/cordel/alicerce/config.ts'
-import { pending, reconcileStranded, runJob, tick } from './motor/oswaldo/mutirao/fila.ts'
+import { halteradosDoLote, pending, reconcileStranded, runJob, tick } from './motor/oswaldo/mutirao/fila.ts'
+import { varrerPreviewsOrfaos } from './motor/ciclo/crivo/url-viva.ts'
 import { renderProgress } from './motor/euclides/radar/progresso.ts'
 import { initHicodeHome } from './motor/cordel/alicerce/home.ts'
 import { runSync, relatoDeSync } from './motor/tomada/ponte/tarefas/sync.ts'
@@ -62,12 +63,25 @@ if (process.argv.includes('--init')) {
     process.stderr.write(`[hicode] ${String((e as Error).message)}\n`)
   }
   reconcileStranded()
+  try {
+    const varrida = varrerPreviewsOrfaos()
+    for (const id of varrida.mortosLimpos) process.stdout.write(`[runner] #${id}: url_pid morto limpo no arranque\n`)
+    for (const id of varrida.orfaosParados) process.stdout.write(`[runner] #${id}: preview orfao parado no arranque\n`)
+  } catch (e) {
+    reportTickFailure('varredura de previews', e as Error)
+  }
   retomarAoIniciar(linha => process.stdout.write(linha))
   if (process.argv.includes('--once')) {
     void wakeDueWaiting()
       .catch((e) => { reportTickFailure('wakeDueWaiting (once)', e as Error) })
-      .then(() => Promise.all(pending().slice(0, MAX_CONCURRENCY).map(runJob)))
-      .then(() => process.exit(0))
+      .then(async () => {
+        const lote = pending().slice(0, MAX_CONCURRENCY)
+        await Promise.all(lote.map(runJob))
+        const parados = halteradosDoLote(lote.map(j => j.id))
+        if (!parados.length) process.exit(0)
+        process.stderr.write(`[runner] --once: ${parados.length} card(s) do lote terminaram em HALTED (#${parados.join(', #')}) — saindo com codigo 1 para o orquestrador ver a falha\n`)
+        process.exit(1)
+      })
   } else {
     process.stdout.write(`hicode runner ativo — worktrees + paralelo (max ${MAX_CONCURRENCY}, poll ${POLL_MS}ms, timeout ${RUN_TIMEOUT_MS}ms)\n`)
     const saude = subirServidorDeSaude()

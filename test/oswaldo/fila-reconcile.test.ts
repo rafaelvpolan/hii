@@ -7,7 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-queue-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
-const { reconcileStranded, pending } = await import('../../motor/oswaldo/mutirao/estado-da-fila.ts')
+const { reconcileStranded, pending, halteradosDoLote } = await import('../../motor/oswaldo/mutirao/estado-da-fila.ts')
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -117,4 +117,42 @@ test('pending: status sem job nao entra na fila', () => {
   const ids = pending().map(j => j.id)
   expect(ids).not.toContain(parado)
   expect(ids).not.toContain(esperando)
+})
+
+test('reconcile: resume_from nasce do estado gravado — passo ja pago nao repete no finish reiniciado', () => {
+  const esperado: Array<[string, string]> = [
+    ['REFINED', 'Testes'],
+    ['TESTS_GREEN', 'Seguranca'],
+    ['SEC_CLEARED', 'Limpeza'],
+    ['CLEANED', '__apos_passos__'],
+  ]
+  for (const [estado, resume] of esperado) {
+    const id = card(estado)
+    reconcileStranded()
+    const fm = readCard(id)?.fm
+    expect(fm?.status, `estado ${estado}`).toBe('URL_OK')
+    expect(fm?.resume_from, `estado ${estado}`).toBe(resume)
+  }
+})
+
+test('reconcile: REVIEWED (passo removido do pipeline) volta sem resume_from — o replay decide', () => {
+  const id = card('REVIEWED')
+  reconcileStranded()
+  const fm = readCard(id)?.fm
+  expect(fm?.status).toBe('URL_OK')
+  expect(String(fm?.resume_from ?? '')).toBe('')
+})
+
+test('reconcile: resume_from velho e sobrescrito pelo estado atual do card', () => {
+  const id = createCard({ title: 'resume velho', status: 'SEC_CLEARED', repo: 'org/repo', resume_from: 'Testes' }, '## Objetivo\nx\n')
+  reconcileStranded()
+  expect(readCard(id)?.fm.resume_from).toBe('Limpeza')
+})
+
+test('halteradosDoLote: aponta so os cards do lote que terminaram HALTED', () => {
+  const ok = card('URL_OK')
+  const ruim = card('HALTED')
+  card('HALTED')
+  expect(halteradosDoLote([ok, ruim])).toEqual([ruim])
+  expect(halteradosDoLote([])).toEqual([])
 })
