@@ -42,6 +42,13 @@ services:
       #
       # Saida de emergencia: `HICODE_RIGOR_ESTRITO=0 docker stack deploy ...`.
       HICODE_RIGOR_ESTRITO: ${HICODE_RIGOR_ESTRITO:-1}
+      # O default do motor e pipeline MANUAL (motor/cordel/alicerce/config.ts,
+      # pipelineManual) — desenhado para a TUI, onde ha um humano para pedir cada
+      # passo. Neste stack NAO ha TUI, e PAUSED nao tem consumidor automatico
+      # (motor/euclides/radar/saude.ts, SEM_CONSUMIDOR_AUTOMATICO): sem esta linha,
+      # todo card com url aprovada pararia em PAUSED para sempre, em silencio.
+      # Headless roda automatico; quem quiser o manual sobrescreve no deploy.
+      HICODE_PIPELINE: ${HICODE_PIPELINE:-auto}
       # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
       # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
       # decidir quantos worktrees abre em paralelo. Quem le: orcamentoDeRecurso e

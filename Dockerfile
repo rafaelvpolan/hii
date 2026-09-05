@@ -5,8 +5,12 @@ FROM node:24-slim
 
 # git e obrigatorio: o motor trabalha em worktree, nao em clone.
 # gh e obrigatorio: e por ele que o PR abre e que o merge e detectado.
+# psmisc (fuser) e obrigatorio: freePort (motor/ciclo/crivo/url-viva.ts) recupera a
+# porta de preview com `fuser -k` e ENGOLE o erro por desenho — sem o binario, a
+# recuperacao vira no-op silencioso e a porta de um dev-server orfao fica ocupada
+# para sempre.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl gnupg git \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg git psmisc \
  && install -m 0755 -d /etc/apt/keyrings \
  && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
