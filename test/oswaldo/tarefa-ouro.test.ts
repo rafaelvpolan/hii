@@ -204,7 +204,7 @@ test('TAREFA-OURO: a IA cria soma.mjs de verdade — a pos-condicao mecanica pas
   expect(Number(card?.fm.cost_usd)).toBeGreaterThan(0)
 }, TEMPO_TAREFA_OURO_MS)
 
-test('DEFEITO CONHECIDO: a IA nao toca em NENHUM arquivo (diff vazio) e o "nothing to commit" e engolido como se fosse sucesso — o card chega em URL sem que nada tenha acontecido', async () => {
+test('CONSERTADO no raio-x 1-B: a IA nao toca em NENHUM arquivo (diff vazio) — o gate do eval barra o card em CORRECTING em vez de entrega-lo como sucesso', async () => {
   comportamento('nao-faz-nada')
   const id = cardTarefaOuro()
   await handleExecute(id)
@@ -220,11 +220,12 @@ test('DEFEITO CONHECIDO: a IA nao toca em NENHUM arquivo (diff vazio) e o "nothi
   expect(card?.fm.eval_score, 'o proprio avaliador (LLM) enxerga a ausencia de mudanca no diff e da nota 0').toBe('0')
   expect(
     card?.fm.status,
-    'DEFEITO CONHECIDO: o motor nao percebe que a implementacao nao fez NADA — commitAndRecord engole o "nothing to commit" e o card segue para URL exatamente como no teste anterior, que teve sucesso de verdade. Quem so acompanha o status nao distingue os dois casos.',
-  ).toBe('URL')
+    'commitAndRecord ainda engole o "nothing to commit", mas o gate do eval agora pega o vazio rio abaixo: score 0 manda o card para refacao em vez de entrega-lo como sucesso',
+  ).toBe('CORRECTING')
+  expect(card?.fm.eval_gate, 'a refacao automatica e de uso UNICO por card').toBe('usado')
 }, TEMPO_TAREFA_OURO_MS)
 
-test('DEFEITO CONHECIDO: o avaliador identifica corretamente que a tarefa NAO foi cumprida (score 0, meets false), mas isso nao muda em nada o desfecho do card', async () => {
+test('CONSERTADO no raio-x 1-B: o avaliador identifica que a tarefa NAO foi cumprida (score 0) e o veredito agora MUDA o desfecho — refacao unica antes do humano', async () => {
   comportamento('toca-outra-coisa')
   const id = cardTarefaOuro()
   await handleExecute(id)
@@ -240,8 +241,9 @@ test('DEFEITO CONHECIDO: o avaliador identifica corretamente que a tarefa NAO fo
   expect(card?.fm.eval_notes ?? '').toContain('nao foi criado')
   expect(
     card?.fm.status,
-    'DEFEITO CONHECIDO: eval_score=0/meets=false nao muda o status do card nem interrompe nada — olhando so a transicao de estado, este card parece IDENTICO ao card do primeiro teste, que teve sucesso de verdade',
-  ).toBe('URL')
+    'o veredito do avaliador agora TEM leitor: score 0 desvia o card para refacao unica em vez de deixa-lo identico ao card que teve sucesso de verdade',
+  ).toBe('CORRECTING')
+  expect(card?.fm.correction, 'a instrucao de refacao carrega o que o avaliador viu').toContain('nao foi criado')
 }, TEMPO_TAREFA_OURO_MS)
 
 test('TAREFA-OURO (trilha paga): a MESMA tarefa contra o modelo real, atras de HICODE_E2E_MODELO_REAL + teto de gasto — e quem detecta o fake/cassete envelhecido', async () => {

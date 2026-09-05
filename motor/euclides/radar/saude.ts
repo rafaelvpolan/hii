@@ -7,8 +7,10 @@ import { readDaemonHealth } from './tick.ts'
 import { isActive } from '../../mirante/render/phases.ts'
 import { PROVEDOR_DESCONHECIDO, lerCota } from '../tesouro/cota.ts'
 import type { LeituraDeCota } from '../tesouro/cota.ts'
+import { lerTetoGlobal } from '../tesouro/teto-global.ts'
+import type { LeituraDoTetoGlobal } from '../tesouro/teto-global.ts'
 
-export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'esperando-provedor' | 'parado' | 'trabalhando' | 'ocioso'
+export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'orcamento-esgotado' | 'esperando-provedor' | 'parado' | 'trabalhando' | 'ocioso'
 
 // Os estados que NINGUEM tira do lugar — nem o tick, nem o boot. Sao cinco, e o
 // numero nao e palpite: `test/euclides/estados-sem-consumidor.test.ts` DERIVA o
@@ -97,6 +99,7 @@ export interface SaudeDoMotor {
   esperandoVoce: CheckpointAberto[]
   tick: SaudeDoTick
   cota: LeituraDeCota
+  orcamentoGlobal: LeituraDoTetoGlobal
 }
 
 function texto(fm: Fields, campo: string): string {
@@ -231,9 +234,10 @@ function checkpointDoCard(fm: Fields, agoraMs: number): CheckpointAberto {
   }
 }
 
-function estadoMaisGrave(tick: SaudeDoTick, paradosPorCota: string[], esperas: EsperaPorFalha[], paradas: ParadaDeCard[], emVoo: boolean): EstadoDoMotor {
+function estadoMaisGrave(tick: SaudeDoTick, paradosPorCota: string[], esperas: EsperaPorFalha[], paradas: ParadaDeCard[], emVoo: boolean, orcamentoBloqueado: boolean): EstadoDoMotor {
   if (tick.falhasSeguidas > 0) return 'tick-falhando'
   if (paradosPorCota.length) return 'cota-esgotada'
+  if (orcamentoBloqueado) return 'orcamento-esgotado'
   if (esperas.length) return 'esperando-provedor'
   // Antes de `paradas` existir, este ramo nao existia: card parado por orcamento,
   // escopo, excecao ou por decisao humana nao caia em ramo nenhum e o motor respondia
@@ -283,8 +287,9 @@ export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {
     const status = texto(c, 'status')
     return status !== 'WAITING' && isActive(status)
   })
+  const orcamentoGlobal = lerTetoGlobal(agoraMs)
   return {
-    estado: estadoMaisGrave(tick, paradosPorCota, esperas, paradas, emVoo),
+    estado: estadoMaisGrave(tick, paradosPorCota, esperas, paradas, emVoo, orcamentoGlobal.bloqueado),
     esperas,
     provedoresIndisponiveis: [...mapa.values()].sort((a, b) => a.provedor.localeCompare(b.provedor)),
     paradosPorCota,
@@ -292,5 +297,6 @@ export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {
     esperandoVoce,
     tick,
     cota,
+    orcamentoGlobal,
   }
 }

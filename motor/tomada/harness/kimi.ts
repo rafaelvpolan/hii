@@ -57,6 +57,7 @@ export const KIMI_CAPACIDADES: HarnessCapabilities = {
   reportsCostUsd: false,
   reportsTokens: false,
   mcp: false,
+  emitsStructuredJson: true,
 }
 
 export const KIMI_SINAIS: SinaisDoHarness = {

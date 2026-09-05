@@ -1,8 +1,9 @@
 import { extractObjetivo } from '../../cordel/index.ts'
-import type { Card } from '../../cordel/index.ts'
+import type { Card, Fields } from '../../cordel/index.ts'
 import { ROOT, GATE_DIFF_LIMIT } from '../../cordel/alicerce/config.ts'
 import { runGit } from '../../quilombo/git.ts'
-import { providerFor, modelFor } from '../../tomada/registro.ts'
+import { providerFor } from '../../tomada/registro.ts'
+import { modeloGovernado, registrarTier, tierDaAcaoDoCard } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 
@@ -28,7 +29,8 @@ export async function evaluate(card: Card, wt: string, base: string): Promise<Ev
     'DIFF:',
     diff || '(sem diff vs a base)',
   ].join('\n')
-  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 }, 'avaliacao')
+  if (card.fm.id) registrarTier(card.fm.id, 'avaliacao', tierDaAcaoDoCard('avaliacao', card.fm))
+  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: modeloGovernado('verify', 'avaliacao', card.fm), expectsJson: true, timeoutMs: 120000 }, 'avaliacao')
   if (!res.ok) {
     return { score: -1, meets: false, notes: `eval NAO rodou: ${String(res.detail || 'provedor falhou').slice(0, 120)}`, cost: res.cost, tokens: sumTokens(res.usage) }
   }
@@ -49,4 +51,20 @@ export async function evaluate(card: Card, wt: string, base: string): Promise<Ev
     }
   }
   return { score: 0, meets: false, notes: 'eval inconclusivo (sem veredito parseavel)', cost: res.cost, tokens }
+}
+
+export type AcaoDoEval = 'corrigir' | 'avisar' | 'nada'
+
+export interface DecisaoDoEval {
+  acao: AcaoDoEval
+  instrucao: string
+}
+
+export function decisaoDoEval(e: EvalResult, fm: Fields, limiar: number, objetivo: string): DecisaoDoEval {
+  if (limiar < 0 || e.score < 0 || e.score > limiar) return { acao: 'nada', instrucao: '' }
+  if (String(fm.eval_gate ?? '') === 'usado') return { acao: 'avisar', instrucao: '' }
+  return {
+    acao: 'corrigir',
+    instrucao: `eval ${e.score}/5 — ${e.notes}. O diff nao cumpre o objetivo; refaca atendendo: "${objetivo}"`,
+  }
 }

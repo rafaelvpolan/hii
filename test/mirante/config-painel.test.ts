@@ -20,7 +20,7 @@ const base: EstadoDaConfig = {
   provedores: [ia('claude', { papeis: ['implement'] }), ia('kimi', { isolaLeitura: false })],
   selecionado: 'kimi',
   uso5h: [uso('claude', 1)], usoSemana: [uso('claude', 2)],
-  serie: [1, 2, 3], loop: [], fila: 0, gastoHoje: 1.5, tetoUsd: 20, projeto: 'org/app',
+  serie: [1, 2, 3], loop: [], fila: 0, gastoHoje: 1.5, tetoUsd: 20, tetoGlobalUsd: 0, gastoGlobalUsd: 0, orcamentoGlobalBloqueado: false, projeto: 'org/app',
   sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
 }
 
@@ -69,7 +69,7 @@ test('limite declarado do provedor aparece no detalhe — isola leitura nao', ()
 test('estado vazio nao quebra e nao mente', () => {
   const vazio: EstadoDaConfig = {
     provedores: [], selecionado: '', uso5h: [], usoSemana: [], serie: [],
-    loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
+    loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, tetoGlobalUsd: 0, gastoGlobalUsd: 0, orcamentoGlobalBloqueado: false, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
   const t = renderConfig(vazio, { color: false, largura: 80, altura: 20 }).join('\n')
   expect(t).toContain('nenhuma ia configurada')

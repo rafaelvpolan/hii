@@ -26,6 +26,7 @@ interface ClaudeJson {
 const URL_DA_API = 'https://api.anthropic.com'
 
 export const CLAUDE_CAPACIDADES: HarnessCapabilities = {
+  emitsStructuredJson: true,
   restrictsTools: true,      // --allowedTools em toda chamada
   isolatesReadonly: true,    // modo readonly cai em Read,Glob,Grep
   acceptsEffort: true,       // --effort

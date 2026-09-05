@@ -66,6 +66,9 @@ export interface EstadoDaConfig {
   sessao: LedgerDaSessao
   gastoHoje: number
   tetoUsd: number
+  tetoGlobalUsd: number
+  gastoGlobalUsd: number
+  orcamentoGlobalBloqueado: boolean
   projeto: string
 }
 

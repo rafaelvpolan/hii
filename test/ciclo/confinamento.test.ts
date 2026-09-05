@@ -89,7 +89,7 @@ const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO } = await import('.
 const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../../motor/agentes/registro.ts')
 const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../../motor/tomada/ponte/mcp.ts')
 const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../../motor/tomada/harness/claude.ts')
-const { verifyVisual } = await import('../../motor/ciclo/agente.ts')
+const { verifyVisual } = await import('../../motor/ciclo/crivo/verificar-visual.ts')
 const { ROOT } = await import('../../motor/cordel/alicerce/config.ts')
 const CARTAO = { file: '', fm: { title: 'ajustar o rodape da pagina' }, order: [], body: '' }
 

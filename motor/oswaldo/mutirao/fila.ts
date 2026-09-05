@@ -15,6 +15,7 @@ import { wakeDueWaiting } from '../../ciclo/reprise/espera.ts'
 import { limparTmpAntigo, usoDeDisco } from '../../euclides/estado-em-disco.ts'
 import { podarRegistrosAntigos } from '../../euclides/podar.ts'
 import { avisarFalhaSilenciosa, motivoDoErro } from '../../cordel/alicerce/aviso.ts'
+import { despachoLiberado } from '../../euclides/tesouro/teto-global.ts'
 
 export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.ts'
 
@@ -114,9 +115,14 @@ export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
     // dizia prevenir. O menor dos dois manda: o operador ainda pode baixar por
     // HICODE_CONCURRENCY, mas nao pode subir acima do que a maquina comporta.
     const teto = tetoDeParalelismo(MAX_CONCURRENCY)
-    for (const job of pending()) {
-      if (quantosEmVoo() >= teto) break
-      void runJob(job)
+    const global = despachoLiberado()
+    if (!global.pode) {
+      avisarFalhaSilenciosa('teto global de gasto', global.motivo, 'o despacho esta drenado ate a janela virar; cards novos ficam no disco')
+    } else {
+      for (const job of pending()) {
+        if (quantosEmVoo() >= teto) break
+        void runJob(job)
+      }
     }
   } catch (e) {
     reportTickFailure('fila', e as Error)

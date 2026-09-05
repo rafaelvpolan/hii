@@ -1,6 +1,7 @@
 import { readDaemonHealth } from './tick.ts'
 import { pending, quantosEmVoo } from '../../oswaldo/mutirao/estado-da-fila.ts'
 import { encerrando } from '../../oswaldo/mutirao/encerramento.ts'
+import { lerTetoGlobal } from '../tesouro/teto-global.ts'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { ENV_HEALTH_BIND, ENV_HEALTH_PORT } from '../../cordel/alicerce/contrato.ts'
@@ -20,6 +21,7 @@ export interface Saude {
   readonly pendentes: number
   readonly falhasSeguidasNoTick: number
   readonly ultimoErro: string
+  readonly orcamentoGlobalBloqueado: boolean
 }
 
 // O /health nao devolve a mensagem crua de erro. reportTickFailure grava
@@ -45,6 +47,7 @@ export function lerSaude(): Saude {
     pendentes: pending().length,
     falhasSeguidasNoTick: h.consecutiveFailures,
     ultimoErro: categoriaDoErro(h.lastError),
+    orcamentoGlobalBloqueado: lerTetoGlobal().bloqueado,
   }
 }
 

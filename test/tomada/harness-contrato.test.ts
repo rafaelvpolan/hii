@@ -5,7 +5,7 @@ import { harnessPorNome, providerNames } from '../../motor/tomada/registro.ts'
 import type { HarnessCapabilities } from '../../motor/tomada/tipos.ts'
 
 const CHAVES: (keyof HarnessCapabilities)[] = [
-  'restrictsTools', 'isolatesReadonly', 'acceptsEffort', 'reportsCostUsd', 'reportsTokens', 'mcp',
+  'restrictsTools', 'isolatesReadonly', 'acceptsEffort', 'reportsCostUsd', 'reportsTokens', 'mcp', 'emitsStructuredJson',
 ]
 
 test('o registro nao esta vazio — sem isto todos os for-of deste arquivo passariam vazios', () => {

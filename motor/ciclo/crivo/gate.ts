@@ -5,7 +5,8 @@ import { runGit, stageAll } from '../../quilombo/git.ts'
 import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
 import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
-import { modelFor, providerFor, effortFor } from '../../tomada/registro.ts'
+import { providerFor, effortFor } from '../../tomada/registro.ts'
+import { modeloGovernado } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { classifyFailure } from '../reprise/classe-de-falha.ts'
@@ -264,8 +265,9 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     dirs: gauntlet ? [wt, ...referencias.map(r => r.replace(/\/[^/]+$/, '')), tela.replace(/\/[^/]+$/, '')] : [wt],
     mode: 'readonly',
     useAgents: false,
-    model: modelFor('gate'),
+    model: modeloGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
     effort: effortFor('gate'),
+    expectsJson: true,
     timeoutMs: timeoutForDiff(diff),
   }, 'gate')
   const tokens = sumTokens(res.usage)

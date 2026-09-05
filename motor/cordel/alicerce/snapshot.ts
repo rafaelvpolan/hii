@@ -10,6 +10,7 @@ import { emExecucao } from '../../mirante/render/rodape.ts'
 import type { AgentRole, HarnessId } from '../../tomada/tipos.ts'
 import type { EstadoDaConfig, ItemDoLoop, LedgerDaSessao, LinhaDeProvedor } from '../../mirante/render/config/index.ts'
 import { janelasDoProvedor } from '../../euclides/tesouro/janelas.ts'
+import { lerTetoGlobal } from '../../euclides/tesouro/teto-global.ts'
 import { gastoDoMotorNoIntervalo } from '../../euclides/tesouro/consumo.ts'
 import type { JanelaDoPainel } from '../../mirante/render/config/tipos.ts'
 import { arquivoDeGovernanca, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
@@ -94,6 +95,7 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
   const hoje = new Date(agoraMs).toISOString().slice(0, 10)
   const gasto = dailySpend(allCards().filter(c => !repo || c.repo === repo), hoje)
   const { itens, fila } = loopEmExecucao(repo, agoraMs)
+  const leituraGlobal = lerTetoGlobal(agoraMs)
   return {
     provedores,
     selecionado: provedores.some(p => p.nome === selecionado) ? selecionado : (provedores[0]?.nome ?? ''),
@@ -111,6 +113,9 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
     // US$16. Numero na tela que nao e o numero aplicado e pior que numero
     // nenhum, porque parece informacao.
     tetoUsd: tetoDoCardComFallback(),
+    tetoGlobalUsd: leituraGlobal.tetoUsd,
+    gastoGlobalUsd: leituraGlobal.gastoUsd,
+    orcamentoGlobalBloqueado: leituraGlobal.bloqueado,
     projeto: repo,
   }
 }

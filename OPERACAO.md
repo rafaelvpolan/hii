@@ -421,7 +421,12 @@ hii estado --revisao    # só o token de revisão (para polling barato)
 
 - **Teto por card**: `orcamentoPorCard.tetoUsd` em `config/model-tier.json`, ou
   `HICODE_CARD_BUDGET_USD`. Ultrapassar → `HALTED`.
-- **Teto global**: `HICODE_BUDGET_USD`.
+- **Teto global**: `HICODE_BUDGET_USD` (ou `orcamentoGlobal.tetoUsd` em
+  `config/model-tier.json`; a env vence). Soma o gasto de TODOS os provedores nos
+  runs de uma janela móvel (`orcamentoGlobal.janela`, padrão 24h). Ao atingir:
+  nenhum job novo é despachado, os em voo terminam, nenhum card muda de status, e
+  o bloqueio se desfaz sozinho quando o run mais antigo sai da janela. O endpoint
+  de saúde reporta `orcamentoGlobalBloqueado` e o estado do motor vira `orcamento-esgotado`.
 - **Harness sem contabilidade** (codex, kimi): o teto não tem o que medir. Vale
   repetir porque não é óbvio — e não é o mesmo conjunto dos que não isolam.
 
@@ -620,7 +625,7 @@ são as que valem memorizar.
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_BUDGET_USD` | teto global |
+| `HICODE_BUDGET_USD` | teto global por janela móvel (drena o despacho; vence o valor de `model-tier.json`) |
 | `HICODE_CARD_BUDGET_USD` | teto por card |
 
 ### Estado fora do clone
