@@ -41,7 +41,7 @@ export async function runJob(job: Job): Promise<void> {
     // (cordel/store.ts), que agora LE esta linha para preencher `halt_reason`.
     // `job.kind` continua na mensagem, onde e informacao, e sai de onde era afirmacao.
     updateCard(job.id, {
-      fields: { status: 'HALTED', halt_class: 'excecao' },
+      fields: { status: 'HALTED', halt_class: 'excecao', halt_reason: `erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e).slice(0, 160)}` },
       log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e)}`,
     })
   } finally {

@@ -49,6 +49,20 @@ test('INVARIANTE nenhum teste calcula a raiz do repo com um unico ".."', () => {
   expect(profundidade, 'teste em subpasta com raiz de um nivel aponta para test/, nao para o repo').toEqual([])
 })
 
+test('teste de dominio nao desce ao 3o nivel — a trilha node (glob de 2 niveis) o ignoraria em SILENCIO', () => {
+  const fundos: string[] = []
+  for (const d of DOMINIOS) {
+    for (const sub of readdirSync(join('test', d))) {
+      const caminho = join('test', d, sub)
+      if (!statSync(caminho).isDirectory()) continue
+      for (const f of readdirSync(caminho)) {
+        if (f.endsWith('.test.ts')) fundos.push(join(caminho, f))
+      }
+    }
+  }
+  expect(fundos, 'package.json test:node so expande test/*.test.ts e test/*/*.test.ts — um teste aqui rodaria no bun e sumiria da trilha node, meia garantia de dual-runtime').toEqual([])
+})
+
 test('a varredura enxerga os arquivos — senao o invariante passaria vazio', () => {
   const total = DOMINIOS.reduce((n, d) => n + testesEm(join('test', d)).length, 0)
   expect(total).toBeGreaterThan(140)

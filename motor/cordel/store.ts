@@ -97,6 +97,12 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     // lacava havia horas; card 001 esta em URL desde 24/08 e nada sabia dizer "aberto
     // ha 9 dias". Gravado SO na mudanca de status, e nunca em patch que so loga.
     if (mudouStatus) gravarCampo(fm, order, 'status_since', String(fm.updated))
+    const saiuDoHalt = before.status === 'HALTED' && mudouStatus && resolvedFields.status !== 'HALTED'
+    if (saiuDoHalt) {
+      for (const campo of ['halt_class', 'halt_at', 'halt_reason', 'halt_provider']) {
+        if (resolvedFields[campo] === undefined) gravarCampo(fm, order, campo, '')
+      }
+    }
     // O HALT tem UM ponto de estrangulamento, e e este: aqui se conhece o par
     // (estado anterior, estado novo). Carimbar a classe aqui garante o invariante
     // "nenhum HALTED sem classe" sem depender de cada sitio de parada lembrar — e a
@@ -160,9 +166,15 @@ export function garantirCardsDir(): string {
 }
 
 export function allCards(): Array<Fields & { file: string }> {
-  return cardFiles()
-    .map(f => parseCardFile(join(cardsDir(), f)))
-    .filter(c => c.id)
+  const cards: Array<Fields & { file: string }> = []
+  for (const f of cardFiles()) {
+    try {
+      cards.push(parseCardFile(join(cardsDir(), f)))
+    } catch {
+      continue
+    }
+  }
+  return cards.filter(c => c.id)
 }
 
 export function nextId(): string {

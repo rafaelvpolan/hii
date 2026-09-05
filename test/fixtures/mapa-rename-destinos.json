@@ -113,7 +113,6 @@
  "motor/mirante/tui/layout.ts",
  "motor/mirante/tui/paleta.ts",
  "motor/mirante/tui/screen.ts",
- "motor/mirante/watch.ts",
  "motor/niemeyer/config.ts",
  "motor/niemeyer/lucio/fase-spec.ts",
  "motor/niemeyer/lucio/ondas.ts",
