@@ -33,6 +33,14 @@ COPY package.json bun.lock ./
 # nenhuma delas e necessaria para executar um card. node_modules ficar vazio aqui
 # e o desenho, nao esquecimento.
 RUN npm install --omit=dev --no-audit --no-fund
+# A inspecao visual da URL (scripts/inspect-preview.mjs) e OPCIONAL na imagem:
+# playwright e devDependency e, sem este estagio, o veredito em producao era
+# SEMPRE "inconclusivo" por construcao (3/3 cards no runner.log) — o humano
+# virava o unico detector de pagina quebrada. --build-arg COM_PREVIEW=1 instala
+# o playwright pinado na mesma versao do package.json + chromium com deps.
+ARG COM_PREVIEW=0
+RUN if [ "$COM_PREVIEW" = "1" ]; then npm install --no-save playwright@1.62.1 \
+ && npx playwright install --with-deps chromium; fi
 COPY . .
 
 # 12-factor: TODA configuracao vem do ambiente. O estado vive em volume externo
