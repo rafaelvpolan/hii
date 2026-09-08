@@ -5,8 +5,12 @@ FROM node:24-slim
 
 # git e obrigatorio: o motor trabalha em worktree, nao em clone.
 # gh e obrigatorio: e por ele que o PR abre e que o merge e detectado.
+# psmisc (fuser) e obrigatorio: freePort (motor/ciclo/crivo/url-viva.ts) recupera a
+# porta de preview com `fuser -k` e ENGOLE o erro por desenho — sem o binario, a
+# recuperacao vira no-op silencioso e a porta de um dev-server orfao fica ocupada
+# para sempre.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl gnupg git \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg git psmisc \
  && install -m 0755 -d /etc/apt/keyrings \
  && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
@@ -29,6 +33,14 @@ COPY package.json bun.lock ./
 # nenhuma delas e necessaria para executar um card. node_modules ficar vazio aqui
 # e o desenho, nao esquecimento.
 RUN npm install --omit=dev --no-audit --no-fund
+# A inspecao visual da URL (scripts/inspect-preview.mjs) e OPCIONAL na imagem:
+# playwright e devDependency e, sem este estagio, o veredito em producao era
+# SEMPRE "inconclusivo" por construcao (3/3 cards no runner.log) — o humano
+# virava o unico detector de pagina quebrada. --build-arg COM_PREVIEW=1 instala
+# o playwright pinado na mesma versao do package.json + chromium com deps.
+ARG COM_PREVIEW=0
+RUN if [ "$COM_PREVIEW" = "1" ]; then npm install --no-save playwright@1.62.1 \
+ && npx playwright install --with-deps chromium; fi
 COPY . .
 
 # 12-factor: TODA configuracao vem do ambiente. O estado vive em volume externo

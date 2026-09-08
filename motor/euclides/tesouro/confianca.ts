@@ -78,6 +78,9 @@ export function recusaPorLimite(provider: Harness, req: AgentRequest): string {
   if (req.mode === 'readonly' && !capacidades.isolatesReadonly) {
     return `${provider.name} nao sabe rodar em modo somente-leitura (nao restringe ferramenta) — um papel de verificacao nele poderia editar arquivo`
   }
+  if (req.expectsJson === true && !capacidades.emitsStructuredJson) {
+    return `${provider.name} nao declara saida JSON estruturada — o veredito deste papel sairia inparseavel e o card iria de HALT em vez de recusa clara; escolha outra ia para o papel (ex.: /ia gate claude)`
+  }
   return ''
 }
 

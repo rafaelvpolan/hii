@@ -37,11 +37,11 @@ test('memoArquivo recalcula quando o arquivo muda', () => {
   expect(f('x')).toBe(2)
 })
 
-test('memoArquivo trata arquivo ausente sem explodir', () => {
+test('memoArquivo NAO serve cache de arquivo ausente — recomputa a cada leitura ate ele voltar', () => {
   let n = 0
   const f = memoArquivo(() => join(dir, 'nao-existe'), () => ++n)
   expect(f('x')).toBe(1)
-  expect(f('x')).toBe(1)
+  expect(f('x'), 'a assinatura de erro casava com o cache e um card apagado seguia sendo servido como se existisse').toBe(2)
 })
 
 test('memoArquivo guarda por chave, nao mistura cards', () => {

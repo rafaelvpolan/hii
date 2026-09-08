@@ -13,12 +13,12 @@ export function memoTempo<T>(fn: () => T, ms: number, agora: () => number = Date
   }
 }
 
-function assinatura(arquivo: string): string {
+function assinatura(arquivo: string): string | null {
   try {
     const s = statSync(arquivo)
     return `${s.ino}:${s.mtimeMs}:${s.size}`
   } catch {
-    return ''
+    return null
   }
 }
 
@@ -26,6 +26,10 @@ export function memoArquivo<T>(arquivoDe: (chave: string) => string, fn: (chave:
   const cache = new Map<string, { assinatura: string; valor: T }>()
   return (chave: string): T => {
     const atual = assinatura(arquivoDe(chave))
+    if (atual === null) {
+      cache.delete(chave)
+      return fn(chave)
+    }
     const guardado = cache.get(chave)
     if (guardado && guardado.assinatura === atual) return guardado.valor
     const valor = fn(chave)

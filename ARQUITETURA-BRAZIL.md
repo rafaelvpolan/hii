@@ -471,7 +471,6 @@ Fonte de verdade da Onda 1. `scripts/renomear-brazil.mjs` consome exatamente est
 | `lib/core/progresso.ts` | `motor/mirante/progresso.ts` | Mirante |
 | `lib/core/refs-comando.ts` | `motor/mirante/refs-comando.ts` | Mirante |
 | `lib/core/responder.ts` | `motor/mirante/responder.ts` | Mirante |
-| `lib/core/watch.ts` | `motor/mirante/watch.ts` | Mirante |
 | `lib/core/render/**` (24 arquivos) | `motor/mirante/render/**` | Mirante |
 | `lib/core/tui/**` (8 arquivos) | `motor/mirante/tui/**` | Mirante |
 

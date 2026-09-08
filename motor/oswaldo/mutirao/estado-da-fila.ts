@@ -1,7 +1,9 @@
 import { isoNow } from '../../cordel/index.ts'
 import type { Job, Fields } from '../../cordel/index.ts'
-import { allCards, cardsByStatus, patchCard } from '../../cordel/store.ts'
+import { allCards, cardsByStatus, patchCard, readCard } from '../../cordel/store.ts'
 import { marcarOrfao, prOrfaoDe } from '../../quilombo/salvo-conduto/compensacao.ts'
+import { activeSteps } from '../../niemeyer/config.ts'
+import { RESUME_POST_STEPS } from '../../quilombo/cartorio/retomar.ts'
 import { encerrando } from './encerramento.ts'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
@@ -21,6 +23,13 @@ export function quantosEmVoo(): number {
   return emVoo.size
 }
 
+function resumeAposEstado(estadoQueOPassoPagoGravou: string, worktree: string): string {
+  const passos = activeSteps(worktree || undefined)
+  const indiceDoPassoJaPago = passos.findIndex(p => p.state === estadoQueOPassoPagoGravou)
+  if (indiceDoPassoJaPago < 0) return ''
+  return passos[indiceDoPassoJaPago + 1]?.label ?? RESUME_POST_STEPS
+}
+
 export function reconcileStranded(): void {
   for (const s of FINISH_STATES) {
     for (const c of cardsByStatus(s)) {
@@ -36,8 +45,10 @@ export function reconcileStranded(): void {
         process.stdout.write(`[runner] #${id}: PR orfao adotado (${orfao.url}) — nao foi aberto de novo\n`)
         continue
       }
-      patchCard(id, { status: 'URL_OK' }, `${isoNow()} ${s}->URL_OK recuperado apos reinicio do daemon (finish reiniciado)`)
-      process.stdout.write(`[runner] #${id}: recuperado ${s}->URL_OK\n`)
+      const resume = resumeAposEstado(s, String(c.worktree ?? ''))
+      const campos: Fields = resume ? { status: 'URL_OK', resume_from: resume } : { status: 'URL_OK' }
+      patchCard(id, campos, `${isoNow()} ${s}->URL_OK recuperado apos reinicio do daemon (finish reiniciado${resume ? ` retomando de "${resume}" — passo ja pago nao repete` : ''})`)
+      process.stdout.write(`[runner] #${id}: recuperado ${s}->URL_OK${resume ? ` (retoma de ${resume})` : ''}\n`)
     }
   }
   for (const s of RERUN_STATES) {
@@ -52,6 +63,10 @@ export function reconcileStranded(): void {
     patchCard(c.id ?? '', { status: 'EXECUTING' }, `${isoNow()} EXECUTED->EXECUTING recuperado (url nao concluido ou rejeitado sem worktree — nao havia consumidor de EXECUTED)`)
     process.stdout.write(`[runner] #${c.id}: recuperado EXECUTED->EXECUTING\n`)
   }
+}
+
+export function halteradosDoLote(ids: readonly string[]): string[] {
+  return ids.filter(id => readCard(id)?.fm.status === 'HALTED')
 }
 
 export function pending(): Job[] {

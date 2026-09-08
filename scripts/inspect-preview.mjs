@@ -1,4 +1,15 @@
-import { chromium } from 'playwright'
+let chromium
+try {
+  ({ chromium } = await import('playwright'))
+} catch {
+  process.stdout.write(JSON.stringify({
+    ok: false,
+    conclusive: false,
+    detail: 'playwright NAO instalado — problema de PROVISIONAMENTO, nao da pagina: gere a imagem com --build-arg COM_PREVIEW=1, ou rode npm ci no clone',
+    errors: [],
+  }))
+  process.exit(0)
+}
 
 const url = process.argv[2]
 const out = process.argv[3] || ''

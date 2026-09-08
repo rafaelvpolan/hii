@@ -1,3 +1,4 @@
+// hicode:allow-monolith code-smell: handleFinish concentra gates+passos+sync+PR (~460 linhas de codigo); a decisao do pipeline manual ja saiu para plano-de-passos.ts — o laco de passos e o fecho sao a proxima extracao
 import { existsSync } from 'node:fs'
 import { objetivoComInstrucoes } from '../../mirante/instruir.ts'
 import { isoNow } from '../../cordel/index.ts'
@@ -29,6 +30,7 @@ import { buildWithReajuste, testGate } from '../../ciclo/crivo/portoes-de-fecho.
 import type { RunCtx } from '../../ciclo/crivo/portoes-de-fecho.ts'
 import { syncWithBase, revalidate } from './sync.ts'
 import { resumeStart, RESUME_POST_STEPS } from './retomar.ts'
+import { quaisPassosRodar } from './plano-de-passos.ts'
 import { precisaConfirmarFecho, perguntaDeFecho } from './confirmar-fecho.ts'
 import { runStep } from '../../ciclo/agente.ts'
 import { avaliarDiff } from '../../cascudo/lei/guarda.ts'
@@ -194,46 +196,31 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // Nao e `steps.at(-1)`: numa retomada com `resume_from` os passos ja feitos sao
   // pulados, e com RESUME_POST_STEPS nenhum roda — o card fica onde estava, e a
   // etiqueta apontava para um estado em que ele nunca esteve nesta execucao.
-  let vaoRodar = steps.slice(startIdx)
-  // Pipeline manual (padrao — ver pipelineManual em cordel/alicerce/config.ts): a
-  // url aprovada NAO dispara os passos pagos. Sem pedido explicito o card para em
-  // PAUSED (o runner nao toca — PAUSED e saida humana); `pipeline_passo` roda UM
-  // passo e volta a pausar; `pipeline_liberado` roda o restante e segue o fecho.
-  // `pipeline_feitos` guarda os labels ja rodados a pedido, para a suite e a
-  // retomada nao pagarem o mesmo passo duas vezes. Quem escreve esses campos e o
-  // cartorio/passos-manuais.ts — aqui so se obedece.
-  const passoUnico = String(card.fm.pipeline_passo ?? '').trim()
-  const liberado = card.fm.pipeline_liberado === 'true'
-  let feitos: string[] = []
-  if (pipelineManual(card.fm)) {
-    feitos = String(card.fm.pipeline_feitos ?? '').split(',').map(s => s.trim()).filter(Boolean)
-    vaoRodar = vaoRodar.filter(s => !feitos.includes(s.label))
-    if (liberado) {
-      // A suite manda: um pedido de passo unico anterior caduca, senao o
-      // "roda tudo" executaria so aquele passo e pararia de novo.
-      if (passoUnico) patchCard(id, { pipeline_passo: '' })
-    } else if (passoUnico) {
-      const alvo = vaoRodar.find(s => s.id === passoUnico)
-      const faltam = alvo
-        ? (alvo.needs ?? []).map(n => all.find(a => a.id === n)?.label ?? n).filter(l => !feitos.includes(l))
-        : []
-      if (!alvo || faltam.length) {
-        const motivo = !alvo
-          ? `passo manual "${passoUnico}" nao esta no plano deste card (ja rodou ou nao se aplica ao perfil ${plan.profile})`
-          : `passo manual "${passoUnico}" depende de [${faltam.join(', ')}] — rode antes`
-        patchCard(id, { status: 'PAUSED', retomar_em: 'URL_OK', pipeline_pausa: 'manual', pipeline_passo: '' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->PAUSED ${motivo}; restantes: [${vaoRodar.map(s => s.id).join(', ') || 'nenhum'}]`)
-        process.stdout.write(`[runner] #${id}: PAUSED — ${motivo}\n`)
-        return
-      }
-      vaoRodar = [alvo]
-    } else if (vaoRodar.length) {
-      patchCard(id, { status: 'PAUSED', retomar_em: 'URL_OK', pipeline_pausa: 'manual' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->PAUSED pipeline manual: restam [${vaoRodar.map(s => s.id).join(', ')}] — rode um a um (/${vaoRodar.map(s => s.id).join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (/hii ou ENTER no card)`)
-      process.stdout.write(`[runner] #${id}: PAUSED — pipeline manual, aguardando pedido de passo\n`)
-      return
-    }
+  const decisao = quaisPassosRodar({
+    manual: pipelineManual(card.fm),
+    passoUnico: String(card.fm.pipeline_passo ?? '').trim(),
+    liberado: card.fm.pipeline_liberado === 'true',
+    feitosCru: String(card.fm.pipeline_feitos ?? ''),
+    aposRetomada: steps.slice(startIdx),
+    all,
+    profile: plan.profile,
+  })
+  if (decisao.tipo === 'pausar') {
+    const comandos = decisao.restantes.map(s => s.id)
+    const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (/hii ou ENTER no card)`
+    const cauda = decisao.motivo ? `; restantes: [${comandos.join(', ') || 'nenhum'}]` : ''
+    patchCard(id, { status: 'PAUSED', retomar_em: 'URL_OK', pipeline_pausa: 'manual', pipeline_passo: '' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->PAUSED ${motivo}${cauda}`)
+    process.stdout.write(`[runner] #${id}: PAUSED — ${decisao.motivo || 'pipeline manual, aguardando pedido de passo'}\n`)
+    return
   }
+  if (decisao.liberacaoCaducada) {
+    patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo /hii`)
+  }
+  const vaoRodar = decisao.vaoRodar
+  const feitos = decisao.feitos
+  const passoUnicoAtivo = decisao.passoUnicoAtivo
   const statusAtual = vaoRodar.at(-1)?.state ?? String(card.fm.status ?? 'URL_OK')
-  process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${vaoRodar.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}${passoUnico && !liberado ? ` — so o passo ${passoUnico}` : ''}\n`)
+  process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${vaoRodar.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}${passoUnicoAtivo ? ` — so o passo ${passoUnicoAtivo}` : ''}\n`)
   const fsteps: StepMap = {}
   for (const step of vaoRodar) {
     // O teto era conferido SO na entrada do handler (linha 71), nunca aqui. Uma
@@ -355,9 +342,9 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // Passo unico pedido pelo humano: roda ele, registra em pipeline_feitos e
   // volta a PAUSED — o fecho (build, gates, PR) so acontece quando nao resta
   // passo nenhum ou quando a suite e liberada (/hii, ENTER).
-  if (passoUnico && pipelineManual(card.fm) && !liberado) {
-    const agora = [...feitos, ...vaoRodar.map(s => s.label)]
-    const restam = steps.filter(s => !agora.includes(s.label)).map(s => s.id)
+  if (passoUnicoAtivo) {
+    const agora = [...feitos, ...vaoRodar.map(s => s.id)]
+    const restam = steps.filter(s => !agora.includes(s.id) && !agora.includes(s.label)).map(s => s.id)
     patchCard(id, {
       status: 'PAUSED',
       retomar_em: 'URL_OK',
@@ -365,8 +352,8 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       pipeline_passo: '',
       pipeline_feitos: agora.join(','),
       ...accumulatedTotals(card, fsteps),
-    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnico}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ' — pipeline completo: /hii ou ENTER fecham o card (build, gates e PR)'}`)
-    process.stdout.write(`[runner] #${id}: PAUSED — passo ${passoUnico} feito${restam.length ? `, restam [${restam.join(', ')}]` : ', pipeline completo'}\n`)
+    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnicoAtivo}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ' — pipeline completo: /hii ou ENTER fecham o card (build, gates e PR)'}`)
+    process.stdout.write(`[runner] #${id}: PAUSED — passo ${passoUnicoAtivo} feito${restam.length ? `, restam [${restam.join(', ')}]` : ', pipeline completo'}\n`)
     return
   }
   if (!(await buildWithReajuste(id, wt, ctx, fsteps, 'Testes', 'Reajuste', deps.runStep))) {

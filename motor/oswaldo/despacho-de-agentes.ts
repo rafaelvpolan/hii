@@ -75,27 +75,3 @@ export function decidirEspecs(ctx: ContextoDeDespacho): EspecDeAgente[] {
     .map(([agente, v]) => ({ agente, papel: v.papel, arquivos: v.arquivos }))
 }
 
-function sobrepoe(a: readonly string[], b: readonly string[]): boolean {
-  const conjunto = new Set(a)
-  return b.some(x => conjunto.has(x))
-}
-
-export function lotesSemSobreposicao(specs: readonly EspecDeAgente[]): EspecDeAgente[][] {
-  const lotes: EspecDeAgente[][] = []
-  for (const spec of specs) {
-    const lote = lotes.find(l => l.every(outro => !sobrepoe(outro.arquivos, spec.arquivos)))
-    if (lote) lote.push(spec)
-    else lotes.push([spec])
-  }
-  return lotes
-}
-
-export type ExecutorDeAgente<T> = (spec: EspecDeAgente) => Promise<T>
-
-export async function despacharAgentesNaFase<T>(specs: readonly EspecDeAgente[], executar: ExecutorDeAgente<T>): Promise<T[]> {
-  const fora: T[] = []
-  for (const lote of lotesSemSobreposicao(specs)) {
-    fora.push(...await Promise.all(lote.map(executar)))
-  }
-  return fora
-}

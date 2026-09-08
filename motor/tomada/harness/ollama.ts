@@ -33,6 +33,7 @@ function costOfEndpoint(): CostReading {
 }
 
 export const OLLAMA_CAPACIDADES: HarnessCapabilities = {
+  emitsStructuredJson: false,
   restrictsTools: false,     // nao ha mecanismo de ferramenta pra restringir
   isolatesReadonly: true,    // ...e por isso mesmo nao consegue editar nada
   acceptsEffort: false,

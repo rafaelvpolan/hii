@@ -1,6 +1,8 @@
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
+import { isoNow } from '../../cordel/index.ts'
+import { allCards, patchCard } from '../../cordel/store.ts'
 import { cardsDir, ROOT, PREVIEW_BASE_PORT, URL_PROBE_INTERVAL_MS, URL_PROBE_TIMEOUT_MS, URL_INSPECT_TIMEOUT_MS, URL_FREEPORT_SETTLE_MS } from '../../cordel/alicerce/config.ts'
 import { run } from '../../quilombo/git.ts'
 import { readContract } from '../../cordel/bussola/armazenar.ts'
@@ -87,6 +89,44 @@ export async function waitHttp(url: string, tries: number): Promise<boolean> {
     await new Promise(res => setTimeout(res, URL_PROBE_INTERVAL_MS))
   }
   return false
+}
+
+const ESTADOS_SEM_USO_DE_PREVIEW = ['PR_OPEN', 'MERGED', 'DEPLOYED', 'HALTED']
+
+function cwdRealDoProcesso(pid: number): string {
+  try {
+    return readlinkSync(`/proc/${pid}/cwd`).replace(/ \(deleted\)$/, '')
+  } catch {
+    return ''
+  }
+}
+
+export interface VarreduraDePreviews {
+  mortosLimpos: string[]
+  orfaosParados: string[]
+}
+
+export function varrerPreviewsOrfaos(): VarreduraDePreviews {
+  const mortosLimpos: string[] = []
+  const orfaosParados: string[] = []
+  for (const c of allCards()) {
+    const id = String(c.id ?? '')
+    const pid = String(c.url_pid ?? '')
+    if (!pid) continue
+    if (!pidAlive(pid)) {
+      patchCard(id, { url_pid: '' }, `${isoNow()} url_pid ${pid} apontava para processo morto — limpo no arranque`)
+      mortosLimpos.push(id)
+      continue
+    }
+    if (!ESTADOS_SEM_USO_DE_PREVIEW.includes(String(c.status ?? ''))) continue
+    const worktree = String(c.worktree ?? '')
+    const identidadeProvada = worktree !== '' && cwdRealDoProcesso(Number(pid)).startsWith(worktree)
+    if (!identidadeProvada) continue
+    stopUrl(pid)
+    patchCard(id, { url_pid: '' }, `${isoNow()} preview orfao (pid ${pid}) parado no arranque — card em ${c.status} nao usa mais o preview`)
+    orfaosParados.push(id)
+  }
+  return { mortosLimpos, orfaosParados }
 }
 
 export async function inspectUrl(id: string, url: string, capture: boolean): Promise<UrlHealth> {

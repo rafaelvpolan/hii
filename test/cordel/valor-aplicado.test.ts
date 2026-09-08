@@ -66,6 +66,22 @@ test('o rodape mostra o modo EFETIVO, nao vazio quando o operador nao escolheu',
     .toContain(`modo ${modoPadraoDoProvedor('claude')}`)
 })
 
+test('o teto GLOBAL do painel e o MESMO que o motor aplica no despacho', async () => {
+  const { lerConfig } = await import('../../motor/cordel/alicerce/snapshot.ts')
+  const { tetoGlobal } = await import('../../motor/euclides/tesouro/teto-global.ts')
+  const anterior = process.env.HICODE_BUDGET_USD
+  try {
+    process.env.HICODE_BUDGET_USD = '9'
+    expect(tetoGlobal().tetoUsd).toBe(9)
+    expect(lerConfig('', '', 0).tetoGlobalUsd, 'HICODE_BUDGET_USD agora e lida de verdade — painel e motor precisam mostrar o mesmo teto global').toBe(9)
+    delete process.env.HICODE_BUDGET_USD
+    expect(lerConfig('', '', 0).tetoGlobalUsd, 'sem env e sem orcamentoGlobal no arquivo, o teto global fica desligado').toBe(tetoGlobal().tetoUsd)
+  } finally {
+    if (anterior === undefined) delete process.env.HICODE_BUDGET_USD
+    else process.env.HICODE_BUDGET_USD = anterior
+  }
+})
+
 test('o teto do painel e o MESMO que o motor aplica no card', async () => {
   const { lerConfig } = await import('../../motor/cordel/alicerce/snapshot.ts')
   const { tetoDoCard } = await import('../../motor/euclides/tesouro/orcamento.ts')

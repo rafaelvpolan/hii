@@ -100,6 +100,10 @@ export const GATE_TIMEOUT_MS_PER_KB = numeroDeEnv('HICODE_GATE_TIMEOUT_MS_PER_KB
 export const VISUAL_AI = (process.env.HICODE_VISUAL_AI || 'off') === 'on'
 export const CLARIFY = (process.env.HICODE_CLARIFY || 'on') !== 'off'
 export const EVAL = (process.env.HICODE_EVAL || 'on') !== 'off'
+export function evalMin(): number {
+  if (process.env.HICODE_EVAL_MIN === 'off') return -1
+  return numeroDeEnv('HICODE_EVAL_MIN', 1)
+}
 export const PROJECT_MEMORY = (process.env.HICODE_PROJECT_MEMORY || 'on') !== 'off'
 export function maxWaitingAttempts(): number {
   return numeroDeEnv('HICODE_WAITING_MAX_ATTEMPTS', 8)

@@ -97,6 +97,12 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     // lacava havia horas; card 001 esta em URL desde 24/08 e nada sabia dizer "aberto
     // ha 9 dias". Gravado SO na mudanca de status, e nunca em patch que so loga.
     if (mudouStatus) gravarCampo(fm, order, 'status_since', String(fm.updated))
+    const saiuDoHalt = before.status === 'HALTED' && mudouStatus && resolvedFields.status !== 'HALTED'
+    if (saiuDoHalt) {
+      for (const campo of ['halt_class', 'halt_at', 'halt_reason', 'halt_provider']) {
+        if (resolvedFields[campo] === undefined) gravarCampo(fm, order, campo, '')
+      }
+    }
     // O HALT tem UM ponto de estrangulamento, e e este: aqui se conhece o par
     // (estado anterior, estado novo). Carimbar a classe aqui garante o invariante
     // "nenhum HALTED sem classe" sem depender de cada sitio de parada lembrar — e a
@@ -132,6 +138,10 @@ function semStatus(f: Fields): Fields {
   return resto
 }
 
+export function updateCardPorAcaoHumana(id: string, patch: Omit<CardPatch, 'apesarDaParada'>): Fields | null {
+  return updateCard(id, { ...patch, apesarDaParada: true })
+}
+
 export function patchCard(id: string, fields: Fields, logLine?: string): void {
   updateCard(id, { fields, log: logLine })
 }
@@ -156,9 +166,15 @@ export function garantirCardsDir(): string {
 }
 
 export function allCards(): Array<Fields & { file: string }> {
-  return cardFiles()
-    .map(f => parseCardFile(join(cardsDir(), f)))
-    .filter(c => c.id)
+  const cards: Array<Fields & { file: string }> = []
+  for (const f of cardFiles()) {
+    try {
+      cards.push(parseCardFile(join(cardsDir(), f)))
+    } catch {
+      continue
+    }
+  }
+  return cards.filter(c => c.id)
 }
 
 export function nextId(): string {
@@ -172,17 +188,20 @@ function slugify(s: string): string {
 }
 
 export function createCard(fields: Fields, body: string): string {
-  const id = nextId()
   const slug = fields.slug || slugify(fields.title || '')
   const agora = isoNow()
   // `status_since` nasce com o card: sem semente aqui, todo card ficaria sem idade
   // mensuravel ate a PRIMEIRA transicao — exatamente na janela em que ele esta
   // esperando alguem (READY, e depois CLARIFY/URL).
-  const fm: Fields = { id, slug, status: 'READY', status_since: agora, ...fields, updated: agora }
-  const order = Object.keys(fm)
+  const semId: Fields = { slug, status: 'READY', status_since: agora, ...fields, updated: agora }
   garantirCardsDir()
-  writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n')
-  return id
+  return withFileLock(join(cardsDir(), '.criacao'), () => {
+    const id = nextId()
+    const fm: Fields = { id, ...semId }
+    const order = Object.keys(fm)
+    writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n', { flag: 'wx' })
+    return id
+  })
 }
 
 function loadRepos(): RepoConfig[] {

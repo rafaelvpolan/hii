@@ -512,9 +512,10 @@ vez de mandar e tratar o lixo que volta como resultado.
 e qualidade sem ninguém autorizar. Travado por teste.
 
 Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
-`claude` e `codex` por alcançabilidade da API, timeout de 5 s
-(`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** provedor fora desse mapa — hoje `kimi` —
-cai no `return true` e é reportado como saudável sem ter sido testado.
+`claude`, `codex` e `kimi` por alcançabilidade das respectivas APIs, timeout de 5 s
+(`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** harness NÃO registrado em
+`motor/tomada/registro.ts` cai no `return true` de `probeProviderHealth` — não saber sondar
+não pode impedir um card de acordar; os quatro registrados hoje sondam de verdade.
 
 ---
 
@@ -590,7 +591,7 @@ com que o daemon poda o transitório de `tmp/` a cada tick.
 ## Desenvolvimento
 
 ```bash
-bun test              # 1466 testes
+bun test              # a suite completa (a contagem exata vive no CI e cresce a cada guarda nova)
 bun run typecheck     # tsc --noEmit, cobre test/ também
 ```
 

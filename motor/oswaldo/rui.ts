@@ -1,6 +1,11 @@
 import { anexarEvento } from '../euclides/eventos.ts'
-import { TIERS, elevarTier, tierPara } from '../euclides/tesouro/orcamento.ts'
+import { TIERS, elevarTier, modeloDoTier, tierPara } from '../euclides/tesouro/orcamento.ts'
 import type { EscolhaDeTier, Tier } from '../euclides/tesouro/orcamento.ts'
+import { modelFor, providerNameFor } from '../tomada/registro.ts'
+import type { AgentRole } from '../tomada/tipos.ts'
+import { preferenciaDoPapel } from '../tomada/preferencias.ts'
+import { readCard } from '../cordel/store.ts'
+import type { Fields } from '../cordel/index.ts'
 
 // RUI — Rui Barbosa: a camada que decide ANTES de rotear. Quanto vale gastar
 // nesta acao, e por que.
@@ -51,6 +56,37 @@ export function tierDoCard(acao: string, pedido: PedidoDeEstrategia): EscolhaDeT
   }
 
   return { tier, motivo: motivos.join(' · ') }
+}
+
+const ACAO_DO_AGENTE: Readonly<Record<string, string>> = {
+  rufus: 'arquitetura',
+  testudo: 'testes',
+  escudo: 'seguranca',
+  pura: 'limpeza',
+  glossia: 'documentacao',
+  limpio: 'reparo_build',
+}
+
+export function acaoDoAgente(agente: string): string {
+  return ACAO_DO_AGENTE[agente] ?? ''
+}
+
+export function tierDaAcaoDoCard(acao: string, fm: Fields): EscolhaDeTier {
+  return tierDoCard(acao, { pedidoDoCard: fm.tier, leiForcou: fm.lei_forcou === 'completo' })
+}
+
+export function modeloGovernado(papel: AgentRole, acao: string, fm: Fields): string | undefined {
+  const escolhaDoHumano = preferenciaDoPapel(papel).model
+  if (escolhaDoHumano) return escolhaDoHumano
+  if (acao) {
+    const governado = modeloDoTier(providerNameFor(papel), tierDaAcaoDoCard(acao, fm).tier)
+    if (governado) return governado
+  }
+  return modelFor(papel)
+}
+
+export function modeloDoPasso(agente: string, id: string): string | undefined {
+  return modeloGovernado('step', acaoDoAgente(agente), readCard(id)?.fm ?? {})
 }
 
 export function registrarTier(card: string, acao: string, escolha: EscolhaDeTier): void {

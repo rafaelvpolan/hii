@@ -20,6 +20,13 @@ export function avisarArquivoIlegivel(caminho: string, motivo: string, consequen
   process.stderr.write(`[hicode] ${caminho} existe mas esta ILEGIVEL (${motivo}) — ${consequencia}\n`)
 }
 
+export function avisarFalhaSilenciosa(rotulo: string, motivo: string, consequencia: string): void {
+  const chave = `${rotulo}::${motivo}`
+  if (avisados.has(chave)) return
+  avisados.add(chave)
+  process.stderr.write(`[hicode] ${rotulo} FALHOU (${motivo}) — ${consequencia}\n`)
+}
+
 export function esquecerAvisosDeArquivo(): void {
   avisados.clear()
 }

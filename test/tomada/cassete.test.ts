@@ -42,7 +42,7 @@ function harnessFalso(nome: string, executar: (req: AgentRequest) => AgentResult
     comandoDeLogin: [],
     temLeitorDePlano: false,
     rodaLocal: true,
-    capabilities: () => ({ restrictsTools: false, isolatesReadonly: false, acceptsEffort: false, reportsCostUsd: true, reportsTokens: true, mcp: false }),
+    capabilities: () => ({ restrictsTools: false, isolatesReadonly: false, acceptsEffort: false, reportsCostUsd: true, reportsTokens: true, mcp: false, emitsStructuredJson: true }),
     healthCheck: async () => true,
     sinaisDeFalha: () => ({ terminal: [], quota: [], transient: [] }),
     comoObterQuandoAusente: () => '',
@@ -100,7 +100,7 @@ test('envolverComCassete preserva o contrato de um harness de CLASSE (ClaudeProv
   // passaria igual se a constante fosse esvaziada na origem. O par abaixo fecha os
   // dois lados: o proxy encaminha, E o que ele encaminha tem conteudo de verdade.
   expect(envolvido.capabilities()).toEqual(CLAUDE_CAPACIDADES)
-  expect(Object.keys(envolvido.capabilities()).length).toBe(6)
+  expect(Object.keys(envolvido.capabilities()).length).toBe(7)
   expect(envolvido.capabilities().reportsCostUsd).toBe(true)
   expect(envolvido.sinaisDeFalha().quota.length).toBeGreaterThan(0)
   expect(typeof envolvido.run).toBe('function')

@@ -21,7 +21,7 @@ export type Tier = (typeof TIERS)[number]
 
 export const ACOES_GOVERNADAS = [
   'arquitetura', 'seguranca', 'review', 'implementacao',
-  'reparo_build', 'testes', 'documentacao', 'limpeza', 'classificacao',
+  'reparo_build', 'testes', 'documentacao', 'limpeza', 'classificacao', 'avaliacao',
 ] as const
 
 export interface CriterioDeTier {
@@ -34,11 +34,20 @@ export interface OrcamentoPorCard {
   readonly acaoAoEstourar: string
 }
 
+export type ModelosPorProvedor = Readonly<Record<string, Readonly<Partial<Record<Tier, string>>>>>
+
+export interface OrcamentoGlobal {
+  readonly tetoUsd: number
+  readonly janela: string
+}
+
 export interface Governanca {
   readonly versao: number
   readonly padrao: Tier
   readonly criterios: Readonly<Record<string, CriterioDeTier>>
   readonly orcamentoPorCard: OrcamentoPorCard
+  readonly modelosPorTier: ModelosPorProvedor
+  readonly orcamentoGlobal: OrcamentoGlobal | null
 }
 
 interface Cru {
@@ -46,6 +55,8 @@ interface Cru {
   padrao?: string
   criterios?: Record<string, { tier?: string; motivo?: string }>
   orcamentoPorCard?: { tetoUsd?: number; acaoAoEstourar?: string }
+  modelosPorTier?: { porProvedor?: Record<string, Record<string, string>> }
+  orcamentoGlobal?: { tetoUsd?: number; janela?: string }
 }
 
 export function arquivoDeGovernanca(): string {
@@ -85,7 +96,36 @@ export function lerGovernanca(): Governanca {
   if (typeof teto !== 'number' || !Number.isFinite(teto) || teto <= 0 || !acaoAoEstourar) {
     throw new Error(`model-tier.json: orcamentoPorCard precisa de tetoUsd numero finito > 0 e acaoAoEstourar — recebido ${JSON.stringify(teto)}. Teto infinito ou de outro tipo e a ausencia de orcamento com outro nome`)
   }
-  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar } }
+  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar }, modelosPorTier: lerModelosPorTier(cru), orcamentoGlobal: lerOrcamentoGlobal(cru) }
+}
+
+function lerOrcamentoGlobal(cru: Cru): OrcamentoGlobal | null {
+  if (!cru.orcamentoGlobal) return null
+  const teto = cru.orcamentoGlobal.tetoUsd
+  const janela = String(cru.orcamentoGlobal.janela ?? '24h')
+  if (typeof teto !== 'number' || !Number.isFinite(teto) || teto < 0) {
+    throw new Error(`model-tier.json: orcamentoGlobal.tetoUsd precisa ser numero finito >= 0 (0 = desligado) — recebido ${JSON.stringify(teto)}`)
+  }
+  return { tetoUsd: teto, janela }
+}
+
+function lerModelosPorTier(cru: Cru): ModelosPorProvedor {
+  const porProvedor: Record<string, Partial<Record<Tier, string>>> = {}
+  for (const [provedor, mapa] of Object.entries(cru.modelosPorTier?.porProvedor ?? {})) {
+    const porTier: Partial<Record<Tier, string>> = {}
+    for (const [tier, modelo] of Object.entries(mapa ?? {})) {
+      if (!modelo || typeof modelo !== 'string') {
+        throw new Error(`model-tier.json: modelosPorTier.porProvedor.${provedor}.${tier} precisa de um nome de modelo nao-vazio`)
+      }
+      porTier[exigirTier(tier, `modelosPorTier.porProvedor.${provedor}`)] = modelo
+    }
+    porProvedor[provedor] = porTier
+  }
+  return porProvedor
+}
+
+export function modeloDoTier(provedor: string, tier: Tier, g: Governanca = lerGovernanca()): string | undefined {
+  return g.modelosPorTier[provedor]?.[tier]
 }
 
 export function elevarTier(atual: Tier, pedido: Tier): Tier {

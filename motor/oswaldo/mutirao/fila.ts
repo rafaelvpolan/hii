@@ -14,8 +14,10 @@ import { recordTickSuccess, reportTickFailure } from '../../euclides/radar/tick.
 import { wakeDueWaiting } from '../../ciclo/reprise/espera.ts'
 import { limparTmpAntigo, usoDeDisco } from '../../euclides/estado-em-disco.ts'
 import { podarRegistrosAntigos } from '../../euclides/podar.ts'
+import { avisarFalhaSilenciosa, motivoDoErro } from '../../cordel/alicerce/aviso.ts'
+import { despachoLiberado } from '../../euclides/tesouro/teto-global.ts'
 
-export { reconcileStranded, pending } from './estado-da-fila.ts'
+export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.ts'
 
 
 export async function runJob(job: Job): Promise<void> {
@@ -39,7 +41,7 @@ export async function runJob(job: Job): Promise<void> {
     // (cordel/store.ts), que agora LE esta linha para preencher `halt_reason`.
     // `job.kind` continua na mensagem, onde e informacao, e sai de onde era afirmacao.
     updateCard(job.id, {
-      fields: { status: 'HALTED', halt_class: 'excecao' },
+      fields: { status: 'HALTED', halt_class: 'excecao', halt_reason: `erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e).slice(0, 160)}` },
       log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e)}`,
     })
   } finally {
@@ -47,24 +49,28 @@ export async function runJob(job: Job): Promise<void> {
   }
 }
 
-function semDerrubarOTick(chore: () => void): void {
+function semDerrubarOTick(rotulo: string, consequencia: string, chore: () => void): void {
   try {
     chore()
-  } catch {
-    return
+  } catch (e) {
+    avisarFalhaSilenciosa(rotulo, motivoDoErro(e as Error), consequencia)
   }
 }
 
 function podarTmp(): void {
-  semDerrubarOTick(() => {
+  semDerrubarOTick('poda de tmp', 'transitorio antigo deixou de ser removido — disco do motor enchendo em silencio; `hii disco --limpar` alivia', () => {
     const r = limparTmpAntigo()
     if (r.removidos.length) {
       process.stdout.write(`[runner] tmp podado: ${r.removidos.length} item(ns), ${r.bytesLiberados} bytes\n`)
     }
+  })
+  semDerrubarOTick('poda de registros', 'conversas e ledgers antigos deixaram de ser podados — cards/runs crescendo sem teto', () => {
     const registros = podarRegistrosAntigos()
     if (registros.removidos.length) {
       process.stdout.write(`[runner] registros podados: ${registros.removidos.length} conversa(s)/ledger(s), ${registros.bytesLiberados} bytes\n`)
     }
+  })
+  semDerrubarOTick('medicao de disco', 'o uso de disco deixou de ser medido — o aviso de disco cheio nao dispara', () => {
     const uso = usoDeDisco()
     if (uso.nivel !== 'ok') {
       process.stdout.write(`[runner] disco do motor em ${uso.bytes} bytes (nivel ${uso.nivel}) — \`hii disco --limpar\` libera o transitorio\n`)
@@ -109,9 +115,14 @@ export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
     // dizia prevenir. O menor dos dois manda: o operador ainda pode baixar por
     // HICODE_CONCURRENCY, mas nao pode subir acima do que a maquina comporta.
     const teto = tetoDeParalelismo(MAX_CONCURRENCY)
-    for (const job of pending()) {
-      if (quantosEmVoo() >= teto) break
-      void runJob(job)
+    const global = despachoLiberado()
+    if (!global.pode) {
+      avisarFalhaSilenciosa('teto global de gasto', global.motivo, 'o despacho esta drenado ate a janela virar; cards novos ficam no disco')
+    } else {
+      for (const job of pending()) {
+        if (quantosEmVoo() >= teto) break
+        void runJob(job)
+      }
     }
   } catch (e) {
     reportTickFailure('fila', e as Error)

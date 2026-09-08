@@ -109,7 +109,7 @@ test('o rotulo da situacao no painel /config diferencia sem-login de cota estour
       { ...base, nome: 'claude', situacao: 'nao-autenticado' as const },
       { ...base, nome: 'codex', situacao: 'cota-esgotada' as const },
     ],
-    selecionado: '', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
+    selecionado: '', uso5h: [], usoSemana: [], serie: [], loop: [], fila: 0, gastoHoje: 0, tetoUsd: 0, tetoGlobalUsd: 0, gastoGlobalUsd: 0, orcamentoGlobalBloqueado: false, projeto: '', sessao: { curto: '', papeis: [], custoUsd: 0, tokens: 0 },
   }
   const { stripAnsi } = await import('../../motor/mirante/tui/layout.ts')
   const linhas = painelDeIas(estado, 78, { color: false, largura: 78, altura: 10 }).map(stripAnsi)

@@ -1,20 +1,22 @@
+// hicode:allow-monolith code-smell: handleExecute concentra worktree+url+verify+eval (458 linhas); a extracao devida e a mesma cirurgia do quaisPassosRodar do fecho (raio-x, onda 3)
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cordel/index.ts'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cordel/index.ts'
-import { cardsDir, CLARIFY, EVAL, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
+import { cardsDir, CLARIFY, EVAL, evalMin, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
 import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
-import { evaluate } from '../ciclo/crivo/avaliar.ts'
+import { decisaoDoEval, evaluate } from '../ciclo/crivo/avaliar.ts'
 import { readCard, patchCard, repoPath, repoBase } from '../cordel/store.ts'
 import { ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
 import type { WorktreeFate } from '../quilombo/git.ts'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../ciclo/crivo/url-viva.ts'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './rota/superficie.ts'
 import { instrucaoDeAjuste, instrucaoDeConserto, relatoDoAjuste, subirUrlComAjuste, esperarPorPid, subirNoWorktree } from '../ciclo/reprise/url-ajuste.ts'
-import { escopoDoCard, implement, verifyVisual } from '../ciclo/agente.ts'
+import { escopoDoCard, implement } from '../ciclo/agente.ts'
+import { verifyVisual } from '../ciclo/crivo/verificar-visual.ts'
 import { sumStepTime } from '../euclides/metricas-de-fecho.ts'
 import { foraDoEscopo } from './rota/escopo.ts'
 import { resolvedFailure, writeRun } from '../euclides/registros.ts'
@@ -27,6 +29,7 @@ export interface ExecuteDeps {
   implement: typeof implement
   verifyVisual: typeof verifyVisual
   inspecionar?: typeof inspectUrl
+  avaliar?: typeof evaluate
 }
 
 interface ExecuteSteps {
@@ -455,13 +458,19 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: inspecao ${vstate}\n`)
   }
   if (EVAL) {
-    const e = await evaluate(card, wt, base)
+    const e = await (deps.avaliar ?? evaluate)(card, wt, base)
     auxCost += e.cost || 0
     auxTokens += e.tokens || 0
     if (e.score < 0) {
       patchCard(id, { eval_notes: e.notes }, `${isoNow()} eval NAO rodou — sem nota de qualidade (${e.notes})`)
     } else {
-      patchCard(id, { eval_score: String(e.score), eval_notes: e.notes }, `${isoNow()} eval (qualidade vs objetivo): ${e.score}/5 ${e.meets ? '(cumpre)' : '(revisar)'} — ${e.notes}`)
+      const decisao = decisaoDoEval(e, card.fm, evalMin(), extractObjetivo(card.body) || card.fm.title || '')
+      if (decisao.acao === 'corrigir') {
+        patchCard(id, { status: 'CORRECTING', correction: decisao.instrucao, eval_gate: 'usado', eval_score: String(e.score), eval_notes: e.notes }, `${isoNow()} URL->CORRECTING eval ${e.score}/5 no limiar de refacao — refeito UMA vez antes de chegar a voce`)
+      } else {
+        const aviso = decisao.acao === 'avisar' ? ' — refacao automatica ja usada; a decisao fica com voce' : ''
+        patchCard(id, { eval_score: String(e.score), eval_notes: e.notes }, `${isoNow()} eval (qualidade vs objetivo): ${e.score}/5 ${e.meets ? '(cumpre)' : '(revisar)'} — ${e.notes}${aviso}`)
+      }
     }
     process.stdout.write(`[runner] #${id}: eval ${e.score}/5\n`)
   }

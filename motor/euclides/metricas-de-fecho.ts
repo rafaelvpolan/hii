@@ -49,6 +49,8 @@ export function haltForInspection(id: string, card: Card, fsteps: StepMap, messa
     halt_class: classe,
     retomar_em: 'URL_OK',
     resume_from: resumeStep,
+    pipeline_liberado: '',
+    pipeline_passo: '',
     ...accumulatedTotals(card, fsteps),
   }, message)
 }

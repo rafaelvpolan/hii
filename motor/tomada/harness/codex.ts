@@ -54,6 +54,7 @@ function parse(stdout: string): { text: string; usage: Usage; isError: boolean }
 const URL_DA_API = 'https://api.openai.com'
 
 export const CODEX_CAPACIDADES: HarnessCapabilities = {
+  emitsStructuredJson: true,
   restrictsTools: true,      // --sandbox
   isolatesReadonly: true,    // --sandbox read-only quando mode !== edit
   acceptsEffort: true,       // model_reasoning_effort

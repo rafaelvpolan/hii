@@ -18,6 +18,7 @@ export interface AgentRequest {
   model?: string
   effort?: string
   modo?: string
+  expectsJson?: boolean
   timeoutMs: number
   liveLog?: string
   extraTools?: string[]
@@ -60,6 +61,7 @@ export interface HarnessCapabilities {
   readonly reportsCostUsd: boolean
   readonly reportsTokens: boolean
   readonly mcp: boolean
+  readonly emitsStructuredJson: boolean
 }
 
 export interface CatalogoDeModo {

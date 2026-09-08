@@ -35,6 +35,12 @@ function tetoNaLinha(tetoUsd: number): string {
   return tetoUsd > 0 ? ` · teto por card US$ ${tetoUsd.toFixed(2)}` : ' · teto por card NAO LEGIVEL (confira config/model-tier.json)'
 }
 
+function tetoGlobalNaLinha(e: { tetoGlobalUsd: number; gastoGlobalUsd: number; orcamentoGlobalBloqueado: boolean }): string {
+  if (e.tetoGlobalUsd <= 0) return ''
+  const alerta = e.orcamentoGlobalBloqueado ? ' — ATINGIDO, despacho drenado' : ''
+  return ` · global US$ ${e.gastoGlobalUsd.toFixed(2)}/${e.tetoGlobalUsd.toFixed(2)}${alerta}`
+}
+
 export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   const cols = colunas(o.largura)
   const w = larguraDaColuna(o.largura, cols)
@@ -60,7 +66,7 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   //
   // O corte pela largura e obrigatorio: a linha do cabecalho e medida junto com as
   // caixas, e o painel exige largura visivel igual em todas as linhas.
-  const resumo = `projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}${tetoNaLinha(e.tetoUsd)}`
+  const resumo = `projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}${tetoNaLinha(e.tetoUsd)}${tetoGlobalNaLinha(e)}`
   const cabecalho = [
     `  ${paint('/config', CYAN, o)}  ${paint(truncVisible(resumo, Math.max(8, o.largura - 13)), DIM, o)}`,
     '',

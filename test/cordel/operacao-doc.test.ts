@@ -40,7 +40,8 @@ test('todo comando de TUI citado em OPERACAO.md existe', () => {
 
 test('toda variavel HICODE_ citada em OPERACAO.md existe no codigo', () => {
   const noCodigo = new Set<string>()
-  for (const f of [...arquivosTs('motor'), ...arquivosTs('bin'), 'runner.ts']) {
+  const scripts = readdirSync('scripts').filter(f => f.endsWith('.mjs') || f.endsWith('.sh')).map(f => join('scripts', f))
+  for (const f of [...arquivosTs('motor'), ...arquivosTs('bin'), 'runner.ts', ...scripts]) {
     for (const m of readFileSync(f, 'utf8').matchAll(/HICODE_[A-Z_]+/g)) noCodigo.add(m[0])
   }
   const citadas = [...new Set([...DOC.matchAll(/HICODE_[A-Z_]+/g)].map(m => m[0]))]
