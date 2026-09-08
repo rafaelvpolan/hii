@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-failpolicy-'))
 process.env.HICODE_CARDS_DIR = CARDS
 
-const { createCard, readCard } = await import('../../motor/cordel/store.ts')
+const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
 const { applyFailurePolicy, backoffMsFor } = await import('../../motor/ciclo/reprise/politica.ts')
 
 beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '3' })
@@ -207,5 +207,44 @@ test('quota SEM papel informado continua HALTED — so papel com leitor de overr
 
   expect(outcome).toBe('halt')
   expect(readCard(id)?.fm.provider_override_implement ?? '').toBe('')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('papel step grava provider_override_step — cada papel acorda no proprio override', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { papel: 'step', rota: rotaQueTroca('kimi') })
+
+  const c = readCard(id)
+  expect(outcome).toBe('waiting')
+  expect(c?.fm.provider_override_step).toBe('kimi')
+  expect(c?.fm.provider_override_implement ?? '', 'o override do implement nao pode ser tocado por falha de step').toBe('')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('papel gate grava provider_override_gate', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { papel: 'gate', rota: rotaQueTroca('codex') })
+
+  expect(outcome).toBe('waiting')
+  expect(readCard(id)?.fm.provider_override_gate).toBe('codex')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('HALT por quota limpa os TRES overrides — a cota de quem falhou ontem pode ter voltado quando o humano retomar', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+  patchCard(id, { provider_override_implement: 'codex', provider_override_step: 'kimi', provider_override_gate: 'codex' })
+
+  const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueMantem })
+
+  const c = readCard(id)
+  expect(outcome).toBe('halt')
+  expect(c?.fm.provider_override_implement).toBe('')
+  expect(c?.fm.provider_override_step).toBe('')
+  expect(c?.fm.provider_override_gate).toBe('')
   delete process.env.HICODE_QUOTA_FALLBACK
 })

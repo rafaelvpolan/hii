@@ -81,7 +81,7 @@ test('DECISAO DE PRODUTO: cota esgotada sem HICODE_QUOTA_FALLBACK=on para o card
 
   const card = readCard(id)
   expect(card?.fm.status).toBe('HALTED')
-  expect(card?.fm.provider_override_implement).toBeUndefined()
+  expect(card?.fm.provider_override_implement || '', 'ausente ou limpo pelo haltFields — o que importa e nenhum override ativo').toBe('')
   expect(card?.body).toContain('sem troca automatica de provedor')
   expect(existsSync(wt)).toBe(false)
 }, TEMPO_COM_GIT_MS)

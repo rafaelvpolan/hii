@@ -182,12 +182,14 @@ pelo sucesso do implement e por `haltFields`.
   (`providers: ["claude", "codex", "kimi"]` dentro do papel). Sem isso a ordem é a do
   registro, com a env `HICODE_<PAPEL>_QUOTA_FALLBACK_PROVIDER` na frente quando definida.
 
-**Trabalho que falta (não depende de decisão):** estender a rota aos papéis `gate`,
-`verify` e `step`. Hoje só `implement` tem leitor de override
-(`motor/ciclo/agente.ts:190`, `provider_override_implement`); os chamadores de
-`providerFor` dos outros papéis (`gate.ts`, `avaliar.ts`, `clarificar.ts`) não aceitam
-override por card — é a mesma costura, um papel por vez, cada um com seu teste. A
-constante `PAPEIS_COM_OVERRIDE_DE_PROVEDOR` em `politica.ts` é o ponto de expansão.
+**Estendido em 08/09 para `step` e `gate`:** `runStep` e o crivo leem
+`provider_override_step`/`provider_override_gate`, a falha carrega o `papel` de quem
+falhou (agente × crivo, distinguido em `passo-com-gate.ts` — rotear o outro não
+ajudaria), o modelo segue o provedor trocado, e o fecho concluído (`PR_OPEN`) e o
+`haltFields` limpam os três overrides. **Falta só `verify`** (avaliar/clarificar/
+verificar-visual, três sítios que chamam `providerFor('verify')` sem override) — mesma
+costura, e a constante `PAPEIS_COM_OVERRIDE_DE_PROVEDOR` em `politica.ts` continua sendo
+o ponto de expansão.
 
 **Uma mudança de contrato que a suíte pegou e ficou registrada:** o fallback explícito da
 env deixou de vencer incondicionalmente — se o provedor da env não está apto (não

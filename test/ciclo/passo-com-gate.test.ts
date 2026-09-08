@@ -217,3 +217,23 @@ test('PROPAGACAO o alvo chega ao runStep, e nao vazio', async () => {
   expect(stepCalls.length).toBeGreaterThan(0)
   expect(stepCalls[0]?.alvo, 'sem o caminho do alvo o agente de seguranca nunca recebe o checklist da stack').toBe('/caminho/do/alvo')
 })
+
+test('falha de QUOTA do agente sai com papel step — e o que permite a politica trocar o provedor certo', async () => {
+  const id = reset([step({ ok: false, failureClass: 'quota', failureReason: 'cota esgotada', provider: 'claude', text: '429' })], [])
+
+  const r = await runGatedStep(id, '/tmp/wt', 'main', '/tmp/wt', 'rufus', 'melhore X', 'objetivo', 'Arquitetura', agente)
+
+  expect(r.ok).toBe(false)
+  expect(r.failureClass).toBe('quota')
+  expect(r.papel, 'quem falhou foi o AGENTE do passo — rotear o crivo nao ajudaria').toBe('step')
+})
+
+test('crivo indisponivel sai com papel gate — a troca de provedor tem de mirar quem falhou', async () => {
+  const id = reset([step({}), step({})], [gate({ ok: false, failureClass: 'quota', failureReason: 'cota do crivo esgotada', provider: 'claude', reason: 'sem resposta' }), gate({ ok: false, failureClass: 'quota', failureReason: 'cota do crivo esgotada', provider: 'claude', reason: 'sem resposta' })])
+
+  const r = await runGatedStep(id, '/tmp/wt', 'main', '/tmp/wt', 'rufus', 'melhore X', 'objetivo', 'Arquitetura', agente)
+
+  expect(r.ok).toBe(false)
+  expect(r.failureClass).toBe('quota')
+  expect(r.papel, 'quem falhou foi o CRIVO — rotear o agente do passo nao ajudaria').toBe('gate')
+})

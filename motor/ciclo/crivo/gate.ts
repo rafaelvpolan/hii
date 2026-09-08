@@ -5,7 +5,8 @@ import { runGit, stageAll } from '../../quilombo/git.ts'
 import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
 import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
-import { providerFor, effortFor } from '../../tomada/registro.ts'
+import { providerFor, effortFor, modelFor } from '../../tomada/registro.ts'
+import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
 import { modeloGovernado } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
@@ -228,7 +229,8 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
   if (!diff.names.trim()) {
     return { ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
-  const provider = providerFor('gate')
+  const overrideDoGate = readCard(id)?.fm[campoDeOverrideDoPapel('gate')] || undefined
+  const provider = providerFor('gate', overrideDoGate)
   const todasAsReferencias = referenciasDoCard(id)
   const referencias = todasAsReferencias.slice(0, MAX_REFERENCIAS_NA_COMPARACAO)
   const refsCortadas = todasAsReferencias.length - referencias.length
@@ -265,7 +267,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     dirs: gauntlet ? [wt, ...referencias.map(r => r.replace(/\/[^/]+$/, '')), tela.replace(/\/[^/]+$/, '')] : [wt],
     mode: 'readonly',
     useAgents: false,
-    model: modeloGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
+    model: overrideDoGate ? modelFor('gate', overrideDoGate) : modeloGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
     effort: effortFor('gate'),
     expectsJson: true,
     timeoutMs: timeoutForDiff(diff),

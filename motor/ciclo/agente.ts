@@ -14,7 +14,8 @@ import { conectorExterno, navegacaoSemantica } from '../tomada/ponte/mcp.ts'
 import { agentesNexusPor } from '../agentes/registro.ts'
 import type { AgenteInjetado } from '../agentes/registro.ts'
 import { readProjectRules } from '../cordel/alicerce/home.ts'
-import { repoPath } from '../cordel/store.ts'
+import { readCard, repoPath } from '../cordel/store.ts'
+import { campoDeOverrideDoPapel } from '../tomada/rota.ts'
 import { runProvider } from '../euclides/tesouro/confianca.ts'
 import { markProviderSubstituted } from '../tomada/confianca.ts'
 import { readProjectMemory } from '../cascudo/memoria.ts'
@@ -316,7 +317,8 @@ function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruct
 // escopo que valesse so para o implementador seria escopo pela metade.
 export async function runStep(wt: string, agent: string, instruction: string, id: string, repo: string, packs: readonly string[] = [], escopo: EscopoDeEscrita = SEM_ESCOPO): Promise<StepResult> {
   const t = Date.now()
-  const provider = providerFor('step')
+  const overrideDoPasso = readCard(id)?.fm[campoDeOverrideDoPapel('step')] || undefined
+  const provider = providerFor('step', overrideDoPasso)
   if (!provider.agentic) return { time: 0, cost: 0, costMeasured: true, tokens: 0, ok: false, text: `provider ${provider.name} nao-agentico — step "${agent}" NAO executou (use claude/codex para steps que editam)`, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos', provider: provider.name }
   const navegacao = await navegacaoSemantica()
   const agenteInjetado = agentesInjetaveis(provider, [agent], navegacao)
@@ -327,9 +329,9 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     dirs: [wt],
     mode: 'edit',
     useAgents: injetou,
-    model: modeloDoPasso(agent, id),
+    model: overrideDoPasso ? modelFor('step', overrideDoPasso) : modeloDoPasso(agent, id),
     effort: effortFor('step'),
-    modo: modoFor('step'),
+    modo: modoFor('step', overrideDoPasso),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
     extraTools: navegacao,

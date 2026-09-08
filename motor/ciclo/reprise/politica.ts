@@ -2,7 +2,7 @@ import { isoAt, isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, Fields, FailureClass } from '../../cordel/index.ts'
 import { maxWaitingAttempts, pisoDeEsperaMs, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
-import { comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
+import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
 import type { AgentRole } from '../../tomada/tipos.ts'
 import { appendFailureAttempt } from './tentativas.ts'
@@ -31,7 +31,7 @@ export interface FailurePolicyInput {
   extraFields?: Fields
 }
 
-const PAPEIS_COM_OVERRIDE_DE_PROVEDOR: readonly AgentRole[] = ['implement']
+const PAPEIS_COM_OVERRIDE_DE_PROVEDOR: readonly AgentRole[] = ['implement', 'step', 'gate']
 
 const BACKOFF_STEPS_MS = [30_000, 60_000, 120_000, 300_000, 600_000]
 
@@ -63,6 +63,9 @@ function haltFields(input: FailurePolicyInput): Fields {
     wait_resume_status: '',
     wait_provider: '',
     rota_tentados: '',
+    provider_override_implement: '',
+    provider_override_step: '',
+    provider_override_gate: '',
     ...input.extraFields,
   }
 }
@@ -77,7 +80,7 @@ function trocaDeProvedorPorQuota(input: FailurePolicyInput, attempts: number): P
   const until = isoAt(Date.now() + backoffMsFor(attempts, 'rede'))
   patchCard(input.id, {
     status: 'WAITING',
-    provider_override_implement: rota.para,
+    [campoDeOverrideDoPapel(input.papel)]: rota.para,
     rota_tentados: comTentativaDeRota(tentadosNoCard, input.provider),
     wait_reason: input.failureReason,
     wait_attempts: String(attempts),
