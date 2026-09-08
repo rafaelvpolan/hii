@@ -12,6 +12,7 @@ export const ESFORCO_PADRAO = '(padrao da IA)'
 
 export interface PreferenciaDePapel {
   provider?: string
+  providers?: string[]
   model?: string
   effort?: string
   modo?: string

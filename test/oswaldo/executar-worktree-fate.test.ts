@@ -119,16 +119,18 @@ test('cota esgotada (sem fallback aplicavel, ja no provedor de fallback) para o 
   expect(existsSync(wt)).toBe(false)
 }, TEMPO_COM_GIT_MS)
 
-test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): troca de provedor em vez de parar', async () => {
+test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): a ROTA decide a troca em vez de parar', async () => {
   process.env.HICODE_QUOTA_FALLBACK = 'on'
   try {
     resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'claude' }
     const wt = worktreeParaTeste()
     const id = cardExecutando(wt, 'tarefa que estoura a cota no provedor padrao')
-    await handleExecute(id, agente)
+    const rotaDeterministica = () => ({ acao: 'trocar', para: 'codex', motivo: 'escolha fixa do teste — a consulta real depende de quem esta autenticado na maquina' }) as const
+    await handleExecute(id, { ...agente, rota: rotaDeterministica })
     const card = readCard(id)
     expect(card?.fm.status).toBe('EXECUTING')
     expect(card?.fm.provider_override_implement).toBe('codex')
+    expect(card?.fm.rota_tentados, 'quem estourou entra na rodada para nao ser repetido').toBe('claude')
     expect(card?.body).toContain('trocando para codex')
     expect(existsSync(wt)).toBe(true)
   } finally {

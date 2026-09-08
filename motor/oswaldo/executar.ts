@@ -23,13 +23,14 @@ import { resolvedFailure, writeRun } from '../euclides/registros.ts'
 import { abrirSessao } from '../euclides/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
-import { quotaFallbackProviderFor } from '../tomada/registro.ts'
+import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
 
 export interface ExecuteDeps {
   implement: typeof implement
   verifyVisual: typeof verifyVisual
   inspecionar?: typeof inspectUrl
   avaliar?: typeof evaluate
+  rota?: typeof decidirRota
 }
 
 interface ExecuteSteps {
@@ -310,9 +311,10 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     const totalTokens = baseTokens + auxTokens + rec.tokens_total
     const totals: Fields = { cost_usd: totalCost.toFixed(4), tokens_total: String(totalTokens), tempo_s: tempoAcumulado() }
     if (failureClass === 'quota' && quotaFallbackLigado()) {
-      const fallback = quotaFallbackProviderFor('implement')
-      if (fallback && fallback !== res.provider) {
-        patchCard(id, { provider_override_implement: fallback, ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${fallback} (config explicita HICODE_QUOTA_FALLBACK=on) e tentando de novo`)
+      const tentados = rotaTentadas(card.fm.rota_tentados)
+      const rota = (deps.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: tentados })
+      if (rota.acao === 'trocar') {
+        patchCard(id, { provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${rota.para} (${rota.motivo}; HICODE_QUOTA_FALLBACK=on) e tentando de novo`)
         return
       }
     }
@@ -376,7 +378,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
-  patchCard(id, { wait_attempts: '', provider_override_implement: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
+  patchCard(id, { wait_attempts: '', provider_override_implement: '', rota_tentados: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {

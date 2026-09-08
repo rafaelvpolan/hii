@@ -146,3 +146,66 @@ test('resumeStep, quando informado, e gravado como resume_from para o polimento 
   })
   expect(readCard(id)?.fm.resume_from).toBe('Testes')
 })
+
+const rotaQueTroca = (para: string) => () => ({ acao: 'trocar', para, motivo: 'candidato de teste' }) as const
+const rotaQueMantem = () => ({ acao: 'manter_politica_atual', motivo: 'nenhum candidato apto (teste)' }) as const
+
+function quotaEm(id: string, provider: string, extra: Record<string, unknown> = {}): string {
+  return String(applyFailurePolicy({
+    id, fromStatus: 'CORRECTING', resumeStatus: 'CORRECTING', provider,
+    failureClass: 'quota', failureReason: 'cota esgotada', technicalDetail: '429',
+    ...extra,
+  } as never))
+}
+
+test('REGRESSAO: quota com fallback ligado e rota apta vira WAITING com o provedor NOVO — antes a correcao ia direto a HALTED', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueTroca('codex') })
+
+  const c = readCard(id)
+  expect(outcome).toBe('waiting')
+  expect(c?.fm.status).toBe('WAITING')
+  expect(c?.fm.provider_override_implement, 'o retry tem de acordar no provedor novo').toBe('codex')
+  expect(c?.fm.wait_provider, 'a sonda de espera tem de sondar o provedor NOVO, nao o esgotado').toBe('codex')
+  expect(c?.fm.rota_tentados, 'quem falhou nesta rodada fica registrado para nao ser repetido').toBe('claude')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('quota com fallback ligado mas SEM candidato apto continua HALTED — a rota nunca inventa provedor', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueMantem })
+
+  const c = readCard(id)
+  expect(outcome).toBe('halt')
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.halt_class).toBe('quota')
+  expect(c?.fm.rota_tentados, 'haltFields limpa a rodada — o proximo ciclo humano comeca do zero').toBe('')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('quota com fallback DESLIGADO nem consulta a rota — trocar de provedor e decisao do operador', () => {
+  delete process.env.HICODE_QUOTA_FALLBACK
+  const id = card()
+  let consultada = false
+
+  const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: () => { consultada = true; return rotaQueTroca('codex')() } })
+
+  expect(outcome).toBe('halt')
+  expect(consultada, 'com o interruptor desligado a rota nao pode nem ser perguntada').toBe(false)
+  expect(readCard(id)?.fm.status).toBe('HALTED')
+})
+
+test('quota SEM papel informado continua HALTED — so papel com leitor de override pode ser roteado', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { rota: rotaQueTroca('codex') })
+
+  expect(outcome).toBe('halt')
+  expect(readCard(id)?.fm.provider_override_implement ?? '').toBe('')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
