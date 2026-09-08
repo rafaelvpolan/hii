@@ -119,6 +119,7 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
       failureClass: r.failureClass ?? 'terminal',
       failureReason: r.failureReason ?? 'falha nao classificada',
       waitClass: r.waitClass,
+      papel: 'implement',
       technicalDetail: r.text,
     })
     if (outcome === 'halt') patchCard(id, { correction: '', correction_file: '', correction_line: '', correction_line_text: '' })

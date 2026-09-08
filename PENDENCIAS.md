@@ -89,13 +89,10 @@ cooldown por card (`:97-100` só filtra `emVoo`, `:31` só reveza na chamada). `
 (`executar.ts:312`) era gravado e nunca apagado — **consertado em 29/08**: o implement
 bem-sucedido limpa o campo, então a cota que voltou deixa de ser ignorada.
 
-Em outro caminho, `quotaFallbackProviderFor` (`motor/tomada/registro.ts:134-137`) é chamado em
-`executar.ts:309`, devolvendo um provedor. Mas o código devolve sem troca de estado:
-`:311-314` grava o override em `patchCard(id, { provider_override_implement: fallback })` e
-segue — o card não sai de `EXECUTING`. É redespachado. A segunda volta `:311` bate em
-`if (res.provider === fallback)` — a condição falha — e cai em `applyFailurePolicy`, que
-classifica a falha como `quota` e vai direto a `HALTED`. **Primeiro retry: fallback; segundo:
-parede.**
+**"Primeiro retry: fallback; segundo: parede" saiu em 08/09**: o caminho de quota do
+`handleExecute` e o de `applyFailurePolicy` agora consultam `decidirRota`
+(`motor/tomada/rota.ts`), e `rota_tentados` impede repetir quem já falhou na rodada —
+ver a seção do roteador abaixo.
 
 **A contagem de tentativas se comporta de forma complexa por fronteira de passo** — `wait_attempts`
 ressurge em cada fronteira de sucesso (`fechar.ts:293`), mas entre passos **consecutivos do
@@ -156,75 +153,43 @@ transição fora de `topologia.json` e a ausência de cooldown por card em
 
 ---
 
-## PLANO — transformar motor/tomada/registro de harnesses em roteador de rotas
+## PENDÊNCIA — o roteador de rotas existe; ligar e estender é o que falta
 
-O contrato `Harness` já declara capacidade em dois lugares: `capabilities()` devolve
-`HarnessCapabilities` com seis booleanos (`restrictsTools`, `isolatesReadonly`, `acceptsEffort`,
-`reportsCostUsd`, `reportsTokens`, `mcp`) — `motor/tomada/tipos.ts:56-63` — e o próprio `Harness`
-declara `supportsAgents`, `supportsVision` e `agentic` como campos, `motor/tomada/tipos.ts:101-105`.
-São dados de capacidade que já existem; o que falta é alguém consultá-los para decidir rota.
-Hoje só `isolatesReadonly` é lido, em `motor/euclides/tesouro/confianca.ts:74-82`.
-A classe de erro já é normalizada por harness (`sinaisDeFalha()`, `:47-51`) e `classifyFailure`
-(`motor/ciclo/reprise/classe-de-falha.ts:43-53`) cruza com genéricos. `probeProviderHealth()`
-(`motor/tomada/registro.ts:112-115`) existe mas é **lido só por `espera.ts:69`** — nunca para escolher.
-`TrocaDeProvedor` (`motor/cordel/tipos.ts:76-81`) é tipo que nada preencheu. O roteador que falta
-é um decisor aditivo (nunca piora o comportamento atual, só acrescenta uma saída antes do HALT),
-chamado de dentro de `decideOutcome` (`motor/ciclo/reprise/politica.ts:72`).
+O PLANO desta seção foi executado em 08/09: `motor/tomada/rota.ts` (`decidirRota`) decide
+troca de provedor consultando o que o contrato `Harness` sempre declarou — `agentic`,
+`isolatesReadonly`, `autenticado()`, `rodaLocal` e a cota da janela corrente
+(`cotaEsgotadaEm`). Candidatos em ordem: env do papel, `providers` da preferência, todos
+os registrados. Falha `terminal` nunca troca; papel mecânico prefere quem roda local;
+lista vazia mantém a política atual.
 
-**Assinatura concreta, sem dependência nova:**
+Está ligado em dois pontos: o caminho de quota do `handleExecute`
+(`motor/oswaldo/executar.ts`, campo `rota_tentados` no card impede repetir quem já falhou
+na rodada — era o "primeiro retry: fallback; segundo: parede", provado por teste que
+percorre claude→codex→kimi→HALTED) e o ramo de quota de `applyFailurePolicy`
+(`motor/ciclo/reprise/politica.ts`, cobre a correção: o card vai a WAITING curto com
+`wait_provider` apontando o provedor NOVO, em vez de HALTED). `rota_tentados` é limpo
+pelo sucesso do implement e por `haltFields`.
 
-```ts
-// motor/tomada/rota.ts — novo arquivo, só imports de tomada/
-export interface EntradaDeRota {
-  papel: AgentRole                          // implement | verify | gate | step
-  classeDeFalha: FailureClass               // transient | quota | terminal
-  provedorAtual: HarnessId
-  tentadosNestaRodada: readonly HarnessId[] // quem já falhou NESTA rodada
-}
+**Precisa de você (operação, não código):**
 
-export type DecisaoDeRota =
-  | { acao: 'manter_politica_atual'; motivo: string }
-  | { acao: 'trocar'; para: HarnessId; motivo: string }
+- **Ligar `HICODE_QUOTA_FALLBACK=on`.** O roteador só age com o interruptor ligado —
+  troca automática de provedor é decisão do operador, e o default continua parar.
+- **(Opcional) declarar a ordem de candidatos por papel** em `config/ia.json`
+  (`providers: ["claude", "codex", "kimi"]` dentro do papel). Sem isso a ordem é a do
+  registro, com a env `HICODE_<PAPEL>_QUOTA_FALLBACK_PROVIDER` na frente quando definida.
 
-export function decidirRota(e: EntradaDeRota): DecisaoDeRota
-```
+**Trabalho que falta (não depende de decisão):** estender a rota aos papéis `gate`,
+`verify` e `step`. Hoje só `implement` tem leitor de override
+(`motor/ciclo/agente.ts:190`, `provider_override_implement`); os chamadores de
+`providerFor` dos outros papéis (`gate.ts`, `avaliar.ts`, `clarificar.ts`) não aceitam
+override por card — é a mesma costura, um papel por vez, cada um com seu teste. A
+constante `PAPEIS_COM_OVERRIDE_DE_PROVEDOR` em `politica.ts` é o ponto de expansão.
 
-Regras (tudo com dado que o motor já tem):
-
-1. `terminal` → `manter_politica_atual` (preserva HALT de hoje).
-2. Candidatos = lista ordenada do papel em `PreferenciaDePapel.providers?: string[]`
-   (`motor/tomada/preferencias.ts:13-25`, extensão retrocompatível do campo `provider` singular).
-   Fallback: `providerNames()` (os quatro conectados).
-3. Filtra por `tentadosNestaRodada` (não repetir quem falhou ESTA rodada), por `capabilities()`
-   (papel `implement` exige `agentic`, papel `verify` exige `isolatesReadonly` — regra que já
-   existe em `motor/euclides/tesouro/confianca.ts:74-82`, hoje só para recusar), por `autenticado()`,
-   por `janelasDoProvedor` (cota estourada, `motor/tomada/disponibilidade.ts:28-31`).
-4. Ordena preferindo `rodaLocal` quando mecânico (papel `step`/`verify` sem escrita).
-5. Lista vazia → `manter_politica_atual`. Nunca piora.
-
-**Encaixe em pontos concretos (sem redesenho):**
-
-- `motor/ciclo/reprise/politica.ts:72` — antes do `if (input.failureClass === 'quota')`, branch:
-  ```ts
-  const rota = decidirRota({ papel: input.papel, classeDeFalha: input.failureClass,
-    provedorAtual: input.provider, tentadosNestaRodada: card.rota_tentados?.split(',') ?? [] })
-  if (rota.acao === 'trocar') {
-    return patchCard(id, { rota_tentados: `${rota.para}` }, ...) + retry com novo harness
-  }
-  ```
-- Seis chamadores de `providerFor` em `agente.ts:350`, `gate.ts:229`, `avaliar.ts:20`,
-  `clarificar.ts:96`, `ideate-run.ts:25` passam a aceitar `override?: HarnessId` opcional
-  (como `implement` já aceita em `executar.ts:309-315`).
-- `motor/tomada/preferencias.ts` — campo novo `providers?: string[]` é opcional; código existente
-  que usa `provider` singular segue funcionando.
-- Campo novo `rota_tentados` no frontmatter do card (CSV de HarnessId) — escrito por `patchCard`,
-  limpo por `haltFields` (item 15 em Rufus) e pelo sucesso.
-
-**O que já passa a funcionar com esse roteador mínimo:**
-
-Failover de quota entre claude↔codex↔kimi para `implement`; entre claude↔codex↔ollama para `verify`.
-Card em `EXECUTING` com quota de claude redirecciona para codex no mesmo tick. Tiering de modelo
-(próximo item, RECOMENDACAO) passa a ser consultável no ponto de escolha.
+**Uma mudança de contrato que a suíte pegou e ficou registrada:** o fallback explícito da
+env deixou de vencer incondicionalmente — se o provedor da env não está apto (não
+autenticado, cota também esgotada, não-agêntico para implement), o roteador escolhe o
+próximo apto em vez de trocar para quem vai falhar de novo. O teste antigo que fixava o
+contrato da env foi atualizado para o novo, com rota injetada.
 
 ---
 

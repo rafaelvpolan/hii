@@ -1,7 +1,10 @@
 import { isoAt, isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, Fields, FailureClass } from '../../cordel/index.ts'
-import { maxWaitingAttempts, pisoDeEsperaMs } from '../../cordel/alicerce/config.ts'
+import { maxWaitingAttempts, pisoDeEsperaMs, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
+import { comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
+import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
+import type { AgentRole } from '../../tomada/tipos.ts'
 import { appendFailureAttempt } from './tentativas.ts'
 import type { FailureOutcome } from './tentativas.ts'
 import { stampRunFailure } from '../../euclides/registros.ts'
@@ -23,8 +26,12 @@ export interface FailurePolicyInput {
   // era.
   waitClass?: ClasseDeEspera
   resumeStep?: string
+  papel?: AgentRole
+  rota?: (e: EntradaDeRota) => DecisaoDeRota
   extraFields?: Fields
 }
+
+const PAPEIS_COM_OVERRIDE_DE_PROVEDOR: readonly AgentRole[] = ['implement']
 
 const BACKOFF_STEPS_MS = [30_000, 60_000, 120_000, 300_000, 600_000]
 
@@ -55,8 +62,33 @@ function haltFields(input: FailurePolicyInput): Fields {
     wait_until: '',
     wait_resume_status: '',
     wait_provider: '',
+    rota_tentados: '',
     ...input.extraFields,
   }
+}
+
+function trocaDeProvedorPorQuota(input: FailurePolicyInput, attempts: number): PolicyOutcome | null {
+  if (!quotaFallbackLigado()) return null
+  if (!input.papel || !PAPEIS_COM_OVERRIDE_DE_PROVEDOR.includes(input.papel)) return null
+  const tentadosNoCard = readCard(input.id)?.fm.rota_tentados
+  const tentados = rotaTentadas(tentadosNoCard)
+  const rota = (input.rota ?? decidirRota)({ papel: input.papel, classeDeFalha: input.failureClass, provedorAtual: input.provider, tentadosNestaRodada: tentados })
+  if (rota.acao !== 'trocar') return null
+  const until = isoAt(Date.now() + backoffMsFor(attempts, 'rede'))
+  patchCard(input.id, {
+    status: 'WAITING',
+    provider_override_implement: rota.para,
+    rota_tentados: comTentativaDeRota(tentadosNoCard, input.provider),
+    wait_reason: input.failureReason,
+    wait_attempts: String(attempts),
+    wait_class: 'rede',
+    wait_until: until,
+    wait_resume_status: input.resumeStatus,
+    wait_provider: rota.para,
+    ...(input.resumeStep ? { resume_from: input.resumeStep } : {}),
+    ...input.extraFields,
+  }, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) cota de ${input.provider || 'provedor'} esgotada — proxima tentativa em ${rota.para} as ${until} (${rota.motivo}; HICODE_QUOTA_FALLBACK=on; a espera e curta porque o retry NAO volta ao provedor esgotado)`)
+  return 'waiting'
 }
 
 function recordFailure(input: FailurePolicyInput, attempt: number, outcome: PolicyOutcome): void {
@@ -85,7 +117,9 @@ function attemptNumber(id: string): number {
 
 function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutcome {
   if (input.failureClass === 'quota') {
-    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor); configure HICODE_QUOTA_FALLBACK para permitir troca explicita`)
+    const trocado = trocaDeProvedorPorQuota(input, attempts)
+    if (trocado) return trocado
+    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HICODE_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
   }
 

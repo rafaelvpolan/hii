@@ -25,7 +25,7 @@ function noPath(binario: string): boolean {
   return caminhos.some(dir => existsSync(join(dir, binario)))
 }
 
-function cotaEsgotadaEm(nome: HarnessId, agoraMs: number): boolean {
+export function cotaEsgotadaEm(nome: HarnessId, agoraMs: number = Date.now()): boolean {
   return janelasDoProvedor(nome, agoraMs).some(j =>
     j.limiteConfiavel && j.percentualDoLimite !== null && j.percentualDoLimite >= 100 && j.restamMs > 0)
 }
