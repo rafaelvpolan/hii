@@ -119,6 +119,20 @@ test('FOTO a cadeia de polimento do pipeline.json esta declarada de ponta a pont
   expect(faltando, 'passo do pipeline muda o card para um estado que a topologia nao permite').toEqual([])
 })
 
+test('TODA subsequencia de passos do pipeline tem a cadeia declarada — perfil e override PULAM passos, e o salto tambem e transicao', () => {
+  const estados = ondas(activeSteps()).flat().map(s => s.state)
+  const faltando: string[] = []
+  for (let mascara = 1; mascara < (1 << estados.length); mascara++) {
+    const cadeia: Status[] = ['URL_OK', ...estados.filter((_, i) => mascara & (1 << i))]
+    for (let i = 0; i + 1 < cadeia.length; i++) {
+      const de = cadeia[i]
+      const para = cadeia[i + 1]
+      if (de && para && !transicaoPermitida(topo, de, para)) faltando.push(`${de} -> ${para}`)
+    }
+  }
+  expect([...new Set(faltando)], 'planSteps (perfil) e o override de passos produzem este salto, e a topologia nao o declara — era deriva executando sem auditoria').toEqual([])
+})
+
 test('o ultimo estado do pipeline chega em PR_OPEN, que e checkpoint humano', () => {
   const cadeia = ondas(activeSteps()).flat().map(s => s.state)
   const ultimo = cadeia[cadeia.length - 1]

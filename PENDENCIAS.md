@@ -147,9 +147,13 @@ não-progresso — **já foi feito** e saiu da lista: `motor/ciclo/reparo.ts:48-
 `motor/ciclo/passo-com-gate.ts:60,136-141` fazem o mesmo antes do teto de `maxReajuste()`.
 
 **Reconferido em 02/09:** `status_since` e `halt_class` **saíram** — ver a seção de
-diagnosticabilidade abaixo. O que continua aberto nesta seção são os 6 pares de
-transição fora de `topologia.json` e a ausência de cooldown por card em
-`motor/oswaldo/mutirao/fila.ts` (`:97` só filtra `emVoo`).
+diagnosticabilidade abaixo.
+
+**Reconferido em 08/09:** os 6 pares de transição **saíram** — `config/topologia.json`
+declara todos os saltos que perfil e override produzem, e a varredura de
+`test/niemeyer/topologia.test.ts` percorre TODA subsequência de passos (2⁴ cadeias),
+não só o pipeline completo. O que continua aberto nesta seção é a ausência de cooldown
+por card em `motor/oswaldo/mutirao/fila.ts` (`:97` só filtra `emVoo`).
 
 ---
 
