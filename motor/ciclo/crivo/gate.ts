@@ -5,9 +5,9 @@ import { runGit, stageAll } from '../../quilombo/git.ts'
 import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
 import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
-import { providerFor, effortFor, modelFor } from '../../tomada/registro.ts'
+import { providerFor, modelFor } from '../../tomada/registro.ts'
 import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
-import { modeloGovernado } from '../../oswaldo/rui.ts'
+import { esforcoGovernado, modeloGovernado } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { classifyFailure } from '../reprise/classe-de-falha.ts'
@@ -268,7 +268,7 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     mode: 'readonly',
     useAgents: false,
     model: overrideDoGate ? modelFor('gate', overrideDoGate) : modeloGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
-    effort: effortFor('gate'),
+    effort: esforcoGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
     expectsJson: true,
     timeoutMs: timeoutForDiff(diff),
   }, 'gate')

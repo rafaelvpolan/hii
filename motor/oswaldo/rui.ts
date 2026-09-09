@@ -1,9 +1,9 @@
 import { anexarEvento } from '../euclides/eventos.ts'
-import { TIERS, elevarTier, modeloDoTier, tierPara } from '../euclides/tesouro/orcamento.ts'
+import { TIERS, elevarTier, esforcoDoTier, modeloDoTier, tierPara } from '../euclides/tesouro/orcamento.ts'
 import type { EscolhaDeTier, Tier } from '../euclides/tesouro/orcamento.ts'
 import { modelFor, providerNameFor } from '../tomada/registro.ts'
 import type { AgentRole } from '../tomada/tipos.ts'
-import { preferenciaDoPapel } from '../tomada/preferencias.ts'
+import { esforcoPara, preferenciaDoPapel } from '../tomada/preferencias.ts'
 import { readCard } from '../cordel/store.ts'
 import type { Fields } from '../cordel/index.ts'
 
@@ -87,6 +87,20 @@ export function modeloGovernado(papel: AgentRole, acao: string, fm: Fields): str
 
 export function modeloDoPasso(agente: string, id: string): string | undefined {
   return modeloGovernado('step', acaoDoAgente(agente), readCard(id)?.fm ?? {})
+}
+
+export function esforcoGovernado(papel: AgentRole, acao: string, fm: Fields): string | undefined {
+  const escolhaDoHumano = esforcoPara(papel, fm.effort)
+  if (escolhaDoHumano) return escolhaDoHumano
+  if (acao) {
+    const governado = esforcoDoTier(tierDaAcaoDoCard(acao, fm).tier)
+    if (governado) return governado
+  }
+  return undefined
+}
+
+export function esforcoDoPasso(agente: string, id: string): string | undefined {
+  return esforcoGovernado('step', acaoDoAgente(agente), readCard(id)?.fm ?? {})
 }
 
 export function registrarTier(card: string, acao: string, escolha: EscolhaDeTier): void {

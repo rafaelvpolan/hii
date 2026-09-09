@@ -4,7 +4,7 @@ import { ROOT, GATE_DIFF_LIMIT } from '../../cordel/alicerce/config.ts'
 import { runGit } from '../../quilombo/git.ts'
 import { modelFor, providerFor } from '../../tomada/registro.ts'
 import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
-import { modeloGovernado, registrarTier, tierDaAcaoDoCard } from '../../oswaldo/rui.ts'
+import { esforcoGovernado, modeloGovernado, registrarTier, tierDaAcaoDoCard } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 
@@ -32,7 +32,7 @@ export async function evaluate(card: Card, wt: string, base: string): Promise<Ev
     diff || '(sem diff vs a base)',
   ].join('\n')
   if (card.fm.id) registrarTier(card.fm.id, 'avaliacao', tierDaAcaoDoCard('avaliacao', card.fm))
-  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: overrideDoVerify ? modelFor('verify', overrideDoVerify) : modeloGovernado('verify', 'avaliacao', card.fm), expectsJson: true, timeoutMs: 120000 }, 'avaliacao')
+  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [wt], mode: 'readonly', useAgents: false, model: overrideDoVerify ? modelFor('verify', overrideDoVerify) : modeloGovernado('verify', 'avaliacao', card.fm), effort: esforcoGovernado('verify', 'avaliacao', card.fm), expectsJson: true, timeoutMs: 120000 }, 'avaliacao')
   if (!res.ok) {
     return { score: -1, meets: false, notes: `eval NAO rodou: ${String(res.detail || 'provedor falhou').slice(0, 120)}`, cost: res.cost, tokens: sumTokens(res.usage) }
   }

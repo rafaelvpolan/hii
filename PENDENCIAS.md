@@ -214,7 +214,25 @@ arquivos** (`diff.names`, que já é calculado em `:123` e truncado em 4.000 car
 deixando o crivo pedir o trecho acumulado quando a lista indicar sobreposição. Antes de
 mexer, medir: o número acima é a linha de base.
 
-**O item 3 continua parado, e continua sendo decisão de negócio, não de engenharia.**
+**R: aplicado em 09/09, com um achado que muda o desenho.** O que dava para ligar sem
+remedir, ligou: `esforcosPorTier` entrou na governança (`tier3_barato: low` — limpeza,
+documentação, classificação e avaliação deixam de pagar raciocínio profundo; nenhum custo
+sobe), com `esforcoGovernado` na mesma precedência do modelo: humano > dado versionado >
+padrão do harness, e tier elevado saindo do assento barato. **O assento barato ENTRE
+provedores (tier3 → ollama) está fechado pelas guardas do próprio motor:** ollama é
+`agentic: false` (não pode editar em step) e `emitsStructuredJson: false` (recusado onde o
+veredito é JSON — crivo, avaliador, visual). Não é esquecimento: mapear o ollama hoje
+faria o passo falhar na guarda, não economizar. Abrir esse assento exige ou um harness
+ollama agentic, ou um leitor de veredito tolerante a JSON solto — os dois são trabalho
+novo, registrados aqui.
+
+**O corte de contexto do crivo aguarda a remedição que esta própria seção exige:** com
+uma única chamada de gate no ledger atual, a conclusão dos 640k tokens não é verificável.
+O desenho está pronto (incremental do passo como corpo, acumulado só como lista de
+arquivos); rodar dois ou três cards reais repõe a linha de base e o corte sai com
+antes/depois medido.
+
+**O que era o item 3 original:**
 `config/model-tier.json` mapeia **ação → tier** e não tem uma linha ligando tier a
 provedor, modelo ou esforço. `motor/oswaldo/rui.ts:50,62` (`tierDoCard`/`registrarTier`) tem
 consumidor apenas em `motor/quilombo/cartorio/fechar.ts:214,353`, e lá só emite evento de diário:

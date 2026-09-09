@@ -6,7 +6,7 @@ import type { EscopoDeEscrita } from '../oswaldo/rota/escopo.ts'
 import type { Card, ClasseDeEspera, FailureClass, ImplementResult } from '../cordel/index.ts'
 import { cardsDir, RUN_TIMEOUT_MS, PROJECT_MEMORY } from '../cordel/alicerce/config.ts'
 import { isProviderName, modelFor, providerFor, effortFor, modoFor } from '../tomada/registro.ts'
-import { modeloDoPasso } from '../oswaldo/rui.ts'
+import { esforcoDoPasso, modeloDoPasso } from '../oswaldo/rui.ts'
 import { sumTokens } from '../tomada/uso.ts'
 import { classifyFailure } from './reprise/classe-de-falha.ts'
 import type { Harness } from '../tomada/tipos.ts'
@@ -330,7 +330,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     mode: 'edit',
     useAgents: injetou,
     model: overrideDoPasso ? modelFor('step', overrideDoPasso) : modeloDoPasso(agent, id),
-    effort: effortFor('step'),
+    effort: esforcoDoPasso(agent, id),
     modo: modoFor('step', overrideDoPasso),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
