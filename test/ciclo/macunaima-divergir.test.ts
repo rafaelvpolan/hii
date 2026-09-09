@@ -79,7 +79,7 @@ test('TETO card que ja consumiu o orcamento nao abre ramo nenhum', () => {
 // codigo: trocar a divisao por multiplicacao nos dois lados mantinha o teste
 // verde. As assercoes abaixo usam NUMEROS, que so fecham se a conta estiver certa.
 test('TETO o restante e dividido pelos ramos — N ramos multiplicam o custo por N', () => {
-  const governanca = { versao: 1, padrao: 'tier2_padrao' as const, criterios: {}, orcamentoPorCard: { tetoUsd: 16, acaoAoEstourar: 'pausar' }, modelosPorTier: {}, orcamentoGlobal: null }
+  const governanca = { versao: 1, padrao: 'tier2_padrao' as const, criterios: {}, orcamentoPorCard: { tetoUsd: 16, acaoAoEstourar: 'pausar' }, modelosPorTier: {}, esforcosPorTier: {}, orcamentoGlobal: null }
   const o = orcamentoDaDivergencia(4, 4, governanca)
   expect(o.tetoUsd).toBe(16)
   expect(o.restanteUsd).toBe(12)

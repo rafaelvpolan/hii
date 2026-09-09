@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, numeroDeEnv } from '../../cordel/alicerce/config.ts'
 import { ENV_TIER_FILE } from '../../cordel/alicerce/contrato.ts'
+import { ehEsforco, ESFORCOS } from '../../tomada/preferencias.ts'
+import type { Esforco } from '../../tomada/preferencias.ts'
 
 // Tesouro — governanca de custo como DADO versionado, nao habito no codigo.
 //
@@ -47,6 +49,7 @@ export interface Governanca {
   readonly criterios: Readonly<Record<string, CriterioDeTier>>
   readonly orcamentoPorCard: OrcamentoPorCard
   readonly modelosPorTier: ModelosPorProvedor
+  readonly esforcosPorTier: Readonly<Partial<Record<Tier, Esforco>>>
   readonly orcamentoGlobal: OrcamentoGlobal | null
 }
 
@@ -56,6 +59,7 @@ interface Cru {
   criterios?: Record<string, { tier?: string; motivo?: string }>
   orcamentoPorCard?: { tetoUsd?: number; acaoAoEstourar?: string }
   modelosPorTier?: { porProvedor?: Record<string, Record<string, string>> }
+  esforcosPorTier?: Record<string, string>
   orcamentoGlobal?: { tetoUsd?: number; janela?: string }
 }
 
@@ -96,7 +100,22 @@ export function lerGovernanca(): Governanca {
   if (typeof teto !== 'number' || !Number.isFinite(teto) || teto <= 0 || !acaoAoEstourar) {
     throw new Error(`model-tier.json: orcamentoPorCard precisa de tetoUsd numero finito > 0 e acaoAoEstourar — recebido ${JSON.stringify(teto)}. Teto infinito ou de outro tipo e a ausencia de orcamento com outro nome`)
   }
-  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar }, modelosPorTier: lerModelosPorTier(cru), orcamentoGlobal: lerOrcamentoGlobal(cru) }
+  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar }, modelosPorTier: lerModelosPorTier(cru), esforcosPorTier: lerEsforcosPorTier(cru), orcamentoGlobal: lerOrcamentoGlobal(cru) }
+}
+
+function lerEsforcosPorTier(cru: Cru): Readonly<Partial<Record<Tier, Esforco>>> {
+  const porTier: Partial<Record<Tier, Esforco>> = {}
+  for (const [tier, esforco] of Object.entries(cru.esforcosPorTier ?? {})) {
+    if (!ehEsforco(esforco)) {
+      throw new Error(`model-tier.json: esforcosPorTier.${tier} precisa de um esforco valido (${ESFORCOS.join(' | ')}) — recebido ${JSON.stringify(esforco)}`)
+    }
+    porTier[exigirTier(tier, 'esforcosPorTier')] = esforco
+  }
+  return porTier
+}
+
+export function esforcoDoTier(tier: Tier, g: Governanca = lerGovernanca()): Esforco | undefined {
+  return g.esforcosPorTier[tier]
 }
 
 function lerOrcamentoGlobal(cru: Cru): OrcamentoGlobal | null {

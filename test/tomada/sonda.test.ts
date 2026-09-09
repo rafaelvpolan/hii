@@ -1,5 +1,14 @@
 import { test, expect, afterAll, servidorDeTeste } from '../apoio/runner.ts'
+import { mkdtempSync, writeFileSync, chmodSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { probeProviderHealth, sabeSondarProvedor } from '../../motor/tomada/registro.ts'
+import { binarioResponde, cliSaudavel } from '../../motor/tomada/sonda.ts'
+
+const BIN_FALSO = mkdtempSync(join(tmpdir(), 'hicode-sonda-bin-'))
+writeFileSync(join(BIN_FALSO, 'kimi'), '#!/bin/sh\necho 0.38.0\n')
+chmodSync(join(BIN_FALSO, 'kimi'), 0o755)
+process.env.PATH = `${BIN_FALSO}:${process.env.PATH ?? ''}`
 
 let statusCode = 200
 const server = await servidorDeTeste(function fetch(): Response {
@@ -7,7 +16,7 @@ const server = await servidorDeTeste(function fetch(): Response {
   })
 const baseUrl = `http://localhost:${server.port}`
 
-afterAll(() => server.stop(true))
+afterAll(() => { server.stop(true); rmSync(BIN_FALSO, { recursive: true, force: true }) })
 
 test('provedor com string vazia: nao sonda, assume saudavel (nada a checar)', async () => {
   expect(await probeProviderHealth('')).toBe(true)
@@ -73,4 +82,19 @@ test('sabeSondarProvedor separa "sondei e esta de pe" de "nao tenho como sondar"
   expect(sabeSondarProvedor('ollama')).toBe(true)
   expect(sabeSondarProvedor('')).toBe(false)
   expect(sabeSondarProvedor('provedor-sem-endpoint')).toBe(false)
+})
+
+test('binarioResponde: binario no PATH que responde --version e saudavel; ausente nao e', async () => {
+  expect(await binarioResponde('kimi')).toBe(true)
+  expect(await binarioResponde('binario-que-nao-existe-nesta-maquina')).toBe(false)
+})
+
+test('cliSaudavel e E, nao OU: API 200 com binario ausente NAO e saude — foi um GET assim que "curou" um CLI travado por 900s', async () => {
+  statusCode = 200
+  expect(await cliSaudavel('binario-que-nao-existe-nesta-maquina', baseUrl)).toBe(false)
+  expect(await cliSaudavel('kimi', baseUrl)).toBe(true)
+})
+
+test('cliSaudavel: binario vivo com API fora do ar tambem nao e saude', async () => {
+  expect(await cliSaudavel('kimi', 'http://localhost:1')).toBe(false)
 })

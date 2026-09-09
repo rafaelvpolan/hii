@@ -5,7 +5,7 @@ import { resolverModo } from '../modo-puro.ts'
 import { codexAutenticado } from '../../euclides/tesouro/planos.ts'
 import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
 import { SEM_PLANO } from '../tipos.ts'
-import { alcancavelPorHttp } from '../sonda.ts'
+import { cliSaudavel } from '../sonda.ts'
 import type { Usage } from '../../cordel/index.ts'
 
 export const CODEX_MODOS: CatalogoDeModo = { modos: ['untrusted', 'on-request', 'never'], padrao: 'never' }
@@ -90,7 +90,7 @@ export class CodexProvider implements Harness {
   plano(): PlanoDoProvedor { return { ...SEM_PLANO, provedor: 'codex' } }
   modelosDisponiveis(): string[] { return [] }
   capabilities(): HarnessCapabilities { return CODEX_CAPACIDADES }
-  healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
+  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CODEX_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {

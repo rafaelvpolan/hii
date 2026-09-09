@@ -141,8 +141,8 @@ test('implement bem-sucedido depois da troca limpa override E rodada — a proxi
   expect(c?.fm.rota_tentados).toBe('')
 }, TEMPO_COM_GIT_MS)
 
-test('com HICODE_QUOTA_FALLBACK desligado a primeira quota ja e HALTED — o comportamento de sempre', async () => {
-  delete process.env.HICODE_QUOTA_FALLBACK
+test('com HICODE_QUOTA_FALLBACK=off a primeira quota ja e HALTED — o opt-out do operador', async () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'off'
   const id = cardExecutando()
 
   await handleExecute(id, depsQueEstouram())

@@ -104,3 +104,18 @@ test('modelosPorTier invalido LANCA: tier desconhecido e modelo vazio nao passam
     "modelosPorTier": { "porProvedor": { "claude": { "tier1_caro": "" } } }`)
   expect(() => lerGovernanca()).toThrow()
 })
+
+test('esforcoGovernado: acao tier3 cai para low pelo dado versionado, e a escolha do humano vence', async () => {
+  const { esforcoGovernado } = await import('../../motor/oswaldo/rui.ts')
+
+  expect(esforcoGovernado('step', 'limpeza', {}), 'limpeza e tier3 e o dado manda low').toBe('low')
+  expect(esforcoGovernado('step', 'arquitetura', {}), 'tier1 nao tem entrada — vale o padrao do harness').toBeUndefined()
+  expect(esforcoGovernado('step', 'limpeza', { effort: 'high' }), 'o humano pediu high no card; governanca nunca sobrepoe pessoa').toBe('high')
+  expect(esforcoGovernado('step', '', {}), 'sem acao nao ha tier — nada a governar').toBeUndefined()
+})
+
+test('esforcoGovernado: card que ELEVA o tier tira a acao do assento barato — subir tira do low', async () => {
+  const { esforcoGovernado } = await import('../../motor/oswaldo/rui.ts')
+
+  expect(esforcoGovernado('step', 'limpeza', { tier: 'tier1_caro' }), 'tier elevado nao pode manter esforco de tier barato').toBeUndefined()
+})

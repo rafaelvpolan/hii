@@ -20,6 +20,10 @@
       "claude": { "tier3_barato": "haiku" }
     }
   },
+  "esforcosPorTier": {
+    "tier3_barato": "low"
+  },
+  "sobreEsforcos": "Esforco de raciocinio por tier, aplicado onde o harness aceita (claude e codex). Embarque conservador: so o tier barato baixa para low — limpeza, documentacao, classificacao e avaliacao nao precisam de raciocinio profundo, e nenhum custo sobe. tier1/tier2 seguem no padrao do harness ate decisao em contrario. Nota de 09/09: mapear tier3 para o ollama (custo zero em dolar) esbarra nas guardas do proprio motor — ollama e agentic:false (nao pode editar em step) e emitsStructuredJson:false (recusado onde o veredito e JSON). Enquanto essas guardas valerem, o assento barato entre provedores fica fechado por design, nao por esquecimento.",
   "regraDeSubida": "card ou regra de config/regras-inegociaveis.json pode forcar tier acima do padrao, NUNCA abaixo. Mesma politica da LEI sobre o perfil de risco.",
   "orcamentoPorCard": {
     "tetoUsd": 16,

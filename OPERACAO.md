@@ -353,9 +353,10 @@ Esgotou as tentativas → `HALTED`, com o worktree preservado para inspeção.
 ### 8.3 Laço de espera (backoff)
 
 Falha classificada como **transitória** manda o card para `WAITING` com backoff
-crescente, até `HICODE_WAITING_MAX_ATTEMPTS`. Falha de **cota** pode trocar de
-provedor, se `HICODE_QUOTA_FALLBACK=on`. Falha **terminal** não é repetida —
-repetir daria o mesmo resultado.
+crescente, até `HICODE_WAITING_MAX_ATTEMPTS`. Falha de **cota** troca de provedor
+pelo roteador de rotas (ligado por omissão desde 09/09; `HICODE_QUOTA_FALLBACK=off`
+devolve o comportamento antigo de parar na primeira cota). Falha **terminal** não é
+repetida — repetir daria o mesmo resultado.
 
 ### 8.4 Laço de divergência (Macunaíma)
 
@@ -573,7 +574,7 @@ morria no arranque.
 | `HALTED` logo após o implement | escreveu fora do escopo | diário do card diz qual caminho; o worktree está preservado |
 | `HALTED` com "o crivo reprovou" | esgotou os reajustes | leia o veredito no diário; `hii reject 42 "<o que corrigir>"` |
 | `WAITING` que não sai | falha transitória repetida | `hii estado` mostra esperas e provedores indisponíveis |
-| "cota esgotada" | limite do provedor | `HICODE_QUOTA_FALLBACK=on`, ou `/ia <outro>` |
+| "cota esgotada" e HALTED | nenhum provedor apto restou na rodada | `/ia <outro>` quando a cota voltar; `HICODE_QUOTA_FALLBACK=off` desliga a troca automática |
 | Perfil `visual` numa tarefa que não é visual | vocabulário do enunciado | reescreva o título, ou marque `risk: high` |
 | Perfil pesado numa troca de cor | palavra de sinal duro no enunciado | é deliberado — sinal duro vence estilo |
 | Disco crescendo | worktrees e runs acumulados | `hii disco`, depois `hii disco --limpar` |
@@ -601,7 +602,7 @@ são as que valem memorizar.
 | `HICODE_VERIFY_PROVIDER` / `HICODE_VERIFY_MODEL` | verificação |
 | `HICODE_STEP_PROVIDER` | passos do pipeline |
 | `HICODE_CLAUDE_MODEL`, `HICODE_CODEX_MODEL`, `HICODE_KIMI_MODEL`, `HICODE_OLLAMA_MODEL` | modelo por harness |
-| `HICODE_QUOTA_FALLBACK=on` | troca de provedor quando a cota estoura |
+| `HICODE_QUOTA_FALLBACK` | troca de provedor quando a cota estoura — `on` por omissão; `off` para parar na primeira cota |
 
 ### Limites e laços
 
@@ -692,6 +693,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_HEALTH_BIND` | `motor/cordel/alicerce/contrato.ts` |
 | `HICODE_HEALTH_HOST` | `motor/cordel/alicerce/contrato.ts` |
 | `HICODE_HEALTH_PORT` | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
+| `HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS` | `motor/tomada/sonda.ts` |
 | `HICODE_HEALTH_PROBE_TIMEOUT_MS` | `motor/tomada/sonda.ts` |
 | `HICODE_HYPERLINKS` | `motor/mirante/tui/layout.ts` |
 | `HICODE_IA_FILE` | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
@@ -722,7 +724,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_POLL_MS` | `motor/cordel/alicerce/config.ts` |
 | `HICODE_PREVIEW_BASE` | `motor/cordel/alicerce/config.ts` |
 | `HICODE_PROJECT_MEMORY` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_QUOTA_FALLBACK` | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` |
+| `HICODE_QUOTA_FALLBACK` | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
 | `HICODE_REAJUSTE_RETRIES` | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
 | `HICODE_REGISTROS_TTL_MS` | `motor/euclides/podar.ts` |
 | `HICODE_REGRAS_FILE` | `motor/cordel/alicerce/contrato.ts` |

@@ -261,6 +261,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
             failureClass: g.failureClass,
             failureReason: g.failureReason ?? 'falha nao classificada',
             waitClass: g.waitClass,
+            papel: g.papel,
             technicalDetail: g.reason,
           })
           return
@@ -283,6 +284,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
           failureClass: sr.failureClass ?? 'terminal',
           failureReason: sr.failureReason ?? 'falha nao classificada',
           waitClass: sr.waitClass,
+          papel: 'step',
           technicalDetail: `agente ${step.agent}: ${sr.text}`,
         })
         return
@@ -410,6 +412,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
         provider: gate.provider ?? '',
         failureClass: gate.failureClass,
         failureReason: gate.failureReason ?? 'falha nao classificada',
+        papel: 'gate',
         waitClass: gate.waitClass,
         technicalDetail: gateHaltReason(gate),
       })
@@ -467,6 +470,10 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     pipeline_liberado: '',
     pipeline_feitos: '',
     pipeline_passo: '',
+    provider_override_step: '',
+    provider_override_gate: '',
+    provider_override_verify: '',
+    rota_tentados: '',
     ...totalsFields,
   }, `${isoNow()} ${statusAtual}->PR_OPEN ${url} (merge e do humano)`)
   if (PROJECT_MEMORY) appendProjectMemory(target, `#${id} "${(desc ?? '').slice(0, 80)}" -> PR aberto (${url})`)

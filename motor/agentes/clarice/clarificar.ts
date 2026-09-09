@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { Card, ClarifyQuestion } from '../../cordel/index.ts'
 import { cardsDir, ROOT } from '../../cordel/alicerce/config.ts'
 import { providerFor, modelFor } from '../../tomada/registro.ts'
+import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { preflight, comoOpcoes } from '../tarsila/ideacao.ts'
 import { idear } from '../tarsila/ideate-run.ts'
@@ -93,7 +94,8 @@ export async function clarifyPorIdeacao(card: Card, perfil: string): Promise<Ide
 
 export async function clarify(card: Card): Promise<ClarifyResult> {
   const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
-  const provider = providerFor('verify')
+  const overrideDoVerify = card.fm[campoDeOverrideDoPapel('verify')] || undefined
+  const provider = providerFor('verify', overrideDoVerify)
   const prompt = [
     'Voce recebe uma tarefa de desenvolvimento web. Se ela ja estiver CLARA o bastante para implementar sem suposicoes, responda exatamente {"questions":[]}.',
     'So pergunte se houver ambiguidade REAL que mudaria a implementacao (escopo, aparencia, comportamento ou dados). No maximo 3 perguntas.',
@@ -102,7 +104,7 @@ export async function clarify(card: Card): Promise<ClarifyResult> {
     '',
     `TAREFA: ${desc}`,
   ].join('\n')
-  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [], mode: 'readonly', useAgents: false, model: modelFor('verify'), timeoutMs: 120000 }, 'clarify')
+  const res = await runProvider(card.fm.id ?? '', provider, { prompt, cwd: ROOT, dirs: [], mode: 'readonly', useAgents: false, model: modelFor('verify', overrideDoVerify), timeoutMs: 120000 }, 'clarify')
   if (!res.ok) {
     return {
       questions: [],

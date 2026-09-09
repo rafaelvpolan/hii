@@ -108,7 +108,9 @@ test('transiente que esgota as tentativas finalmente HALTa mas mantem o worktree
   expect(existsSync(wt)).toBe(true)
 }, TEMPO_COM_GIT_MS)
 
-test('cota esgotada (sem fallback aplicavel, ja no provedor de fallback) para o card e descarta o worktree', async () => {
+test('cota esgotada com HICODE_QUOTA_FALLBACK=off para o card e descarta o worktree', async () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'off'
+  try {
   resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'codex' }
   const wt = worktreeParaTeste()
   const id = cardExecutando(wt, 'tarefa que estoura a cota ja no fallback')
@@ -117,6 +119,9 @@ test('cota esgotada (sem fallback aplicavel, ja no provedor de fallback) para o 
   expect(card?.fm.status).toBe('HALTED')
   expect(card?.body).toContain('cota do provedor codex esgotada')
   expect(existsSync(wt)).toBe(false)
+  } finally {
+    delete process.env.HICODE_QUOTA_FALLBACK
+  }
 }, TEMPO_COM_GIT_MS)
 
 test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): a ROTA decide a troca em vez de parar', async () => {

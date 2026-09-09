@@ -122,6 +122,10 @@ export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
   if (classe === 'taxa') return numeroDeEnv('HICODE_ESPERA_PISO_TAXA_MS', 60_000)
   return 0
 }
+// Ligado por omissao desde 09/09 (R: no PENDENCIAS): com o roteador de rotas
+// conferindo aptidao (autenticacao, cota, capacidade do papel), trocar de provedor
+// deixou de ser salto no escuro. HICODE_QUOTA_FALLBACK=off devolve o comportamento
+// antigo: parar e chamar o humano na primeira cota esgotada.
 export function quotaFallbackLigado(): boolean {
-  return (process.env.HICODE_QUOTA_FALLBACK || 'off') === 'on'
+  return (process.env.HICODE_QUOTA_FALLBACK || 'on') === 'on'
 }

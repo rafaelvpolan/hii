@@ -59,6 +59,10 @@ function semRepetir(nomes: readonly HarnessId[]): HarnessId[] {
   return [...new Set(nomes)]
 }
 
+export function campoDeOverrideDoPapel(papel: AgentRole): string {
+  return `provider_override_${papel}`
+}
+
 export function rotaTentadas(csv: string | undefined): HarnessId[] {
   return (csv ?? '').split(',').map(s => s.trim()).filter(Boolean)
 }

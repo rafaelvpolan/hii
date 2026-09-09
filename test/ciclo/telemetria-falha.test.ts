@@ -10,7 +10,7 @@ import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telemfalha-'))
 process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
 process.env.HICODE_COTA_TTL_MS = '0'
-delete process.env.HICODE_QUOTA_FALLBACK
+process.env.HICODE_QUOTA_FALLBACK = 'off'
 mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {

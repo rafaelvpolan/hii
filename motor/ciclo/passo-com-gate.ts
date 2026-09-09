@@ -26,6 +26,7 @@ export interface GatedResult {
   failureReason?: string
   waitClass?: ClasseDeEspera
   provider?: string
+  papel?: 'step' | 'gate'
 }
 
 function review(id: string, wt: string, base: string, desc: string, label: string, revisar: typeof runGatedReview): Promise<GateResult> {
@@ -93,7 +94,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
         // fase_fim aqui tambem: sem ele, uma falha LIMPA pareceria fase
         // interrompida por crash na leitura do diario (motor/euclides/recuperar.ts).
         anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: `agente falhou: ${r.failureClass}` })
-        return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `agente ${agent} falhou (${r.failureReason ?? 'erro'})`, failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider }
+        return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `agente ${agent} falhou (${r.failureReason ?? 'erro'})`, failureClass: r.failureClass, failureReason: r.failureReason, waitClass: r.waitClass, provider: r.provider, papel: 'step' }
       }
       // A causa ja classificada (agente.ts:309) ia para o lixo aqui: nem o prompt
       // nem o diario do card recebiam r.failureReason, e o humano lia so
@@ -127,7 +128,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
     patchCard(id, {}, `${isoNow()} gate crivo [${label}]: ${gate.ok ? gate.verdict : 'NAO EXECUTOU'}${gate.reason ? ` — ${gate.reason}` : ''}`)
     if (!gate.ok) {
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'crivo indisponivel' })
-      return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `crivo indisponivel apos ${GATE_RETRIES + 1} tentativa(s): ${gate.reason}`, failureClass: gate.failureClass, failureReason: gate.failureReason, waitClass: gate.waitClass, provider: gate.provider }
+      return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: `crivo indisponivel apos ${GATE_RETRIES + 1} tentativa(s): ${gate.reason}`, failureClass: gate.failureClass, failureReason: gate.failureReason, waitClass: gate.waitClass, provider: gate.provider, papel: 'gate' }
     }
     if (gate.verdict !== 'BLOCKED') {
       anexarEvento({ card: id, evento: 'fase_fim', fase: label, detalhe: 'aprovada' })
@@ -158,6 +159,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
       failureReason: ultimaFalhaDoAgente.failureReason ?? motivoFinal,
       waitClass: ultimaFalhaDoAgente.waitClass,
       provider: ultimaFalhaDoAgente.provider ?? '',
+      papel: 'step',
     }
   }
   return { metric: metric(), metricaDoGate: metricaDoGate(), ok: false, text, reason: motivoFinal }

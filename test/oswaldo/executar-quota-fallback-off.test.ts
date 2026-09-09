@@ -68,11 +68,13 @@ function cardExecutando(wt: string, titulo: string): string {
   }, '## Objetivo\nfazer algo\n')
 }
 
-test('pre-condicao: HICODE_QUOTA_FALLBACK nao foi ligado neste arquivo (comportamento padrao)', () => {
+process.env.HICODE_QUOTA_FALLBACK = 'off'
+
+test('pre-condicao: HICODE_QUOTA_FALLBACK=off explicito — desde 09/09 o padrao e on, e este arquivo testa o opt-OUT', () => {
   expect(quotaFallbackLigado()).toBe(false)
 })
 
-test('DECISAO DE PRODUTO: cota esgotada sem HICODE_QUOTA_FALLBACK=on para o card mesmo com um provedor de fallback configurado — nunca troca de provedor sozinho', async () => {
+test('OPT-OUT: com HICODE_QUOTA_FALLBACK=off a cota esgotada para o card mesmo com provedor de fallback configurado — o operador pediu para nunca trocar sozinho', async () => {
   resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'claude' }
   const wt = worktreeParaTeste()
   const id = cardExecutando(wt, 'tarefa que estoura cota sem a chave mestra ligada')
@@ -81,7 +83,7 @@ test('DECISAO DE PRODUTO: cota esgotada sem HICODE_QUOTA_FALLBACK=on para o card
 
   const card = readCard(id)
   expect(card?.fm.status).toBe('HALTED')
-  expect(card?.fm.provider_override_implement).toBeUndefined()
+  expect(card?.fm.provider_override_implement || '', 'ausente ou limpo pelo haltFields — o que importa e nenhum override ativo').toBe('')
   expect(card?.body).toContain('sem troca automatica de provedor')
   expect(existsSync(wt)).toBe(false)
 }, TEMPO_COM_GIT_MS)
