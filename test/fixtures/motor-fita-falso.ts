@@ -2,8 +2,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, readFileSync 
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { envolverComCassete } from '../apoio/cassete.ts'
-import type { EntradaDoCassete, OpcoesDoCassete } from '../apoio/cassete.ts'
+import { envolverComFita } from '../apoio/fita.ts'
+import type { EntradaDaFita, OpcoesDaFita } from '../apoio/fita.ts'
 import type { Terminal } from '../../motor/mirante/tui/screen.ts'
 import { harnessPorNome } from '../../motor/tomada/registro.ts'
 import type { AgentRequest, AgentResult, AgentRole, Harness, HarnessId } from '../../motor/tomada/tipos.ts'
@@ -85,8 +85,8 @@ export function usarArquivoDeIa(nome: string): void {
   process.env.HICODE_IA_FILE = join(BASE, `${nome}.json`)
 }
 
-export function novoDirDeCassete(nome: string): string {
-  return join(BASE, `cassetes-${nome}`)
+export function novoDirDeFita(nome: string): string {
+  return join(BASE, `fitas-${nome}`)
 }
 
 export function agentResultDe(texto: string, custo: number, tokensIn: number, tokensOut: number): AgentResult {
@@ -131,29 +131,30 @@ function harnessSintetico(base: Harness, binarioFalso: string, resolver: (req: A
 
 export interface HarnessInstalado {
   restaurar(): void
-  caminhoDoCassete: string
+  caminhoDoFita: string
 }
 
-export function instalarHarnessDoCassete(nome: HarnessId, resolver: (req: AgentRequest) => AgentResult | Promise<AgentResult>, dir: string): HarnessInstalado {
+export function instalarHarnessDoFita(nome: HarnessId, resolver: (req: AgentRequest) => AgentResult | Promise<AgentResult>, dir: string): HarnessInstalado {
   const singleton = harnessPorNome(nome)
   const runOriginal = singleton.run.bind(singleton)
   const sintetico = harnessSintetico(singleton, `sintetico-${nome}`, resolver)
-  const opcoes: OpcoesDoCassete = { nome: `tui-com-modelo-${nome}`, dir, modo: 'gravar-se-faltar' }
-  const envolvido = envolverComCassete(sintetico, opcoes)
+  const rodadaSemTeto = { gastoAcumuladoUsd: 0, registrarChamada: () => undefined, evidenciasDaRodada: () => [] }
+  const opcoes: OpcoesDaFita = { nome: `tui-com-modelo-${nome}`, dir, modo: 'gravar-se-faltar', rodada: rodadaSemTeto }
+  const envolvido = envolverComFita(sintetico, opcoes)
   singleton.run = (req: AgentRequest): Promise<AgentResult> => envolvido.run(req)
   return {
     restaurar: (): void => { singleton.run = runOriginal },
-    caminhoDoCassete: join(dir, `${opcoes.nome}.json`),
+    caminhoDoFita: join(dir, `${opcoes.nome}.json`),
   }
 }
 
-export interface ArquivoDeCasseteLido {
+export interface ArquivoDeFitaLido {
   formatoVersao: number
-  entradas: EntradaDoCassete[]
+  entradas: EntradaDaFita[]
 }
 
-export function lerCassete(caminho: string): ArquivoDeCasseteLido {
-  return JSON.parse(readFileSync(caminho, 'utf8')) as ArquivoDeCasseteLido
+export function lerFita(caminho: string): ArquivoDeFitaLido {
+  return JSON.parse(readFileSync(caminho, 'utf8')) as ArquivoDeFitaLido
 }
 
 export interface FakeTerminal extends Terminal {

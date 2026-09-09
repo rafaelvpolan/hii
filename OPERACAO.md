@@ -722,7 +722,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_POLL_MS` | `motor/cordel/alicerce/config.ts` |
 | `HICODE_PREVIEW_BASE` | `motor/cordel/alicerce/config.ts` |
 | `HICODE_PROJECT_MEMORY` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_QUOTA_FALLBACK` | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` |
+| `HICODE_QUOTA_FALLBACK` | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
 | `HICODE_REAJUSTE_RETRIES` | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
 | `HICODE_REGISTROS_TTL_MS` | `motor/euclides/podar.ts` |
 | `HICODE_REGRAS_FILE` | `motor/cordel/alicerce/contrato.ts` |

@@ -77,7 +77,7 @@ export class TetoDeGastoEstourado extends Error {
       `teto de gasto da trilha cara estourado: acumulado US$${gastoAcumuladoUsd.toFixed(4)} > teto US$${tetoUsd.toFixed(4)} (${ENV_TETO_DE_GASTO_USD}).`,
       `evidencia das chamadas desta rodada, para reproduzir a falha:`,
       resumoDasChamadas,
-      `se as chamadas passaram por test/apoio/cassete.ts, o AgentResult completo de cada uma esta gravado no arquivo de cassete correspondente.`,
+      `se as chamadas passaram por test/apoio/fita.ts, o AgentResult completo de cada uma esta gravado no arquivo de fita correspondente.`,
     ].join('\n'))
     this.name = 'TetoDeGastoEstourado'
     this.gastoAcumuladoUsd = gastoAcumuladoUsd

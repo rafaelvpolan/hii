@@ -2,7 +2,7 @@ import { test, expect, afterAll } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { envolverComCassete, chaveDoPedido, type ModoDoCassete } from '../apoio/cassete.ts'
+import { envolverComFita, chaveDoPedido, type ModoDaFita } from '../apoio/fita.ts'
 import {
   abrirRodadaCara,
   gastaModelo,
@@ -19,8 +19,12 @@ import { emptyUsage } from '../../motor/tomada/uso.ts'
 
 const DIRETORIOS_TEMPORARIOS: string[] = []
 
+function rodadaDeTeste() {
+  return { gastoAcumuladoUsd: 0, registrarChamada: () => undefined, evidenciasDaRodada: () => [] }
+}
+
 function diretorioTemporario(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'hii-cassete-teste-'))
+  const dir = mkdtempSync(join(tmpdir(), 'hii-fita-teste-'))
   DIRETORIOS_TEMPORARIOS.push(dir)
   return dir
 }
@@ -58,8 +62,8 @@ function harnessFalso(nome: string, executar: (req: AgentRequest) => AgentResult
 function pedidoBase(sobrescritas: Partial<AgentRequest> = {}): AgentRequest {
   return {
     prompt: 'faca algo util',
-    cwd: '/tmp/hii-cassete-teste/worktree-padrao',
-    dirs: ['/tmp/hii-cassete-teste/worktree-padrao'],
+    cwd: '/tmp/hii-fita-teste/worktree-padrao',
+    dirs: ['/tmp/hii-fita-teste/worktree-padrao'],
     mode: 'edit',
     useAgents: false,
     timeoutMs: 5000,
@@ -91,9 +95,9 @@ function capturarErro(executar: () => void): Error {
   throw new Error('esperava que a funcao lancasse, e ela nao lancou')
 }
 
-test('envolverComCassete preserva o contrato de um harness de CLASSE (ClaudeProvider) — metodos de prototipo continuam acessiveis atraves do proxy', () => {
+test('envolverComFita preserva o contrato de um harness de CLASSE (ClaudeProvider) — metodos de prototipo continuam acessiveis atraves do proxy', () => {
   const real = new ClaudeProvider()
-  const envolvido = envolverComCassete(real, { nome: 'contrato/claude', dir: diretorioTemporario() })
+  const envolvido = envolverComFita(real, { nome: 'contrato/claude', dir: diretorioTemporario() })
   expect(envolvido.name).toBe('claude')
   expect(envolvido.binario).toBe('claude')
   // Comparar so com CLAUDE_CAPACIDADES prova que o proxy nao trocou o objeto, mas
@@ -115,11 +119,11 @@ test('gravar em modo gravar-se-faltar e depois reproduzir devolve o MESMO AgentR
   })
   const pedido = pedidoBase()
 
-  const gravando = envolverComCassete(real, { nome: 'grava-e-reproduz', dir, modo: 'gravar-se-faltar' })
+  const gravando = envolverComFita(real, { nome: 'grava-e-reproduz', dir, modo: 'gravar-se-faltar', rodada: rodadaDeTeste() })
   const resultadoGravado = await gravando.run(pedido)
   expect(quantasChamadasReais).toBe(1)
 
-  const reproduzindo = envolverComCassete(real, { nome: 'grava-e-reproduz', dir, modo: 'reproduzir' })
+  const reproduzindo = envolverComFita(real, { nome: 'grava-e-reproduz', dir, modo: 'reproduzir' })
   const resultadoReproduzido = await reproduzindo.run(pedido)
 
   expect(quantasChamadasReais).toBe(1)
@@ -144,16 +148,16 @@ test('chaveDoPedido substitui caminho aninhado dentro do prompt do maior para o 
     dirs: ['/tmp/wt', '/tmp/wt/pacote-x'],
     prompt: 'edite o arquivo em /tmp/wt/pacote-x/main.ts, dentro do worktree /tmp/wt',
   }))
-  expect(chave.prompt).toBe('edite o arquivo em <DIR:1>/main.ts, dentro do worktree <CWD>')
+  expect(chave.prompt).toBe('edite o arquivo em <DIR:pacote-x>/main.ts, dentro do worktree <CWD>')
 })
 
-test('gravado com um worktree, o cassete reproduz para um pedido cujo worktree e so o caminho absoluto diferente', async () => {
+test('gravado com um worktree, o fita reproduz para um pedido cujo worktree e so o caminho absoluto diferente', async () => {
   const dir = diretorioTemporario()
   const real = harnessFalso('falso', () => resultadoOk({ text: 'ok-worktree' }))
-  const gravando = envolverComCassete(real, { nome: 'normaliza-worktree', dir, modo: 'gravar-se-faltar' })
+  const gravando = envolverComFita(real, { nome: 'normaliza-worktree', dir, modo: 'gravar-se-faltar', rodada: rodadaDeTeste() })
   await gravando.run(pedidoBase({ cwd: '/tmp/worktree-A', dirs: ['/tmp/worktree-A'] }))
 
-  const reproduzindo = envolverComCassete(real, { nome: 'normaliza-worktree', dir, modo: 'reproduzir' })
+  const reproduzindo = envolverComFita(real, { nome: 'normaliza-worktree', dir, modo: 'reproduzir' })
   const resultado = await reproduzindo.run(pedidoBase({
     cwd: '/var/outro/lugar/completamente/diferente/worktree-B',
     dirs: ['/var/outro/lugar/completamente/diferente/worktree-B'],
@@ -162,42 +166,42 @@ test('gravado com um worktree, o cassete reproduz para um pedido cujo worktree e
   expect(resultado.text).toBe('ok-worktree')
 })
 
-test('gravado com um prompt, o mesmo worktree com prompt DIFERENTE nao acha o cassete', async () => {
+test('gravado com um prompt, o mesmo worktree com prompt DIFERENTE nao acha o fita', async () => {
   const dir = diretorioTemporario()
   const real = harnessFalso('falso', () => resultadoOk({ text: 'ok-prompt' }))
-  const gravando = envolverComCassete(real, { nome: 'prompt-diferente', dir, modo: 'gravar-se-faltar' })
+  const gravando = envolverComFita(real, { nome: 'prompt-diferente', dir, modo: 'gravar-se-faltar', rodada: rodadaDeTeste() })
   await gravando.run(pedidoBase({ prompt: 'faca a tarefa A' }))
 
-  const reproduzindo = envolverComCassete(real, { nome: 'prompt-diferente', dir, modo: 'reproduzir' })
-  await expect(reproduzindo.run(pedidoBase({ prompt: 'faca a tarefa B' }))).rejects.toThrow(/cassete/i)
+  const reproduzindo = envolverComFita(real, { nome: 'prompt-diferente', dir, modo: 'reproduzir' })
+  await expect(reproduzindo.run(pedidoBase({ prompt: 'faca a tarefa B' }))).rejects.toThrow(/fita/i)
 })
 
-test('modo reproduzir FALHA quando falta cassete, em vez de passar em silencio, e nunca chama o harness real', async () => {
+test('modo reproduzir FALHA quando falta fita, em vez de passar em silencio, e nunca chama o harness real', async () => {
   const dir = diretorioTemporario()
   let chamouOReal = false
   const real = harnessFalso('falso', () => {
     chamouOReal = true
     return resultadoOk({ text: 'nunca deveria acontecer' })
   })
-  const harness = envolverComCassete(real, { nome: 'nao-existe', dir, modo: 'reproduzir' })
+  const harness = envolverComFita(real, { nome: 'nao-existe', dir, modo: 'reproduzir' })
 
-  await expect(harness.run(pedidoBase())).rejects.toThrow(/cassete/i)
+  await expect(harness.run(pedidoBase())).rejects.toThrow(/fita/i)
   expect(chamouOReal).toBe(false)
 })
 
-test('o modo vem do ambiente (HICODE_CASSETE_MODO) quando opcoes.modo nao e informado', async () => {
+test('o modo vem do ambiente (HICODE_FITA_MODO) quando opcoes.modo nao e informado', async () => {
   const dir = diretorioTemporario()
   const real = harnessFalso('falso', () => resultadoOk({ text: 'via-ambiente' }))
-  const envolvido = envolverComCassete(real, { nome: 'modo-por-ambiente', dir })
+  const envolvido = envolverComFita(real, { nome: 'modo-por-ambiente', dir, rodada: rodadaDeTeste() })
 
-  process.env.HICODE_CASSETE_MODO = 'gravar-se-faltar' satisfies ModoDoCassete
+  process.env.HICODE_FITA_MODO = 'gravar-se-faltar' satisfies ModoDaFita
   try {
     await envolvido.run(pedidoBase())
   } finally {
-    delete process.env.HICODE_CASSETE_MODO
+    delete process.env.HICODE_FITA_MODO
   }
 
-  const reproduzindo = envolverComCassete(real, { nome: 'modo-por-ambiente', dir, modo: 'reproduzir' })
+  const reproduzindo = envolverComFita(real, { nome: 'modo-por-ambiente', dir, modo: 'reproduzir' })
   const resultado = await reproduzindo.run(pedidoBase())
   expect(resultado.text).toBe('via-ambiente')
 })
@@ -211,24 +215,24 @@ test('modo regravar sempre chama o harness real e substitui a gravacao anterior 
   })
   const pedido = pedidoBase()
 
-  const primeiraGravacao = envolverComCassete(real, { nome: 'regravar', dir, modo: 'gravar-se-faltar' })
+  const primeiraGravacao = envolverComFita(real, { nome: 'regravar', dir, modo: 'gravar-se-faltar', rodada: rodadaDeTeste() })
   const resultado1 = await primeiraGravacao.run(pedido)
   expect(resultado1.text).toBe('versao 1')
   expect(quantasChamadasReais).toBe(1)
 
-  const regravando = envolverComCassete(real, { nome: 'regravar', dir, modo: 'regravar' })
+  const regravando = envolverComFita(real, { nome: 'regravar', dir, modo: 'regravar', rodada: rodadaDeTeste() })
   const resultado2 = await regravando.run(pedido)
   expect(resultado2.text).toBe('versao 2')
   expect(quantasChamadasReais).toBe(2)
 
-  const reproduzindo = envolverComCassete(real, { nome: 'regravar', dir, modo: 'reproduzir' })
+  const reproduzindo = envolverComFita(real, { nome: 'regravar', dir, modo: 'reproduzir' })
   const resultado3 = await reproduzindo.run(pedido)
   expect(resultado3.text).toBe('versao 2')
   expect(quantasChamadasReais).toBe(2)
 })
 
 // O filtro do modo regravar rodava a CADA chamada, entao a segunda apagava a
-// primeira e o cassete terminava com uma entrada so — a sequencia multi-chamada
+// primeira e o fita terminava com uma entrada so — a sequencia multi-chamada
 // morria em silencio no unico modo que existe para refaze-la.
 test('REGRESSAO regravar preserva a SEQUENCIA: tres chamadas iguais gravam tres entradas, nao uma', async () => {
   const dir = diretorioTemporario()
@@ -239,14 +243,14 @@ test('REGRESSAO regravar preserva a SEQUENCIA: tres chamadas iguais gravam tres 
   })
   const pedido = pedidoBase()
 
-  const regravando = envolverComCassete(real, { nome: 'regravar-sequencia', dir, modo: 'regravar' })
+  const regravando = envolverComFita(real, { nome: 'regravar-sequencia', dir, modo: 'regravar', rodada: rodadaDeTeste() })
   expect((await regravando.run(pedido)).text).toBe('versao 1')
   expect((await regravando.run(pedido)).text).toBe('versao 2')
   expect((await regravando.run(pedido)).text).toBe('versao 3')
 
   // Se as tres entradas nao tiverem sido gravadas, a terceira reproducao estoura
-  // por cassete ausente — que e exatamente como o defeito se manifestava.
-  const reproduzindo = envolverComCassete(real, { nome: 'regravar-sequencia', dir, modo: 'reproduzir' })
+  // por fita ausente — que e exatamente como o defeito se manifestava.
+  const reproduzindo = envolverComFita(real, { nome: 'regravar-sequencia', dir, modo: 'reproduzir' })
   expect((await reproduzindo.run(pedido)).text).toBe('versao 1')
   expect((await reproduzindo.run(pedido)).text).toBe('versao 2')
   expect((await reproduzindo.run(pedido)).text).toBe('versao 3')
@@ -262,11 +266,11 @@ test('chamadas repetidas com a mesma chave no modo reproduzir sao servidas em or
   })
   const pedido = pedidoBase()
 
-  const gravando = envolverComCassete(real, { nome: 'sequencia', dir, modo: 'gravar-se-faltar' })
+  const gravando = envolverComFita(real, { nome: 'sequencia', dir, modo: 'gravar-se-faltar', rodada: rodadaDeTeste() })
   await gravando.run(pedido)
   await gravando.run(pedido)
 
-  const reproduzindo = envolverComCassete(real, { nome: 'sequencia', dir, modo: 'reproduzir' })
+  const reproduzindo = envolverComFita(real, { nome: 'sequencia', dir, modo: 'reproduzir' })
   const primeira = await reproduzindo.run(pedido)
   const segunda = await reproduzindo.run(pedido)
 
@@ -366,4 +370,47 @@ test('TetoDeGastoEstourado carrega o gasto acumulado e o teto exatos, para quem 
   } finally {
     delete process.env[ENV_TETO_DE_GASTO_USD]
   }
+})
+
+
+test('REGRESSAO: dois repositorios DIFERENTES na mesma posicao da lista nao dividem a mesma chave — o marcador carrega o basename', () => {
+  const chaveRepoX = chaveDoPedido(pedidoBase({ cwd: '/tmp/wt', dirs: ['/tmp/wt', '/tmp/alvos/repo-x'], prompt: 'edite /tmp/alvos/repo-x/a.ts' }))
+  const chaveRepoY = chaveDoPedido(pedidoBase({ cwd: '/tmp/wt', dirs: ['/tmp/wt', '/tmp/alvos/repo-y'], prompt: 'edite /tmp/alvos/repo-y/a.ts' }))
+
+  expect(chaveRepoX.prompt).toBe('edite <DIR:repo-x>/a.ts')
+  expect(chaveRepoY.prompt).toBe('edite <DIR:repo-y>/a.ts')
+  expect(chaveRepoX, 'com marcador posicional os dois pedidos viravam a MESMA chave e um era servido pela gravacao do outro').not.toEqual(chaveRepoY)
+})
+
+test('REGRESSAO: fita de formato antigo REPROVA na leitura em vez de casar pedido errado', async () => {
+  const dir = diretorioTemporario()
+  const { writeFileSync, mkdirSync } = await import('node:fs')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'formato-velho.json'), JSON.stringify({ formatoVersao: 1, entradas: [] }))
+  const real = harnessFalso('falso', () => resultadoOk({ text: 'nunca' }))
+  const harness = envolverComFita(real, { nome: 'formato-velho', dir, modo: 'reproduzir' })
+
+  await expect(harness.run(pedidoBase({}))).rejects.toThrow('formato')
+})
+
+test('REGRESSAO: modo que GRAVA sem rodada cara recusa ANTES de gastar — o teto existia so como frase', async () => {
+  const dir = diretorioTemporario()
+  let chamadasReais = 0
+  const real = harnessFalso('falso', () => { chamadasReais++; return resultadoOk({ text: 'pago' }) })
+  const semRodada = envolverComFita(real, { nome: 'sem-rodada', dir, modo: 'gravar-se-faltar' })
+
+  await expect(semRodada.run(pedidoBase({}))).rejects.toThrow('rodada cara')
+  expect(chamadasReais, 'recusar DEPOIS de gastar seria o defeito original com outro nome').toBe(0)
+})
+
+test('gravacao com rodada registra a chamada na rodada — o teto passa a ver o gasto da gravacao', async () => {
+  const dir = diretorioTemporario()
+  const registradas: number[] = []
+  const rodada = { gastoAcumuladoUsd: 0, registrarChamada: (r: AgentResult) => { registradas.push(r.cost) }, evidenciasDaRodada: () => [] }
+  const real = harnessFalso('falso', () => resultadoOk({ text: 'pago', cost: 0.07 }))
+  const gravando = envolverComFita(real, { nome: 'com-rodada', dir, modo: 'gravar-se-faltar', rodada })
+
+  await gravando.run(pedidoBase({}))
+
+  expect(registradas).toEqual([0.07])
 })

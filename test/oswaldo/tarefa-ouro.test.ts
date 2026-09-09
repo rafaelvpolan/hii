@@ -246,7 +246,7 @@ test('CONSERTADO no raio-x 1-B: o avaliador identifica que a tarefa NAO foi cump
   expect(card?.fm.correction, 'a instrucao de refacao carrega o que o avaliador viu').toContain('nao foi criado')
 }, TEMPO_TAREFA_OURO_MS)
 
-test('TAREFA-OURO (trilha paga): a MESMA tarefa contra o modelo real, atras de HICODE_E2E_MODELO_REAL + teto de gasto — e quem detecta o fake/cassete envelhecido', async () => {
+test('TAREFA-OURO (trilha paga): a MESMA tarefa contra o modelo real, atras de HICODE_E2E_MODELO_REAL + teto de gasto — e quem detecta o fake/fita envelhecido', async () => {
   if (!gastaModelo('tarefa-ouro contra modelo real')) return
   const rodada = abrirRodadaCara()
   const pathComFake = process.env.PATH

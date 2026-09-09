@@ -542,33 +542,29 @@ retomar isto começa por aí, não pelo grafo de imports.
 
 ---
 
-## PENDÊNCIA — o que ficou em aberto no cassete e na trilha cara
+## PENDÊNCIA — a fita (ex-cassete) fechou quatro dos seis; os dois que ficam são desenho
 
-O PR #28 entregou `test/apoio/cassete.ts` e `test/apoio/e2e.ts`, e corrigiu dois
-defeitos que o crivo confirmou (o modo `regravar` destruía sequência multi-chamada; o
-teto de gasto era inutilizável com `codex` e `kimi`, que declaram
-`reportsCostUsd:false`). Ficou em aberto, tudo apontado pelo crivo e nenhum corrigido:
+R: de 09/09 aplicado — o módulo virou **fita** (`test/apoio/fita.ts`, env
+`HICODE_FITA_MODO`), e quatro consertos saíram com o rename:
 
-- **O gravador nunca consulta o teto.** `test/apoio/cassete.ts` grava e
-  `test/apoio/e2e.ts` conta gasto, mas a ligação entre os dois existe só como frase na
-  mensagem de erro. Uma gravação nova pode estourar o teto sem que a rodada perceba.
-- **`formatoVersao: 1` é gravado e nunca validado na leitura.** Cassete de formato
-  antigo será lido como se fosse do formato corrente.
-- **Gravação concorrente perde entrada.** É read-modify-write sem trava; dois testes
-  gravando o mesmo arquivo em paralelo derrubam um ao outro. Hoje ninguém faz isso, o
-  que torna o defeito invisível até o dia em que alguém fizer.
-- **`<DIR:n>` é posicional.** Repositórios diferentes que caem na mesma posição da
-  lista colidem na mesma chave — dois pedidos distintos servidos pelo mesmo cassete.
-- **O cassete envolve `Harness.run`, e é um degrau acima de onde o defeito mora.**
-  A pesquisa que embasou o desenho já avisava: gravar `AgentRequest -> AgentResult`
-  pula o parser de cada harness (`claude-stream.ts`, `codex.ts`), e foi exatamente num
-  parser que o argv errado do kimi sobreviveu verde. Gravar stdout/stderr/exit-code do
-  subprocesso exercitaria o parser de verdade, ao custo de uma costura por harness.
-- **Não há como o motor receber o harness envolvido.** `motor/tomada/registro.ts:13-16` é
-  `ReadonlyMap` const e os oito chamadores resolvem por `providerFor()` internamente.
-  A costura de percurso que o repo de fato usa é `ExecuteDeps`
-  (`test/oswaldo/executar-custo.test.ts:51-54`) — é por ali que um teste ponta a ponta
-  entra hoje, não envolvendo o harness.
+- **Gravar exige a rodada cara**: modo que pode gastar sem `OpcoesDaFita.rodada` recusa
+  ANTES de chamar o provedor, e cada gravação registra o custo na rodada — o teto de
+  `e2e.ts` deixou de ser frase de mensagem de erro.
+- **`formatoVersao` é validado na leitura** (e subiu para 2, porque a chave mudou):
+  formato antigo reprova mandando regravar, em vez de casar pedido errado.
+- **Escrita sob trava** (`withFileLock` + `writeFileAtomic` do motor): gravações
+  concorrentes no mesmo arquivo não se derrubam mais.
+- **`<DIR:n>` deixou de ser posicional**: o marcador carrega o basename
+  (`<DIR:repo-x>`), então repositórios diferentes na mesma posição não dividem chave.
+
+**O que fica, e é desenho, não conserto:**
+
+- A fita envolve `Harness.run`, um degrau acima do parser de cada harness — gravar
+  stdout/stderr/exit-code do subprocesso exercitaria o parser de verdade (foi num parser
+  que o argv errado do kimi sobreviveu verde), ao custo de uma costura por harness.
+- O motor não tem como receber o harness envolvido: o registro é `ReadonlyMap` const e os
+  chamadores resolvem por `providerFor()` internamente. A costura de percurso real é
+  `ExecuteDeps`.
 
 ---
 
