@@ -6,6 +6,8 @@ import { cardsDir, reposFile, ROOT } from './alicerce/config.ts'
 import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
 import { memoArquivo } from '../tomada/eco/memo.ts'
 import { conferirTransicao } from '../niemeyer/deriva-de-transicao.ts'
+import { lerTopologia } from '../niemeyer/topologia.ts'
+import { anexarEvento } from '../euclides/eventos.ts'
 
 interface RepoConfig {
   name: string
@@ -125,8 +127,26 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     if (paradaSemClasse) nb = appendLog(nb, `${isoNow()} DEFEITO: esta escrita levou o card a HALTED sem halt_class — carimbado como ${PARADA_SEM_CLASSE}. Quem parou o card tem de dizer a classe (motor/cordel/tipos.ts, CLASSES_DE_PARADA), senao /health nao sabe se isto e cota, orcamento, escopo ou voce`)
     if (desfariaParada) nb = appendLog(nb, `${isoNow()} escrita descartada: o card esta em ${before.status} e um job em voo tentou leva-lo para ${resolvedStatus(pedidos)} — parada humana so sai por decisao humana`)
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
+    if (mudouStatus) emitirEventoDeCheckpoint(id, before.status, String(resolvedFields.status))
     return { ...fm, file: name }
   })
+}
+
+function ehCheckpointHumano(status: string | undefined): boolean {
+  try {
+    return status !== undefined && (lerTopologia().checkpointsHumanos as readonly string[]).includes(status)
+  } catch {
+    return false
+  }
+}
+
+function emitirEventoDeCheckpoint(card: string, anterior: string | undefined, novo: string): void {
+  try {
+    if (ehCheckpointHumano(novo)) anexarEvento({ card, evento: 'human_checkpoint', chave: novo, resultado: 'aberto', detalhe: `veio de ${anterior || 'INBOX'}` })
+    if (ehCheckpointHumano(anterior)) anexarEvento({ card, evento: 'human_checkpoint', chave: String(anterior), resultado: 'atendido', detalhe: `saiu para ${novo}` })
+  } catch (e) {
+    process.stderr.write(`[hicode] evento human_checkpoint nao gravado para #${card} (${String((e as Error).message).slice(0, 120)}) — o card foi escrito; so o diario de eventos ficou sem esta linha\n`)
+  }
 }
 
 function resolvedStatus(f: Fields): string | undefined {

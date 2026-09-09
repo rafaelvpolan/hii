@@ -20,6 +20,7 @@ export interface Saude {
   readonly emVoo: number
   readonly pendentes: number
   readonly falhasSeguidasNoTick: number
+  readonly ticksSemProgresso: number
   readonly ultimoErro: string
   readonly orcamentoGlobalBloqueado: boolean
 }
@@ -36,16 +37,22 @@ export function categoriaDoErro(mensagem: string): string {
   return contexto.trim() ? `falha em ${contexto.trim()}` : 'erro interno'
 }
 
+const TICKS_SEM_PROGRESSO_MAX = Number(process.env.HICODE_TICKS_SEM_PROGRESSO_MAX || 0) || 6
+
 export function lerSaude(): Saude {
   const h = readDaemonHealth()
   return {
     // Drenando ainda e "de pe", mas nao esta ok para receber trabalho novo:
-    // o orquestrador deve tirar este processo do balanceamento.
-    ok: h.consecutiveFailures === 0 && !encerrando(),
+    // o orquestrador deve tirar este processo do balanceamento. E "de pe e
+    // improdutivo" (tick limpo, fila com pendente e ninguem em voo, assinatura
+    // parada por N ticks) tambem nao e ok: era exatamente assim que o card 002
+    // ficava invisivel com o /health verde.
+    ok: h.consecutiveFailures === 0 && !encerrando() && h.ticksSemProgresso < TICKS_SEM_PROGRESSO_MAX,
     encerrando: encerrando(),
     emVoo: quantosEmVoo(),
     pendentes: pending().length,
     falhasSeguidasNoTick: h.consecutiveFailures,
+    ticksSemProgresso: h.ticksSemProgresso,
     ultimoErro: categoriaDoErro(h.lastError),
     orcamentoGlobalBloqueado: lerTetoGlobal().bloqueado,
   }

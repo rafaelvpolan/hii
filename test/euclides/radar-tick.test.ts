@@ -59,3 +59,20 @@ test('reportTickFailure nunca lanca, mesmo com cardsDir corrompido/inacessivel',
     rmSync(arquivoNoLugarDoDiretorio, { force: true })
   }
 })
+
+test('ticksSemProgresso conta improdutividade, zera no progresso e SOBREVIVE ao registro de sucesso do tick', async () => {
+  const { readDaemonHealth, recordTickSuccess, registrarProgressoDoTick, reportTickFailure } = await import('../../motor/euclides/radar/tick.ts')
+
+  registrarProgressoDoTick(true)
+  registrarProgressoDoTick(true)
+  expect(readDaemonHealth().ticksSemProgresso).toBe(2)
+
+  reportTickFailure('fila', new Error('qualquer'))
+  expect(readDaemonHealth().ticksSemProgresso, 'falha de tick nao pode apagar a contagem de improdutividade — sao sinais diferentes').toBe(2)
+
+  recordTickSuccess()
+  expect(readDaemonHealth().ticksSemProgresso, 'tick SEM excecao nao significa tick produtivo — era exatamente o furo do card 002').toBe(2)
+
+  registrarProgressoDoTick(false)
+  expect(readDaemonHealth().ticksSemProgresso).toBe(0)
+})

@@ -156,3 +156,26 @@ test('halteradosDoLote: aponta so os cards do lote que terminaram HALTED', () =>
   expect(halteradosDoLote([ok, ruim])).toEqual([ruim])
   expect(halteradosDoLote([])).toEqual([])
 })
+
+test('REGRESSAO: job que volta SEM mudar o status entra em cooldown — o redespacho em 5s virava laco de gasto', async () => {
+  const { pending, registrarRetornoSemTransicao, esquecerCooldowns } = await import('../../motor/oswaldo/mutirao/estado-da-fila.ts')
+  const id = createCard({ title: 'gira sem sair do lugar', status: 'EXECUTING', repo: 'org/repo' }, '## Objetivo\nx\n')
+
+  expect(pending().some(j => j.id === id), 'antes do cooldown o card e elegivel').toBe(true)
+
+  registrarRetornoSemTransicao(id)
+  expect(pending().some(j => j.id === id), 'retorno sem transicao suspende o card pelo intervalo de cooldown').toBe(false)
+
+  registrarRetornoSemTransicao(id, Date.now() - 60_000)
+  expect(pending().some(j => j.id === id), 'cooldown vencido devolve o card a fila sozinho').toBe(true)
+
+  esquecerCooldowns()
+})
+
+test('cooldown NAO atrasa card que mudou de status — so o retorno suspeito paga o intervalo', async () => {
+  const { pending, esquecerCooldowns } = await import('../../motor/oswaldo/mutirao/estado-da-fila.ts')
+  esquecerCooldowns()
+  const id = createCard({ title: 'progrediu', status: 'URL_OK', repo: 'org/repo' }, '## Objetivo\nx\n')
+
+  expect(pending().some(j => j.id === id)).toBe(true)
+})

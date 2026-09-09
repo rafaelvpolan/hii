@@ -11,6 +11,32 @@ const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
 
 const emVoo = new Set<string>()
 
+const COOLDOWN_MS = Number(process.env.HICODE_CARD_COOLDOWN_MS || 0) || 30_000
+
+const emCooldownAte = new Map<string, number>()
+
+export function registrarRetornoSemTransicao(id: string, agoraMs = Date.now()): void {
+  emCooldownAte.set(id, agoraMs + COOLDOWN_MS)
+}
+
+export function esquecerCooldowns(): void {
+  emCooldownAte.clear()
+}
+
+function aindaEmCooldown(id: string, agoraMs: number): boolean {
+  const ate = emCooldownAte.get(id)
+  if (ate === undefined) return false
+  if (agoraMs >= ate) {
+    emCooldownAte.delete(id)
+    return false
+  }
+  return true
+}
+
+export function assinaturaDaFila(): string {
+  return allCards().map(c => `${c.id ?? ''}:${c.status ?? ''}`).sort().join('|')
+}
+
 export function marcarEmVoo(id: string): void {
   emVoo.add(id)
 }
@@ -79,5 +105,6 @@ export function pending(): Job[] {
   const fi: Job[] = porStatus('URL_OK').map(c => ({ kind: 'finish', id: c.id ?? '' }))
   const co: Job[] = porStatus('CORRECTING').map(c => ({ kind: 'correct', id: c.id ?? '' }))
   const sp: Job[] = porStatus('SPECCED').map(c => ({ kind: 'spec', id: c.id ?? '' }))
-  return [...sp, ...ex, ...fi, ...co].filter(j => !emVoo.has(j.id))
+  const agoraMs = Date.now()
+  return [...sp, ...ex, ...fi, ...co].filter(j => !emVoo.has(j.id) && !aindaEmCooldown(j.id, agoraMs))
 }

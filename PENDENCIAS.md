@@ -23,152 +23,6 @@ corrigidas onde aparecem: a medição de custo, o card 006 e o aviso sobre o ite
 
 ---
 
-## ESTADO — a sonda mede o binário desde 09/09 (R: Pode fazer)
-
-Fechou a trilogia do "travada em loop". `binarioResponde` (`motor/tomada/sonda.ts`)
-sonda `<cli> --version` com teto de 15 s (`HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS`), e
-`cliSaudavel` exige **E, não OU**: binário respondendo E API alcançável — porque um GET
-de 5 s já "curou" um CLI travado por 900 s, e o inverso (binário vivo, rede fora) também
-é falha real. claude, codex e kimi usam a sonda composta; ollama continua na URL, que
-para um servidor local É o binário. O teste roda com um `kimi` falso no PATH, para não
-depender de quem está instalado na máquina.
-
----
-
-## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
-
-A máquina de estados tem 15 estados; apenas 5 têm consumidor automático dentro do tick
-(`motor/oswaldo/mutirao/fila.ts:97-100`, `pending()` → handlers). Os outros 10 são checkpoints
-humanos, estados de boot ou — o pior — estados que nunca saem sozinhos. Card 001 está
-em `URL` desde 19/08. Card 002 em `HALTED` sem sinal de por quê. Ambos têm `updated`
-recente porque cada log que cai escreve `fm.updated = isoNow()` (`motor/cordel/store.ts:58`),
-mascarando staleness.
-
-`reconciledStranded()` (`motor/oswaldo/mutirao/estado-da-fila.ts:44-52`) roda uma única vez no
-boot, assume que um card é órfão se não está em estado terminal conhecido, e **refuta**
-estados reais: `URL`, `CLARIFY`, `READY`, `PAUSED`, `CONFIRM`, `HALTED` — os seis que
-o motor hoje **não consegue destravar**. A lista `checkpointsHumanos` em `config/topologia.json:74`
-declara `["URL","CONFIRM","PR_OPEN"]`, e o teste `test/niemeyer/topologia.test.ts:110-121` valida
-a cadeia de estados per-perfil, nunca a decisão de "quem espera humano". De fato `PR_OPEN`
-**tem** consumidor (`motor/quilombo/cartorio/merge.ts:39`, roda a cada 30 s) — o único checkpoint
-que o motor tira sozinho. Três dos quatro checkpoints reais (`READY`, `CLARIFY`, `PAUSED`)
-não estão na lista.
-
-**O laço quente, o problema concreto:**
-
-`handleExecute` (`motor/oswaldo/executar.ts:309-314`) em falha de cota de provedor devolve sem
-mudar status — o card fica em `EXECUTING`. Redespachado em ≤5 s porque `fila.ts` não tem
-cooldown por card (`:97-100` só filtra `emVoo`, `:31` só reveza na chamada). `provider_override_implement`
-(`executar.ts:312`) era gravado e nunca apagado — **consertado em 29/08**: o implement
-bem-sucedido limpa o campo, então a cota que voltou deixa de ser ignorada.
-
-**"Primeiro retry: fallback; segundo: parede" saiu em 08/09**: o caminho de quota do
-`handleExecute` e o de `applyFailurePolicy` agora consultam `decidirRota`
-(`motor/tomada/rota.ts`), e `rota_tentados` impede repetir quem já falhou na rodada —
-ver a seção do roteador abaixo.
-
-**A contagem de tentativas se comporta de forma complexa por fronteira de passo** — `wait_attempts`
-ressurge em cada fronteira de sucesso (`fechar.ts:293`), mas entre passos **consecutivos do
-mesmo `handleFinish` há oito retomadas sem resset** (A4 em Rufus). A conta acumulada é ~40
-passagens do `handleFinish` antes de qualquer HALT por espera. Vezes 4 passos + pós-passos =
-~200. Por passagem de `handleFinish`, o pior caso verificável é: `maxReajuste()` = 2
-(`motor/cordel/alicerce/config.ts:60-62`) dá **três voltas** no laço de `motor/ciclo/passo-com-gate.ts:64`, e
-cada volta custa uma chamada do agente mais até duas do crivo (`GATE_RETRIES` = 1, `config.ts:64`)
-— nove chamadas por passo gated, vinte e sete nos três passos gated, mais o passo não gated.
-Resultado: **ordem de centenas de chamadas de IA por card, dentro dos tetos declarados, sem
-ninguém intervindo, todas podendo voltar sem progresso**. O multiplicador exato depende de quantas
-retomadas de espera cada fronteira de passo concede na prática, e essa medição não foi feita —
-o que está provado é a ordem de grandeza e o fato de nenhuma delas bater no teto. Card 002 prova: `13:20:03 EXECUTING->WAITING (tentativa 1/8)` e `13:20:33
-WAITING->EXECUTING sonda de saude ok` — um timeout de 900 s do CLI foi "curado" por um GET
-de 5 s no host da API, porque `probeProviderHealth()` (`motor/tomada/sonda.ts:14`) retorna `true`
-para qualquer código `> 0 && < 500` — código 429 conta como saudável. `wait_provider` vazio
-devolve `true` incondicional.
-
-**Deriva de transição:** `config/topologia.json:9-46` declara pares (origem, destino). `planSteps`
-(`motor/oswaldo/rota/perfil.ts:227-242`) combina perfil + pipeline, produzindo **6 pares não declarados**:
-`URL_OK→TESTS_GREEN`, `URL_OK→CLEANED`, `URL_OK→SEC_CLEARED`, `REFINED→SEC_CLEARED`, `REFINED→CLEANED`,
-`TESTS_GREEN→CLEANED`. Quatro são heurísticos, dois foram observados. O teste `topologia.test.ts:110-121`
-valida o pipeline **completo**; nunca chama `planSteps` para cada perfil ativo.
-
-**Onde mexer:**
-
-- `motor/cordel/store.ts:53` — adicionar campo `status_since` (gravado só quando o status muda,
-  não em todo `patchCard`). Habilita staleness real e timeout de checkpoint.
-- `motor/ciclo/reprise/politica.ts:72` — antes do `if (input.failureClass === 'quota')`, branch para um
-  roteador que decide troca (seção PLANO abaixo).
-- `motor/tomada/registro.ts:134-137` — `quotaFallbackProviderFor` deixa de ser chamada aqui; a
-  decisão de rota integrada no roteador a substitui. O override é limpo em `executar.ts:372`
-  (implement bem-sucedido).
-- `motor/oswaldo/rota/perfil.ts` — somar os 6 pares a `topologia.json`; `topologia.test.ts:110-121`
-  passa a varrer `planSteps(perfil)` para cada perfil ativo, não só o pipeline.
-- `motor/ciclo/crivo/url-viva.ts:56-62` — `ensureUrl` já confere URL viva; criar consumidor em
-  `motor/oswaldo/mutirao/fila.ts:83` (`podar()`) que reconfire `url_pid` mortos e marca `url_estado`.
-- `motor/oswaldo/mutirao/fila.ts:29` — o catch-all de `runJob` manda pra `HALTED` sem `halt_class`.
-  Todas as ~26 escritas de HALT precisam de classe (`transient`/`quota`/`terminal`/`humano`/`orcamento`/`excecao`).
-
-**O que fica em aberto:**
-
-Prioridade de qual laço sair do travamento: se o roteador (PLANO) destravar a quota, a contagem
-falsa de tentativas fica em segundo plano — o card terá mais oportunidade antes de HALT. Se
-corrigir `cost_usd` no frontmatter (RECOMENDACAO item 3), o teto de orçamento deixa de ser
-decorativo. Ambos são pré-requisitos para o terceiro: detecção de não-progresso (item 5 em
-CORVINUS, hash de `gate.reason` entre voltas).
-
-**Reconferido em 29/08:** o terceiro pré-requisito citado acima — detecção de
-não-progresso — **já foi feito** e saiu da lista: `motor/ciclo/reparo.ts:48-50`
-(`assinaturaDeVeredicto`) e `:84-93` comparam a volta anterior e quebram o laço, e
-`motor/ciclo/passo-com-gate.ts:60,136-141` fazem o mesmo antes do teto de `maxReajuste()`.
-
-**Reconferido em 02/09:** `status_since` e `halt_class` **saíram** — ver a seção de
-diagnosticabilidade abaixo.
-
-**Reconferido em 08/09:** os 6 pares de transição **saíram** — `config/topologia.json`
-declara todos os saltos que perfil e override produzem, e a varredura de
-`test/niemeyer/topologia.test.ts` percorre TODA subsequência de passos (2⁴ cadeias),
-não só o pipeline completo. O que continua aberto nesta seção é a ausência de cooldown
-por card em `motor/oswaldo/mutirao/fila.ts` (`:97` só filtra `emVoo`).
-
----
-
-## PENDÊNCIA — o roteador de rotas existe; ligar e estender é o que falta
-
-O PLANO desta seção foi executado em 08/09: `motor/tomada/rota.ts` (`decidirRota`) decide
-troca de provedor consultando o que o contrato `Harness` sempre declarou — `agentic`,
-`isolatesReadonly`, `autenticado()`, `rodaLocal` e a cota da janela corrente
-(`cotaEsgotadaEm`). Candidatos em ordem: env do papel, `providers` da preferência, todos
-os registrados. Falha `terminal` nunca troca; papel mecânico prefere quem roda local;
-lista vazia mantém a política atual.
-
-Está ligado em dois pontos: o caminho de quota do `handleExecute`
-(`motor/oswaldo/executar.ts`, campo `rota_tentados` no card impede repetir quem já falhou
-na rodada — era o "primeiro retry: fallback; segundo: parede", provado por teste que
-percorre claude→codex→kimi→HALTED) e o ramo de quota de `applyFailurePolicy`
-(`motor/ciclo/reprise/politica.ts`, cobre a correção: o card vai a WAITING curto com
-`wait_provider` apontando o provedor NOVO, em vez de HALTED). `rota_tentados` é limpo
-pelo sucesso do implement e por `haltFields`.
-
-**Ligado em 09/09 (R: Pode fazer):** `HICODE_QUOTA_FALLBACK` passou a `on` por omissão —
-com o roteador conferindo aptidão, trocar deixou de ser salto no escuro. `off` devolve o
-comportamento antigo. Continua opcional declarar a ordem de candidatos por papel em
-`config/ia.json` (`providers: [...]`); sem isso vale a ordem do registro, com a env
-`HICODE_<PAPEL>_QUOTA_FALLBACK_PROVIDER` na frente quando definida.
-
-**Estendido em 08/09 para `step` e `gate`:** `runStep` e o crivo leem
-`provider_override_step`/`provider_override_gate`, a falha carrega o `papel` de quem
-falhou (agente × crivo, distinguido em `passo-com-gate.ts` — rotear o outro não
-ajudaria), o modelo segue o provedor trocado, e o fecho concluído (`PR_OPEN`) e o
-`haltFields` limpam os três overrides. **`verify` fechou em 09/09** — os três sítios
-(avaliar/clarificar/verificar-visual) leem `provider_override_verify`, e a série
-implement/step/gate/verify está completa em `PAPEIS_COM_OVERRIDE_DE_PROVEDOR`.
-
-**Uma mudança de contrato que a suíte pegou e ficou registrada:** o fallback explícito da
-env deixou de vencer incondicionalmente — se o provedor da env não está apto (não
-autenticado, cota também esgotada, não-agêntico para implement), o roteador escolhe o
-próximo apto em vez de trocar para quem vai falhar de novo. O teste antigo que fixava o
-contrato da env foi atualizado para o novo, com rota injetada.
-
----
-
 ## RECOMENDAÇÃO — onde o dinheiro queima, agora medido no ledger e não estimado
 
 Os itens 1, 2 e 4 da ordem de corte anterior entraram no PR #28 e saíram desta lista.
@@ -301,14 +155,16 @@ em `config/topologia.json:74` está tipado e parseado, com zero consumidores de 
 
 **Sinal que falta, em ordem de impacto** (os itens 1 e 2 saíram em 02/09 e estão descritos acima):
 
-3. Evento `human_checkpoint` emitido **no ponto de entrada** do checkpoint (`motor/cordel/store.ts:53`,
-   onde já se sabe se é transição) com `chave` = status e `resultado` = `aberto`. Emitido também na
-   **saída** (`motor/mirante/acoes.ts:81-90` approveUrl, `acoes.ts:115-125` confirmar, `motor/quilombo/cartorio/merge.ts:23`
-   fechado) com `resultado` = `atendido`.
-4. Tick sem progresso detectável — em `motor/oswaldo/mutirao/fila.ts:105`, comparar assinatura de estado da
-   fila (par `id:status` de `allCards()`) contra tick anterior. Gravar `ticksSemProgresso` em
-   `motor/euclides/radar/tick.ts:6-10` (`DaemonHealth`). `/health` degrada para 503 (ou `ok:false`) quando
-   motor está de pé e improdutivo.
+3. **Saiu em 09/09** — `human_checkpoint` é emitido no estrangulamento (`updateCard`):
+   entrada em checkpoint gera `aberto`, saída gera `atendido`, dado vindo de
+   `checkpointsHumanos` na topologia (que ganhou `CLARIFY` e `PAUSED` — três dos quatro
+   checkpoints reais estavam fora da lista). Falha ao gravar o evento não falha a
+   escrita do card.
+4. **Saiu em 09/09** — assinatura da fila comparada por tick; `ticksSemProgresso` em
+   `DaemonHealth` (sobrevive a `recordTickSuccess`, que era o furo), e `/health` responde
+   `ok:false`/503 com o motor de pé e improdutivo por `HICODE_TICKS_SEM_PROGRESSO_MAX`
+   ticks (6 por omissão). De quebra: job que volta SEM mudar o status entra em cooldown
+   (`HICODE_CARD_COOLDOWN_MS`, 30 s) — o redespacho em 5 s que virava laço de gasto.
 5. Campo `diffHash` + `criterio` do veredito em evento `gate_verdict` — `motor/ciclo/passo-com-gate.ts:114`,
    com `chave: diffHash` do diff acumulado (`motor/ciclo/crivo/gate.ts:131`). Três vezes o mesmo hash =
    laço comprovado, não inferido.
@@ -336,167 +192,15 @@ reconferir saúde de recurso que foi delegado e nunca se verifica depois.
 
 ---
 
-## DECISÃO — o que fica no bun, o que fica no node, e o que hoje está no lugar errado
+## PENDÊNCIA — comandos nativos por provedor: sem mescla e sem namespace
 
-Levantado por varredura de `motor/`, `bin/`, `scripts/`, `runner.ts`, `Dockerfile`,
-`.github/workflows/ci.yml` e `package.json`, com os tempos medidos nesta máquina
-(node v24.17.0, bun 1.4.0).
-
-**O ponto de partida é melhor do que parecia: o núcleo já é neutro.** Grep por `Bun.`,
-`bun:`, `import.meta.dir` e afins em `motor/` + `bin/` + `scripts/` + `runner.ts`
-devolve **zero**, e isso não é sorte — é invariante em
-`test/cordel/alicerce-runtime.test.ts:60-64`. `motor/cordel/alicerce/runtime.ts:47-62` já escolhe o
-runtime por `HICODE_RUNTIME`, com detecção automática e memoização (`:40-51`, porque a
-TUI consulta a cada ~400 ms). Os 983 imports relativos de `motor/`+`bin/` carregam
-extensão `.ts` explícita — 983 de 983, guardado por
-`test/cordel/import-com-extensao.test.ts:41-59`. Não há dependência de runtime no
-`package.json`: só devDeps.
-
-**Portanto a pergunta não é "reescrever para bun ou para node".** É onde cada um paga,
-e o que hoje está fora do lugar.
-
-### Onde o bun paga, medido
-
-| Superfície | Medida | Decisão |
-|---|---|---|
-| Arranque do CLI/TUI interativo | `bin/hii.ts --help`: **bun 0,03 s × node 0,15 s** (5×) | **bun**, que já é o default local por detecção |
-| Binário único distribuível | `bun build --compile` não tem equivalente prático no node | **bun**, e é o caminho barato de "proteger o código" citado na última seção |
-| Instalação de dependências no CI | `bun install --frozen-lockfile` já é o passo (`ci.yml:32`) | **bun** |
-
-### Onde o node paga, medido
-
-| Superfície | Medida | Decisão |
-|---|---|---|
-| Daemon de produção | imagem `node:24-slim`, `ENTRYPOINT ["node","bin/hii.ts"]` (`Dockerfile:4,54`), `HICODE_RUNTIME=node` (`:36`) | **node**. Foi o node que expôs o `setInterval` sem `unref` que prendia o processo — o bun ignora timer pendente ao sair, o node respeita, e o certo é o do node |
-| Suíte de testes | `node --test` roda **2.704 testes em 32 s**, um processo por arquivo, em paralelo | **node é a trilha primária** |
-| Scripts `.mjs` de lint e manutenção | ESM puro, `node:fs`/`node:path`; o prefixo `bun` em `package.json:15-17` é convenção, não necessidade | **node** |
-
-### O que estava no lugar errado, e saiu em 29/08
-
-| O que era | Estado |
-|---|---|
-| `scripts/runner-daemon.sh` hardcodava `bun` em três pontos e o daemon **não subia** na imagem de produção (`node:24-slim`, `COM_BUN=0`) | **feito** — resolve por `HICODE_RUNTIME`, e o teste sobe o daemon com um PATH sem bun, conferindo a cmdline do processo |
-| A trilha bun era 2,5× mais lenta que a node por causa de um `for` com `spawnSync` | **feito** — piscina do tamanho da máquina: 1m22s → 32s |
-| `bun run test` não incluía a trilha node: verde local mais fraco que o do CI | **feito** |
-| `import.meta.main` (extensão do bun) fazia o bloco de CLI de dois scripts sumir em silêncio sob node | **feito** — checagem portável |
-| `require()` dentro de um `.mjs` | **feito** — virou import |
-| `scripts-setup-imports` reprovava por ausência de `bun`, não por defeito | **feito** — sem bun cai numa resolução própria, conferida contra import quebrado de verdade |
-| `tsconfig.json` apontava `#shared/*` para `./panel/*`, que não existe | **feito** — removido |
-
-**O que sobrou, e é pequeno:** o `Dockerfile:27` copia `bun.lock` e o `:31` roda
-`npm install --omit=dev`, que o ignora. Funciona só porque não há dependência de runtime —
-no dia em que houver, o npm fica sem lockfile. Não mexi porque provar exige um
-`docker build`, e mudar imagem sem rodar a construção é o defeito que a Onda 11 já cobrou
-uma vez.
-
-### O que NÃO fazer
-
-Adotar `Bun.file`/`Bun.spawn`/`Bun.serve` no motor para "ganhar desempenho". O caminho
-quente do motor é chamada de IA e comando de git: as 27 chamadas medidas levaram de 11 s
-a 230 s cada. Trocar o custo de um `spawn` ali é ruído contra isso, e o preço seria
-perder a neutralidade que hoje permite escolher o runtime por superfície — que é
-justamente o que esta seção usa.
-
-
-**R: aplicado em 09/09.** O motor roda sob **bun em toda parte**: a imagem instala o bun
-pinado pelo `.bun-version` (via npm -g, sobre a mesma base `node:24-slim`), o
-`ENTRYPOINT` é `bun bin/hii.ts`, `HICODE_RUNTIME=bun` no Dockerfile e no stack, e o
-shebang de `bin/hii.ts` voltou a `bun`. O node **fica na imagem de propósito** — é o
-"menos execuções próprias de outros projetos": repo-alvo com contrato node/npm/pnpm roda
-com o runtime dele, e a trilha node do CI continua como prova de portabilidade do grafo.
-De quebra, a incoerência antiga fechou: `bun install --frozen-lockfile --production` usa
-o `bun.lock` que a imagem copia (o npm o ignorava). Verificado construindo E rodando a
-imagem: `--help` pelo ENTRYPOINT, `runner-daemon.sh status` resolvendo `bun`, e as
-versões conferidas dentro do container (bun 1.4.0, node 24).
-
----
-
-## PENDÊNCIA — o revezamento de IAs não tem onde acontecer, e a troca que já existe é invisível
-
-O pedido é começar uma tarefa numa IA, trocar no meio, voltar, e terminar noutra. A pesquisa e a
-leitura do código dizem duas coisas incômodas, e as duas mudam o que dá para prometer.
-
-**Primeira: continuidade fiel de conversa entre os harnesses não existe, e não é limitação do hii.**
-Os provedores conectados aqui são binários de CLI com loop de ferramentas e sessão próprios —
-não uma API de completion crua. Cada um resume só a si mesmo: `claude --resume` lê
-`~/.claude/projects/`, `codex exec resume` lê JSONL em `~/.codex/sessions/`, formatos proprietários
-e estruturalmente diferentes, sem adaptador entre eles. E mesmo entre modelos do mesmo fornecedor,
-cache de prefixo é hash de (ferramentas + system + mensagens) **e específico do modelo**, e blocos de
-raciocínio precisam voltar inalterados à mesma API. Ou seja: o que atravessa uma troca é texto final,
-nunca raciocínio em progresso nem cache aquecido. O único padrão que generaliza para agentes que não
-compartilham estado interno é o **bastão escrito** — um briefing em prosa que o próximo recebe no
-lugar do histórico. Vale registrar que nenhum harness usa hoje a retomada nativa da própria CLI:
-`grep` por `--resume` e `--continue` em `motor/tomada/harness/` não devolve nada.
-
-**Segunda, e essa é o achado: o bastão escrito já existe, embrionário, e ninguém o chama de handoff.**
-`motor/ciclo/reprise/tentativas.ts:52-57` persiste cada tentativa em `cards/runs/<id>.attempts.json` com
-até 8000 caracteres de resposta, e `attemptHistory` (`motor/ciclo/corrigir.ts:67-72`) reinjeta isso no
-prompt da tentativa seguinte, truncado em 200 caracteres por linha, sob a frase "Historico de
-tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta)". É
-**agnóstico de provedor** e roda no caminho de `CORRECTING` (`:75`). Não foi desenhado para
-revezamento, mas é exatamente a forma certa: estado da tarefa em texto neutro, mais o worktree
-carregando o que de fato mudou.
-
-**Terceira: a única troca de provedor que o motor faz hoje é invisível para a função que existe
-para observá-la.** `motor/euclides/ias-da-sessao.ts:189-201` tem `trocasDeProvedor(chamadas)`, que lê
-troca de provedor dentro de uma sessão. Só que sessão, ali, é por **execução**, não por card:
-`idDaSessao` monta `<card>-<carimbo>` com carimbo de precisão de segundo (`:23-29`), e `abrirSessao`
-sobrescreve o registro anterior (`:41-46`). Some-se a isso o fallback de cota
-(`motor/oswaldo/executar.ts:309-314`): ele grava `provider_override_implement` e **retorna sem mudar o
-status**. O card continua em `EXECUTING`, a fila o redespacha, `handleExecute` chama `abrirSessao` de
-novo — e as duas chamadas, a que falhou por cota e a que rodou no provedor novo, caem em **ledgers
-diferentes**. `trocasDeProvedor` nunca vê nenhuma das duas pontas junta. O próprio teste do módulo
-diz isso no título: `test/euclides/ias-da-sessao.test.ts:35-43`, "a sessao de um card e estavel entre
-chamadas, e uma nova execucao abre outra".
-
-Some-se ainda que o escritor da escolha de provedor está do lado errado da costura
-(`motor/mirante/escolher-ia.ts`), que o `provider_override_implement` tem um único escritor de produção
-(`motor/oswaldo/executar.ts:312`) e que `implement` (`motor/ciclo/agente.ts:187`) não aceita override por
-parâmetro — lê do frontmatter em `:190`. O daemon não troca de IA no meio de um card porque a
-capacidade de escolher nunca esteve no motor.
-
-
-
-**O que fazer, em ordem, e onde mexer.**
-
-1. Fazer a sessão cobrir o card, e não a execução. `abrirSessao` (`euclides/ias-da-sessao.ts:41`) passa a
-   reaproveitar a sessão existente do card em vez de abrir outra. É o pré-requisito de tudo: sem
-   isso, nenhuma leitura de travessia entre provedores é confiável, inclusive a que já existe.
-2. Fazer o fallback de cota mudar o status ao retornar (`oswaldo/executar.ts:309-314`). Hoje ele é um dos
-   `return` sem transição que a PENDÊNCIA anterior sobre laço quente já enumera — e é o mesmo defeito.
-3. Promover `attemptHistory` a briefing de passagem explícito: um campo no card dizendo qual provedor
-   escreveu cada tentativa, para o texto reinjetado dizer de quem veio o bastão. `Fields` é
-   `Record<string, string>` (`motor/cordel/tipos.ts:11`), então campo novo não muda tipo.
-4. Levar a escolha de provedor para o motor, deixando `mirante/escolher-ia.ts` como cliente.
-
-**O que fica em aberto.** O contrato de sessão completo foi escrito três vezes e reprovado nas três
-pelo crivo — não por otimismo sobre o handoff, que foi corretamente recusado nas três, mas por erros
-de fato em cima da premissa de que a sessão já cobria o card. Corrigido o item 1 acima, o desenho
-volta a ser possível sobre terreno verdadeiro. Também fica em aberto a incorporação dos comandos
-nativos de cada IA: `motor/tomada/mapa/comandos.ts` já enumera manifestos `.md` por provedor, mas
-`comandosDaIaAtiva` (`:137`) olha só `providerNameFor('implement')`, nunca mescla provedores, e não
-tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
-entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
-no repositório: `MCP_PREFIX` em `motor/tomada/ponte/mcp.ts:6`.
-
-**R: aplicado em 09/09, com um item superado no caminho:**
-
-1. **Feito** — a sessão cobre o CARD: `abrirSessao` reaproveita a sessão existente (em
-   memória ou retomada do disco), então duas execuções gravam no MESMO ledger e
-   `trocasDeProvedor` finalmente vê as duas pontas juntas — provado por teste que
-   reexecuta e confere a troca claude→codex visível.
-2. **Superado pelo roteador de rotas** (PR #34/#35): o fallback de cota deixou de ser um
-   `return` sem transição — hoje ou troca com `rota_tentados` no card, ou vai a WAITING
-   com o provedor novo, ou HALTa com classe.
-3. **Feito** — o bastão diz de quem veio: cada tentativa em `runs/<id>.attempts.json`
-   grava o `provedor`, e o texto reinjetado prefixa a autoria (`[correcao por claude]`)
-   avisando que quem lê pode ser OUTRA IA. Tentativa antiga aparece sem autoria, nunca
-   com autoria inventada.
-4. **Feito** — a escolha de provedor mora no motor: o núcleo de persistência/aplicação
-   (`ler`/`gravar`/`aplicar`/`limpar`/`ciclarModo`, com as guardas de ia.json ilegível
-   intactas) saiu de `mirante/escolher-ia.ts` para `motor/tomada/escolha-de-ia.ts`; o
-   mirante ficou com parsing e apresentação, como cliente — e reexporta, então nenhum
-   chamador mudou.
+O que sobrou do revezamento (os quatro itens do R: saíram em 09/09 — sessão por card,
+bastão com autoria, escolha no motor, e o fallback superado pelo roteador):
+`motor/tomada/mapa/comandos.ts` enumera manifestos `.md` por provedor, mas
+`comandosDaIaAtiva` olha só `providerNameFor('implement')`, nunca mescla provedores, e
+não tem namespace — o dedup é um `Set` dentro da lista de um provedor só. `ollama` não
+tem entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de
+namespace existe: `MCP_PREFIX` em `motor/tomada/ponte/mcp.ts`.
 
 ---
 
@@ -567,31 +271,16 @@ retomar isto começa por aí, não pelo grafo de imports.
 
 ---
 
-## PENDÊNCIA — a fita (ex-cassete) fechou quatro dos seis; os dois que ficam são desenho
+## PENDÊNCIA — a fita grava um degrau acima de onde o defeito mora
 
-R: de 09/09 aplicado — o módulo virou **fita** (`test/apoio/fita.ts`, env
-`HICODE_FITA_MODO`), e quatro consertos saíram com o rename:
+Os quatro consertos e o rename saíram em 09/09 (PR #36). Ficam os dois itens de desenho:
 
-- **Gravar exige a rodada cara**: modo que pode gastar sem `OpcoesDaFita.rodada` recusa
-  ANTES de chamar o provedor, e cada gravação registra o custo na rodada — o teto de
-  `e2e.ts` deixou de ser frase de mensagem de erro.
-- **`formatoVersao` é validado na leitura** (e subiu para 2, porque a chave mudou):
-  formato antigo reprova mandando regravar, em vez de casar pedido errado.
-- **Escrita sob trava** (`withFileLock` + `writeFileAtomic` do motor): gravações
-  concorrentes no mesmo arquivo não se derrubam mais.
-- **`<DIR:n>` deixou de ser posicional**: o marcador carrega o basename
-  (`<DIR:repo-x>`), então repositórios diferentes na mesma posição não dividem chave.
-
-**O que fica, e é desenho, não conserto:**
-
-- A fita envolve `Harness.run`, um degrau acima do parser de cada harness — gravar
-  stdout/stderr/exit-code do subprocesso exercitaria o parser de verdade (foi num parser
-  que o argv errado do kimi sobreviveu verde), ao custo de uma costura por harness.
-- O motor não tem como receber o harness envolvido: o registro é `ReadonlyMap` const e os
-  chamadores resolvem por `providerFor()` internamente. A costura de percurso real é
+- A fita envolve `Harness.run`; gravar stdout/stderr/exit-code do **subprocesso**
+  exercitaria o parser de cada harness de verdade — foi num parser que o argv errado do
+  kimi sobreviveu verde. Custo: uma costura por harness.
+- O motor não tem como receber o harness envolvido: o registro é `ReadonlyMap` const e
+  os chamadores resolvem por `providerFor()` internamente. A costura de percurso real é
   `ExecuteDeps`.
-
-  R: corrija, e mude esse nome "cassete" para outro nome
 
 ---
 
@@ -635,46 +324,6 @@ O que continua aberto:
   `test/cordel/scripts-existem.test.ts` acusar, por desenho. O pino é do CI
   (`ci.yml:20-22`) e existe porque `expect([NaN]).toContain(NaN)` passa no bun 1.3.14
   (SameValueZero) e falha no 1.4.0 (`===`).
-
----
-
-## ESTADO — `HICODE_RIGOR_ESTRITO`, ligado em produção em 02/09
-
-**LIGADO onde o motor roda:** `docker-stack.yml` declara
-`HICODE_RIGOR_ESTRITO: ${HICODE_RIGOR_ESTRITO:-1}`. O momento passa a ser o deploy, e a
-saída de emergência é `HICODE_RIGOR_ESTRITO=0 docker stack deploy ...`.
-
-**O default no código continua opt-in, por decisão** (`motor/cordel/alicerce/config.ts`,
-`=== '1'`): ligar é ato de operação, e virar o default tiraria de quem liga a escolha do
-momento — além de mudar o significado de "variável ausente" para local e para a suíte.
-Local liga com `export HICODE_RIGOR_ESTRITO=1`.
-
-**O aviso que estava aqui estava vencido, e é por isso que ligar era seguro.** A versão
-anterior desta seção dizia que o item 5 "funciona mas cobra a coisa errada — card
-`completo` com suíte verde vai fazer HALT", e remetia a uma seção que já havia sido
-podada. Aquilo descrevia o bug de ANTES da Onda C, quando a consulta rodava antes do
-produtor da evidência e `red.satisfeito` era constante `false`. Reconferido no código:
-`registrarRed` roda **dentro** de `testGate` (`motor/ciclo/crivo/portoes-de-fecho.ts:97`),
-a consulta vem depois (`motor/quilombo/cartorio/fechar.ts:295`) e há um segundo produtor
-a partir do relato do agente (`:278`). `test/agentes/chagas-red-primeiro.test.ts` passa
-com 20 asserções, provando a ordem certa com guarda contra o `-1`.
-
-**O que passa a barrar:** os três itens abaixo. Os três escrevem o veredicto no card e
-nunca barraram ninguém, então o primeiro card `completo` depois do deploy é o primeiro
-teste real deles. A fila está vazia (só 001 em `URL` e 002 em `HALTED`, ambos já
-parados), o que torna este o momento barato.
-
-Três exigências já escrevem o veredicto no card e só barram com o interruptor
-ligado:
-
-| Item | Exige | Campo no card |
-|---|---|---|
-| 5 | perfil `completo` teve teste que FALHOU antes de passar | `red_antes_do_green` |
-| 22 | área nova tem comando de teste no contrato do alvo | `setup_ferramental` |
-| 4 | matriz de entendimento respondida antes de aprovar o plano | `matriz_entendimento` |
-
-Enquanto desligado dá para ver, card a card, quem passou sem provar — que é o
-insumo para decidir quando apertar.
 
 ---
 

@@ -2,15 +2,15 @@ import { isoNow } from '../../cordel/index.ts'
 import type { Job } from '../../cordel/index.ts'
 import { MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
 import { tetoDeParalelismo } from '../../quilombo/limites.ts'
-import { updateCard } from '../../cordel/store.ts'
-import { pending, marcarEmVoo, liberar, quantosEmVoo } from './estado-da-fila.ts'
+import { readCard, updateCard } from '../../cordel/store.ts'
+import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, registrarRetornoSemTransicao } from './estado-da-fila.ts'
 import { handleExecute } from '../executar.ts'
 import { handleFinish } from '../../quilombo/cartorio/fechar.ts'
 import { handleCorrect } from '../../ciclo/corrigir.ts'
 import { handleSpec } from '../../niemeyer/lucio/fase-spec.ts'
 import { checkMerged } from '../../quilombo/cartorio/merge.ts'
 import { arquivar, precisaArquivar } from '../../cordel/arquivar.ts'
-import { recordTickSuccess, reportTickFailure } from '../../euclides/radar/tick.ts'
+import { recordTickSuccess, registrarProgressoDoTick, reportTickFailure } from '../../euclides/radar/tick.ts'
 import { wakeDueWaiting } from '../../ciclo/reprise/espera.ts'
 import { limparTmpAntigo, usoDeDisco } from '../../euclides/estado-em-disco.ts'
 import { podarRegistrosAntigos } from '../../euclides/podar.ts'
@@ -22,6 +22,7 @@ export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.t
 
 export async function runJob(job: Job): Promise<void> {
   marcarEmVoo(job.id)
+  const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {
     if (job.kind === 'execute') await handleExecute(job.id)
     else if (job.kind === 'finish') await handleFinish(job.id)
@@ -45,8 +46,19 @@ export async function runJob(job: Job): Promise<void> {
       log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED erro nao previsto (${job.kind}): ${String((e as Error)?.message ?? e)}`,
     })
   } finally {
+    const statusDepois = readCard(job.id)?.fm.status ?? ''
+    if (statusDepois === statusAntes) registrarRetornoSemTransicao(job.id)
     liberar(job.id)
   }
+}
+
+let assinaturaDoTickAnterior = ''
+
+function medirProgressoDaFila(): void {
+  const assinatura = assinaturaDaFila()
+  const improdutivo = assinatura === assinaturaDoTickAnterior && pending().length > 0 && quantosEmVoo() === 0
+  assinaturaDoTickAnterior = assinatura
+  registrarProgressoDoTick(improdutivo)
 }
 
 function semDerrubarOTick(rotulo: string, consequencia: string, chore: () => void): void {
@@ -92,6 +104,12 @@ function podar(): void {
 
 export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
   let ok = true
+  try {
+    medirProgressoDaFila()
+  } catch (e) {
+    reportTickFailure('progresso da fila', e as Error)
+    ok = false
+  }
   const merged = verificarMerges(Date.now()).catch(e => {
     reportTickFailure('checkMerged', e as Error)
     ok = false

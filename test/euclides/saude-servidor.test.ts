@@ -136,3 +136,17 @@ test('INVARIANTE o runner anuncia a porta DEPOIS de o listen resolver', async ()
   expect(fonte, 'anunciar antes do listen promete porta que pode nunca ter aberto').toContain('saude.pronto.then(')
   expect(fonte, 'e o caso de falha tem de ser dito, nao omitido').toContain('/health NAO subiu')
 })
+
+test('REGRESSAO: motor de pe e IMPRODUTIVO responde ok:false — tick limpo com fila parada era invisivel', async () => {
+  const { lerSaude } = await import('../../motor/euclides/radar/servidor.ts')
+  const { registrarProgressoDoTick } = await import('../../motor/euclides/radar/tick.ts')
+
+  for (let i = 0; i < 6; i++) registrarProgressoDoTick(true)
+
+  const s = lerSaude()
+  expect(s.ticksSemProgresso).toBe(6)
+  expect(s.ok, 'de pe e improdutivo nao e saudavel — o orquestrador precisa saber').toBe(false)
+
+  registrarProgressoDoTick(false)
+  expect(lerSaude().ok).toBe(true)
+})

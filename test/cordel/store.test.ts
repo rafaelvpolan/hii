@@ -191,3 +191,39 @@ test('escrita SEM status sobre card parado passa inteira — diario e metrica na
   expect(c?.fm.cost_usd).toBe('3.3300')
   expect(corpoDoCard(id)).not.toContain('escrita descartada')
 })
+
+test('transicao PARA checkpoint humano emite human_checkpoint aberto; a saida emite atendido — antes o tipo existia com zero emissores', async () => {
+  const { eventosDoCard } = await import('../../motor/euclides/eventos.ts')
+  const id = fresh({ title: 'espera gente', status: 'EXECUTING', repo: 'org/repo' })
+
+  patchCard(id, { status: 'URL' }, 'url pronta para aprovacao')
+  patchCard(id, { status: 'URL_OK' }, 'humano aprovou')
+
+  const eventos = eventosDoCard(id).filter(e => e.evento === 'human_checkpoint')
+  expect(eventos).toHaveLength(2)
+  expect(eventos[0]?.chave).toBe('URL')
+  expect(eventos[0]?.resultado).toBe('aberto')
+  expect(eventos[1]?.chave).toBe('URL')
+  expect(eventos[1]?.resultado).toBe('atendido')
+  expect(eventos[1]?.detalhe).toContain('URL_OK')
+})
+
+test('transicao entre estados que NAO sao checkpoint nao emite nada — o evento e de espera humana, nao de transicao', async () => {
+  const { eventosDoCard } = await import('../../motor/euclides/eventos.ts')
+  const id = fresh({ title: 'so maquina', status: 'EXECUTING', repo: 'org/repo' })
+
+  patchCard(id, { status: 'EXECUTED' }, 'implement concluiu')
+
+  expect(eventosDoCard(id).filter(e => e.evento === 'human_checkpoint')).toHaveLength(0)
+})
+
+test('CLARIFY e PAUSED agora contam como checkpoint humano — tres dos quatro reais estavam fora da lista', async () => {
+  const { eventosDoCard } = await import('../../motor/euclides/eventos.ts')
+  const id = fresh({ title: 'pergunta', status: 'EXECUTING', repo: 'org/repo' })
+
+  patchCard(id, { status: 'CLARIFY' }, 'pergunta ao humano')
+
+  const eventos = eventosDoCard(id).filter(e => e.evento === 'human_checkpoint')
+  expect(eventos[0]?.chave).toBe('CLARIFY')
+  expect(eventos[0]?.resultado).toBe('aberto')
+})
