@@ -470,7 +470,24 @@ tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor s
 entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
 no repositório: `MCP_PREFIX` em `motor/tomada/ponte/mcp.ts:6`.
 
-R: pode executar
+**R: aplicado em 09/09, com um item superado no caminho:**
+
+1. **Feito** — a sessão cobre o CARD: `abrirSessao` reaproveita a sessão existente (em
+   memória ou retomada do disco), então duas execuções gravam no MESMO ledger e
+   `trocasDeProvedor` finalmente vê as duas pontas juntas — provado por teste que
+   reexecuta e confere a troca claude→codex visível.
+2. **Superado pelo roteador de rotas** (PR #34/#35): o fallback de cota deixou de ser um
+   `return` sem transição — hoje ou troca com `rota_tentados` no card, ou vai a WAITING
+   com o provedor novo, ou HALTa com classe.
+3. **Feito** — o bastão diz de quem veio: cada tentativa em `runs/<id>.attempts.json`
+   grava o `provedor`, e o texto reinjetado prefixa a autoria (`[correcao por claude]`)
+   avisando que quem lê pode ser OUTRA IA. Tentativa antiga aparece sem autoria, nunca
+   com autoria inventada.
+4. **Feito** — a escolha de provedor mora no motor: o núcleo de persistência/aplicação
+   (`ler`/`gravar`/`aplicar`/`limpar`/`ciclarModo`, com as guardas de ia.json ilegível
+   intactas) saiu de `mirante/escolher-ia.ts` para `motor/tomada/escolha-de-ia.ts`; o
+   mirante ficou com parsing e apresentação, como cliente — e reexporta, então nenhum
+   chamador mudou.
 
 ---
 

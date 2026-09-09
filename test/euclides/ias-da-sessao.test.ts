@@ -32,14 +32,27 @@ function chamada(over: Partial<ChamadaDeIa> = {}): ChamadaDeIa {
   }
 }
 
-test('a sessao de um card e estavel entre chamadas, e uma nova execucao abre outra', async () => {
+test('REGRESSAO: a sessao cobre o CARD, nao a execucao — reexecutar reaproveita a mesma sessao', async () => {
   const m = await import('../../motor/euclides/ias-da-sessao.ts')
   const primeira = m.abrirSessao('010', Date.parse('2026-08-19T12:00:00Z'))
   expect(m.sessaoDoCard('010')).toBe(primeira)
+  const segundaExecucao = m.abrirSessao('010', Date.parse('2026-08-19T13:00:00Z'))
+  expect(segundaExecucao, 'sessao nova por execucao partia o ledger em dois e trocasDeProvedor nunca via as duas pontas juntas').toBe(primeira)
   expect(m.sessaoDoCard('010')).toBe(primeira)
-  const segunda = m.abrirSessao('010', Date.parse('2026-08-19T13:00:00Z'))
-  expect(segunda).not.toBe(primeira)
-  expect(m.sessaoDoCard('010')).toBe(segunda)
+})
+
+test('a travessia de provedores de um card fica VISIVEL: duas execucoes gravam no MESMO ledger, e trocasDeProvedor ve a troca', async () => {
+  const m = await import('../../motor/euclides/ias-da-sessao.ts')
+  const sessao = m.abrirSessao('011', Date.parse('2026-08-19T12:00:00Z'))
+  m.registrarChamada(sessao, chamada({ papel: 'implement', provedor: 'claude' }))
+  const mesmaSessaoNaReexecucao = m.abrirSessao('011', Date.parse('2026-08-19T14:00:00Z'))
+  m.registrarChamada(mesmaSessaoNaReexecucao, chamada({ papel: 'implement', provedor: 'codex' }))
+
+  const chamadas = m.chamadasDaSessao(sessao)
+  const trocas = m.trocasDeProvedor(chamadas)
+  expect(trocas.length, 'a unica troca que o motor fazia era invisivel para a funcao que existe para observa-la').toBe(1)
+  expect(trocas[0]?.de).toBe('claude')
+  expect(trocas[0]?.para).toBe('codex')
 })
 
 test('o id curto e deterministico — mesma sessao, mesmo id', async () => {
