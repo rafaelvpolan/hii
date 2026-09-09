@@ -664,6 +664,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_AUDIT_LOTE_CHARS` | `motor/agentes/assis/tipos.ts` |
 | `HICODE_BUDGET_USD` | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
 | `HICODE_CARD_BUDGET_USD` | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
+| `HICODE_CARD_COOLDOWN_MS` | `motor/oswaldo/mutirao/estado-da-fila.ts` |
 | `HICODE_CARDS_DIR` | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
 | `HICODE_CLARIFY` | `motor/cordel/alicerce/config.ts` |
 | `HICODE_CLAUDE_CONFIG` | `motor/euclides/tesouro/planos.ts` |
@@ -747,6 +748,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_TEST_JOBS` | `scripts/test-bun.mjs` |
 | `HICODE_TEST_TIMEOUT_MS` | `scripts/test-bun.mjs` |
 | `HICODE_TICK_ESCALATE_AFTER` | `motor/euclides/radar/tick.ts` |
+| `HICODE_TICKS_SEM_PROGRESSO_MAX` | `motor/euclides/radar/servidor.ts` |
 | `HICODE_TIER_FILE` | `motor/cordel/alicerce/contrato.ts` |
 | `HICODE_TMP_TTL_H` | `motor/euclides/estado-em-disco.ts` |
 | `HICODE_TOPOLOGIA_FILE` | `motor/cordel/alicerce/contrato.ts` |
