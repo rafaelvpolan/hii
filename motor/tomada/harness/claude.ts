@@ -7,7 +7,7 @@ import { COST_UNKNOWN, readReportedCost } from '../../euclides/tesouro/custo.ts'
 import { runClaudeStream } from './claude-stream.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
 import type { AgentRole, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
-import { alcancavelPorHttp } from '../sonda.ts'
+import { cliSaudavel } from '../sonda.ts'
 import { GATE_MODEL, VERIFY_MODEL } from '../../cordel/alicerce/config.ts'
 
 interface ClaudeJson {
@@ -68,7 +68,7 @@ export class ClaudeProvider implements Harness {
   plano(agoraMs: number): PlanoDoProvedor { return planoDoClaude(agoraMs) }
   modelosDisponiveis(): string[] { return this.plano(Date.now()).modelos }
   capabilities(): HarnessCapabilities { return CLAUDE_CAPACIDADES }
-  healthCheck(): Promise<boolean> { return alcancavelPorHttp(URL_DA_API) }
+  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CLAUDE_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {

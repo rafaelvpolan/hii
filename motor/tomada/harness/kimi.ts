@@ -4,6 +4,7 @@ import { emptyUsage } from '../uso.ts'
 import { COST_UNKNOWN } from '../../euclides/tesouro/custo.ts'
 import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
 import { kimiAutenticado, planoDoKimi } from '../../euclides/tesouro/planos.ts'
+import { cliSaudavel } from '../sonda.ts'
 
 // UM modo so, e nao quatro. Medido contra o CLI real (kimi 0.38.0 no WSL): com `-p`
 // — que este adaptador SEMPRE usa, porque o motor chama nao-interativo — o binario
@@ -24,7 +25,6 @@ import { kimiAutenticado, planoDoKimi } from '../../euclides/tesouro/planos.ts'
 // nunca aplicado.
 export const KIMI_MODOS: CatalogoDeModo = { modos: ['default'], padrao: 'default' }
 
-import { alcancavelPorHttp } from '../sonda.ts'
 
 interface KimiStreamLine {
   role?: string
@@ -143,7 +143,7 @@ export class KimiProvider implements Harness {
   // Antes isto caia no `return true` implicito de probeProviderHealth: kimi nao
   // tinha entrada na tabela de URLs, e "sem entrada" valia como "esta de pe".
   // Item 3.7 da Parte I do MODERNIZATION.md.
-  healthCheck(): Promise<boolean> { return alcancavelPorHttp(urlDoKimi()) }
+  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, urlDoKimi()) }
   sinaisDeFalha(): SinaisDoHarness { return KIMI_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {

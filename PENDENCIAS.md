@@ -23,46 +23,17 @@ corrigidas onde aparecem: a medição de custo, o card 006 e o aviso sobre o ite
 
 ---
 
-## PENDÊNCIA — a sonda ainda mede a coisa errada (o backoff já escala, saiu em 02/09)
+## ESTADO — a sonda mede o binário desde 09/09 (R: Pode fazer)
 
-Dos três mecanismos que produziam "a tarefa ficou travada em loop", dois saíram: a
-escrita sem compare-and-set (`motor/cordel/store.ts` agora recusa tirar da parada quem
-não é a pessoa) e o `resume_from` que atravessava a correção. Resta o terceiro, e o que
-sobrou dele **exige decisão**, não é conserto mecânico.
+Fechou a trilogia do "travada em loop". `binarioResponde` (`motor/tomada/sonda.ts`)
+sonda `<cli> --version` com teto de 15 s (`HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS`), e
+`cliSaudavel` exige **E, não OU**: binário respondendo E API alcançável — porque um GET
+de 5 s já "curou" um CLI travado por 900 s, e o inverso (binário vivo, rede fora) também
+é falha real. claude, codex e kimi usam a sonda composta; ollama continua na URL, que
+para um servidor local É o binário. O teste roda com um `kimi` falso no PATH, para não
+depender de quem está instalado na máquina.
 
-**O que já foi feito:** `alcancavelPorHttp` (`motor/tomada/sonda.ts`) parou de aceitar
-403, 408 e 429 como saudável — cota estourada é exatamente "indisponível agora", e o card
-era acordado para falhar de novo. E `wake` (`motor/ciclo/reprise/espera.ts`) parou de
-escrever "sonda de saude ok" quando não havia sonda para o provedor:
-`sabeSondarProvedor` separa "sondei e está de pé" de "não tenho como sondar", que antes
-eram o mesmo `true`.
-
-**O que continua errado, e por quê é decisão.** A sonda mede uma **URL** enquanto o que
-falhou foi o **binário**. Card 002: entrou em `WAITING` às 13:20:03 por timeout de 900 s
-do CLI, e às 13:20:33 foi acordado — um GET de cinco segundos declarando curado um
-processo que não respondeu em quinze minutos. Mesmo com 429 fora, um 200 da API não prova
-que a CLI volta a responder.
-
-**A segunda metade saiu em 02/09.** O backoff escala pela classe de espera:
-`CLASSES_DE_ESPERA` (`motor/cordel/tipos.ts`) é sub-classe de `transient`, porque
-`FailureClass` não servia — `quota` e `terminal` vão direto a HALT, então tudo o que
-chega a `WAITING` é `transient` e escalar por um valor constante não escalava nada.
-`classifyFailure` devolve `classeDeEspera`, `politica.ts` grava `wait_class` no card,
-`backoffMsFor(tentativa, classe)` aplica piso por classe (`pisoDeEsperaMs` em
-`alicerce/config.ts`) e `espera.ts` lê o campo para o reagendamento, que roda noutro
-processo. O piso de `timeout` é o próprio `RUN_TIMEOUT_MS`, por simetria: quem consumiu
-o teto inteiro sem responder não é retentado antes de ter esperado o mesmo tanto. Quem
-não informa classe cai em `rede`, cujo piso é zero — a mudança é aditiva e nenhum
-caminho ficou mais curto.
-
-**O que continua aberto, e é decisão:** sondar o que falhou. Trocar `alcancavelPorHttp`
-por uma sonda do binário (`<cli> --version` com teto curto) no `healthCheck()` de cada
-harness. Mede o que quebrou, custa um spawn por card devido, e exige uma costura por
-harness — os quatro hoje chamam `alcancavelPorHttp` (`claude.ts:70`, `codex.ts:92`,
-`ollama.ts:74`, `kimi.ts:145`). Não é óbvia o bastante para sair sem sua palavra: pode
-transformar provedor lento em provedor "morto".
-
-R: Pode fazer
+---
 
 ## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
 
