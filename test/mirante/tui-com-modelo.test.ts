@@ -17,9 +17,9 @@ import { createCard, readCard, patchCard, allCards, repoPath } from '../../motor
 import { handleExecute } from '../../motor/oswaldo/executar.ts'
 import { pending } from '../../motor/oswaldo/mutirao/estado-da-fila.ts'
 import {
-  BASE, REPO_NOME, limparAmbiente, usarArquivoDeIa, novoDirDeCassete,
-  agentResultDe, instalarHarnessDoCassete, lerCassete, fakeTerminal,
-} from '../fixtures/motor-cassete-falso.ts'
+  BASE, REPO_NOME, limparAmbiente, usarArquivoDeIa, novoDirDeFita,
+  agentResultDe, instalarHarnessDoFita, lerFita, fakeTerminal,
+} from '../fixtures/motor-fita-falso.ts'
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 
@@ -27,15 +27,15 @@ if (!process.env.HICODE_CARDS_DIR) throw new Error('HICODE_CARDS_DIR nao foi iso
 
 afterAll(() => limparAmbiente())
 
-test('TUI cria a tarefa, o motor executa com o harness do cassete, e o card chega a URL com custo e tokens do modelo gravados', async () => {
+test('TUI cria a tarefa, o motor executa com o harness do fita, e o card chega a URL com custo e tokens do modelo gravados', async () => {
   usarArquivoDeIa('ia-principal')
-  const dirDoCassete = novoDirDeCassete('principal')
+  const dirDoFita = novoDirDeFita('principal')
   let chamadasDeImplement = 0
-  const claude = instalarHarnessDoCassete('claude', (req) => {
+  const claude = instalarHarnessDoFita('claude', (req) => {
     if (req.mode === 'readonly') return agentResultDe('{"questions":[]}', 0, 0, 0)
     chamadasDeImplement++
     return agentResultDe('rodape ganhou o contador de itens', 0.1234, 100, 50)
-  }, dirDoCassete)
+  }, dirDoFita)
   try {
     const io = dispatchIOFalso({ daemonOnline: () => true })
     let estado: SessionState = newSession(REPO_NOME)
@@ -59,7 +59,7 @@ test('TUI cria a tarefa, o motor executa com o harness do cassete, e o card cheg
     expect(card?.fm.cost_usd).toBe('0.1234')
     expect(card?.fm.tokens_total).toBe('150')
 
-    const gravado = lerCassete(claude.caminhoDoCassete)
+    const gravado = lerFita(claude.caminhoDoFita)
     expect(gravado.entradas.length).toBeGreaterThan(0)
   } finally {
     claude.restaurar()
@@ -68,15 +68,15 @@ test('TUI cria a tarefa, o motor executa com o harness do cassete, e o card cheg
 
 test('CLARIFY: a pergunta do modelo aparece para a TUI mostrar, e a resposta humana destrava a execucao ate o fim', async () => {
   usarArquivoDeIa('ia-clarify')
-  const dirDoCassete = novoDirDeCassete('clarify')
+  const dirDoFita = novoDirDeFita('clarify')
   let chamadasDeImplement = 0
-  const claude = instalarHarnessDoCassete('claude', (req) => {
+  const claude = instalarHarnessDoFita('claude', (req) => {
     if (req.mode === 'readonly') {
       return agentResultDe('{"questions":[{"q":"Qual cor usar no botao novo?","options":["azul","verde"],"recommended":"azul"}]}', 0.02, 5, 5)
     }
     chamadasDeImplement++
     return agentResultDe('botao adicionado na cor escolhida', 0.05, 20, 15)
-  }, dirDoCassete)
+  }, dirDoFita)
   try {
     const io = dispatchIOFalso({ daemonOnline: () => true })
     let estado: SessionState = newSession(REPO_NOME)
@@ -119,10 +119,10 @@ test('CLARIFY: a pergunta do modelo aparece para a TUI mostrar, e a resposta hum
 
 test('GATE: o crivo reprova, passo-com-gate repete o passo, e o prompt da segunda tentativa contem a reprovacao SEM substituir a instrucao original', async () => {
   usarArquivoDeIa('ia-gate')
-  const dirDoCassete = novoDirDeCassete('gate')
+  const dirDoFita = novoDirDeFita('gate')
   let chamadasDeGate = 0
   const promptsDoPasso: string[] = []
-  const claude = instalarHarnessDoCassete('claude', (req) => {
+  const claude = instalarHarnessDoFita('claude', (req) => {
     if (req.mode === 'readonly') {
       chamadasDeGate++
       const texto = chamadasDeGate === 1
@@ -132,7 +132,7 @@ test('GATE: o crivo reprova, passo-com-gate repete o passo, e o prompt da segund
     }
     promptsDoPasso.push(req.prompt)
     return agentResultDe('passo aplicado', 0.03, 8, 8)
-  }, dirDoCassete)
+  }, dirDoFita)
   try {
     const wt = join(BASE, 'wt-gate')
     const id = createCard({
@@ -183,19 +183,19 @@ test('GATE: o crivo reprova, passo-com-gate repete o passo, e o prompt da segund
 
 test('a troca de IA pela TUI (/ia) reflete no harness que o motor de fato chama, nos dois sentidos', async () => {
   usarArquivoDeIa('ia-switch')
-  const dirDoCassete = novoDirDeCassete('ia-switch')
+  const dirDoFita = novoDirDeFita('ia-switch')
   let chamadasClaude = 0
   let chamadasCodex = 0
-  const claude = instalarHarnessDoCassete('claude', (req) => {
+  const claude = instalarHarnessDoFita('claude', (req) => {
     if (req.mode === 'readonly') return agentResultDe('{"questions":[]}', 0, 0, 0)
     chamadasClaude++
     return agentResultDe('claude implementou', 0.10, 10, 10)
-  }, dirDoCassete)
-  const codex = instalarHarnessDoCassete('codex', (req) => {
+  }, dirDoFita)
+  const codex = instalarHarnessDoFita('codex', (req) => {
     if (req.mode === 'readonly') return agentResultDe('{"questions":[]}', 0, 0, 0)
     chamadasCodex++
     return agentResultDe('codex implementou', 0.20, 20, 20)
-  }, dirDoCassete)
+  }, dirDoFita)
   try {
     const io = dispatchIOFalso({ daemonOnline: () => true })
     let estado: SessionState = newSession(REPO_NOME)
