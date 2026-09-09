@@ -187,8 +187,8 @@ test('quota com fallback ligado mas SEM candidato apto continua HALTED — a rot
   delete process.env.HICODE_QUOTA_FALLBACK
 })
 
-test('quota com fallback DESLIGADO nem consulta a rota — trocar de provedor e decisao do operador', () => {
-  delete process.env.HICODE_QUOTA_FALLBACK
+test('quota com fallback DESLIGADO (off explicito — o padrao e on desde 09/09) nem consulta a rota', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'off'
   const id = card()
   let consultada = false
 
@@ -197,6 +197,7 @@ test('quota com fallback DESLIGADO nem consulta a rota — trocar de provedor e 
   expect(outcome).toBe('halt')
   expect(consultada, 'com o interruptor desligado a rota nao pode nem ser perguntada').toBe(false)
   expect(readCard(id)?.fm.status).toBe('HALTED')
+  delete process.env.HICODE_QUOTA_FALLBACK
 })
 
 test('quota SEM papel informado continua HALTED — so papel com leitor de override pode ser roteado', () => {
@@ -246,5 +247,16 @@ test('HALT por quota limpa os TRES overrides — a cota de quem falhou ontem pod
   expect(c?.fm.provider_override_implement).toBe('')
   expect(c?.fm.provider_override_step).toBe('')
   expect(c?.fm.provider_override_gate).toBe('')
+  delete process.env.HICODE_QUOTA_FALLBACK
+})
+
+test('papel verify grava provider_override_verify — a serie implement/step/gate/verify fecha', () => {
+  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  const id = card()
+
+  const outcome = quotaEm(id, 'claude', { papel: 'verify', rota: rotaQueTroca('codex') })
+
+  expect(outcome).toBe('waiting')
+  expect(readCard(id)?.fm.provider_override_verify).toBe('codex')
   delete process.env.HICODE_QUOTA_FALLBACK
 })

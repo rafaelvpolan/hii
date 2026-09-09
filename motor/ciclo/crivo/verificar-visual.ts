@@ -8,12 +8,14 @@ import { extractObjetivo } from '../../cordel/index.ts'
 import type { Card, VerifyResult } from '../../cordel/index.ts'
 import { ROOT } from '../../cordel/alicerce/config.ts'
 import { modelFor, providerFor, effortFor } from '../../tomada/registro.ts'
+import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 
 export async function verifyVisual(card: Card, shotPath: string): Promise<VerifyResult> {
   if (!existsSync(shotPath)) return { ok: false, conclusive: false, reason: 'sem screenshot — url nao renderizou (inconclusivo)', cost: 0, tokens: 0 }
-  const provider = providerFor('verify')
+  const overrideDoVerify = card.fm[campoDeOverrideDoPapel('verify')] || undefined
+  const provider = providerFor('verify', overrideDoVerify)
   if (!provider.supportsVision) return { ok: false, conclusive: false, reason: `provider ${provider.name} nao le imagem — verify visual inconclusivo`, cost: 0, tokens: 0 }
   const desc = extractObjetivo(card.body) || card.fm.title
   const prompt = [
@@ -28,7 +30,7 @@ export async function verifyVisual(card: Card, shotPath: string): Promise<Verify
     dirs: [dirname(shotPath)],
     mode: 'readonly',
     useAgents: false,
-    model: modelFor('verify'),
+    model: modelFor('verify', overrideDoVerify),
     effort: effortFor('verify', card.fm.effort),
     expectsJson: true,
     timeoutMs: 120000,

@@ -31,7 +31,7 @@ export interface FailurePolicyInput {
   extraFields?: Fields
 }
 
-const PAPEIS_COM_OVERRIDE_DE_PROVEDOR: readonly AgentRole[] = ['implement', 'step', 'gate']
+const PAPEIS_COM_OVERRIDE_DE_PROVEDOR: readonly AgentRole[] = ['implement', 'step', 'gate', 'verify']
 
 const BACKOFF_STEPS_MS = [30_000, 60_000, 120_000, 300_000, 600_000]
 
@@ -66,6 +66,7 @@ function haltFields(input: FailurePolicyInput): Fields {
     provider_override_implement: '',
     provider_override_step: '',
     provider_override_gate: '',
+    provider_override_verify: '',
     ...input.extraFields,
   }
 }

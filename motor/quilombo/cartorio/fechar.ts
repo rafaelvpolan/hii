@@ -472,6 +472,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     pipeline_passo: '',
     provider_override_step: '',
     provider_override_gate: '',
+    provider_override_verify: '',
     rota_tentados: '',
     ...totalsFields,
   }, `${isoNow()} ${statusAtual}->PR_OPEN ${url} (merge e do humano)`)

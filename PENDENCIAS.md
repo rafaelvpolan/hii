@@ -62,6 +62,8 @@ harness — os quatro hoje chamam `alcancavelPorHttp` (`claude.ts:70`, `codex.ts
 `ollama.ts:74`, `kimi.ts:145`). Não é óbvia o bastante para sair sem sua palavra: pode
 transformar provedor lento em provedor "morto".
 
+R: Pode fazer
+
 ## PENDÊNCIA — o card trava porque há estado sem consumidor, e o laço não sabe que não progride
 
 A máquina de estados tem 15 estados; apenas 5 têm consumidor automático dentro do tick
@@ -174,22 +176,19 @@ percorre claude→codex→kimi→HALTED) e o ramo de quota de `applyFailurePolic
 `wait_provider` apontando o provedor NOVO, em vez de HALTED). `rota_tentados` é limpo
 pelo sucesso do implement e por `haltFields`.
 
-**Precisa de você (operação, não código):**
-
-- **Ligar `HICODE_QUOTA_FALLBACK=on`.** O roteador só age com o interruptor ligado —
-  troca automática de provedor é decisão do operador, e o default continua parar.
-- **(Opcional) declarar a ordem de candidatos por papel** em `config/ia.json`
-  (`providers: ["claude", "codex", "kimi"]` dentro do papel). Sem isso a ordem é a do
-  registro, com a env `HICODE_<PAPEL>_QUOTA_FALLBACK_PROVIDER` na frente quando definida.
+**Ligado em 09/09 (R: Pode fazer):** `HICODE_QUOTA_FALLBACK` passou a `on` por omissão —
+com o roteador conferindo aptidão, trocar deixou de ser salto no escuro. `off` devolve o
+comportamento antigo. Continua opcional declarar a ordem de candidatos por papel em
+`config/ia.json` (`providers: [...]`); sem isso vale a ordem do registro, com a env
+`HICODE_<PAPEL>_QUOTA_FALLBACK_PROVIDER` na frente quando definida.
 
 **Estendido em 08/09 para `step` e `gate`:** `runStep` e o crivo leem
 `provider_override_step`/`provider_override_gate`, a falha carrega o `papel` de quem
 falhou (agente × crivo, distinguido em `passo-com-gate.ts` — rotear o outro não
 ajudaria), o modelo segue o provedor trocado, e o fecho concluído (`PR_OPEN`) e o
-`haltFields` limpam os três overrides. **Falta só `verify`** (avaliar/clarificar/
-verificar-visual, três sítios que chamam `providerFor('verify')` sem override) — mesma
-costura, e a constante `PAPEIS_COM_OVERRIDE_DE_PROVEDOR` em `politica.ts` continua sendo
-o ponto de expansão.
+`haltFields` limpam os três overrides. **`verify` fechou em 09/09** — os três sítios
+(avaliar/clarificar/verificar-visual) leem `provider_override_verify`, e a série
+implement/step/gate/verify está completa em `PAPEIS_COM_OVERRIDE_DE_PROVEDOR`.
 
 **Uma mudança de contrato que a suíte pegou e ficou registrada:** o fallback explícito da
 env deixou de vencer incondicionalmente — se o provedor da env não está apto (não
@@ -258,6 +257,8 @@ custa US$ 0,00 em dólar e tempo de GPU em vez de token. As 27 chamadas medidas 
 **todas** em `claude`. Escrever o mapa `tier → (provedor, modelo, esforço)` no arquivo
 de governança é o que falta; ligar `providerFor`/`modelFor`/`effortFor` ao tier já
 computado é trabalho pequeno depois disso.
+
+R: Pode fazer.
 
 ---
 
@@ -407,6 +408,9 @@ a 230 s cada. Trocar o custo de um `spawn` ali é ruído contra isso, e o preço
 perder a neutralidade que hoje permite escolher o runtime por superfície — que é
 justamente o que esta seção usa.
 
+
+R: deixar tudo bun, menos execuções proprias de outros projetos.
+
 ---
 
 ## PENDÊNCIA — o revezamento de IAs não tem onde acontecer, e a troca que já existe é invisível
@@ -453,6 +457,8 @@ Some-se ainda que o escritor da escolha de provedor está do lado errado da cost
 parâmetro — lê do frontmatter em `:190`. O daemon não troca de IA no meio de um card porque a
 capacidade de escolher nunca esteve no motor.
 
+
+
 **O que fazer, em ordem, e onde mexer.**
 
 1. Fazer a sessão cobrir o card, e não a execução. `abrirSessao` (`euclides/ias-da-sessao.ts:41`) passa a
@@ -474,6 +480,8 @@ nativos de cada IA: `motor/tomada/mapa/comandos.ts` já enumera manifestos `.md`
 tem namespace — o dedup em `:113` é um `Set` dentro da lista de um provedor só. `ollama` não tem
 entrada em `FONTES`, e não está decidido se é lacuna ou escolha. O precedente de namespace já existe
 no repositório: `MCP_PREFIX` em `motor/tomada/ponte/mcp.ts:6`.
+
+R: pode executar
 
 ---
 
@@ -571,6 +579,8 @@ teto de gasto era inutilizável com `codex` e `kimi`, que declaram
   A costura de percurso que o repo de fato usa é `ExecuteDeps`
   (`test/oswaldo/executar-custo.test.ts:51-54`) — é por ali que um teste ponta a ponta
   entra hoje, não envolvendo o harness.
+
+  R: corrija, e mude esse nome "cassete" para outro nome
 
 ---
 
@@ -732,3 +742,5 @@ medição por cliente (há por card, em `AgentResult` e no ledger de
 medida, o cliente nunca recebe fonte e o servidor é a fronteira natural. Enquanto o
 produto for o motor local, o caminho barato é compilar — o Bun gera executável único —
 e não subir servidor nenhum.
+
+R: MANTER: primeiro fazer funcionar, depois pôr preço
