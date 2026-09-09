@@ -52,7 +52,7 @@ test('INVARIANTE todo import relativo carrega a extensao — sem ela o node nao 
 
 test('INVARIANTE o CLI carrega sob node puro — o grep de texto acima nao prova execucao', () => {
   const r = spawnSync('node', ['bin/hii.ts', '--help'], { encoding: 'utf8', timeout: 60_000 })
-  expect(r.error, 'node precisa estar no PATH: e o runtime que a imagem de producao usa (node:24-slim)').toBeUndefined()
+  expect(r.error, 'node precisa estar no PATH: e o runtime dos repos-alvo e a prova de que o grafo resolve fora do bun').toBeUndefined()
   const saida = `${r.stdout ?? ''}${r.stderr ?? ''}`
   expect(saida).not.toContain('ERR_MODULE_NOT_FOUND')
   expect(r.status, `node bin/hii.ts --help falhou:\n${saida.slice(0, 2000)}`).toBe(0)

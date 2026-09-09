@@ -169,7 +169,7 @@ test('start com a trava livre so declara sucesso depois que o motor sobreviveu a
   expect(existsSync(pidfile)).toBe(false)
 }, 60000)
 
-test('REGRESSAO: o daemon sobe SEM bun no PATH — e a condicao da imagem de producao (node:24-slim com COM_BUN=0)', () => {
+test('REGRESSAO: o daemon sobe SEM bun no PATH — maquina so-node continua suportada mesmo com a imagem padrao em bun', () => {
   const nome = 'sem-bun-no-path'
   const pidfile = join(BASE, `${nome}.pid`)
   const semBun = { PATH: pathSemBun() }

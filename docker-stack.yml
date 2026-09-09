@@ -21,7 +21,7 @@ services:
   hii:
     image: ${HII_IMAGEM:?defina HII_IMAGEM com a imagem publicada}
     environment:
-      HICODE_RUNTIME: ${HICODE_RUNTIME:-node}
+      HICODE_RUNTIME: ${HICODE_RUNTIME:-bun}
       # Onda 5, itens 5/22/4: LIGADO. As tres exigencias que so BARRAM com este
       # interruptor sao RED antes do GREEN no perfil completo (`red_antes_do_green`),
       # comando de teste no contrato quando a area e nova (`setup_ferramental`) e

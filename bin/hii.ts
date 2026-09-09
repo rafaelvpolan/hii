@@ -1,10 +1,10 @@
-#!/usr/bin/env node
-// Shebang em `node`, nao em `bun`, e o mesmo motivo da Onda 11: a imagem de
-// producao e node:24-slim (Dockerfile: ENTRYPOINT ["node", "bin/hii.ts"]), e o
-// node 24 roda este arquivo por type stripping nativo. Um shebang `bun` fazia o
-// bin instalado exigir um binario que a imagem nao tem — a mesma promessa de
-// "roda em qualquer lugar" que motor/cordel/alicerce/runtime.ts existe para cumprir.
-// Quem prefere bun continua rodando `bun bin/hii.ts` (o shebang nao atrapalha).
+#!/usr/bin/env bun
+// Shebang em `bun` desde o R: de 09/09 ("deixar tudo bun, menos execucoes
+// proprias de outros projetos"): a imagem de producao instala o bun pinado pelo
+// .bun-version e roda ENTRYPOINT ["bun", "bin/hii.ts"] — o runtime do
+// desenvolvimento e o de producao viraram o mesmo. O node continua na imagem
+// para os REPOS-ALVO (contrato deles decide), e `node bin/hii.ts` continua
+// funcionando por type stripping — e o que o CI prova a cada push.
 import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
