@@ -560,8 +560,11 @@ bun run test        # typecheck + no-any + clone-limpo + suíte (bun)
 bun run test:node   # a MESMA suíte sob node --test
 ```
 
-Os dois são obrigatórios no CI. O node é o runtime da imagem de produção
-(`node:24-slim`), e a suíte rodando só sob bun já deixou passar uma imagem que
+Os dois são obrigatórios no CI. O MOTOR roda sob **bun** em toda parte desde o R:
+de 09/09 (a imagem instala o bun pinado pelo `.bun-version` e o `ENTRYPOINT` é
+`bun bin/hii.ts`); o node continua na imagem para as execuções dos repos-alvo, e a
+trilha node do CI é a prova de portabilidade do grafo — a suíte rodando só sob bun
+já deixou passar uma imagem que
 morria no arranque.
 
 ---

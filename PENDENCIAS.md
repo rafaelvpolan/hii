@@ -398,7 +398,16 @@ perder a neutralidade que hoje permite escolher o runtime por superfície — qu
 justamente o que esta seção usa.
 
 
-R: deixar tudo bun, menos execuções proprias de outros projetos.
+**R: aplicado em 09/09.** O motor roda sob **bun em toda parte**: a imagem instala o bun
+pinado pelo `.bun-version` (via npm -g, sobre a mesma base `node:24-slim`), o
+`ENTRYPOINT` é `bun bin/hii.ts`, `HICODE_RUNTIME=bun` no Dockerfile e no stack, e o
+shebang de `bin/hii.ts` voltou a `bun`. O node **fica na imagem de propósito** — é o
+"menos execuções próprias de outros projetos": repo-alvo com contrato node/npm/pnpm roda
+com o runtime dele, e a trilha node do CI continua como prova de portabilidade do grafo.
+De quebra, a incoerência antiga fechou: `bun install --frozen-lockfile --production` usa
+o `bun.lock` que a imagem copia (o npm o ignorava). Verificado construindo E rodando a
+imagem: `--help` pelo ENTRYPOINT, `runner-daemon.sh status` resolvendo `bun`, e as
+versões conferidas dentro do container (bun 1.4.0, node 24).
 
 ---
 

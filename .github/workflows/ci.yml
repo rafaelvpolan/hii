@@ -20,8 +20,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
-      # O node NAO e detalhe do ambiente de teste: e o runtime da imagem de
-      # producao (node:24-slim no Dockerfile). O CI so tinha bun, e foi por isso
+      # O node NAO e detalhe do ambiente de teste: e o runtime dos REPOS-ALVO e a
+      # prova de portabilidade do grafo — a imagem roda o MOTOR sob bun desde o R:
+      # de 09/09, com node presente para os alvos. O CI so tinha bun, e foi por isso
       # que a Onda 11 mergeou verde com uma imagem que morria no arranque —
       # o bun resolve import relativo sem extensao e o node nao.
       # Pinado na MESMA major do Dockerfile de proposito: divergir aqui traria

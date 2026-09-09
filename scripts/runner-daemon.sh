@@ -32,7 +32,8 @@ ARRANQUE_INTERVALO=0.05
 # Mesma politica de motor/cordel/alicerce/runtime.ts, e pelo mesmo motivo: HICODE_RUNTIME manda;
 # sem ele, bun se estiver no PATH, senao node. Este script prendia `bun` em tres pontos
 # (a cmdline aceita, o pgrep e o nohup do start) enquanto a imagem de producao e
-# node:24-slim com COM_BUN=0 por padrao — ou seja, no container o daemon nao subia.
+# node:24-slim sem bun (na epoca) — ou seja, no container o daemon nao subia. Hoje a
+# imagem instala o bun pinado e HICODE_RUNTIME=bun; o node fica para os repos-alvo.
 # Runtime desconhecido PARA o script em vez de cair no padrao: escolher outro binario em
 # silencio seria rodar algo que o operador nao pediu.
 runtime_do_daemon() {

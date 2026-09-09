@@ -21,18 +21,25 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends gh \
  && rm -rf /var/lib/apt/lists/*
 
-# pnpm e npm vem pelo corepack. bun entra opcional: com --build-arg COM_BUN=1 a
-# imagem ganha os dois runtimes, e HICODE_RUNTIME escolhe qual executa.
+# R: de 09/09 — "deixar tudo bun, menos execucoes proprias de outros projetos".
+# O MOTOR roda sob bun (arranque ~5x mais rapido, e o runtime do desenvolvimento
+# vira o de producao — a mesma coisa nos dois lugares). O node fica na imagem
+# porque os REPOS-ALVO sao de quem os escreveu: contrato detectado com node/npm/
+# pnpm roda com node/npm/pnpm, e o corepack serve os dois gerentes.
+# O bun e pinado pelo MESMO .bun-version que o CI usa — versao divergente entre
+# CI e producao foi exatamente o furo que o pin existiu para fechar.
 RUN corepack enable
-ARG COM_BUN=0
-RUN if [ "$COM_BUN" = "1" ]; then npm install -g bun; fi
+COPY .bun-version ./
+RUN npm install -g "bun@$(cat .bun-version)"
 
 WORKDIR /app
 COPY package.json bun.lock ./
 # O package.json nao tem dependencia de runtime alguma — so devDependencies, e
 # nenhuma delas e necessaria para executar um card. node_modules ficar vazio aqui
-# e o desenho, nao esquecimento.
-RUN npm install --omit=dev --no-audit --no-fund
+# e o desenho, nao esquecimento. `bun install` porque o lockfile e bun.lock:
+# copiar o lock e instalar com npm (que o ignora) era a incoerencia registrada
+# em PENDENCIAS desde 29/08.
+RUN bun install --frozen-lockfile --production
 # A inspecao visual da URL (scripts/inspect-preview.mjs) e OPCIONAL na imagem:
 # playwright e devDependency e, sem este estagio, o veredito em producao era
 # SEMPRE "inconclusivo" por construcao (3/3 cards no runner.log) — o humano
@@ -45,7 +52,7 @@ COPY . .
 
 # 12-factor: TODA configuracao vem do ambiente. O estado vive em volume externo
 # ao container — perder o container nao pode perder card nem diario.
-ENV HICODE_RUNTIME=node \
+ENV HICODE_RUNTIME=bun \
     HICODE_CARDS_DIR=/estado/cards \
     HICODE_REPOS_FILE=/estado/repos.json \
     HICODE_RUNNER_PIDFILE=/estado/runner.pid \
@@ -61,7 +68,7 @@ EXPOSE 8080
 # credencial, ou instale num estagio derivado desta imagem.
 # `hii doctor` diz exatamente o que falta antes de qualquer card rodar.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD bun -e "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-ENTRYPOINT ["node", "bin/hii.ts"]
+ENTRYPOINT ["bun", "bin/hii.ts"]
 CMD ["run"]
