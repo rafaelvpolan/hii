@@ -65,11 +65,11 @@ async function commit(wt: string, message: string): Promise<void> {
   await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', message])
 }
 
-function attemptHistory(id: string): string {
+export function attemptHistory(id: string): string {
   const prior = readAttempts(id)
   if (!prior.length) return ''
-  const lines = prior.map(a => `- [${a.kind}] pedido: ${a.reason} | resultado: ${a.response.replace(/\s+/g, ' ').slice(0, 200)}`).join('\n')
-  return `Historico de tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta):\n${lines}\n\n`
+  const lines = prior.map(a => `- [${a.kind}${a.provedor ? ` por ${a.provedor}` : ''}] pedido: ${a.reason} | resultado: ${a.response.replace(/\s+/g, ' ').slice(0, 200)}`).join('\n')
+  return `Historico de tentativas anteriores neste card (NAO repita os mesmos erros; leve o feedback em conta — cada tentativa diz qual IA a escreveu, e voce pode ser OUTRA):\n${lines}\n\n`
 }
 
 async function redoUrl(card: NonNullable<ReturnType<typeof readCard>>, wt: string, instruction: string, implementar: typeof implement): Promise<StepOutcome> {
@@ -109,7 +109,7 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const redo = !file
   process.stdout.write(`[runner] #${id}: ${redo ? 'refazendo url (rejeitado)' : 'aplicando correção'} em ${wt}\n`)
   const r = redo ? await redoUrl(card, wt, instruction, deps.implement) : await scopedFix(wt, instruction, file, line, lineText, id, repoPath(card.fm.repo ?? ''), deps.runStep)
-  appendAttempt(id, redo ? 'reprovacao' : 'correcao', instruction, r.fullText)
+  appendAttempt(id, redo ? 'reprovacao' : 'correcao', instruction, r.fullText, r.provider ?? '')
   if (!r.ok) {
     const outcome = applyFailurePolicy({
       id,

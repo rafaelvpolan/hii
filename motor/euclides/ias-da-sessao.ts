@@ -41,6 +41,11 @@ export function arquivoDoLedger(sessao: string): string {
 const abertas = new Map<string, string>()
 
 export function abrirSessao(card: string, agoraMs = Date.now()): string {
+  const existente = abertas.get(card) || sessaoRetomadaDoDiscoAposReinicio(card)
+  if (existente) {
+    abertas.set(card, existente)
+    return existente
+  }
   const sessao = idDaSessao(card, agoraMs)
   abertas.set(card, sessao)
   return sessao

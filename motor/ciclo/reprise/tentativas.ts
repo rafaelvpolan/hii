@@ -13,6 +13,7 @@ export interface Attempt {
   kind: AttemptKind
   reason: string
   response: string
+  provedor?: string
 }
 
 export interface FailureAttempt {
@@ -49,10 +50,10 @@ export function readAttempts(id: string): Attempt[] {
   }
 }
 
-export function appendAttempt(id: string, kind: AttemptKind, reason: string, response: string): void {
+export function appendAttempt(id: string, kind: AttemptKind, reason: string, response: string, provedor = ''): void {
   ensureRunsDir()
   const list = readAttempts(id)
-  list.push({ ts: isoNow(), kind, reason: String(reason || '').slice(0, 2000), response: String(response || '').slice(0, 8000) })
+  list.push({ ts: isoNow(), kind, reason: String(reason || '').slice(0, 2000), response: String(response || '').slice(0, 8000), ...(provedor ? { provedor } : {}) })
   writeFileSync(attemptsFile(id), JSON.stringify(list, null, 2))
 }
 
