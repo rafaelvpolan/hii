@@ -23,6 +23,7 @@ import { larguraUtil, reposRegistrados, todosOsCards } from '../motor/mirante/cl
 import { branchAtual } from '../motor/mirante/cli/branch.ts'
 import { definirModo, modoAtual, selecionado, selecionar } from '../motor/mirante/cli/estado.ts'
 import { cabecalhoDaTarefa, planoDe } from '../motor/mirante/cli/tela-tarefa.ts'
+import { confirmacaoDeRemocao } from '../motor/mirante/cli/confirmacao-de-remocao.ts'
 import { dicaDaNavegacao, pintarComando, rodapeDa } from '../motor/mirante/cli/rodape-tui.ts'
 import { alvoDeEntrada, avisoRepos, completer, corpoDaTela, navegarNaTela } from '../motor/mirante/cli/board-tui.ts'
 import { ensureDaemon, fleet } from '../motor/mirante/cli/comandos.ts'
@@ -99,6 +100,7 @@ async function tui(state0: SessionState): Promise<void> {
     telaPropria: () => state.tela === 'config',
     sairDaTela: () => { state = { ...state, tela: '' } },
     acima: () => {
+      if (state.removendo) return confirmacaoDeRemocao(state.removendo, { color, width: larguraUtil() })
       if (state.comentando) return renderAprovacao(state.comentando, { color, comentando: true, width: larguraUtil() })
       if (state.perguntando) {
         const p = pendencia(state.perguntando)
