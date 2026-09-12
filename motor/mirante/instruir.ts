@@ -1,6 +1,6 @@
 import { extractObjetivo } from '../cordel/index.ts'
 import { readCard, updateCardPorAcaoHumana } from '../cordel/store.ts'
-import { isoNow } from '../cordel/util.ts'
+import { isoNow, semControle } from '../cordel/util.ts'
 import { existsSync } from 'node:fs'
 import type { Fields } from '../cordel/tipos.ts'
 
@@ -36,7 +36,7 @@ export function subPrompts(body: string): string[] {
 }
 
 export function umaLinha(texto: string): string {
-  return texto.replace(/\s*\n+\s*/g, ' ⏎ ').replace(/[ \t]+/g, ' ').trim()
+  return semControle(texto).replace(/\s*\n+\s*/g, ' ⏎ ').replace(/[ \t]+/g, ' ').trim()
 }
 
 export function anexarSubPrompt(body: string, texto: string): string {
