@@ -168,6 +168,9 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       if (!line.trim()) return
       try {
         const ev = JSON.parse(line) as StreamEvent
+        // O CLI pode emitir `result` mais de uma vez na mesma chamada (visto no card
+        // 007: duas linhas de conclusao identicas). So a primeira fecha o bloco.
+        if (ev.type === 'result' && gotResult) return
         const human = renderEvent(ev, ferramentasEmVoo)
         if (human) write(semControle(human) + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {

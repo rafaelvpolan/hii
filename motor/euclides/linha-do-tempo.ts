@@ -80,6 +80,7 @@ export function blocosDeChamada(atividades: readonly AtividadeDaIa[]): ChamadaNa
       abrir(a, raia)
       continue
     }
+    if (a.tipo === 'fim' && !abertoPorRaia.has(raia)) continue
     const b = abertoPorRaia.get(raia) ?? abrir({ ...a, args: '', alvo: '' }, raia)
     if (a.tipo === 'fim') {
       b.concluida = true
