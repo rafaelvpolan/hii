@@ -657,111 +657,111 @@ regenerar este apêndice reprova a suite. O raio-x encontrou 68 de 97 envs fora
 do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 
 <!-- hicode:envs:inicio -->
-| Variável | Lida em |
-|---|---|
-| `HICODE_AGENTS_DIR` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_AI_PROVIDER` | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
-| `HICODE_AUDIT_LOTE_CHARS` | `motor/agentes/assis/tipos.ts` |
-| `HICODE_BUDGET_USD` | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
-| `HICODE_CARD_BUDGET_USD` | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
-| `HICODE_CARD_COOLDOWN_MS` | `motor/oswaldo/mutirao/estado-da-fila.ts` |
-| `HICODE_CARDS_DIR` | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
-| `HICODE_CLARIFY` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_CLAUDE_CONFIG` | `motor/euclides/tesouro/planos.ts` |
-| `HICODE_CLAUDE_HOME_DIR` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_CLAUDE_MODEL` | `motor/tomada/harness/claude.ts` |
-| `HICODE_CODEX_MODEL` | `motor/tomada/harness/codex.ts` |
-| `HICODE_COLOR_DEPTH` | `motor/mirante/tui/paleta.ts` |
-| `HICODE_CONCURRENCY` | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
-| `HICODE_CONFLICT_RETRIES` | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
-| `HICODE_COTA_TTL_MS` | `motor/euclides/tesouro/cota-runs.ts` |
-| `HICODE_CPU_POR_WORKTREE` | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
-| `HICODE_CPUS_TOTAL` | `motor/quilombo/limites.ts` |
-| `HICODE_CRITERIOS_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_DISCO_ALERTA_MB` | `motor/euclides/estado-em-disco.ts` |
-| `HICODE_DISCO_TETO_MB` | `motor/euclides/estado-em-disco.ts`, `motor/mirante/render/disco.ts` |
-| `HICODE_EFFORT` | `motor/tomada/preferencias.ts` |
-| `HICODE_ENQUADRAMENTOS_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_ESPERA_PISO_TAXA_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_ESPERA_PISO_TIMEOUT_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_EVAL` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_EVAL_MIN` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_DIFF_LIMIT` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_MODEL` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_PROVIDER` | `motor/tomada/registro.ts` |
-| `HICODE_GATE_RETRIES` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MAX_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MIN_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MS_PER_KB` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GH_REPO` | `motor/tomada/ponte/tarefas/github-issues.ts` |
-| `HICODE_HEALTH_BIND` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_HEALTH_HOST` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_HEALTH_PORT` | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
-| `HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS` | `motor/tomada/sonda.ts` |
-| `HICODE_HEALTH_PROBE_TIMEOUT_MS` | `motor/tomada/sonda.ts` |
-| `HICODE_HYPERLINKS` | `motor/mirante/tui/layout.ts` |
-| `HICODE_IA_FILE` | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
-| `HICODE_IDEATE_FRAMES` | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IDEATE_IDEAS` | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IDEATE_TOPK` | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IMPLEMENT_PROVIDER` | `motor/tomada/registro.ts` |
-| `HICODE_JANELAS_` | `motor/euclides/tesouro/janelas.ts` |
-| `HICODE_KIMI_CONFIG` | `motor/euclides/tesouro/planos.ts` |
-| `HICODE_KIMI_HOME_DIR` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_KIMI_MODEL` | `motor/tomada/harness/kimi.ts` |
-| `HICODE_KIMI_URL` | `motor/tomada/harness/kimi.ts` |
-| `HICODE_LIVELOG_KEEP_BYTES` | `motor/tomada/harness/claude-stream.ts` |
-| `HICODE_LIVELOG_MAX_BYTES` | `motor/tomada/harness/claude-stream.ts` |
-| `HICODE_LOCK_STALE_MS` | `motor/oswaldo/mutirao/trava-arquivo.ts` |
-| `HICODE_LOCK_TIMEOUT_MS` | `motor/oswaldo/mutirao/trava-arquivo.ts` |
-| `HICODE_MAX_CARDS` | `motor/cordel/arquivar.ts` |
-| `HICODE_MCN_IDEIAS` | `motor/ciclo/macunaima/divergir.ts` |
-| `HICODE_MCN_RAMOS` | `motor/ciclo/macunaima/divergir.ts` |
-| `HICODE_MEM_POR_WORKTREE_MB` | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
-| `HICODE_MEM_TOTAL_MB` | `motor/quilombo/limites.ts` |
-| `HICODE_MERGE_POLL_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_MODELOS_FILE` | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
-| `HICODE_OLLAMA_MODEL` | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
-| `HICODE_OLLAMA_URL` | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
-| `HICODE_PASTE_INLINE_MAX` | `motor/mirante/tui/input.ts` |
-| `HICODE_PIPELINE` | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
-| `HICODE_POLL_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_PREVIEW_BASE` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_PROJECT_MEMORY` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_QUOTA_FALLBACK` | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
-| `HICODE_REAJUSTE_RETRIES` | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
-| `HICODE_REGISTROS_TTL_MS` | `motor/euclides/podar.ts` |
-| `HICODE_REGRAS_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_REPOS_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_RIGOR_ESTRITO` | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
-| `HICODE_ROOT` | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs` |
-| `HICODE_RUN_TIMEOUT_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_RUNNER_LOCK` | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNNER_LOG` | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNNER_PIDFILE` | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNTIME` | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_SECRETS_DIR` | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
-| `HICODE_SHUTDOWN_TIMEOUT_MS` | `motor/oswaldo/mutirao/encerramento.ts` |
-| `HICODE_SKILLS_DIR` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_STEP_PROVIDER` | `motor/tomada/registro.ts` |
-| `HICODE_TASK_SYNC` | `bin/hii.ts`, `motor/euclides/radar/doctor.ts`, `motor/tomada/ponte/tarefas/registro.ts` |
-| `HICODE_TEST_JOBS` | `scripts/test-bun.mjs` |
-| `HICODE_TEST_TIMEOUT_MS` | `scripts/test-bun.mjs` |
-| `HICODE_TICK_ESCALATE_AFTER` | `motor/euclides/radar/tick.ts` |
-| `HICODE_TICKS_SEM_PROGRESSO_MAX` | `motor/euclides/radar/servidor.ts` |
-| `HICODE_TIER_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_TMP_TTL_H` | `motor/euclides/estado-em-disco.ts` |
-| `HICODE_TOPOLOGIA_FILE` | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_URL_AJUSTES` | `motor/ciclo/reprise/url-ajuste.ts` |
-| `HICODE_URL_FREEPORT_SETTLE_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_INSPECT_TIMEOUT_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_PROBE_INTERVAL_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_PROBE_TIMEOUT_MS` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_WAIT_S` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_VERIFY_MODEL` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_VERIFY_PROVIDER` | `motor/tomada/registro.ts` |
-| `HICODE_VISUAL_AI` | `motor/cordel/alicerce/config.ts` |
-| `HICODE_WAITING_MAX_ATTEMPTS` | `motor/cordel/alicerce/config.ts` |
+| Variável | Padrão no código | Contrato motor/painel | Lida em |
+|---|---|---|---|
+| `HICODE_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HICODE_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
+| `HICODE_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
+| `HICODE_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
+| `HICODE_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
+| `HICODE_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
+| `HICODE_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
+| `HICODE_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_CLAUDE_MODEL` | — | — | `motor/tomada/harness/claude.ts` |
+| `HICODE_CODEX_MODEL` | — | — | `motor/tomada/harness/codex.ts` |
+| `HICODE_COLOR_DEPTH` | — | — | `motor/mirante/tui/paleta.ts` |
+| `HICODE_CONCURRENCY` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
+| `HICODE_CONFLICT_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
+| `HICODE_COTA_TTL_MS` | `'2000'` | — | `motor/euclides/tesouro/cota-runs.ts` |
+| `HICODE_CPU_POR_WORKTREE` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
+| `HICODE_CPUS_TOTAL` | — | — | `motor/quilombo/limites.ts` |
+| `HICODE_CRITERIOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_DISCO_ALERTA_MB` | — | — | `motor/euclides/estado-em-disco.ts` |
+| `HICODE_DISCO_TETO_MB` | — | — | `motor/euclides/estado-em-disco.ts`, `motor/mirante/render/disco.ts` |
+| `HICODE_EFFORT` | — | — | `motor/tomada/preferencias.ts` |
+| `HICODE_ENQUADRAMENTOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_ESPERA_PISO_TAXA_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_ESPERA_PISO_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_EVAL` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_EVAL_MIN` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_DIFF_LIMIT` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HICODE_GATE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_TIMEOUT_MAX_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_TIMEOUT_MIN_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GATE_TIMEOUT_MS_PER_KB` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_GH_REPO` | `''` | — | `motor/tomada/ponte/tarefas/github-issues.ts` |
+| `HICODE_HEALTH_BIND` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_HEALTH_HOST` | — | — | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_HEALTH_PORT` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
+| `HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS` | `15000` | — | `motor/tomada/sonda.ts` |
+| `HICODE_HEALTH_PROBE_TIMEOUT_MS` | `5000` | — | `motor/tomada/sonda.ts` |
+| `HICODE_HYPERLINKS` | — | — | `motor/mirante/tui/layout.ts` |
+| `HICODE_IA_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
+| `HICODE_IDEATE_FRAMES` | `4` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HICODE_IDEATE_IDEAS` | `5` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HICODE_IDEATE_TOPK` | `3` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HICODE_IMPLEMENT_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HICODE_JANELAS_` | — | — | `motor/euclides/tesouro/janelas.ts` |
+| `HICODE_KIMI_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
+| `HICODE_KIMI_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_KIMI_MODEL` | — | — | `motor/tomada/harness/kimi.ts` |
+| `HICODE_KIMI_URL` | `'https://api.moonshot.ai'` | — | `motor/tomada/harness/kimi.ts` |
+| `HICODE_LIVELOG_KEEP_BYTES` | `200_000` | — | `motor/tomada/harness/claude-stream.ts` |
+| `HICODE_LIVELOG_MAX_BYTES` | `1_000_000` | — | `motor/tomada/harness/claude-stream.ts` |
+| `HICODE_LOCK_STALE_MS` | `15000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
+| `HICODE_LOCK_TIMEOUT_MS` | `10000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
+| `HICODE_MAX_CARDS` | `10` | — | `motor/cordel/arquivar.ts` |
+| `HICODE_MCN_IDEIAS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
+| `HICODE_MCN_RAMOS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
+| `HICODE_MEM_POR_WORKTREE_MB` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
+| `HICODE_MEM_TOTAL_MB` | — | — | `motor/quilombo/limites.ts` |
+| `HICODE_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
+| `HICODE_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
+| `HICODE_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
+| `HICODE_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
+| `HICODE_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
+| `HICODE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_PREVIEW_BASE` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_PROJECT_MEMORY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_QUOTA_FALLBACK` | `'on'` | — | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
+| `HICODE_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
+| `HICODE_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
+| `HICODE_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
+| `HICODE_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs` |
+| `HICODE_RUN_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HICODE_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HICODE_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HICODE_RUNTIME` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
+| `HICODE_SECRETS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
+| `HICODE_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |
+| `HICODE_SKILLS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_STEP_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HICODE_TASK_SYNC` | `'none'` | — | `bin/hii.ts`, `motor/euclides/radar/doctor.ts`, `motor/tomada/ponte/tarefas/registro.ts` |
+| `HICODE_TEST_JOBS` | `0` | — | `scripts/test-bun.mjs` |
+| `HICODE_TEST_TIMEOUT_MS` | `0` | — | `scripts/test-bun.mjs` |
+| `HICODE_TICK_ESCALATE_AFTER` | `3` | — | `motor/euclides/radar/tick.ts` |
+| `HICODE_TICKS_SEM_PROGRESSO_MAX` | `0` | — | `motor/euclides/radar/servidor.ts` |
+| `HICODE_TIER_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_TMP_TTL_H` | — | — | `motor/euclides/estado-em-disco.ts` |
+| `HICODE_TOPOLOGIA_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HICODE_URL_AJUSTES` | — | — | `motor/ciclo/reprise/url-ajuste.ts` |
+| `HICODE_URL_FREEPORT_SETTLE_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_URL_INSPECT_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_URL_PROBE_INTERVAL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_URL_PROBE_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_URL_WAIT_S` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_VERIFY_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_VERIFY_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HICODE_VISUAL_AI` | `'off'` | — | `motor/cordel/alicerce/config.ts` |
+| `HICODE_WAITING_MAX_ATTEMPTS` | — | — | `motor/cordel/alicerce/config.ts` |
 <!-- hicode:envs:fim -->
 
 ---

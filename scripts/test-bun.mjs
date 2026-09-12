@@ -65,8 +65,9 @@ function rodar(arquivo) {
 }
 
 function contabilizar({ arquivo, status, saida }) {
-  totalPass += Number(saida.match(/^\s*(\d+) pass$/m)?.[1] ?? 0)
-  totalFail += Number(saida.match(/^\s*(\d+) fail$/m)?.[1] ?? 0)
+  const semCor = saida.replace(/\x1b\[[0-9;]*m/g, '')
+  totalPass += Number(semCor.match(/^\s*(\d+) pass$/m)?.[1] ?? 0)
+  totalFail += Number(semCor.match(/^\s*(\d+) fail$/m)?.[1] ?? 0)
   if (status !== 0) {
     reprovados.push(arquivo)
     process.stdout.write(`\nREPROVOU ${arquivo}\n${saida}\n`)

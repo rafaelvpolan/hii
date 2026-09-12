@@ -1,6 +1,8 @@
 import { test, expect } from './apoio/runner.ts'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { execSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 // hicode:allow-any — o script de rename e .mjs; a fronteira e checada aqui.
 import { caminhosNaoAlcancaveis } from '../scripts/renomear-testes-brazil.mjs'
 
@@ -49,18 +51,46 @@ test('INVARIANTE nenhum teste calcula a raiz do repo com um unico ".."', () => {
   expect(profundidade, 'teste em subpasta com raiz de um nivel aponta para test/, nao para o repo').toEqual([])
 })
 
-test('teste de dominio nao desce ao 3o nivel — a trilha node (glob de 2 niveis) o ignoraria em SILENCIO', () => {
-  const fundos: string[] = []
-  for (const d of DOMINIOS) {
-    for (const sub of readdirSync(join('test', d))) {
-      const caminho = join('test', d, sub)
-      if (!statSync(caminho).isDirectory()) continue
-      for (const f of readdirSync(caminho)) {
-        if (f.endsWith('.test.ts')) fundos.push(join(caminho, f))
-      }
-    }
+const TEST_NODE = (JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }).scripts['test:node'] ?? ''
+
+function arquivosEnumeradosPelaTrilhaNode(cwd: string): string[] {
+  const somenteListar = TEST_NODE.replace(/node --test(?: --[a-z-]+=\S+)*/g, "printf '%s\\n'")
+  const saida = execSync(somenteListar, { cwd, encoding: 'utf8', shell: '/bin/sh' })
+  return saida.split('\n').map(l => l.trim()).filter(l => l.endsWith('.test.ts')).sort()
+}
+
+function testesRecursivos(dir: string): string[] {
+  const achados: string[] = []
+  for (const nome of readdirSync(dir)) {
+    const caminho = join(dir, nome)
+    if (statSync(caminho).isDirectory()) achados.push(...testesRecursivos(caminho))
+    else if (nome.endsWith('.test.ts')) achados.push(caminho)
   }
-  expect(fundos, 'package.json test:node so expande test/*.test.ts e test/*/*.test.ts — um teste aqui rodaria no bun e sumiria da trilha node, meia garantia de dual-runtime').toEqual([])
+  return achados.sort()
+}
+
+test('a trilha node enumera teste em QUALQUER profundidade — o glob de 2 niveis engolia o 3o nivel em SILENCIO', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'hicode-trilha-node-'))
+  try {
+    const fundos = ['test/dom/sub/fundo.test.ts', 'test/dom/sub/mais/fundo2.test.ts']
+    const arvore = ['test/raiz.test.ts', 'test/dom/raso.test.ts', ...fundos, 'test/apoio/expect-diferencial.test.ts', 'test/mirante/tempo-de-pintura.test.ts', 'test/mirante/tui-sob-carga.test.ts']
+    for (const rel of arvore) {
+      mkdirSync(join(raiz, dirname(rel)), { recursive: true })
+      writeFileSync(join(raiz, rel), '')
+    }
+    const enumerados = arquivosEnumeradosPelaTrilhaNode(raiz)
+    for (const f of fundos) expect(enumerados, `${f} ficou FORA da trilha node: package.json test:node nao desce alem de 2 niveis`).toContain(f)
+    expect(enumerados, 'o expect-diferencial e a excecao deliberada e continua fora').not.toContain('test/apoio/expect-diferencial.test.ts')
+    expect(enumerados.filter(f => f.includes('mirante/')).length, 'os dois sensiveis a carga entram uma vez, na invocacao serial').toBe(2)
+  } finally {
+    rmSync(raiz, { recursive: true, force: true })
+  }
+})
+
+test('todo .test.ts sob test/, em qualquer profundidade, entra na trilha node — menos o expect-diferencial', () => {
+  const esperados = testesRecursivos('test').filter(f => !f.includes('apoio/expect-diferencial'))
+  expect(esperados.length, 'varredura vazia tornaria a guarda incapaz de falhar').toBeGreaterThan(140)
+  expect(arquivosEnumeradosPelaTrilhaNode('.')).toEqual(esperados)
 })
 
 test('a varredura enxerga os arquivos — senao o invariante passaria vazio', () => {
