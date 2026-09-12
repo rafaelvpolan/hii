@@ -198,3 +198,94 @@ test('a regiao pinada nunca passa de 40% da caixa', () => {
     expect(f.lines.join('\n')).toContain('ultima')
   }
 })
+
+// ---- linha do tempo da orquestracao ----
+import { linhaDoTempo } from '../../motor/euclides/linha-do-tempo.ts'
+import { renderLinhaDoTempo } from '../../motor/mirante/render/execucao.ts'
+import type { EventoDoCard } from '../../motor/euclides/eventos.ts'
+import type { ChamadaDeIa } from '../../motor/cordel/tipos.ts'
+
+const LOG_DA_ORQUESTRACAO = [
+  '— chamada em 2026-09-12T10:00:00Z · implement · vitro —',
+  '— sessao iniciada (claude-fable-5-1) —',
+  'Vou mexer no menu.',
+  '  → Edit({"file_path":"src/menu.vue"})',
+  '  ← ok',
+  '— concluido (custo $0.4000) —',
+  '[lente 1/2] — chamada em 2026-09-12T10:05:00Z · ideacao · lente 1/2 —',
+  '[lente 2/2] — chamada em 2026-09-12T10:05:00Z · ideacao · lente 2/2 —',
+  '[lente 1/2] ideia A',
+  '[lente 2/2] ideia B',
+  '[lente 1/2] — concluido (custo $0.0500) —',
+  '— chamada em 2026-09-12T10:10:00Z · gate · crivo —',
+  '  → Read({"file_path":"src/menu.vue"})',
+].join('\n')
+
+function ledger(ts: string, papel: ChamadaDeIa['papel'], provedor: string, custoUsd: number, modelo: string, ok = true): ChamadaDeIa {
+  return { ts, papel, provedor, modelo, custoUsd, custoMedido: true, tokens: 1234, tokensEntrada: 1000, tokensSaida: 234, tokensCache: 0, duracaoS: 95, ok, classeDeFalha: ok ? '' : 'quota' }
+}
+
+const EVENTOS_DA_ORQUESTRACAO: EventoDoCard[] = [
+  { ts: '2026-09-12T09:59:00Z', card: '001', evento: 'fase_inicio', fase: 'implement', detalhe: 'vitro' },
+  { ts: '2026-09-12T10:04:30Z', card: '001', evento: 'fase_fim', fase: 'implement', detalhe: 'aprovada' },
+  { ts: '2026-09-12T10:04:40Z', card: '001', evento: 'model_tier_selected', chave: 'gate', detalhe: 'tier2_medio (diff pequeno)' },
+  { ts: '2026-09-12T10:09:00Z', card: '001', evento: 'gate_start', fase: 'Testes', detalhe: 'crivo' },
+  { ts: '2026-09-12T10:12:00Z', card: '001', evento: 'gate_verdict', fase: 'Testes', detalhe: 'CONDITIONAL', resultado: 'falta teste do menu' },
+  { ts: '2026-09-12T10:12:30Z', card: '001', evento: 'repair_attempt', fase: 'Testes', detalhe: 'tentativa 1/2: falta teste do menu' },
+  { ts: '2026-09-12T10:13:00Z', card: '001', evento: 'human_checkpoint', chave: 'URL', resultado: 'aberto', detalhe: 'veio de EXECUTING' },
+]
+
+test('PONTA A PONTA: a tela intercala decisao do motor (fase, gate, reparo, tier, checkpoint) com os blocos de IA, e cada bloco fecha com o custo do ledger', () => {
+  const marcos = linhaDoTempo({
+    eventos: EVENTOS_DA_ORQUESTRACAO,
+    chamadas: [ledger('2026-09-12T10:04:00Z', 'implement', 'claude', 0.4, 'claude-fable-5-1'), ledger('2026-09-12T10:06:00Z', 'ideacao', 'kimi', 0.05, 'k2')],
+    atividades: parseLog(LOG_DA_ORQUESTRACAO),
+  })
+  const tela = renderLinhaDoTempo(marcos, { color: false, largura: 70 })
+  const txt = tela.join('\n')
+  expect(tela[0]?.startsWith('── ▸ fase implement · vitro ──')).toBe(true)
+  expect(tela.some(l => l.startsWith('── ▶ IA · implement · vitro · claude-fable-5-1 · 10:00:00 ──'))).toBe(true)
+  expect(tela).toContain('┃ Vou mexer no menu.')
+  expect(tela.some(l => l.startsWith('── ■ concluido · US$0.4000 · 1234 tokens · 1m35s · claude-fable-5-1 ──'))).toBe(true)
+  expect(tela.some(l => l.startsWith('── ▸ fim da fase implement · aprovada ──'))).toBe(true)
+  expect(txt).toContain('◇ tier gate: tier2_medio (diff pequeno)')
+  expect(tela.some(l => l.startsWith('[lente 1/2] ── ▶ IA · ideacao · lente 1/2 · k2 · 10:05:00 ──')), 'o modelo vem do ledger quando o log nao o traz').toBe(true)
+  expect(tela.some(l => l.startsWith('[lente 2/2] ── ▶ IA · ideacao · lente 2/2 · 10:05:00 ──'))).toBe(true)
+  expect(tela.filter(l => l.length > 70), 'nenhuma linha, com ou sem raia, passa da largura pedida').toEqual([])
+  expect(tela).toContain('[lente 1/2] ┃ ideia A')
+  expect(tela).toContain('[lente 2/2] ┃ ideia B')
+  expect(tela.some(l => l.startsWith('[lente 1/2] ── ■ concluido · US$0.0500'))).toBe(true)
+  expect(txt).toContain('◆ gate Testes revisando (crivo)')
+  expect(tela.some(l => l.startsWith('── ▶ IA · gate · crivo · 10:10:00 ──'))).toBe(true)
+  expect(txt).toContain('◆ gate Testes CONDITIONAL — falta teste do menu')
+  expect(txt).toContain('↻ reparo Testes tentativa 1/2: falta teste do menu')
+  expect(tela[tela.length - 1]?.startsWith('── ⏸ esperando voce · URL (veio de EXECUTING) ──')).toBe(true)
+  expect(txt).not.toContain('\x1b')
+})
+
+test('troca de harness por cota aparece como marco, e a chamada que falhou fecha em vermelho com a classe', () => {
+  const marcos = linhaDoTempo({
+    eventos: [],
+    chamadas: [
+      ledger('2026-09-12T10:01:00Z', 'implement', 'claude', 0.2, 'c', false),
+      ledger('2026-09-12T10:03:00Z', 'implement', 'kimi', 0.3, 'k2'),
+    ],
+    atividades: parseLog('— chamada em 2026-09-12T10:00:00Z · implement · limpio —\n— concluido —\n— chamada em 2026-09-12T10:02:00Z · implement · limpio —\n— concluido —'),
+  })
+  const tela = renderLinhaDoTempo(marcos, { color: true, largura: 70 })
+  const txt = tela.join('\n')
+  expect(txt).toContain('implement: claude → kimi')
+  expect(txt).toContain('troca de harness')
+  const fechos = tela.filter(l => l.includes('concluido') || l.includes('falhou'))
+  expect(fechos[0]).toContain('\x1b[31m')
+  expect(fechos[0]).toContain('falhou (quota)')
+  expect(fechos[1]).toContain('\x1b[32m')
+  expect(fechos[1]).toContain('k2')
+})
+
+test('log antigo sem cabecalho (so ferramentas) ainda vira um bloco, sem rotulo e sem quebrar', () => {
+  const marcos = linhaDoTempo({ eventos: [], chamadas: [], atividades: parseLog('  → Read({"file_path":"a.md"})\n  ← x') })
+  const tela = renderLinhaDoTempo(marcos, { color: false, largura: 60 })
+  expect(tela.some(l => l.startsWith('── ▶ IA ──'))).toBe(true)
+  expect(tela).toContain('● Read(a.md)')
+})

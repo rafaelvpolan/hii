@@ -4,6 +4,11 @@ import { cardsDir, reposFile } from '../../cordel/alicerce/config.ts'
 import { allCards, listRepos, normalizeId } from '../../cordel/store.ts'
 import { memoArquivo, memoChave, memoTempo } from '../../tomada/eco/memo.ts'
 import { parseLog } from '../atividade.ts'
+import { arquivoDeEventos, eventosDoCard } from '../../euclides/eventos.ts'
+import { chamadasDoCard } from '../../euclides/ias-da-sessao.ts'
+import { linhaDoTempo } from '../../euclides/linha-do-tempo.ts'
+import type { Marco } from '../../euclides/linha-do-tempo.ts'
+import type { ChamadaDeIa } from '../../cordel/tipos.ts'
 
 export { passosAtivos, planoDoCard, passosDe } from '../../niemeyer/passos.ts'
 
@@ -32,6 +37,28 @@ export function todosOsCards(): ReturnType<typeof allCards> {
 
 export function reposRegistrados(): ReturnType<typeof listRepos> {
   return reposPorArquivo()()
+}
+
+export const eventosDe = memoArquivo(
+  (id) => arquivoDeEventos(normalizeId(id)),
+  (id: string) => eventosDoCard(normalizeId(id)),
+)
+
+// O ledger de um card pode estar espalhado em varias sessoes (um arquivo por
+// arranque do motor), entao nao ha UM arquivo para assinar: cache curto por id.
+const chamadasPorCard = new Map<string, () => ChamadaDeIa[]>()
+export function chamadasDe(id: string): ChamadaDeIa[] {
+  const chave = `${cardsDir()}|${normalizeId(id)}`
+  let leitor = chamadasPorCard.get(chave)
+  if (!leitor) {
+    leitor = memoTempo(() => chamadasDoCard(normalizeId(id)), 500)
+    chamadasPorCard.set(chave, leitor)
+  }
+  return leitor()
+}
+
+export function linhaDoTempoDe(id: string): Marco[] {
+  return linhaDoTempo({ eventos: eventosDe(id), chamadas: chamadasDe(id), atividades: atividadeDe(id) })
 }
 
 export function larguraUtil(): number {
