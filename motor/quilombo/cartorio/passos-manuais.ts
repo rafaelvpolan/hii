@@ -1,6 +1,7 @@
 import { isoNow } from '../../cordel/index.ts'
 import { pipelineManual } from '../../cordel/alicerce/config.ts'
 import { readCard, updateCardPorAcaoHumana } from '../../cordel/store.ts'
+import { motivoParaEsperarHarness } from '../../tomada/harness-em-voo.ts'
 import { activeSteps } from '../../niemeyer/config.ts'
 import { feitosDoCard, passosRestantes } from './plano-de-passos.ts'
 
@@ -44,6 +45,8 @@ function cardEmPipelineManual(id: string): { erro: string } | { status: string }
   if (status !== 'PAUSED' && status !== 'HALTED') {
     return { erro: `#${id} esta em ${status} — passo manual so de card pausado` }
   }
+  const espera = status === 'HALTED' ? motivoParaEsperarHarness(id) : ''
+  if (espera) return { erro: espera }
   return { status }
 }
 

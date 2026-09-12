@@ -23,6 +23,8 @@ chmodSync(FALSO_CLAUDE, 0o755)
 const vivo = await import('../../motor/tomada/harness-em-voo.ts')
 const A = await import('../../motor/mirante/acoes.ts')
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
+const { pedirSuiteManual } = await import('../../motor/quilombo/cartorio/passos-manuais.ts')
+const { instruir } = await import('../../motor/mirante/instruir.ts')
 
 const filhos: ChildProcess[] = []
 afterAll(() => {
@@ -147,7 +149,7 @@ test('varredura no arranque: pid morto limpa o arquivo; vivo em card HALTED e en
   vivo.registrarHarness(ativo, pidAtivo, 'implement')
   await dormir(150)
 
-  const v = vivo.varrerHarnessesOrfaos()
+  const v = await vivo.varrerHarnessesOrfaos()
   expect(v.mortosLimpos).toContain(morto)
   expect(existsSync(registro(morto, pidMorto))).toBe(false)
   expect(v.encerrados.map(e => e.id)).toContain(parado)
@@ -170,7 +172,7 @@ test('encerramento do motor mata todo harness registrado e deixa linha no diario
   vivo.registrarHarness(a, pidA, 'implement')
   vivo.registrarHarness(b, pidB, 'step')
 
-  const r = vivo.encerrarHarnessesRegistrados('encerramento do motor')
+  const r = await vivo.encerrarHarnessesRegistrados('encerramento do motor')
   expect(r.length).toBe(2)
   expect(await morreu(pidA)).toBe(true)
   expect(await morreu(pidB)).toBe(true)
@@ -189,7 +191,7 @@ test('REGRESSAO pid reciclado: registro com starttime de OUTRO processo nao e mo
   const lido = JSON.parse(readFileSync(caminho, 'utf8')) as { inicioNoKernel: string }
   expect(lido.inicioNoKernel.length, 'o registro tem de carregar o starttime do kernel').toBeGreaterThan(0)
   writeFileSync(caminho, JSON.stringify({ ...lido, pid, inicioNoKernel: '1' }))
-  const r = vivo.encerrarHarnessDoCard(id, 'teste')
+  const r = await vivo.encerrarHarnessDoCard(id, 'teste')
   expect(r.map(x => x.acao)).toEqual(['recusado'])
   expect(vivo.pidVivo(pid), 'processo com outro starttime e outro processo — fica vivo').toBe(true)
   expect(existsSync(caminho)).toBe(false)
@@ -214,9 +216,33 @@ test('registro no formato antigo (um slot por card) e migrado e continua encerra
   const pid = subir(['sleep', '60'], WT)
   await dormir(150)
   writeFileSync(join(CARDS, 'runs', `${id}.harness.pid`), JSON.stringify({ pid, papel: 'implement', iniciadoEm: '2026-09-12T00:00:00Z' }))
-  const v = vivo.varrerHarnessesOrfaos()
+  const v = await vivo.varrerHarnessesOrfaos()
   expect(v.encerrados.map(e => e.id)).toContain(id)
   expect(await morreu(pid)).toBe(true)
   expect(existsSync(join(CARDS, 'runs', `${id}.harness.pid`))).toBe(false)
   expect(existsSync(registro(id, pid))).toBe(false)
+}, TEMPO_COM_GIT_MS)
+
+test('REGRESSAO janela pos-halt: enquanto o harness do card HALTED respira, retomar/passo manual/instrucao sao recusados com motivo; depois que morre, passam', async () => {
+  const id = createCard({ status: 'HALTED', title: 't', repo: 'org/app', risk: 'low', worktree: WT, pipeline_pausa: 'manual' }, '## Objetivo\nx\n')
+  const pid = teimoso(WT)
+  await dormir(150)
+  vivo.registrarHarness(id, pid, 'implement')
+
+  expect(vivo.motivoParaEsperarHarness(id)).toContain(`pid ${pid}`)
+  expect(A.transition(id, 'EXECUTING', 'retomado pelo humano'), 'retomar com harness vivo tem de ser recusado').toBeNull()
+  expect(A.resumeFrom(id, 'Testes')).toBeNull()
+  expect(readCard(id)?.fm.status).toBe('HALTED')
+  expect(readCard(id)?.body ?? '').toContain('retomada recusada')
+  const passo = pedirSuiteManual(id)
+  expect(passo.ok).toBe(false)
+  expect(passo.mensagem).toContain('ainda esta encerrando')
+  const inst = instruir(id, 'mexe no menu')
+  expect(inst.ok).toBe(false)
+  expect(inst.reason).toContain('ainda esta encerrando')
+
+  process.kill(pid, 'SIGKILL')
+  expect(await esperarMorte(pid, 2000)).toBe(true)
+  expect(vivo.motivoParaEsperarHarness(id)).toBe('')
+  expect(A.transition(id, 'EXECUTING', 'retomado pelo humano')?.status).toBe('EXECUTING')
 }, TEMPO_COM_GIT_MS)

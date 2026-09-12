@@ -1,6 +1,7 @@
 import { extractObjetivo } from '../cordel/index.ts'
 import { readCard, updateCardPorAcaoHumana } from '../cordel/store.ts'
 import { isoNow, semControle } from '../cordel/util.ts'
+import { motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
 import { existsSync } from 'node:fs'
 import type { Fields } from '../cordel/tipos.ts'
 
@@ -76,6 +77,8 @@ export function instruir(id: string, texto: string): ResultadoInstrucao {
     return { ...vazio, reason: `#${id} ja foi entregue (${status}) — crie uma tarefa nova para mudar isso` }
   }
   const antes = ANTES_DE_EXECUTAR.includes(status)
+  const espera = status === 'HALTED' ? motivoParaEsperarHarness(id) : ''
+  if (espera) return { ...vazio, reason: espera }
   const worktree = card.fm.worktree ?? ''
   const temWorktree = !!worktree && existsSync(worktree)
   const refaz = !antes && !temWorktree

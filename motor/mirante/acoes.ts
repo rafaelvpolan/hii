@@ -8,7 +8,7 @@ import { readClarify, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { conferirParedeDoPlano } from '../quilombo/cartorio/aprovar-plano.ts'
 import { CONFIRMADO } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { RESUME_POST_STEPS } from '../quilombo/cartorio/retomar.ts'
-import { encerrarHarnessDoCardAsync } from '../tomada/harness-em-voo.ts'
+import { encerrarHarnessDoCard, motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
 
 export interface NewCardInput {
   title: string
@@ -50,7 +50,16 @@ export function submit(input: NewCardInput): string {
   }, body)
 }
 
+function recusadoPorHarnessEmVoo(id: string): boolean {
+  if (readCard(id)?.fm.status !== 'HALTED') return false
+  const motivo = motivoParaEsperarHarness(id)
+  if (!motivo) return false
+  patchCard(id, {}, `${isoNow()} retomada recusada: ${motivo}`)
+  return true
+}
+
 export function transition(id: string, status: string, note?: string): ActionResult {
+  if (recusadoPorHarnessEmVoo(id)) return null
   return updateCardPorAcaoHumana(id, {
     fields: { status },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->${status}${note ? ' ' + note : ''}`,
@@ -58,6 +67,7 @@ export function transition(id: string, status: string, note?: string): ActionRes
 }
 
 export function resumeFrom(id: string, step: string): ActionResult {
+  if (recusadoPorHarnessEmVoo(id)) return null
   return updateCardPorAcaoHumana(id, {
     fields: { resume_from: step, status: 'URL_OK' },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->URL_OK replay a partir de ${step}`,
@@ -178,7 +188,7 @@ export function halt(id: string, reason: string): ActionResult {
     fields: { status: 'HALTED', halt_class: 'humano', halt_reason: reason, halt_at: isoNow() },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED${reason ? ' ' + reason : ''}`,
   })
-  if (r) void encerrarHarnessDoCardAsync(id, 'parada pedida pelo humano')
+  if (r) void encerrarHarnessDoCard(id, 'parada pedida pelo humano')
   return r
 }
 
