@@ -124,6 +124,7 @@ function anotarChamada(id: string, provider: Harness, req: AgentRequest, papel: 
     registrarChamada(sessaoParaChamada(id), {
       ts: isoNow(),
       papel,
+      rotulo: req.rotulo ?? papel,
       provedor: provider.name,
       modelo: req.model ?? '',
       custoUsd: Number(res.cost) || 0,

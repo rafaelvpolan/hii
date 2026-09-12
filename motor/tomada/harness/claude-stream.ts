@@ -4,7 +4,7 @@ import { appendFileSync, writeFileSync, readFileSync, statSync, mkdirSync, exist
 import { dirname } from 'node:path'
 import { emptyUsage } from '../uso.ts'
 import { semControle } from '../../cordel/util.ts'
-import { cabecalhoDaChamada, carimboAgora, comRaia } from './live-log.ts'
+import { AcumuladorDeLinhas, cabecalhoDaChamada, carimboAgora, comRaia } from './live-log.ts'
 import { COST_UNKNOWN, readReportedCost } from '../../euclides/tesouro/custo.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
 import type { AgentRequest, AgentResult } from '../tipos.ts'
@@ -127,6 +127,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
   const write = (s: string): void => { try { appendFileSync(liveLog, comRaia(s, req.raia)) } catch { void 0 } }
+  const stderrAcumulado = new AcumuladorDeLinhas()
   write(`\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`)
   const ferramentasEmVoo = new Map<string, string>()
 
@@ -191,10 +192,11 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       }
     })
 
-    child.stderr.on('data', (d: Buffer) => write(String(d)))
+    child.stderr.on('data', (d: Buffer) => { for (const l of stderrAcumulado.empurrar(String(d))) write(l + '\n') })
     child.on('error', (e: Error) => done(true, String(e?.message || e)))
     child.on('close', (code: number | null) => {
       if (buf.trim()) handleLine(buf)
+      for (const l of stderrAcumulado.esvaziar()) write(l + '\n')
       if (!gotResult && code) isError = true
       done(timedOut || !gotResult, timedOut ? 'timeout' : code ? `exit ${code}` : '')
     })

@@ -42,3 +42,21 @@ export function gravarChamadaNoLiveLog(c: ChamadaParaOLog): void {
     void 0
   }
 }
+
+// stderr chega em pedacos sem borda de linha; prefixar raia num pedaco cortado
+// poria "[raia]" no meio da palavra. So linha completa recebe prefixo.
+export class AcumuladorDeLinhas {
+  private resto = ''
+
+  empurrar(pedaco: string): string[] {
+    const partes = `${this.resto}${pedaco}`.split('\n')
+    this.resto = partes.pop() ?? ''
+    return partes
+  }
+
+  esvaziar(): string[] {
+    const sobra = this.resto
+    this.resto = ''
+    return sobra ? [sobra] : []
+  }
+}

@@ -9,6 +9,8 @@ import { chamadasDoCard } from '../../euclides/ias-da-sessao.ts'
 import { linhaDoTempo } from '../../euclides/linha-do-tempo.ts'
 import type { Marco } from '../../euclides/linha-do-tempo.ts'
 import type { ChamadaDeIa } from '../../cordel/tipos.ts'
+import type { EventoDoCard } from '../../euclides/eventos.ts'
+import type { Atividade } from '../atividade.ts'
 
 export { passosAtivos, planoDoCard, passosDe } from '../../niemeyer/passos.ts'
 
@@ -46,19 +48,41 @@ export const eventosDe = memoArquivo(
 
 // O ledger de um card pode estar espalhado em varias sessoes (um arquivo por
 // arranque do motor), entao nao ha UM arquivo para assinar: cache curto por id.
+const TETO_DE_CARDS_EM_CACHE = 64
 const chamadasPorCard = new Map<string, () => ChamadaDeIa[]>()
 export function chamadasDe(id: string): ChamadaDeIa[] {
   const chave = `${cardsDir()}|${normalizeId(id)}`
   let leitor = chamadasPorCard.get(chave)
   if (!leitor) {
     leitor = memoTempo(() => chamadasDoCard(normalizeId(id)), 500)
+    if (chamadasPorCard.size >= TETO_DE_CARDS_EM_CACHE) chamadasPorCard.delete(chamadasPorCard.keys().next().value ?? '')
     chamadasPorCard.set(chave, leitor)
   }
   return leitor()
 }
 
+// As tres fontes ja sao memoizadas e devolvem a MESMA referencia enquanto nada
+// mudou; a fusao so e refeita quando alguma delas trocou. O cabecalho fixo e o
+// corpo da tela pedem a linha do tempo na mesma pintura, e a segunda pedida sai
+// daqui sem custo.
+interface FusaoGuardada {
+  eventos: readonly EventoDoCard[]
+  chamadas: readonly ChamadaDeIa[]
+  atividades: readonly Atividade[]
+  marcos: Marco[]
+}
+const fusaoPorCard = new Map<string, FusaoGuardada>()
 export function linhaDoTempoDe(id: string): Marco[] {
-  return linhaDoTempo({ eventos: eventosDe(id), chamadas: chamadasDe(id), atividades: atividadeDe(id) })
+  const chave = `${cardsDir()}|${normalizeId(id)}`
+  const eventos = eventosDe(id)
+  const chamadas = chamadasDe(id)
+  const atividades = atividadeDe(id)
+  const guardada = fusaoPorCard.get(chave)
+  if (guardada && guardada.eventos === eventos && guardada.chamadas === chamadas && guardada.atividades === atividades) return guardada.marcos
+  const marcos = linhaDoTempo({ eventos, chamadas, atividades })
+  if (fusaoPorCard.size >= TETO_DE_CARDS_EM_CACHE) fusaoPorCard.delete(fusaoPorCard.keys().next().value ?? '')
+  fusaoPorCard.set(chave, { eventos, chamadas, atividades, marcos })
+  return marcos
 }
 
 export function larguraUtil(): number {

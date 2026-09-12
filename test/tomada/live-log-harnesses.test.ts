@@ -2,7 +2,7 @@ import { test, expect, afterAll } from '../apoio/runner.ts'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { comRaia, gravarChamadaNoLiveLog, linhaDeConclusao } from '../../motor/tomada/harness/live-log.ts'
+import { AcumuladorDeLinhas, comRaia, gravarChamadaNoLiveLog, linhaDeConclusao } from '../../motor/tomada/harness/live-log.ts'
 import { linhasDoLiveLog } from '../../motor/tomada/harness/codex.ts'
 import { parseLog } from '../../motor/mirante/atividade.ts'
 import { renderExecucao } from '../../motor/mirante/render/execucao.ts'
@@ -57,4 +57,14 @@ test('chamadas concorrentes no MESMO log: cada raia vira seu proprio bloco e o r
     ['lente 2/2', 'b.md', 'conteudo de b'],
   ])
   expect(at.filter(a => a.tipo === 'sessao').map(a => a.raia)).toEqual(['lente 1/2', 'lente 2/2'])
+})
+
+test('REGRESSAO stderr fragmentado: a raia so entra em linha COMPLETA — pedaco cortado no meio da palavra nao ganha prefixo', () => {
+  const acc = new AcumuladorDeLinhas()
+  expect(acc.empurrar('texto par')).toEqual([])
+  expect(acc.empurrar('cial\nsegunda linha\nterc')).toEqual(['texto parcial', 'segunda linha'])
+  expect(acc.esvaziar()).toEqual(['terc'])
+  expect(acc.esvaziar()).toEqual([])
+  const gravado = acc.empurrar('a\nb\n').map(l => comRaia(l, 'r')).join('\n')
+  expect(gravado).toBe('[r] a\n[r] b')
 })

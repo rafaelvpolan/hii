@@ -104,3 +104,45 @@ test('PONTA A PONTA: a linha do tempo intercala decisao do motor e chamada de IA
     'checkpoint',
   ])
 })
+
+test('REGRESSAO raias do mesmo papel: a lente que abriu DEPOIS mas terminou ANTES recebe o SEU ledger, casado por rotulo e nao por ordem', () => {
+  const log = [
+    '[lente 1/2] — chamada em 2026-09-12T10:00:00Z · ideacao · lente 1/2 —',
+    '[lente 2/2] — chamada em 2026-09-12T10:00:01Z · ideacao · lente 2/2 —',
+    '[lente 2/2] — concluido —',
+    '[lente 1/2] — concluido —',
+  ].join('\n')
+  const ledger: ChamadaDeIa[] = [
+    { ...chamada('2026-09-12T10:00:30Z', 'ideacao', 'claude', 0.02), rotulo: 'ideacao · lente 2/2' },
+    { ...chamada('2026-09-12T10:01:00Z', 'ideacao', 'claude', 0.09), rotulo: 'ideacao · lente 1/2' },
+  ]
+  const casados = casarComLedger(blocosDeChamada(parseLog(log)), ledger)
+  expect(casados.map(c => [c.raia, c.ledger?.custoUsd])).toEqual([['lente 1/2', 0.09], ['lente 2/2', 0.02]])
+})
+
+test('ledger antigo SEM rotulo ainda casa por papel e ordem; ledger com rotulo de outro bloco nao e roubado', () => {
+  const log = '— chamada em 2026-09-12T10:00:00Z · gate · crivo —\n— concluido —\n— chamada em 2026-09-12T10:05:00Z · gate · crivo —\n— concluido —'
+  const antigo = chamada('2026-09-12T10:01:00Z', 'gate', 'claude', 0.3)
+  const rotulado: ChamadaDeIa = { ...chamada('2026-09-12T10:06:00Z', 'gate', 'claude', 0.7), rotulo: 'gate · crivo' }
+  const casados = casarComLedger(blocosDeChamada(parseLog(log)), [antigo, rotulado])
+  expect(casados.map(c => c.ledger?.custoUsd), 'o rotulado vai para o primeiro bloco com o mesmo rotulo cujo inicio precede o fim; o antigo cobre o que sobrou').toEqual([0.7, 0.3])
+})
+
+test('REGRESSAO log antigo (kimi/codex sem cabecalho) depois de um bloco com hora HERDA a hora, e nao pula para o topo da linha do tempo', () => {
+  const log = [
+    '— chamada em 2026-09-12T10:00:00Z · implement · limpio —',
+    '— concluido (custo $0.10) —',
+    'texto cru do kimi antigo, sem cabecalho',
+    '  → Bash({"command":"ls"})',
+  ].join('\n')
+  const marcos = linhaDoTempo({
+    eventos: [{ ts: '2026-09-12T09:00:00Z', card: '1', evento: 'fase_inicio', fase: 'implement' }],
+    chamadas: [],
+    atividades: parseLog(log),
+  })
+  expect(marcos.map(m => (m.tipo === 'chamada' ? `chamada@${m.ts}:${m.rotulo || 'sem-rotulo'}` : m.tipo))).toEqual([
+    'fase',
+    'chamada@2026-09-12T10:00:00Z:implement · limpio',
+    'chamada@2026-09-12T10:00:00Z:sem-rotulo',
+  ])
+})

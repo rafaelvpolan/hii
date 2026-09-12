@@ -106,6 +106,7 @@ interface LinhaCrua {
   duracaoS?: number
   ok?: boolean
   classeDeFalha?: string
+  rotulo?: string
 }
 
 function normalizar(cru: LinhaCrua): ChamadaDeIa {
@@ -124,6 +125,7 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
     duracaoS: positivo(cru.duracaoS),
     ok: cru.ok !== false,
     classeDeFalha: ehClasseDeFalha(cru.classeDeFalha) ? cru.classeDeFalha : '',
+    ...(cru.rotulo ? { rotulo: String(cru.rotulo) } : {}),
   }
 }
 

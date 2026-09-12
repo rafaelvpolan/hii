@@ -64,8 +64,10 @@ function ehCabecalho(a: AtividadeDaIa): boolean {
 export function blocosDeChamada(atividades: readonly AtividadeDaIa[]): ChamadaNaLinha[] {
   const blocos: BlocoAberto[] = []
   const abertoPorRaia = new Map<string, BlocoAberto>()
+  let ultimoTs = ''
   const abrir = (a: AtividadeDaIa, raia: string): BlocoAberto => {
-    const b: BlocoAberto = { ts: a.ts, rotulo: (a.args ?? '').trim(), raia, modelo: a.alvo, atividades: [], concluida: false, custoAnunciado: '' }
+    if (a.ts) ultimoTs = a.ts
+    const b: BlocoAberto = { ts: a.ts || ultimoTs, rotulo: (a.args ?? '').trim(), raia, modelo: a.alvo, atividades: [], concluida: false, custoAnunciado: '' }
     blocos.push(b)
     abertoPorRaia.set(raia, b)
     return b
@@ -90,14 +92,31 @@ export function blocosDeChamada(atividades: readonly AtividadeDaIa[]): ChamadaNa
   return blocos.map(b => ({ tipo: 'chamada', ts: b.ts, rotulo: b.rotulo, raia: b.raia, papel: papelDoRotulo(b.rotulo), modelo: b.modelo, atividades: b.atividades, concluida: b.concluida, custoAnunciado: b.custoAnunciado }))
 }
 
+function tirar(livres: ChamadaDeIa[], indice: number): ChamadaDeIa | undefined {
+  return indice >= 0 ? livres.splice(indice, 1)[0] : undefined
+}
+
+// Duas passagens. A primeira casa por ROTULO, que o ledger grava desde que o
+// rotulo passou a comecar pelo papel: e a unica chave que nao se confunde quando
+// duas raias do mesmo papel rodam juntas e a que abriu depois termina antes. A
+// segunda, so para ledger antigo sem rotulo, cai na heuristica por papel e ordem.
 export function casarComLedger(blocos: readonly ChamadaNaLinha[], chamadas: readonly ChamadaDeIa[]): ChamadaNaLinha[] {
   const livres = [...chamadas].sort((a, b) => a.ts.localeCompare(b.ts))
+  const casados = new Map<ChamadaNaLinha, ChamadaDeIa>()
+  for (const b of blocos) {
+    if (!b.concluida || !b.rotulo) continue
+    const exato = livres.findIndex(c => c.rotulo === b.rotulo && c.ts >= b.ts)
+    const ledger = tirar(livres, exato >= 0 ? exato : livres.findIndex(c => c.rotulo === b.rotulo))
+    if (ledger) casados.set(b, ledger)
+  }
+  for (const b of blocos) {
+    if (casados.has(b) || !b.concluida || b.papel === 'desconhecido') continue
+    const i = livres.findIndex(c => !c.rotulo && c.papel === b.papel && c.ts >= b.ts)
+    const ledger = tirar(livres, i >= 0 ? i : livres.findIndex(c => !c.rotulo && c.papel === b.papel))
+    if (ledger) casados.set(b, ledger)
+  }
   return blocos.map(b => {
-    if (!b.concluida || b.papel === 'desconhecido') return b
-    const i = livres.findIndex(c => c.papel === b.papel && c.ts >= b.ts)
-    const j = i >= 0 ? i : livres.findIndex(c => c.papel === b.papel)
-    if (j < 0) return b
-    const [ledger] = livres.splice(j, 1)
+    const ledger = casados.get(b)
     return ledger ? { ...b, ledger, modelo: b.modelo || ledger.modelo } : b
   })
 }
