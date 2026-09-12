@@ -31,7 +31,7 @@ export type Marco =
   | { readonly tipo: 'tier'; readonly ts: string; readonly detalhe: string }
   | { readonly tipo: 'checkpoint'; readonly ts: string; readonly estado: string; readonly aberto: boolean; readonly detalhe: string }
   | { readonly tipo: 'troca'; readonly ts: string; readonly papel: PapelDeChamada; readonly de: string; readonly para: string }
-  | { readonly tipo: 'evento'; readonly ts: string; readonly evento: string; readonly detalhe: string }
+  | { readonly tipo: 'evento'; readonly ts: string; readonly card: string; readonly evento: string; readonly detalhe: string }
   | ChamadaNaLinha
 
 export interface FontesDaLinha {
@@ -148,7 +148,7 @@ export function marcoDoEvento(e: EventoDoCard): Marco {
     case 'repair_attempt': return { tipo: 'reparo', ts: e.ts, fase, detalhe }
     case 'model_tier_selected': return { tipo: 'tier', ts: e.ts, detalhe: [e.chave, detalhe].filter(Boolean).join(': ') }
     case 'human_checkpoint': return { tipo: 'checkpoint', ts: e.ts, estado: e.chave ?? '', aberto: e.resultado === 'aberto', detalhe }
-    default: return { tipo: 'evento', ts: e.ts, evento: e.evento, detalhe: [e.chave, detalhe].filter(Boolean).join(': ') }
+    default: return { tipo: 'evento', ts: e.ts, card: e.card, evento: e.evento, detalhe: [e.chave, detalhe].filter(Boolean).join(': ') }
   }
 }
 
