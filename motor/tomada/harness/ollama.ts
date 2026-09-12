@@ -8,6 +8,7 @@ import type { AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, Ha
 import { planoLocal } from '../../euclides/tesouro/planos.ts'
 import { estadoDoOllama } from './ollama-estado.ts'
 import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
+import { gravarChamadaNoLiveLog } from './live-log.ts'
 
 interface OllamaResponse {
   response?: string
@@ -104,6 +105,7 @@ export class OllamaProvider implements Harness {
       text = String(stdout || stderr || '')
     }
     const failed = !!err
+    if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: text ? text.split('\n') : [], custoUsd: costOfEndpoint().cost })
     return {
       ok: !failed && !isError,
       failed,

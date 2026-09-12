@@ -74,3 +74,30 @@ test('omitir tira o que o cabecalho fixo da tarefa ja mostra', () => {
   expect(t, 'sem cabecalho, o titulo nao se repete').not.toContain('cores do podium')
   expect(t, 'mas o que o motor decidiu continua').toContain('visual')
 })
+
+test('o painel mostra o HARNESS atual com trocas, o que esta EM VOO, os candidatos do gauntlet e ha quanto tempo o card espera', () => {
+  const agora = Date.parse('2026-09-12T12:00:00Z')
+  const t = renderSituacao({
+    ...BASE,
+    fm: { ...BASE.fm, status: 'HALTED', status_since: '2026-09-12T09:30:00Z', crivo_modo: 'gauntlet' },
+    chamadas: [
+      { ts: '2026-09-12T10:00:00Z', papel: 'implement', provedor: 'claude', modelo: 'claude-fable-5-1', custoUsd: 1, custoMedido: true, tokens: 1, tokensEntrada: 1, tokensSaida: 0, tokensCache: 0, duracaoS: 1, ok: false, classeDeFalha: 'quota' },
+      { ts: '2026-09-12T10:01:00Z', papel: 'implement', provedor: 'kimi', modelo: 'k2', custoUsd: 1, custoMedido: true, tokens: 1, tokensEntrada: 1, tokensSaida: 0, tokensCache: 0, duracaoS: 1, ok: true },
+    ],
+    emVoo: ['lente 1/4', 'lente 2/4', 'lente 3/4', 'lente 4/4'],
+    candidatos: 3,
+    agoraMs: agora,
+  }, { width: 100 }).join('\n')
+  expect(t).toContain('harness     kimi k2 · 1 troca de provedor')
+  expect(t).toContain('em voo      4 chamadas: lente 1/4, lente 2/4, lente 3/4, lente 4/4')
+  expect(t).toContain('crivo       gauntlet · 3 candidatos cegos')
+  expect(t).toContain('parado ha   2h30 em HALTED')
+})
+
+test('card em execucao, sem ledger e sem nada em voo, NAO ganha linha vazia de harness, em voo ou parado ha', () => {
+  const t = renderSituacao(BASE, { width: 90 }).join('\n')
+  expect(t).not.toContain('harness')
+  expect(t).not.toContain('em voo')
+  expect(t).not.toContain('parado ha')
+  expect(t).toContain('crivo       criterio-escrito')
+})

@@ -54,6 +54,7 @@ export interface ChamadaDeIa {
   duracaoS: number
   ok: boolean
   classeDeFalha?: FailureClass | ''
+  rotulo?: string
 }
 
 export interface IaDaSessao {

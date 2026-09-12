@@ -13,12 +13,16 @@ import { readRunSteps } from '../../euclides/registros.ts'
 import { extractObjetivo } from '../../cordel/index.ts'
 import { subPrompts } from '../instruir.ts'
 import { ultimaAcao, ultimoAgente } from '../atividade.ts'
-import { linhasDaAtividade } from '../render/execucao.ts'
+import { renderLinhaDoTempo } from '../render/execucao.ts'
 import type { SessionState } from '../sessao.ts'
 import { color } from './saida.ts'
-import { atividadeDe, larguraUtil, passosDe } from './dados.ts'
+import { atividadeDe, chamadasDe, eventosDe, larguraUtil, linhaDoTempoDe, passosDe } from './dados.ts'
+import { chamadasEmVoo } from '../../euclides/linha-do-tempo.ts'
+import { referenciasDoCard } from '../../ciclo/canudos/gauntlet.ts'
 import { renderSituacao } from '../render/situacao.ts'
-import { eventosDoCard } from '../../euclides/eventos.ts'
+
+const MARCOS_NA_TELA = 300
+const LINHAS_NA_TELA = 200
 
 export function planoDe(id: string): string {
   const card = readCard(id)
@@ -78,11 +82,15 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   // A queixa era: a area de execucao mostrava o que a IA fazia (Read, Edit, Task) e
   // nada do que o MOTOR decidia. Estas linhas ficam FIXADAS (repl.ts passa este
   // cabecalho como `fixo`), entao nao rolam para fora com o feed.
+  const marcos = linhaDoTempoDe(state.seguindo)
   const doMotor = renderSituacao({
     fm: card.fm,
-    eventos: eventosDoCard(state.seguindo),
+    eventos: eventosDe(state.seguindo),
     atividades: at,
     tocados: [],
+    chamadas: chamadasDe(state.seguindo),
+    emVoo: chamadasEmVoo(marcos).map(c => c.raia || c.rotulo),
+    candidatos: card.fm.crivo_modo === 'gauntlet' ? 1 + referenciasDoCard(state.seguindo).length : 0,
   }, {
     color,
     width: larguraUtil(),
@@ -98,8 +106,8 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
 
 export function seguimento(state: SessionState): string[] {
   const card = readCard(state.seguindo)
-  const at = atividadeDe(state.seguindo)
-  if (at.length) return at.slice(-200).flatMap(a => linhasDaAtividade(a, { color, largura: larguraUtil() }))
+  const marcos = linhaDoTempoDe(state.seguindo)
+  if (marcos.length) return renderLinhaDoTempo(marcos.slice(-MARCOS_NA_TELA), { color, largura: larguraUtil() }).slice(-LINHAS_NA_TELA)
   const status = String(card?.fm.status ?? '')
   if (['EXECUTING', 'CORRECTING'].includes(status)) return ['  aguardando a IA…']
   if (status === 'HALTED') return ['  tarefa parada — escreva uma instrucao ou aperte enter para retomar']

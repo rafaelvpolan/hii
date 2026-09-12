@@ -202,3 +202,12 @@ test('o finish refresca as IAs da run, sem perder o que ja estava', async () => 
   const lido = JSON.parse(readFileSync(arquivo, 'utf8')) as { ias?: { rotulo: string }[] }
   expect(lido.ias?.map(i => i.rotulo)).toEqual(['executa', 'poli'])
 })
+
+test('o rotulo da chamada sobrevive ao ledger — e a chave que casa a chamada com o bloco do live log', async () => {
+  const { registrarChamada, chamadasDaSessao, chamadasDoCard } = await import('../../motor/euclides/ias-da-sessao.ts')
+  registrarChamada('007-20260912T1200', { ...chamada(), rotulo: 'ideacao · lente 2/4' })
+  registrarChamada('007-20260912T1200', chamada())
+  const lidas = chamadasDaSessao('007-20260912T1200')
+  expect(lidas.map(c => c.rotulo)).toEqual(['ideacao · lente 2/4', undefined])
+  expect(chamadasDoCard('007').length, 'chamadasDoCard le as sessoes do card pelo prefixo do arquivo').toBe(2)
+})

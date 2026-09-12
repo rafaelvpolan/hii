@@ -131,3 +131,25 @@ test('entrada de ferramenta continua curta — o corte de 60 vale para tool, nao
   expect(a?.tipo).toBe('shell')
   expect(a?.alvo.length).toBeLessThanOrEqual(61)
 })
+
+test('linha com raia [x] entra na atividade como raia, e linhas intercaladas de duas raias NAO se misturam', () => {
+  const a = parseLinha('[lente 2/4]   → Bash({"command":"ls"})')
+  expect(a?.raia).toBe('lente 2/4')
+  expect(a?.alvo).toBe('ls')
+  const at = parseLog([
+    '[lente 1/2] — chamada em 2026-09-12T10:00:00Z · ideacao · lente 1/2 —',
+    '[lente 2/2] — chamada em 2026-09-12T10:00:00Z · ideacao · lente 2/2 —',
+    '[lente 1/2] primeira ideia da lente um',
+    '[lente 2/2] primeira ideia da lente dois',
+    '[lente 1/2] segunda linha da lente um',
+    '[lente 1/2] — concluido (custo $0.10) —',
+    '[lente 2/2] — concluido —',
+  ].join('\n'))
+  const prosas = at.filter(a => a.tipo === 'texto')
+  expect(prosas.map(a => [a.raia, a.alvo])).toEqual([
+    ['lente 1/2', 'primeira ideia da lente um\nsegunda linha da lente um'],
+    ['lente 2/2', 'primeira ideia da lente dois'],
+  ])
+  const fins = at.filter(a => a.tipo === 'fim')
+  expect(fins.map(a => [a.raia, a.alvo])).toEqual([['lente 1/2', 'US$0.10'], ['lente 2/2', '']])
+})

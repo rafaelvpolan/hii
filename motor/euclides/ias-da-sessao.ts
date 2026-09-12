@@ -106,6 +106,7 @@ interface LinhaCrua {
   duracaoS?: number
   ok?: boolean
   classeDeFalha?: string
+  rotulo?: string
 }
 
 function normalizar(cru: LinhaCrua): ChamadaDeIa {
@@ -124,7 +125,19 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
     duracaoS: positivo(cru.duracaoS),
     ok: cru.ok !== false,
     classeDeFalha: ehClasseDeFalha(cru.classeDeFalha) ? cru.classeDeFalha : '',
+    ...(cru.rotulo ? { rotulo: String(cru.rotulo) } : {}),
   }
+}
+
+export function sessoesDoCard(card: string): string[] {
+  const dir = join(cardsDir(), 'runs')
+  if (!card || !existsSync(dir)) return []
+  const sufixo = '.ias.jsonl'
+  return readdirSync(dir).filter(f => f.startsWith(`${card}-`) && f.endsWith(sufixo)).sort().map(f => f.slice(0, -sufixo.length))
+}
+
+export function chamadasDoCard(card: string): ChamadaDeIa[] {
+  return sessoesDoCard(card).flatMap(chamadasDaSessao)
 }
 
 export function chamadasDaSessao(sessao: string): ChamadaDeIa[] {
