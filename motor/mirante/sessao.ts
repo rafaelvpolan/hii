@@ -5,7 +5,7 @@ export type EffectKind =
   | 'halt' | 'plan' | 'help' | 'quit' | 'error'
   | 'approve-url' | 'reject-url' | 'reopen-repo'
   | 'confirm-close' | 'reject-close'
-  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake'
+  | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake' | 'servir'
   | 'pipeline-step' | 'pipeline-suite'
 
 export interface SessionState {
@@ -54,6 +54,7 @@ export const ALIASES: Record<string, string[]> = {
   '/historico': ['/history'],
   '/config': ['/configuracao'],
   '/ref': ['/referencia', '/imagem'],
+  '/serve': ['/start', '/dev', '/preview'],
 }
 
 export function canonico(comando: string): string {
@@ -63,7 +64,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
   // Pipeline manual: um comando por passo + a suite. Mesma implementacao do CLI
   // (`hii passo`, `hii pipeline`) — cartorio/passos-manuais.ts.
   '/arquitetura', '/polimento', '/testes', '/seguranca', '/limpeza', '/hii',
@@ -241,6 +242,11 @@ function command(line: string, state: SessionState): Reply {
     case 'referencia':
     case 'imagem':
       return reply({ kind: 'ref', text: arg }, state)
+    case 'serve':
+    case 'start':
+    case 'dev':
+    case 'preview':
+      return reply({ kind: 'servir', text: arg }, state)
     case 'new-session':
     case 'nova-sessao':
     case 'new':

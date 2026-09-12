@@ -1,6 +1,7 @@
 import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
 import { pedirPassoManual, pedirSuiteManual } from '../quilombo/cartorio/passos-manuais.ts'
 import { motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
+import { comandoServir } from './servir.ts'
 import { perguntaDeFecho } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { readCard, allCards, normalizeId, listRepos, repoPath, patchCard } from '../cordel/store.ts'
 import { isoNow } from '../cordel/util.ts'
@@ -160,8 +161,12 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const lote = planejarLote(id.split(/\s+/))
       const forcar = texto === 'force'
       const alvos = forcar ? [...lote.removiveis, ...lote.bloqueados] : lote.removiveis
-      for (const l of renderRemocao(lote, forcar, { color: io.color, width: io.largura() })) io.log(l)
-      if (!alvos.length) return state
+      // Com alvo, o plano vai para o bloco FIXO acima do prompt (repl.ts `acima`),
+      // nao para o log rolante — la ele sumia antes de a pessoa confirmar.
+      if (!alvos.length) {
+        for (const l of renderRemocao(lote, forcar, { color: io.color, width: io.largura() })) io.log(l)
+        return state
+      }
       return removendo(state, alvos.map(p => p.id).join(' '))
     }
     case 'confirm-rm': {
@@ -421,6 +426,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'ref': {
       const r = await comandoRef(texto, alvoDeRef(state.seguindo || state.pendingPlan))
       for (const l of r.linhas) io.log(l)
+      return state
+    }
+    case 'servir': {
+      for (const l of await comandoServir(texto, state.repo, state.seguindo)) io.log(l)
       return state
     }
     case 'config': {
