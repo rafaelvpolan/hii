@@ -57,3 +57,16 @@ test('PONTA A PONTA: o que o escritor grava vira, na tela da tarefa, separador d
   expect(tela[tela.length - 1]?.startsWith('── ■ concluido · US$2.4524 ──')).toBe(true)
   expect(tela.some(l => l.includes('x'.repeat(200)))).toBe(false)
 })
+
+test('escape ANSI/OSC vindo da IA nao chega ao log nem a tela — so o texto sobrevive', () => {
+  const emVoo = new Map<string, string>()
+  renderEvent({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'a', name: 'Task', input: {} }] } }, emVoo)
+  const malicioso = 'ok\x1b]0;titulo falso\x07 feito\x1b[2J\x1b[H\x07 fim'
+  const task = renderEvent({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'a', content: malicioso }] } }, emVoo)
+  expect(task).toBe('  ← Task respondeu:\nok feito fim')
+  const fala = renderEvent({ type: 'assistant', message: { content: [{ type: 'text', text: 'diga \x1b[31moi\x1b[0m' }] } }, emVoo)
+  expect(fala).toBe('diga oi')
+  const tela = renderExecucao(parseLog(`${cabecalhoDaChamada('2026-09-10T01:15:26Z')}\n\x1b[31mvermelho\x1b[0m cru no log`), { color: false, largura: 60 })
+  expect(tela.join('\n')).not.toContain('\x1b')
+  expect(tela.join('\n')).toContain('vermelho cru no log')
+})

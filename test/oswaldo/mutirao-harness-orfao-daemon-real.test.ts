@@ -76,7 +76,8 @@ test('REGRESSAO daemon real: arranque encerra harness orfao de card HALTED; SIGT
   expect(subiu, `daemon nao subiu. log:\n${log()}`).toBe(true)
 
   expect(await esperar(() => !vivo(pidParado), 5000), 'harness do card HALTED tinha de morrer no arranque').toBe(true)
-  expect(log()).toContain(`#${parado}: harness orfao (pid ${pidParado}) encerrado no arranque`)
+  const linhaDoArranque = `#${parado}: harness orfao (pid ${pidParado}) encerrado no arranque`
+  expect(await esperar(() => log().includes(linhaDoArranque), 2000), `a varredura e assincrona: a linha chega logo depois da morte. log:\n${log()}`).toBe(true)
   expect(readCard(parado)?.body ?? '').toContain(`harness pid ${pidParado} encerrado (SIGKILL)`)
   expect(existsSync(join(CARDS, 'runs', `${parado}.harness.pid`))).toBe(false)
   expect(vivo(pidPausado), 'card que nao esta terminal mantem o harness no arranque').toBe(true)

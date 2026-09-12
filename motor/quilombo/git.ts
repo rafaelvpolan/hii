@@ -99,6 +99,7 @@ export interface WorktreeInfo {
   baseCommit: string
   origem: OrigemDoWorktree
   head: string
+  divergida: boolean
 }
 
 export interface OpcoesDeWorktree {
@@ -106,7 +107,8 @@ export interface OpcoesDeWorktree {
 }
 
 export function descreverOrigem(info: WorktreeInfo, base: string, branch: string): string {
-  if (info.origem === 'branch-local') return `worktree recriado a partir da branch ${branch} ja existente @${info.head} — o trabalho ja commitado foi mantido`
+  const divergencia = info.divergida ? `; ATENCAO: origin/${branch} tem commits que a local nao tem — divergiram, e isso se resolve no push/PR` : ''
+  if (info.origem === 'branch-local') return `worktree recriado a partir da branch ${branch} ja existente @${info.head} — o trabalho ja commitado foi mantido${divergencia}`
   if (info.origem === 'branch-remota') return `worktree recriado a partir de origin/${branch} @${info.head} — o trabalho ja enviado foi mantido`
   return `branch criada de origin/${base}@${info.baseCommit}`
 }
@@ -213,18 +215,31 @@ async function refExiste(target: string, ref: string): Promise<boolean> {
   return !r.err && r.stdout.trim().length > 0
 }
 
-async function origemDaBranch(target: string, branch: string): Promise<OrigemDoWorktree> {
+interface OrigemApurada {
+  origem: OrigemDoWorktree
+  divergida: boolean
+}
+
+async function ancestral(target: string, de: string, para: string): Promise<boolean> {
+  return !(await runGit(target, ['merge-base', '--is-ancestor', de, para])).err
+}
+
+async function origemDaBranch(target: string, branch: string): Promise<OrigemApurada> {
   await runGit(target, ['fetch', 'origin', branch])
   const local = await refExiste(target, `refs/heads/${branch}`)
   const remota = await refExiste(target, `refs/remotes/origin/${branch}`)
   if (local && remota) {
-    const atras = await runGit(target, ['merge-base', '--is-ancestor', `refs/heads/${branch}`, `refs/remotes/origin/${branch}`])
-    if (!atras.err) await runGit(target, ['branch', '-f', branch, `refs/remotes/origin/${branch}`])
-    return 'branch-local'
+    const refLocal = `refs/heads/${branch}`
+    const refRemota = `refs/remotes/origin/${branch}`
+    if (await ancestral(target, refLocal, refRemota)) {
+      await runGit(target, ['branch', '-f', branch, refRemota])
+      return { origem: 'branch-local', divergida: false }
+    }
+    return { origem: 'branch-local', divergida: !(await ancestral(target, refRemota, refLocal)) }
   }
-  if (local) return 'branch-local'
-  if (remota) return 'branch-remota'
-  return 'base'
+  if (local) return { origem: 'branch-local', divergida: false }
+  if (remota) return { origem: 'branch-remota', divergida: false }
+  return { origem: 'base', divergida: false }
 }
 
 export async function ensureWorktree(target: string, wt: string, branch: string, base: string, opcoes: OpcoesDeWorktree = {}): Promise<WorktreeInfo> {
@@ -246,7 +261,7 @@ export async function ensureWorktree(target: string, wt: string, branch: string,
       if (other !== wt) await runGit(target, ['worktree', 'remove', '--force', other])
     }
     if (!existsSync(WT_BASE)) mkdirSync(WT_BASE, { recursive: true })
-    const origem = opcoes.refazerDoZero ? 'base' : await origemDaBranch(target, branch)
+    const { origem, divergida } = opcoes.refazerDoZero ? { origem: 'base' as const, divergida: false } : await origemDaBranch(target, branch)
     const add = origem === 'branch-local'
       ? ['worktree', 'add', wt, branch]
       : origem === 'branch-remota'
@@ -259,7 +274,7 @@ export async function ensureWorktree(target: string, wt: string, branch: string,
       try { symlinkSync(join(target, 'node_modules'), nm, 'dir') } catch { void 0 }
     }
     const head = await runGit(wt, ['rev-parse', '--short=7', 'HEAD'])
-    return { path: wt, baseCommit: ref.stdout.trim().slice(0, 7), origem, head: head.stdout.trim() }
+    return { path: wt, baseCommit: ref.stdout.trim().slice(0, 7), origem, head: head.stdout.trim(), divergida }
   })
 }
 

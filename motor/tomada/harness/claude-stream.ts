@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { appendFileSync, writeFileSync, readFileSync, statSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { emptyUsage } from '../uso.ts'
+import { semControle } from '../../cordel/util.ts'
 import { COST_UNKNOWN, readReportedCost } from '../../euclides/tesouro/custo.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
 import type { AgentRequest, AgentResult } from '../tipos.ts'
@@ -45,7 +46,7 @@ function textoDoResultado(content: string | object | undefined): string {
 }
 
 export function respostaDeIa(content: string | object | undefined, ferramenta: string): string[] {
-  const texto = textoDoResultado(content).trim()
+  const texto = semControle(textoDoResultado(content)).trim()
   const cortado = texto.length > LIMITE_DA_RESPOSTA_DE_IA ? texto.slice(0, LIMITE_DA_RESPOSTA_DE_IA) + '…' : texto
   return [`  ← ${ferramenta} respondeu:`, ...cortado.split('\n')]
 }
@@ -84,7 +85,7 @@ export function renderEvent(ev: StreamEvent, ferramentasEmVoo: Map<string, strin
   if (ev.type === 'assistant' && ev.message?.content) {
     const parts: string[] = []
     for (const c of ev.message.content) {
-      if (c.type === 'text' && c.text) parts.push(c.text.trim())
+      if (c.type === 'text' && c.text) parts.push(semControle(c.text).trim())
       else if (c.type === 'tool_use') {
         if (c.id) ferramentasEmVoo.set(c.id, c.name || 'tool')
         parts.push(`  → ${c.name || 'tool'}(${short(c.input)})`)
@@ -165,7 +166,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       try {
         const ev = JSON.parse(line) as StreamEvent
         const human = renderEvent(ev, ferramentasEmVoo)
-        if (human) write(human + '\n')
+        if (human) write(semControle(human) + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {
           for (const c of ev.message.content) if (c.type === 'text' && c.text) assistantText = c.text
         }

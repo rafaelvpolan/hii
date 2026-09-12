@@ -168,3 +168,38 @@ test('card sem instrucoes numeradas segue o caminho antigo: um pedido com o text
   expect(conferiu).toBe(false)
   expect(readCard(id)?.fm.status).toBe('URL')
 }, TEMPO_COM_GIT_MS)
+
+test('REGRESSAO volta 1 ok e volta 2 falha: o custo da volta 1 e da conferencia chega ao cost_usd, nao so ao diario', async () => {
+  const id = cardEmCorrecao()
+  let volta = 0
+  const deps: CorrectDeps = {
+    implement: (_c, dir): Promise<ImplementResult> => {
+      volta++
+      appendFileSync(join(dir, 'a.txt'), `volta ${volta}\n`)
+      if (volta === 1) return Promise.resolve(sucesso('volta 1'))
+      return Promise.resolve({ ok: false, reason: 'harness caiu', cost: '0.0500', failureClass: 'terminal', failureReason: 'harness caiu' })
+    },
+    runStep,
+    conferir: (_id, _wt, _base, instrucoes) => Promise.resolve(conclusiva([1, 2], instrucoes)),
+  }
+  await handleCorrect(id, deps)
+  const c = readCard(id)
+  expect(volta).toBe(2)
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.cost_usd, 'volta 1 (0.10) + conferencia (0.01) + volta 2 falhada (0.05)').toBe('0.1600')
+  expect(c?.body).toContain('custo contabilizado')
+}, TEMPO_COM_GIT_MS)
+
+test('REGRESSAO correcao pontual (arquivo:linha) que falha tambem contabiliza o que o agente gastou', async () => {
+  const id = cardEmCorrecao({ correction_file: 'a.txt', correction_line: '1', correction_line_text: 'um' })
+  const deps: CorrectDeps = {
+    implement: () => Promise.reject(new Error('nao devia refazer o url inteiro')),
+    runStep: () => Promise.resolve({ time: 1, cost: 0.03, costMeasured: true, tokens: 7, text: 'harness caiu', ok: false, failureClass: 'terminal', failureReason: 'harness caiu' }),
+  }
+  await handleCorrect(id, deps)
+  const c = readCard(id)
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.cost_usd).toBe('0.0300')
+  expect(c?.fm.tokens_total).toBe('7')
+  expect(c?.body).toContain('correção falhou depois de gastar $0.0300')
+}, TEMPO_COM_GIT_MS)

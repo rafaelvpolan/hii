@@ -82,7 +82,12 @@ function motivoDaParada(linha: string | undefined): string {
   return String(linha ?? '').split('->HALTED ')[1]?.trim() ?? ''
 }
 
-export function updateCard(id: string, patch: CardPatch): ResultadoDaEscrita {
+interface Escrita {
+  card: Fields
+  recusa: string
+}
+
+function escrever(id: string, patch: CardPatch, apesarDaParada: boolean): Escrita | null {
   const name = findCardFile(id)
   if (!name) return null
   const file = join(cardsDir(), name)
@@ -98,7 +103,7 @@ export function updateCard(id: string, patch: CardPatch): ResultadoDaEscrita {
     // Sem isto, `17:17:08 CORRECTING->HALTED parado pelo humano` era desfeito as
     // `17:20:30` pelo job que ainda estava no ar, e para quem olhava a TUI isso era
     // exatamente "eu mandei parar e ele continuou".
-    const desfariaParada = !patch.apesarDaParada && tiraCardDaParada(before.status, resolvedStatus(pedidos))
+    const desfariaParada = !apesarDaParada && tiraCardDaParada(before.status, resolvedStatus(pedidos))
     const resolvedFields = desfariaParada ? semStatus(pedidos) : pedidos
     // Unico ponto do motor que conhece o PAR (estado anterior, estado novo). A
     // topologia declarada e conferida aqui, nao por grep no texto-fonte.
@@ -145,8 +150,7 @@ export function updateCard(id: string, patch: CardPatch): ResultadoDaEscrita {
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
     if (mudouStatus) emitirEventoDeCheckpoint(id, before.status, String(resolvedFields.status))
     const escrito: Fields = { ...fm, file: name }
-    if (desfariaParada) return { recusada: true, motivo: motivoDaRecusa(before.status, resolvedStatus(pedidos)), card: escrito }
-    return escrito
+    return { card: escrito, recusa: desfariaParada ? motivoDaRecusa(before.status, resolvedStatus(pedidos)) : '' }
   })
 }
 
@@ -176,10 +180,14 @@ function semStatus(f: Fields): Fields {
   return resto
 }
 
+export function updateCard(id: string, patch: CardPatch): ResultadoDaEscrita {
+  const e = escrever(id, patch, Boolean(patch.apesarDaParada))
+  if (!e) return null
+  return e.recusa ? { recusada: true, motivo: e.recusa, card: e.card } : e.card
+}
+
 export function updateCardPorAcaoHumana(id: string, patch: Omit<CardPatch, 'apesarDaParada'>): Fields | null {
-  const r = updateCard(id, { ...patch, apesarDaParada: true })
-  if (foiRecusada(r)) throw new Error(`updateCardPorAcaoHumana recusado para #${id}: ${r.motivo}`)
-  return r
+  return escrever(id, patch, true)?.card ?? null
 }
 
 export function patchCard(id: string, fields: Fields, logLine?: string): ResultadoDaEscrita {

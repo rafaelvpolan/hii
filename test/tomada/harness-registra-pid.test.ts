@@ -20,7 +20,8 @@ process.env.PATH = `${BIN}:${PATH_ORIGINAL}`
 
 const { runProvider } = await import('../../motor/euclides/tesouro/confianca.ts')
 const { ClaudeProvider } = await import('../../motor/tomada/harness/claude.ts')
-const { lerHarness, pidVivo } = await import('../../motor/tomada/harness-em-voo.ts')
+const { harnessesDoCard, pidVivo } = await import('../../motor/tomada/harness-em-voo.ts')
+import type { HarnessRegistrado } from '../../motor/tomada/harness-em-voo.ts'
 const { createCard } = await import('../../motor/cordel/store.ts')
 
 afterAll(() => {
@@ -32,10 +33,10 @@ function pedido(extra: Partial<AgentRequest> = {}): AgentRequest {
   return { prompt: 'diga ok', cwd: BASE, dirs: [], mode: 'edit', useAgents: false, timeoutMs: 20000, ...extra }
 }
 
-async function registroDurante(id: string): Promise<ReturnType<typeof lerHarness>> {
+async function registroDurante(id: string): Promise<HarnessRegistrado | null> {
   const limite = Date.now() + 900
   while (Date.now() < limite) {
-    const r = lerHarness(id)
+    const r = harnessesDoCard(id)[0]
     if (r) return r
     await dormir(25)
   }
@@ -56,7 +57,7 @@ for (const caminho of ['stream', 'json'] as const) {
     expect(Number.isNaN(Date.parse(durante.iniciadoEm))).toBe(false)
     const res = await promessa
     expect(res.ok, res.detail).toBe(true)
-    expect(lerHarness(id), 'harness terminado nao pode ficar registrado').toBeNull()
-    expect(existsSync(join(CARDS, 'runs', `${id}.harness.pid`))).toBe(false)
+    expect(harnessesDoCard(id), 'harness terminado nao pode ficar registrado').toEqual([])
+    expect(existsSync(join(CARDS, 'runs', `${id}.${durante.pid}.harness.pid`))).toBe(false)
   }, TEMPO_COM_GIT_MS)
 }

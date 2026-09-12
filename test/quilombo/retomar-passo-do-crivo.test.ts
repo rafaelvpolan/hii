@@ -26,7 +26,7 @@ afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { haltForInspection } = await import('../../motor/euclides/metricas-de-fecho.ts')
-const { resumeStart, RESUME_POST_STEPS } = await import('../../motor/quilombo/cartorio/retomar.ts')
+const { indiceDeRetomada, RESUME_POST_STEPS } = await import('../../motor/quilombo/cartorio/plano-de-passos.ts')
 const { activeSteps } = await import('../../motor/niemeyer/config.ts')
 
 const SEM_METRICA = {}
@@ -56,7 +56,7 @@ test('REGRESSAO o ponto gravado faz a retomada PULAR os passos ja aprovados', ()
   const steps = activeSteps()
   expect(steps.map(s => s.label)).toEqual(['Arquitetura', 'Testes', 'Seguranca', 'Limpeza'])
 
-  const idx = resumeStart(steps, steps, 'Seguranca', 'nao-usado', 'padrao')
+  const idx = indiceDeRetomada(steps, steps, 'Seguranca').indice
 
   expect(idx, 'retomar de Seguranca tem de comecar no indice 2').toBe(2)
   expect(steps.slice(idx).map(s => s.label)).toEqual(['Seguranca', 'Limpeza'])
@@ -64,12 +64,12 @@ test('REGRESSAO o ponto gravado faz a retomada PULAR os passos ja aprovados', ()
 
 test('sem ponto gravado a retomada roda tudo de novo — o comportamento que causou o laco', () => {
   const steps = activeSteps()
-  expect(resumeStart(steps, steps, '', 'nao-usado', 'padrao')).toBe(0)
+  expect(indiceDeRetomada(steps, steps, '').indice).toBe(0)
 })
 
 test('parada DEPOIS dos passos nao repete nenhum deles', () => {
   const steps = activeSteps()
-  const idx = resumeStart(steps, steps, RESUME_POST_STEPS, 'nao-usado', 'padrao')
+  const idx = indiceDeRetomada(steps, steps, RESUME_POST_STEPS).indice
   expect(idx).toBe(steps.length)
   expect(steps.slice(idx)).toEqual([])
 })
@@ -78,7 +78,7 @@ test('parada num passo que este perfil nao roda cai no passo aplicavel seguinte'
   const todos = activeSteps()
   const enxuto = todos.filter(s => s.label === 'Limpeza')
 
-  const idx = resumeStart(enxuto, todos, 'Testes', 'nao-usado', 'enxuto')
+  const idx = indiceDeRetomada(enxuto, todos, 'Testes').indice
 
   expect(enxuto.slice(idx).map(s => s.label)).toEqual(['Limpeza'])
 })

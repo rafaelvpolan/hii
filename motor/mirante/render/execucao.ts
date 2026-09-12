@@ -1,4 +1,5 @@
 import type { Atividade } from '../atividade.ts'
+import { semControle } from '../../cordel/util.ts'
 
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
@@ -57,7 +58,7 @@ function linhaDoResultado(a: Atividade, o: OpcoesExecucao): string[] {
 
 function prosa(a: Atividade, o: OpcoesExecucao): string[] {
   const calha = paint(CALHA, CIANO, o)
-  return a.alvo.split('\n').map(l => `${calha} ${l}`)
+  return semControle(a.alvo).split('\n').map(l => `${calha} ${l}`)
 }
 
 export function separador(marca: string, texto: string, largura: number, cor: string, o: OpcoesExecucao): string {
