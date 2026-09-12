@@ -26,6 +26,7 @@ const { createCard, readCard, patchCard } = await import('../../motor/cordel/sto
 const core = await import('../../motor/mirante/acoes.ts')
 const fecho = await import('../../motor/euclides/metricas-de-fecho.ts')
 const retomar = await import('../../motor/quilombo/cartorio/retomar.ts')
+const { indiceDeRetomada } = await import('../../motor/quilombo/cartorio/plano-de-passos.ts')
 
 function cardEmConfirmacao(): string {
   return createCard({
@@ -109,7 +110,7 @@ const PASSOS = [passo('Arquitetura'), passo('Testes'), passo('Seguranca')] as ne
 
 function ondeORetomarComeca(id: string): number {
   const fm = readCard(id)?.fm
-  return retomar.resumeStart(PASSOS, PASSOS, fm?.resume_from ?? '', id, 'completo')
+  return indiceDeRetomada(PASSOS, PASSOS, fm?.resume_from ?? '').indice
 }
 
 const WORKTREE = join(BASE, 'wt')

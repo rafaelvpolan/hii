@@ -11,7 +11,7 @@
 // fora o trabalho. Perguntando aqui, o worktree esta vivo e a correcao e barata.
 //
 // O "sim" nao repete passo nenhum: o card volta com `resume_from` no sentinela de
-// pos-passos, e `resumeStart` pula todos.
+// pos-passos, e `indiceDeRetomada` pula todos.
 import type { Fields } from '../../cordel/index.ts'
 
 export const CONFIRMADO = 'sim'
