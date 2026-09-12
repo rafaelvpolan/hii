@@ -36,7 +36,7 @@ test('taskSync default = none (sem sync externo)', () => {
 test('runSync NAO conta como espelhado o que falhou, e marca ok=false', async () => {
   const { runSync } = await import('../../motor/tomada/ponte/tarefas/sync.ts')
   const r = await runSync()
-  // Sem HICODE_TASK_SYNC configurado nao ha sync: relatorio zerado e ok.
+  // Sem HII_TASK_SYNC configurado nao ha sync: relatorio zerado e ok.
   expect(r.ok).toBe(true)
   expect(r.falhas).toEqual([])
   expect(r.pushed).toBe(0)

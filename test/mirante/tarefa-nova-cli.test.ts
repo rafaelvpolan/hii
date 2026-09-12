@@ -10,16 +10,16 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-tarefa-nova-'))
   criados.push(dir)
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   const repos = join(dir, 'repos.json')
   writeFileSync(repos, JSON.stringify([{ name: 'org/app', path: dir }]))
-  process.env.HICODE_REPOS_FILE = repos
+  process.env.HII_REPOS_FILE = repos
 })
 
 afterAll(() => {
   for (const d of criados) rmSync(d, { recursive: true, force: true })
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_REPOS_FILE
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_REPOS_FILE
 })
 
 test('cria a tarefa, devolve o id e ja deixa na fila', async () => {

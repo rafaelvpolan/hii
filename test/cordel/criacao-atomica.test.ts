@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-criacao-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 
@@ -31,7 +31,7 @@ test('criacao sequencial: ids distintos e os dois cards sobrevivem', () => {
 
 test('criacao concorrente em dois processos: 24 pedidos, 24 ids unicos, 24 arquivos novos', async () => {
   const fixture = fileURLToPath(new URL('../fixtures/cria-cards.ts', import.meta.url))
-  const env = { ...process.env, HICODE_CARDS_DIR: CARDS }
+  const env = { ...process.env, HII_CARDS_DIR: CARDS }
   const antes = arquivosDeCard()
   const a = rodar([process.execPath, fixture, '12'], { env })
   const b = rodar([process.execPath, fixture, '12'], { env })

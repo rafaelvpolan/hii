@@ -3,16 +3,16 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const ANTERIOR = process.env.HICODE_CARDS_DIR
+const ANTERIOR = process.env.HII_CARDS_DIR
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-progresso-piso-'))
-process.env.HICODE_CARDS_DIR = BASE
+process.env.HII_CARDS_DIR = BASE
 mkdirSync(join(BASE, 'runs'), { recursive: true })
 
 const { renderProgress } = await import('../../motor/euclides/radar/progresso.ts')
 
 afterAll(() => {
-  if (ANTERIOR === undefined) delete process.env.HICODE_CARDS_DIR
-  else process.env.HICODE_CARDS_DIR = ANTERIOR
+  if (ANTERIOR === undefined) delete process.env.HII_CARDS_DIR
+  else process.env.HII_CARDS_DIR = ANTERIOR
   rmSync(BASE, { recursive: true, force: true })
 })
 

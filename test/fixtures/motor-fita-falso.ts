@@ -55,34 +55,34 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: REPO_NOME, path: clone, branch: 'main' }]))
-process.env.HICODE_AGENTS_DIR = join(BASE, 'agentes-vazio')
-mkdirSync(process.env.HICODE_AGENTS_DIR, { recursive: true })
-process.env.HICODE_SKILLS_DIR = join(BASE, 'skills-vazio')
-mkdirSync(process.env.HICODE_SKILLS_DIR, { recursive: true })
-delete process.env.HICODE_AI_PROVIDER
-delete process.env.HICODE_IMPLEMENT_PROVIDER
-delete process.env.HICODE_VERIFY_PROVIDER
-delete process.env.HICODE_GATE_PROVIDER
-delete process.env.HICODE_STEP_PROVIDER
-delete process.env.HICODE_EFFORT
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: REPO_NOME, path: clone, branch: 'main' }]))
+process.env.HII_AGENTS_DIR = join(BASE, 'agentes-vazio')
+mkdirSync(process.env.HII_AGENTS_DIR, { recursive: true })
+process.env.HII_SKILLS_DIR = join(BASE, 'skills-vazio')
+mkdirSync(process.env.HII_SKILLS_DIR, { recursive: true })
+delete process.env.HII_AI_PROVIDER
+delete process.env.HII_IMPLEMENT_PROVIDER
+delete process.env.HII_VERIFY_PROVIDER
+delete process.env.HII_GATE_PROVIDER
+delete process.env.HII_STEP_PROVIDER
+delete process.env.HII_EFFORT
 
 export function limparAmbiente(): void {
   process.env.PATH = PATH_ORIGINAL
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_REPOS_FILE
-  delete process.env.HICODE_AGENTS_DIR
-  delete process.env.HICODE_SKILLS_DIR
-  delete process.env.HICODE_IA_FILE
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_REPOS_FILE
+  delete process.env.HII_AGENTS_DIR
+  delete process.env.HII_SKILLS_DIR
+  delete process.env.HII_IA_FILE
   rmSync(BASE, { recursive: true, force: true })
 }
 
 export function usarArquivoDeIa(nome: string): void {
-  process.env.HICODE_IA_FILE = join(BASE, `${nome}.json`)
+  process.env.HII_IA_FILE = join(BASE, `${nome}.json`)
 }
 
 export function novoDirDeFita(nome: string): string {

@@ -17,7 +17,7 @@ function dirTemp(prefixo: string): string {
 }
 
 afterEach(() => {
-  delete process.env.HICODE_TESTE_NUM
+  delete process.env.HII_TESTE_NUM
   for (const d of criados.splice(0)) rmSync(d, { recursive: true, force: true })
 })
 
@@ -107,14 +107,14 @@ test('REGRESSAO agente que NAO executou nao faz o conflito passar como resolvido
 })
 
 test('REGRESSAO env numerico invalido nao vira NaN em silencio', () => {
-  process.env.HICODE_TESTE_NUM = 'auto'
-  expect(numeroDeEnv('HICODE_TESTE_NUM', 3)).toBe(3)
-  process.env.HICODE_TESTE_NUM = '-5'
-  expect(numeroDeEnv('HICODE_TESTE_NUM', 3)).toBe(3)
-  process.env.HICODE_TESTE_NUM = '8'
-  expect(numeroDeEnv('HICODE_TESTE_NUM', 3)).toBe(8)
-  delete process.env.HICODE_TESTE_NUM
-  expect(numeroDeEnv('HICODE_TESTE_NUM', 3)).toBe(3)
+  process.env.HII_TESTE_NUM = 'auto'
+  expect(numeroDeEnv('HII_TESTE_NUM', 3)).toBe(3)
+  process.env.HII_TESTE_NUM = '-5'
+  expect(numeroDeEnv('HII_TESTE_NUM', 3)).toBe(3)
+  process.env.HII_TESTE_NUM = '8'
+  expect(numeroDeEnv('HII_TESTE_NUM', 3)).toBe(8)
+  delete process.env.HII_TESTE_NUM
+  expect(numeroDeEnv('HII_TESTE_NUM', 3)).toBe(3)
 })
 
 const consulta = (servidores: ServidorMcp[], escopos: Record<string, 'dinamico' | 'persistente' | 'nao-verificavel'>): ConsultaMcp => ({

@@ -98,7 +98,7 @@ export function checkProvider(): Check {
     .filter(h => h.exigeCliNoPath && !exec(h.binario, ['--version']).ok)
     .map(h => h.name)
   if (faltando.length) {
-    return check('IA', 'erro', `CLI ausente: ${faltando.join(', ')}`, `instale ou troque o provedor por papel (HICODE_*_PROVIDER)`)
+    return check('IA', 'erro', `CLI ausente: ${faltando.join(', ')}`, `instale ou troque o provedor por papel (HII_*_PROVIDER)`)
   }
   return check('IA', 'ok', `provedores: ${nomes.join(', ')}`)
 }
@@ -135,7 +135,7 @@ export function checkProjectConfig(repoPath: string, repoName: string): Check {
     divergencias.push(`provider "${c.provider}" != "${provedorReal}" (quem manda e config/ia.json ou a env)`)
   }
   if (c.taskSource && c.taskSource !== 'cards' && c.taskSource !== taskSyncName()) {
-    divergencias.push(`taskSource "${c.taskSource}" != HICODE_TASK_SYNC="${taskSyncName()}"`)
+    divergencias.push(`taskSource "${c.taskSource}" != HII_TASK_SYNC="${taskSyncName()}"`)
   }
   if (!divergencias.length) return check('.hii/config.json', 'ok', `${declarados.length} preferencia(s), todas coerentes`)
   return check(
@@ -155,14 +155,14 @@ export function checkRecurso(): Check {
   try {
     return recursoOuAviso()
   } catch (e) {
-    return check('recurso', 'erro', `orcamento de recurso invalido: ${motivoDoErro(e as Error)}`, 'confira HICODE_MEM_POR_WORKTREE_MB e HICODE_CPU_POR_WORKTREE')
+    return check('recurso', 'erro', `orcamento de recurso invalido: ${motivoDoErro(e as Error)}`, 'confira HII_MEM_POR_WORKTREE_MB e HII_CPU_POR_WORKTREE')
   }
 }
 
 function recursoOuAviso(): Check {
   const teto = tetoDeParalelismo(MAX_CONCURRENCY)
   const cabem = quantosWorktreesCabem(orcamentoDeRecurso()).cabem
-  const detalhe = `${teto} worktree(s) em paralelo (HICODE_CONCURRENCY=${MAX_CONCURRENCY}, cabem ${cabem} no recurso declarado)`
+  const detalhe = `${teto} worktree(s) em paralelo (HII_CONCURRENCY=${MAX_CONCURRENCY}, cabem ${cabem} no recurso declarado)`
   if (teto < MAX_CONCURRENCY) {
     return check('recurso', 'aviso', `${detalhe} — o RECURSO limita, nao a sua configuracao`, relatoDeLimites().split('\n')[1] ?? '')
   }

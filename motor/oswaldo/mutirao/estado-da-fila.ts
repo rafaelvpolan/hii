@@ -11,7 +11,7 @@ const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
 
 const emVoo = new Set<string>()
 
-const COOLDOWN_MS = Number(process.env.HICODE_CARD_COOLDOWN_MS || 0) || 30_000
+const COOLDOWN_MS = Number(process.env.HII_CARD_COOLDOWN_MS || 0) || 30_000
 
 const emCooldownAte = new Map<string, number>()
 

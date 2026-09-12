@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-fre-gate-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const APR = await import('../../motor/cascudo/freire/aprendiz.ts')

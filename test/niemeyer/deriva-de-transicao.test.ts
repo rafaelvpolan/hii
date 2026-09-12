@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os'
 // O cards dir tem de valer ANTES do primeiro import de store.ts — dai o arquivo
 // proprio em vez de um teste dentro de topologia.test.ts.
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-deriva-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard, patchCard, readCard } = await import('../../motor/cordel/store.ts')

@@ -1,5 +1,5 @@
 // Fixture da criacao concorrente (test/cordel/criacao-atomica.test.ts): cria N
-// cards no HICODE_CARDS_DIR herdado e imprime um id por linha — o teste cruza os
+// cards no HII_CARDS_DIR herdado e imprime um id por linha — o teste cruza os
 // ids de dois processos simultaneos para provar que nao ha colisao nem sobrescrita.
 export {}
 

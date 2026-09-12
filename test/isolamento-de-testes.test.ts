@@ -17,9 +17,9 @@ export function arquivosDeTeste(raiz: string = DIR): string[] {
 }
 
 export const ESCREVEM = /createCard|patchCard|updateCard|core\.submit|instruir\(|answerClarify|remover\(|removerLote|dispatch\(/
-export const ISOLAM = /HICODE_CARDS_DIR/
+export const ISOLAM = /HII_CARDS_DIR/
 
-test('REGRESSAO todo teste que escreve card isola HICODE_CARDS_DIR', () => {
+test('REGRESSAO todo teste que escreve card isola HII_CARDS_DIR', () => {
   const culpados: string[] = []
   for (const nome of arquivosDeTeste()) {
     const fonte = readFileSync(nome, 'utf8')
@@ -33,7 +33,7 @@ test('REGRESSAO teste que le variavel de terminal fixa o valor que testa', () =>
   for (const nome of arquivosDeTeste()) {
     const fonte = readFileSync(nome, 'utf8')
     const usaLink = /\blink\(|linkificar\(/.test(fonte)
-    if (usaLink && !/HICODE_HYPERLINKS/.test(fonte)) culpados.push(nome)
+    if (usaLink && !/HII_HYPERLINKS/.test(fonte)) culpados.push(nome)
   }
   expect(culpados, 'dependem do terminal de quem roda — verdes local, vermelhos na CI').toEqual([])
 })

@@ -23,7 +23,7 @@ const PID_ALHEIO = alheio.pid ?? 0
 const menciona = spawn('tail', ['-f', MOTOR_FALSO], { stdio: 'ignore' })
 const PID_MENCIONA = menciona.pid ?? 0
 
-const pidfileOriginal = process.env.HICODE_RUNNER_PIDFILE
+const pidfileOriginal = process.env.HII_RUNNER_PIDFILE
 
 function vivo(pid: number): boolean {
   try {
@@ -38,8 +38,8 @@ afterAll(() => {
   motor.kill('SIGKILL')
   alheio.kill('SIGKILL')
   menciona.kill('SIGKILL')
-  if (pidfileOriginal === undefined) delete process.env.HICODE_RUNNER_PIDFILE
-  else process.env.HICODE_RUNNER_PIDFILE = pidfileOriginal
+  if (pidfileOriginal === undefined) delete process.env.HII_RUNNER_PIDFILE
+  else process.env.HII_RUNNER_PIDFILE = pidfileOriginal
   rmSync(BASE, { recursive: true, force: true })
   rmSync(CARDS, { recursive: true, force: true })
 })
@@ -60,9 +60,9 @@ function rodarRunner(args: string[], lockfile: string): { status: number; stderr
     cwd: ROOT,
     env: {
       ...process.env,
-      HICODE_CARDS_DIR: CARDS,
-      HICODE_REPOS_FILE: join(BASE, 'repos.json'),
-      HICODE_RUNNER_LOCK: lockfile,
+      HII_CARDS_DIR: CARDS,
+      HII_REPOS_FILE: join(BASE, 'repos.json'),
+      HII_RUNNER_LOCK: lockfile,
     },
     encoding: 'utf8',
     timeout: 20000,
@@ -168,8 +168,8 @@ test('liberacao nao apaga a trava de outro motor vivo', () => {
 test('REGRESSAO: a trava nao e o pidfile do daemon — segurar a trava nao faz "hii start" enxergar um daemon online', () => {
   const lockfile = lockfileDeTeste()
   const pidfile = join(BASE, `daemon-${seq}.pid`)
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
-  process.env.HICODE_RUNNER_LOCK = lockfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_LOCK = lockfile
   try {
     expect(holdInstanceLock().acquired).toBe(true)
 
@@ -178,13 +178,13 @@ test('REGRESSAO: a trava nao e o pidfile do daemon — segurar a trava nao faz "
     expect(daemonPid()).toBe(0)
   } finally {
     releaseInstanceLock(lockfile)
-    delete process.env.HICODE_RUNNER_LOCK
+    delete process.env.HII_RUNNER_LOCK
   }
 })
 
 test('REGRESSAO: pidfile com pid vivo que NAO e o motor deste clone nao faz a sessao enxergar daemon online', async () => {
   const pidfile = join(BASE, `daemon-alheio-${++seq}.pid`)
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
   const motorDaRaiz = spawn('bun', [MOTOR_FALSO], { cwd: ROOT, stdio: 'ignore' })
   try {
     writeFileSync(pidfile, `${PID_ALHEIO}\n`)

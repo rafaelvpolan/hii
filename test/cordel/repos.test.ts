@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-repos-'))
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
 
 const { addRepo, removeRepo, repoStatus, detectBranch, isGitRepo } = await import('../../motor/cordel/repos.ts')
 

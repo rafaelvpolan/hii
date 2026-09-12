@@ -51,7 +51,7 @@ export function checarDependencias(root = ROOT): Check {
 
 export function preflight(ollamaAlcancavel = false, root = ROOT): Check[] {
   return [
-    checarBinario(runtimeDeScript(), 'instale bun (https://bun.sh) ou use node 24+ com HICODE_RUNTIME=node'),
+    checarBinario(runtimeDeScript(), 'instale bun (https://bun.sh) ou use node 24+ com HII_RUNTIME=node'),
     checarBinario('git', 'instale o git'),
     checarBinario('gh', 'instale o gh CLI', 'aviso'),
     checarIa(ollamaAlcancavel),

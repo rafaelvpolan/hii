@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { IaDaSessao, PapelDeChamada } from '../../motor/cordel/tipos.ts'
 
-process.env.HICODE_COTA_TTL_MS = '0'
+process.env.HII_COTA_TTL_MS = '0'
 
 const criados: string[] = []
 let dir = ''
@@ -12,7 +12,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hii-cota-chamada-'))
   criados.push(dir)
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   mkdirSync(join(dir, 'runs'), { recursive: true })
 })
 

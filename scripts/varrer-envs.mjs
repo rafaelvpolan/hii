@@ -1,4 +1,4 @@
-// Varredura deterministica das variaveis HICODE_* no codigo executavel, e o
+// Varredura deterministica das variaveis HII_* no codigo executavel, e o
 // reescritor do apendice gerado em OPERACAO.md. O raio-x mediu 68 de 97 envs
 // fora do manual — incluindo knobs de custo e timeout — e uma env documentada
 // que nenhuma linha lia. Doc de env gerada do codigo nao deriva; o teste
@@ -12,9 +12,9 @@ const RAIZ = join(fileURLToPath(new URL('.', import.meta.url)), '..')
 const FONTES = ['motor', 'bin', 'scripts', 'runner.ts']
 const EXTENSOES = ['.ts', '.mjs', '.sh']
 const CONTRATO = join('motor', 'cordel', 'alicerce', 'contrato.ts')
-const RE_ENV = /HICODE_[A-Z0-9_]{2,}/g
-const RE_PADRAO = /process\.env\.(HICODE_[A-Z0-9_]{2,})\s*(?:\|\||\?\?)\s*('[^']*'|"[^"]*"|-?\d[\d_]*(?:\.\d+)?)/g
-const RE_CONSTANTE = /export const (ENV_[A-Z0-9_]+) = '(HICODE_[A-Z0-9_]+)'/g
+const RE_ENV = /HII_[A-Z0-9_]{2,}/g
+const RE_PADRAO = /process\.env\.(HII_[A-Z0-9_]{2,})\s*(?:\|\||\?\?)\s*('[^']*'|"[^"]*"|-?\d[\d_]*(?:\.\d+)?)/g
+const RE_CONSTANTE = /export const (ENV_[A-Z0-9_]+) = '(HII_[A-Z0-9_]+)'/g
 const RE_ENTRADA = /\{ nome: (ENV_[A-Z0-9_]+), precisaSerCompartilhadaEntreClones: (true|false), resolvidoPor: \[[^\]]*\], lado: '(\w+)' \}/g
 const MARCA_INICIO = '<!-- hicode:envs:inicio -->'
 const MARCA_FIM = '<!-- hicode:envs:fim -->'

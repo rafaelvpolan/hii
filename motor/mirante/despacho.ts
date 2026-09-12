@@ -167,6 +167,9 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         for (const l of renderRemocao(lote, forcar, { color: io.color, width: io.largura() })) io.log(l)
         return state
       }
+      const avisos = [...lote.ausentes.map(a => `#${a} nao existe`), ...(forcar ? [] : lote.bloqueados.map(b => `#${b.id} em ${b.status}, fica`))]
+      if (avisos.length) io.log(io.dim(`  ${avisos.join(' · ')}`))
+      io.log(`  ${alvos.length === 1 ? 'apagar 1 tarefa' : `apagar ${alvos.length} tarefas`} — confira o bloco acima do prompt: enter confirma · n cancela`)
       return removendo(state, alvos.map(p => p.id).join(' '))
     }
     case 'confirm-rm': {

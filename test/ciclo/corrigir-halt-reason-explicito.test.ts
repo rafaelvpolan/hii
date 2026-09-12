@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import type { CorrectDeps } from '../../motor/ciclo/corrigir.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-correct-haltreason-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { handleCorrect } = await import('../../motor/ciclo/corrigir.ts')

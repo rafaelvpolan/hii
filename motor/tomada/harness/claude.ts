@@ -56,7 +56,7 @@ export class ClaudeProvider implements Harness {
   readonly temLeitorDePlano = true
 
   prontoParaUso(): boolean { return true }
-  // De proposito NAO le HICODE_CLAUDE_MODEL: o claude usa o modelo padrao do
+  // De proposito NAO le HII_CLAUDE_MODEL: o claude usa o modelo padrao do
   // proprio CLI fora de verify/gate, e era assim antes desta refatoracao.
   modeloPadraoPara(papel: AgentRole): string | undefined {
     if (papel === 'verify') return VERIFY_MODEL

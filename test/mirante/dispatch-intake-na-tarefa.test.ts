@@ -14,16 +14,16 @@ let saida: string[] = []
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-intake-tarefa-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
-  process.env.HICODE_IMPLEMENT_PROVIDER = 'claude'
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_IMPLEMENT_PROVIDER = 'claude'
   saida = []
 })
 
 afterEach(() => {
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_IA_FILE
-  delete process.env.HICODE_IMPLEMENT_PROVIDER
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_IA_FILE
+  delete process.env.HII_IMPLEMENT_PROVIDER
 })
 
 const io = dispatchIOFalso({ log: (l: string) => { saida.push(l) } })

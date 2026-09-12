@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-wake-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 let saudavel = true
 let atrasoMs = 0
@@ -13,7 +13,7 @@ const sonda = (): Promise<boolean> => new Promise(resolve => setTimeout(() => re
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
 const { wakeDueWaiting } = await import('../../motor/ciclo/reprise/espera.ts')
 
-beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '2' })
+beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '2' })
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 

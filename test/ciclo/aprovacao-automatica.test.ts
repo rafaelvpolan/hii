@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-url-auto-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(BASE, 'cards'), { recursive: true })
 const { decisaoDeAprovacaoDeUrl, aprovarUrlPeloMotor } = await import('../../motor/ciclo/crivo/aprovacao-automatica.ts')
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
@@ -18,10 +18,10 @@ test('url respondendo com inspecao ok ou indisponivel APROVA sozinha; erro, sem 
   expect(decisaoDeAprovacaoDeUrl({ temUrl: false, respondeu: false, verify: 'sem-dev-server' }, true).motivo).toContain('aprovacao da funcionalidade e sua')
 })
 
-test('HICODE_URL_AUTO_OK=off devolve o comportamento antigo: nada e aprovado sem pergunta', () => {
+test('HII_URL_AUTO_OK=off devolve o comportamento antigo: nada e aprovado sem pergunta', () => {
   const d = decisaoDeAprovacaoDeUrl({ temUrl: true, respondeu: true, verify: 'ok' }, false)
   expect(d.aprova).toBe(false)
-  expect(d.motivo).toContain('HICODE_URL_AUTO_OK=off')
+  expect(d.motivo).toContain('HII_URL_AUTO_OK=off')
 })
 
 test('aprovarUrlPeloMotor so age em card que esta em URL, grava URL_OK e deixa no diario que foi o motor, nao o humano', () => {

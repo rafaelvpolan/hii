@@ -9,7 +9,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-inst-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
 })
 
 function card(id: string, fields: Record<string, string> = {}, body = '## Objetivo\nfazer algo\n'): void {

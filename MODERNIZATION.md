@@ -30,7 +30,7 @@ Importante de cara: seu instinto de não adotar LangGraph/CrewAI/AutoGen está c
 | `analyze.ts` decidindo perfil (`completo/enxuto/deps/padrao/externo`) | *Routing* | Classificação determinística (zero token) decidindo o caminho — evita gastar um agente inteiro só para rotear |
 | Passos de polimento (rufus/testudo/escudo/crivo/pura) | *Orchestrator-Workers* | Decomposição em especialistas com contexto focado por fase |
 | Gate fechando por exit code em disco, nunca por "o modelo disse que passou" | *Evaluator determinístico* | Este é o ponto mais forte do seu motor. A literatura atual é explícita: não confiar no autorrelato do modelo para verificação objetiva é a diferença entre um gate real e teatro de qualidade |
-| Retry de URL (`HICODE_URL_AJUSTES`, correção estreita, 1 tentativa) | Embrião de *Evaluator-Optimizer* / repair loop | Padrão certo: instrução estreita, não recomeço. Só está aplicado a um caso (subida do servidor) |
+| Retry de URL (`HII_URL_AJUSTES`, correção estreita, 1 tentativa) | Embrião de *Evaluator-Optimizer* / repair loop | Padrão certo: instrução estreita, não recomeço. Só está aplicado a um caso (subida do servidor) |
 | Ledger por chamada de IA (papel, provedor, custo, tokens) | Instrumentação | "Instrument everything" é citado por toda a literatura de agentes em produção como pré-requisito — você já tem isso |
 | Parede humana obrigatória no merge | *Human-in-the-loop* | Ação irreversível (merge) nunca é automática — correto e inegociável |
 | `cwd-guard`, `acceptEdits`, denylist | Princípio de menor privilégio / minimal footprint | Confinamento do agente ao raio de ação necessário |

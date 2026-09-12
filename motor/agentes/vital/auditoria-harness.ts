@@ -37,7 +37,7 @@ export const PADROES_DE_RISCO: readonly PadraoDeRisco[] = [
   },
   {
     id: 'desliga-rigor',
-    rx: /HICODE_\w+\s*=\s*(?:0|off|false)/i,
+    rx: /HII_\w+\s*=\s*(?:0|off|false)/i,
     porque: 'desliga por instrucao um interruptor de rigor do proprio motor',
   },
   {

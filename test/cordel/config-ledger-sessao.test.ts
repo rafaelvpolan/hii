@@ -10,12 +10,12 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-ledger-cfg-'))
   criados.push(dir)
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
 })
 
 afterAll(() => {
   for (const d of criados) rmSync(d, { recursive: true, force: true })
-  delete process.env.HICODE_CARDS_DIR
+  delete process.env.HII_CARDS_DIR
 })
 
 test('REGRESSAO o /config le o ledger que o motor REALMENTE escreve, passando pelo escritor de verdade', async () => {

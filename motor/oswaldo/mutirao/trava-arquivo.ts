@@ -1,7 +1,7 @@
 import { openSync, closeSync, unlinkSync, statSync, writeFileSync, renameSync } from 'node:fs'
 
-const STALE_MS = Number(process.env.HICODE_LOCK_STALE_MS || 15000)
-const ACQUIRE_TIMEOUT_MS = Number(process.env.HICODE_LOCK_TIMEOUT_MS || 10000)
+const STALE_MS = Number(process.env.HII_LOCK_STALE_MS || 15000)
+const ACQUIRE_TIMEOUT_MS = Number(process.env.HII_LOCK_TIMEOUT_MS || 10000)
 const waitBuffer = new Int32Array(new SharedArrayBuffer(4))
 
 function sleepSync(ms: number): void {

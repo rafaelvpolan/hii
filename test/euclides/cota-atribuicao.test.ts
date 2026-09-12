@@ -10,14 +10,14 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-cota-atrib-'))
   criados.push(dir)
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
-  process.env.HICODE_COTA_TTL_MS = '0'
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_COTA_TTL_MS = '0'
 })
 
 afterAll(() => {
   for (const d of criados) rmSync(d, { recursive: true, force: true })
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_COTA_TTL_MS
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_COTA_TTL_MS
 })
 
 function ia(papel: string, provedor: string, classeDeFalha = '') {

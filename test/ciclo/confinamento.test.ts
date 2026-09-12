@@ -16,19 +16,19 @@ mkdirSync(BIN, { recursive: true })
 mkdirSync(SHOTS, { recursive: true })
 writeFileSync(join(SHOTS, 'url.png'), 'png-falso')
 
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-process.env.HICODE_IA_FILE = join(BASE, 'ia.json')
-process.env.HICODE_AGENTS_DIR = join(REPO, '.claude', 'agents')
-process.env.HICODE_PROJECT_MEMORY = 'off'
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+process.env.HII_IA_FILE = join(BASE, 'ia.json')
+process.env.HII_AGENTS_DIR = join(REPO, '.claude', 'agents')
+process.env.HII_PROJECT_MEMORY = 'off'
 process.env.CONF_ARGV_FILE = ARGV_FILE
 process.env.CONF_CWD_FILE = CWD_FILE
-delete process.env.HICODE_EFFORT
-delete process.env.HICODE_AI_PROVIDER
-delete process.env.HICODE_IMPLEMENT_PROVIDER
-delete process.env.HICODE_STEP_PROVIDER
-delete process.env.HICODE_VERIFY_PROVIDER
+delete process.env.HII_EFFORT
+delete process.env.HII_AI_PROVIDER
+delete process.env.HII_IMPLEMENT_PROVIDER
+delete process.env.HII_STEP_PROVIDER
+delete process.env.HII_VERIFY_PROVIDER
 
 const FAKE = `#!/usr/bin/env bash
 if [ "$1" = "mcp" ] && [ "$2" = "list" ]; then
@@ -209,11 +209,11 @@ test('--agents nao aparece quando nao ha agente a injetar, e o prompt cai no mod
 
 test('kimi nao promete agentes Nexus que nao consegue injetar: implement cai no modo direto (sem Task, sem --agents)', async () => {
   limpar()
-  process.env.HICODE_IMPLEMENT_PROVIDER = 'kimi'
+  process.env.HII_IMPLEMENT_PROVIDER = 'kimi'
   try {
     await implement(CARTAO, WT)
   } finally {
-    delete process.env.HICODE_IMPLEMENT_PROVIDER
+    delete process.env.HII_IMPLEMENT_PROVIDER
   }
   const a = argvDoDisco()
   expect(a).not.toContain('--agents')
@@ -271,8 +271,8 @@ test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENT
   const SUBSET_DIR = mkdtempSync(join(tmpdir(), 'hicode-agentes-subset-'))
   writeFileSync(join(SUBSET_DIR, 'limpio.md'), '---\nname: limpio\ndescription: agente de logica e feature, code review limpo\n---\nImplemente a feature com codigo limpo, SOLID e testado.\n')
   writeFileSync(join(SUBSET_DIR, 'radix.md'), '---\nname: radix\ndescription: agente de banco de dados e migrations\n---\nImplemente a mudanca de banco com migration segura e reversivel.\n')
-  const dirOriginal = process.env.HICODE_AGENTS_DIR
-  process.env.HICODE_AGENTS_DIR = SUBSET_DIR
+  const dirOriginal = process.env.HII_AGENTS_DIR
+  process.env.HII_AGENTS_DIR = SUBSET_DIR
   try {
     limpar()
     await implement(CARTAO, WT)
@@ -291,7 +291,7 @@ test('injecao parcial: se o diretorio de agentes so tem um subconjunto dos AGENT
     for (const agente of citados) expect(injetados).toContain(agente)
     expect(prompt, 'menu para a IA escolher e exatamente o que o item 11 proibe').not.toContain('Roteie via Task')
   } finally {
-    process.env.HICODE_AGENTS_DIR = dirOriginal
+    process.env.HII_AGENTS_DIR = dirOriginal
     rmSync(SUBSET_DIR, { recursive: true, force: true })
   }
 })

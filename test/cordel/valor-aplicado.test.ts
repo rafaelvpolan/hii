@@ -3,38 +3,38 @@ import { test, expect } from '../apoio/runner.ts'
 // PADRAO SISTEMICO 3 da auditoria: valor computado, documentado e nunca aplicado.
 // Cada teste aqui prende UM desses valores no ponto onde ele passou a ser usado.
 
-test('taskSyncNames alimenta a VALIDACAO: HICODE_TASK_SYNC com typo nao vira "sem sync"', async () => {
+test('taskSyncNames alimenta a VALIDACAO: HII_TASK_SYNC com typo nao vira "sem sync"', async () => {
   const { taskSyncInvalido, taskSyncNames } = await import('../../motor/tomada/ponte/tarefas/registro.ts')
-  const anterior = process.env.HICODE_TASK_SYNC
+  const anterior = process.env.HII_TASK_SYNC
   try {
-    delete process.env.HICODE_TASK_SYNC
+    delete process.env.HII_TASK_SYNC
     expect(taskSyncInvalido(), 'sem configurar nao ha erro nenhum').toBe('')
-    process.env.HICODE_TASK_SYNC = 'github-issues'
+    process.env.HII_TASK_SYNC = 'github-issues'
     expect(taskSyncInvalido()).toBe('')
-    process.env.HICODE_TASK_SYNC = 'github_issues'
+    process.env.HII_TASK_SYNC = 'github_issues'
     const erro = taskSyncInvalido()
     expect(erro, 'typo caia em null e o CLI dizia "0 espelhados" com exit 0').toContain('github_issues')
     const nomes = taskSyncNames()
     expect(nomes.length, 'lista vazia tornaria o laco abaixo vacuo').toBeGreaterThan(1)
     for (const n of nomes) expect(erro).toContain(n)
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_TASK_SYNC
-    else process.env.HICODE_TASK_SYNC = anterior
+    if (anterior === undefined) delete process.env.HII_TASK_SYNC
+    else process.env.HII_TASK_SYNC = anterior
   }
 })
 
 test('runSync reprova o sync invalido em vez de relatar sucesso vazio', async () => {
   const { runSync } = await import('../../motor/tomada/ponte/tarefas/sync.ts')
-  const anterior = process.env.HICODE_TASK_SYNC
-  process.env.HICODE_TASK_SYNC = 'nao-existe'
+  const anterior = process.env.HII_TASK_SYNC
+  process.env.HII_TASK_SYNC = 'nao-existe'
   try {
     const r = await runSync()
     expect(r.ok).toBe(false)
     expect(r.falhas.join(' ')).toContain('nao-existe')
     expect(r.pushed).toBe(0)
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_TASK_SYNC
-    else process.env.HICODE_TASK_SYNC = anterior
+    if (anterior === undefined) delete process.env.HII_TASK_SYNC
+    else process.env.HII_TASK_SYNC = anterior
   }
 })
 
@@ -69,33 +69,33 @@ test('o rodape mostra o modo EFETIVO, nao vazio quando o operador nao escolheu',
 test('o teto GLOBAL do painel e o MESMO que o motor aplica no despacho', async () => {
   const { lerConfig } = await import('../../motor/cordel/alicerce/snapshot.ts')
   const { tetoGlobal } = await import('../../motor/euclides/tesouro/teto-global.ts')
-  const anterior = process.env.HICODE_BUDGET_USD
+  const anterior = process.env.HII_BUDGET_USD
   try {
-    process.env.HICODE_BUDGET_USD = '9'
+    process.env.HII_BUDGET_USD = '9'
     expect(tetoGlobal().tetoUsd).toBe(9)
-    expect(lerConfig('', '', 0).tetoGlobalUsd, 'HICODE_BUDGET_USD agora e lida de verdade — painel e motor precisam mostrar o mesmo teto global').toBe(9)
-    delete process.env.HICODE_BUDGET_USD
+    expect(lerConfig('', '', 0).tetoGlobalUsd, 'HII_BUDGET_USD agora e lida de verdade — painel e motor precisam mostrar o mesmo teto global').toBe(9)
+    delete process.env.HII_BUDGET_USD
     expect(lerConfig('', '', 0).tetoGlobalUsd, 'sem env e sem orcamentoGlobal no arquivo, o teto global fica desligado').toBe(tetoGlobal().tetoUsd)
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_BUDGET_USD
-    else process.env.HICODE_BUDGET_USD = anterior
+    if (anterior === undefined) delete process.env.HII_BUDGET_USD
+    else process.env.HII_BUDGET_USD = anterior
   }
 })
 
 test('o teto do painel e o MESMO que o motor aplica no card', async () => {
   const { lerConfig } = await import('../../motor/cordel/alicerce/snapshot.ts')
   const { tetoDoCard } = await import('../../motor/euclides/tesouro/orcamento.ts')
-  const anterior = process.env.HICODE_CARD_BUDGET_USD
+  const anterior = process.env.HII_CARD_BUDGET_USD
   try {
-    process.env.HICODE_CARD_BUDGET_USD = '7'
+    process.env.HII_CARD_BUDGET_USD = '7'
     expect(tetoDoCard()).toBe(7)
-    expect(lerConfig('', '', 0).tetoUsd, 'o painel lia HICODE_BUDGET_USD, que nada mais escreve — mostrava 0 com o motor barrando em 16').toBe(7)
-    delete process.env.HICODE_CARD_BUDGET_USD
+    expect(lerConfig('', '', 0).tetoUsd, 'o painel lia HII_BUDGET_USD, que nada mais escreve — mostrava 0 com o motor barrando em 16').toBe(7)
+    delete process.env.HII_CARD_BUDGET_USD
     expect(lerConfig('', '', 0).tetoUsd, 'sem env, vale o teto de model-tier.json').toBe(tetoDoCard())
     expect(lerConfig('', '', 0).tetoUsd).toBeGreaterThan(0)
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_CARD_BUDGET_USD
-    else process.env.HICODE_CARD_BUDGET_USD = anterior
+    if (anterior === undefined) delete process.env.HII_CARD_BUDGET_USD
+    else process.env.HII_CARD_BUDGET_USD = anterior
   }
 })
 

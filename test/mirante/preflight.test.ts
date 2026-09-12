@@ -31,19 +31,19 @@ function comBinarioFalso<T>(nome: string, claudeJson: ClaudeConfigDeTeste | null
   const dir = mkdtempSync(join(tmpdir(), 'hicode-preflight-bin-'))
   writeFileSync(join(dir, nome), '')
   const originalPath = process.env.PATH
-  const originalConfig = process.env.HICODE_CLAUDE_CONFIG
+  const originalConfig = process.env.HII_CLAUDE_CONFIG
   process.env.PATH = dir
   if (claudeJson) {
     const arquivo = join(dir, 'claude.json')
     writeFileSync(arquivo, JSON.stringify(claudeJson))
-    process.env.HICODE_CLAUDE_CONFIG = arquivo
+    process.env.HII_CLAUDE_CONFIG = arquivo
   }
   try {
     return fn()
   } finally {
     process.env.PATH = originalPath
-    if (originalConfig === undefined) delete process.env.HICODE_CLAUDE_CONFIG
-    else process.env.HICODE_CLAUDE_CONFIG = originalConfig
+    if (originalConfig === undefined) delete process.env.HII_CLAUDE_CONFIG
+    else process.env.HII_CLAUDE_CONFIG = originalConfig
   }
 }
 

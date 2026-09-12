@@ -7,7 +7,7 @@ import { mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-process.env.HICODE_CARDS_DIR = mkdtempSync(join(tmpdir(), 'hicode-json-'))
+process.env.HII_CARDS_DIR = mkdtempSync(join(tmpdir(), 'hicode-json-'))
 
 const { harnessPorNome } = await import('../../motor/tomada/registro.ts')
 const { recusaPorLimite, runProvider } = await import('../../motor/euclides/tesouro/confianca.ts')

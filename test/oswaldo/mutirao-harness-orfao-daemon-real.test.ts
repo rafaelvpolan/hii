@@ -11,7 +11,7 @@ const CARDS = join(BASE, 'cards')
 const WT = join(BASE, 'wt')
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 mkdirSync(join(WT, '.git'), { recursive: true })
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 
@@ -43,12 +43,12 @@ function registrar(id: string, pid: number): void {
 function ambiente(): Record<string, string> {
   return {
     ...process.env as Record<string, string>,
-    HICODE_CARDS_DIR: CARDS,
-    HICODE_REPOS_FILE: join(BASE, 'repos.json'),
-    HICODE_RUNNER_PIDFILE: join(BASE, 'runner.pid'),
-    HICODE_RUNNER_LOCK: join(BASE, 'runner.lock'),
-    HICODE_CONCURRENCY: '0',
-    HICODE_POLL_MS: '1000',
+    HII_CARDS_DIR: CARDS,
+    HII_REPOS_FILE: join(BASE, 'repos.json'),
+    HII_RUNNER_PIDFILE: join(BASE, 'runner.pid'),
+    HII_RUNNER_LOCK: join(BASE, 'runner.lock'),
+    HII_CONCURRENCY: '0',
+    HII_POLL_MS: '1000',
   }
 }
 

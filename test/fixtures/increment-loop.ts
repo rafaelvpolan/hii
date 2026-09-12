@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 
 const [, , cardsDir, id, field, times, barrier] = process.argv
-process.env.HICODE_CARDS_DIR = cardsDir ?? ''
+process.env.HII_CARDS_DIR = cardsDir ?? ''
 
 const { patchCardWith } = await import('../../motor/cordel/store.ts')
 

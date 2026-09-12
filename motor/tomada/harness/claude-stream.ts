@@ -109,8 +109,8 @@ function argvStream(req: AgentRequest): string[] {
   return claudeArgv(req, FORMATO_STREAM)
 }
 
-const LOG_MAX = Number(process.env.HICODE_LIVELOG_MAX_BYTES || 1_000_000)
-const LOG_KEEP = Number(process.env.HICODE_LIVELOG_KEEP_BYTES || 200_000)
+const LOG_MAX = Number(process.env.HII_LIVELOG_MAX_BYTES || 1_000_000)
+const LOG_KEEP = Number(process.env.HII_LIVELOG_KEEP_BYTES || 200_000)
 
 function podarLog(caminho: string): void {
   try {

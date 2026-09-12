@@ -177,6 +177,6 @@ export function gastoDoCard(cru: string | undefined): number | null {
 }
 
 export function tetoDoCard(g: Governanca = lerGovernanca()): number {
-  const doOperador = numeroDeEnv('HICODE_CARD_BUDGET_USD', 0)
+  const doOperador = numeroDeEnv('HII_CARD_BUDGET_USD', 0)
   return doOperador > 0 ? doOperador : g.orcamentoPorCard.tetoUsd
 }

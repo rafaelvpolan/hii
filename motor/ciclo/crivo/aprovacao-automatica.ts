@@ -21,7 +21,7 @@ export interface DecisaoDeUrl {
 }
 
 export function decisaoDeAprovacaoDeUrl(s: SinaisDoUrl, ligado = URL_AUTO_OK): DecisaoDeUrl {
-  if (!ligado) return { aprova: false, motivo: 'aprovacao automatica desligada (HICODE_URL_AUTO_OK=off) — a decisao e sua' }
+  if (!ligado) return { aprova: false, motivo: 'aprovacao automatica desligada (HII_URL_AUTO_OK=off) — a decisao e sua' }
   if (!s.temUrl) return { aprova: false, motivo: 'sem url para checar — a aprovacao da funcionalidade e sua' }
   if (!s.respondeu) return { aprova: false, motivo: 'a url nao respondeu — o reparo automatico nao a colocou no ar' }
   if (s.verify === 'falhou') return { aprova: false, motivo: 'a pagina respondeu com erro e o conserto automatico nao resolveu' }

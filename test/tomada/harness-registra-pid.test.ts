@@ -8,7 +8,7 @@ import type { AgentRequest } from '../../motor/tomada/tipos.ts'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-harness-pid-'))
 const CARDS = join(BASE, 'cards')
 const BIN = join(BASE, 'bin')
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 mkdirSync(BIN, { recursive: true })
 

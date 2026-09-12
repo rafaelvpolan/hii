@@ -6,8 +6,8 @@ import type { Card, ImplementResult } from '../../motor/cordel/index.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hii-conserto-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { consertarUmaVez } = await import('../../motor/oswaldo/executar.ts')

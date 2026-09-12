@@ -9,9 +9,9 @@ import {
 } from './ideacao.ts'
 import type { Convergencia } from './ideacao.ts'
 
-export const IDEATE_LENTES = Number(process.env.HICODE_IDEATE_FRAMES || 4)
-export const IDEATE_IDEIAS = Number(process.env.HICODE_IDEATE_IDEAS || 5)
-export const IDEATE_TOPK = Number(process.env.HICODE_IDEATE_TOPK || 3)
+export const IDEATE_LENTES = Number(process.env.HII_IDEATE_FRAMES || 4)
+export const IDEATE_IDEIAS = Number(process.env.HII_IDEATE_IDEAS || 5)
+export const IDEATE_TOPK = Number(process.env.HII_IDEATE_TOPK || 3)
 
 export interface IdeacaoResultado {
   ok: boolean

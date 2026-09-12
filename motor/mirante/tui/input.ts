@@ -12,7 +12,7 @@ export interface InputState {
   navegando: ModoNavegacao
 }
 
-export const LIMITE_COLA = Number(process.env.HICODE_PASTE_INLINE_MAX || 120)
+export const LIMITE_COLA = Number(process.env.HII_PASTE_INLINE_MAX || 120)
 const RE_MARCADOR = /\[colado #(\d+)[^\]]*\]/g
 
 export type InputAction =

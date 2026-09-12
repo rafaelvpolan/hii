@@ -13,7 +13,7 @@ export interface PodaDeRegistros {
 }
 
 function ttlMs(): number {
-  const bruto = Number(process.env.HICODE_REGISTROS_TTL_MS)
+  const bruto = Number(process.env.HII_REGISTROS_TTL_MS)
   return Number.isFinite(bruto) && bruto > 0 ? bruto : JANELA_HISTORICO_MS
 }
 

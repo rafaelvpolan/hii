@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import type { DispatchIO } from '../../motor/mirante/despacho.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-pergreg-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')

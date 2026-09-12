@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import type { AgentRequest, AgentResult } from '../../motor/tomada/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-marca-custo-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const binDir = join(BASE, 'bin')
 mkdirSync(binDir, { recursive: true })

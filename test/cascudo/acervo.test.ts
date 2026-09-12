@@ -161,17 +161,17 @@ test('REGRESSAO clone sem _resolved ainda carrega o acervo — _resolved e cache
   // Agora o cache e APONTADO para um diretorio que nao existe, o que forca o
   // caminho de fusao ao vivo independentemente do ambiente.
   const semCache = mkdtempSync(join(tmpdir(), 'hii-semcache-')); criados.push(semCache)
-  const anterior = process.env.HICODE_SKILLS_DIR
-  process.env.HICODE_SKILLS_DIR = semCache
+  const anterior = process.env.HII_SKILLS_DIR
+  process.env.HII_SKILLS_DIR = semCache
   try {
     expect(existsSync(join(semCache, '_resolved')), 'o fixture tem de estar sem cache').toBe(false)
-    // Com HICODE_SKILLS_DIR apontando para um diretorio vazio, a fusao ao vivo nao
+    // Com HII_SKILLS_DIR apontando para um diretorio vazio, a fusao ao vivo nao
     // encontra `_native` e devolve vazio — o que prova que o caminho SEM cache foi
     // o exercitado (com cache, teria lido o `_resolved` que nao existe ali).
     expect(carregarAcervo(), 'sem cache E sem _native a resposta e vazia, nao um erro').toEqual([])
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_SKILLS_DIR
-    else process.env.HICODE_SKILLS_DIR = anterior
+    if (anterior === undefined) delete process.env.HII_SKILLS_DIR
+    else process.env.HII_SKILLS_DIR = anterior
   }
   // E na raiz de VERDADE (com _native versionado) o acervo carrega sem cache.
   expect(carregarAcervo().length, 'o acervo real tem de carregar sem cache nenhum').toBeGreaterThan(8)

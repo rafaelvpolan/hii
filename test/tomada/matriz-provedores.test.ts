@@ -349,13 +349,13 @@ test('ollama fica de fora de FONTES por decisao — mesmo com claude, codex e ki
   const repoDir = mkdtempSync(join(tmpdir(), 'hii-matriz-fontes-repo-'))
   const codexHome = join(home, '.codex-custom')
   const antigos = {
-    HICODE_CLAUDE_HOME_DIR: process.env.HICODE_CLAUDE_HOME_DIR,
-    HICODE_KIMI_HOME_DIR: process.env.HICODE_KIMI_HOME_DIR,
+    HII_CLAUDE_HOME_DIR: process.env.HII_CLAUDE_HOME_DIR,
+    HII_KIMI_HOME_DIR: process.env.HII_KIMI_HOME_DIR,
     CODEX_HOME: process.env.CODEX_HOME,
-    HICODE_IMPLEMENT_PROVIDER: process.env.HICODE_IMPLEMENT_PROVIDER,
+    HII_IMPLEMENT_PROVIDER: process.env.HII_IMPLEMENT_PROVIDER,
   }
-  process.env.HICODE_CLAUDE_HOME_DIR = join(home, '.claude')
-  process.env.HICODE_KIMI_HOME_DIR = join(home, '.kimi-code')
+  process.env.HII_CLAUDE_HOME_DIR = join(home, '.claude')
+  process.env.HII_KIMI_HOME_DIR = join(home, '.kimi-code')
   process.env.CODEX_HOME = codexHome
   try {
     mkdirSync(join(repoDir, '.claude', 'commands'), { recursive: true })
@@ -365,13 +365,13 @@ test('ollama fica de fora de FONTES por decisao — mesmo com claude, codex e ki
     mkdirSync(join(repoDir, '.kimi-code', 'skills', 'revisa'), { recursive: true })
     writeFileSync(join(repoDir, '.kimi-code', 'skills', 'revisa', 'SKILL.md'), '---\nname: revisa\ndescription: "revisa PR"\n---\ncorpo\n')
 
-    process.env.HICODE_IMPLEMENT_PROVIDER = 'claude'
+    process.env.HII_IMPLEMENT_PROVIDER = 'claude'
     expect(comandosDaIaAtiva(repoDir).comandos.length, 'claude precisa ter fonte real aqui, senao o contraste com ollama nao prova nada').toBeGreaterThan(0)
-    process.env.HICODE_IMPLEMENT_PROVIDER = 'codex'
+    process.env.HII_IMPLEMENT_PROVIDER = 'codex'
     expect(comandosDaIaAtiva(repoDir).comandos.length, 'codex idem').toBeGreaterThan(0)
-    process.env.HICODE_IMPLEMENT_PROVIDER = 'kimi'
+    process.env.HII_IMPLEMENT_PROVIDER = 'kimi'
     expect(comandosDaIaAtiva(repoDir).comandos.length, 'kimi idem').toBeGreaterThan(0)
-    process.env.HICODE_IMPLEMENT_PROVIDER = 'ollama'
+    process.env.HII_IMPLEMENT_PROVIDER = 'ollama'
     expect(comandosDaIaAtiva(repoDir).comandos, 'ollama continua vazio mesmo com os outros tres populados ao mesmo tempo').toEqual([])
     expect(harnessPorNome('ollama').exigeCliNoPath, 'ollama nao tem CLI proprio no PATH — nao ha onde procurar comando/skill').toBe(false)
     expect(harnessPorNome('ollama').comandoDeLogin).toEqual([])

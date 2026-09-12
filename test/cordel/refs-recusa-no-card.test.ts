@@ -53,24 +53,24 @@ writeFileSync(IMPLEMENTA, [
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const AMBIENTE: Record<string, string> = {
-  HICODE_CARDS_DIR: CARDS,
-  HICODE_REPOS_FILE: REPOS,
-  HICODE_PROJECT_MEMORY: 'off',
-  HICODE_AI_PROVIDER: 'claude',
-  HICODE_IMPLEMENT_PROVIDER: 'claude',
+  HII_CARDS_DIR: CARDS,
+  HII_REPOS_FILE: REPOS,
+  HII_PROJECT_MEMORY: 'off',
+  HII_AI_PROVIDER: 'claude',
+  HII_IMPLEMENT_PROVIDER: 'claude',
 }
 
 function comCards<T>(fn: () => T): T {
-  const anterior = { cards: process.env.HICODE_CARDS_DIR, repos: process.env.HICODE_REPOS_FILE }
-  process.env.HICODE_CARDS_DIR = CARDS
-  process.env.HICODE_REPOS_FILE = REPOS
+  const anterior = { cards: process.env.HII_CARDS_DIR, repos: process.env.HII_REPOS_FILE }
+  process.env.HII_CARDS_DIR = CARDS
+  process.env.HII_REPOS_FILE = REPOS
   try {
     return fn()
   } finally {
-    if (anterior.cards === undefined) delete process.env.HICODE_CARDS_DIR
-    else process.env.HICODE_CARDS_DIR = anterior.cards
-    if (anterior.repos === undefined) delete process.env.HICODE_REPOS_FILE
-    else process.env.HICODE_REPOS_FILE = anterior.repos
+    if (anterior.cards === undefined) delete process.env.HII_CARDS_DIR
+    else process.env.HII_CARDS_DIR = anterior.cards
+    if (anterior.repos === undefined) delete process.env.HII_REPOS_FILE
+    else process.env.HII_REPOS_FILE = anterior.repos
   }
 }
 

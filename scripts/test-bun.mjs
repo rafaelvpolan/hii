@@ -39,8 +39,8 @@ const SENSIVEIS_A_CARGA = new Set([
   join('test', 'mirante', 'tui-sob-carga.test.ts'),
 ])
 
-const LARGURA_DA_PISCINA = Math.max(1, Number(process.env.HICODE_TEST_JOBS || 0) || cpus().length - 1)
-const TETO_POR_TESTE_MS = Number(process.env.HICODE_TEST_TIMEOUT_MS || 0) || 60_000
+const LARGURA_DA_PISCINA = Math.max(1, Number(process.env.HII_TEST_JOBS || 0) || cpus().length - 1)
+const TETO_POR_TESTE_MS = Number(process.env.HII_TEST_TIMEOUT_MS || 0) || 60_000
 
 const reprovados = []
 let totalPass = 0

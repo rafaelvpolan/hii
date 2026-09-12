@@ -2,7 +2,7 @@ import { test, expect, afterAll } from '../apoio/runner.ts'
 
 const S = await import('../../motor/quilombo/cofre/segredos.ts')
 
-const NOME = 'HICODE_SEGREDO_DE_TESTE'
+const NOME = 'HII_SEGREDO_DE_TESTE'
 afterAll(() => { delete process.env[NOME] })
 
 test('o provedor de ambiente e sempre o caminho disponivel — nao precisa de nuvem para funcionar', () => {
@@ -99,13 +99,13 @@ test('SWARM segredo declarado mas nao montado LANCA nomeando o caminho esperado'
   }
 })
 
-test('sem HICODE_SECRETS_DIR o padrao segue sendo o ambiente — nuvem nunca e requisito', () => {
-  delete process.env.HICODE_SECRETS_DIR
+test('sem HII_SECRETS_DIR o padrao segue sendo o ambiente — nuvem nunca e requisito', () => {
+  delete process.env.HII_SECRETS_DIR
   expect(S.provedorDoAmbienteOuArquivo().id).toBe('env')
-  process.env.HICODE_SECRETS_DIR = '/run/secrets'
+  process.env.HII_SECRETS_DIR = '/run/secrets'
   try {
     expect(S.provedorDoAmbienteOuArquivo().id).toBe('arquivo')
   } finally {
-    delete process.env.HICODE_SECRETS_DIR
+    delete process.env.HII_SECRETS_DIR
   }
 })

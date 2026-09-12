@@ -1,6 +1,6 @@
 // Tesouro — teto GLOBAL de gasto, por janela movel. O teto por card limita cada
 // tarefa; N cards em voo custavam N x teto sem freio agregado, e OPERACAO.md
-// prometia um HICODE_BUDGET_USD que nenhuma linha lia — doc de rede de protecao
+// prometia um HII_BUDGET_USD que nenhuma linha lia — doc de rede de protecao
 // que nao existia. Aqui a variavel passa a valer de verdade.
 //
 // Barra no DESPACHO (tick), nunca no meio de um card: derrubar chamada em voo
@@ -41,7 +41,7 @@ export function tetoGlobal(g?: Governanca): TetoGlobal {
   const gov = g === undefined ? governancaSemDerrubar() : g
   const janelaConfigurada = gov?.orcamentoGlobal?.janela ?? JANELA_PADRAO
   const janelaMs = duracaoDaJanela(janelaConfigurada) || duracaoDaJanela(JANELA_PADRAO)
-  const daEnv = numeroDeEnv('HICODE_BUDGET_USD', 0)
+  const daEnv = numeroDeEnv('HII_BUDGET_USD', 0)
   if (daEnv > 0) return { tetoUsd: daEnv, janelaMs, origem: 'env' }
   const doArquivo = gov?.orcamentoGlobal?.tetoUsd ?? 0
   if (doArquivo > 0) return { tetoUsd: doArquivo, janelaMs, origem: 'arquivo' }

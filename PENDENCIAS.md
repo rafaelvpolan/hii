@@ -17,7 +17,7 @@ trilha node (as duas trilhas passam a declarar o mesmo número, guardado por
 `test/cordel/tetos-das-trilhas.test.ts`); `status_since` e `halt_class` obrigatório, com
 as 33 escritas de `HALTED` classificadas e consumidor em `lerSaudeDoMotor`
 (`test/cordel/parada-com-classe-e-idade.test.ts`); o backoff por classe de espera
-(`test/ciclo/backoff-por-classe-de-espera.test.ts`); e o `HICODE_RIGOR_ESTRITO`, ligado
+(`test/ciclo/backoff-por-classe-de-espera.test.ts`); e o `HII_RIGOR_ESTRITO`, ligado
 em `docker-stack.yml`. Três afirmações desta lista estavam **vencidas** e foram
 corrigidas onde aparecem: a medição de custo, o card 006 e o aviso sobre o item 5.
 
@@ -162,9 +162,9 @@ em `config/topologia.json:74` está tipado e parseado, com zero consumidores de 
    escrita do card.
 4. **Saiu em 09/09** — assinatura da fila comparada por tick; `ticksSemProgresso` em
    `DaemonHealth` (sobrevive a `recordTickSuccess`, que era o furo), e `/health` responde
-   `ok:false`/503 com o motor de pé e improdutivo por `HICODE_TICKS_SEM_PROGRESSO_MAX`
+   `ok:false`/503 com o motor de pé e improdutivo por `HII_TICKS_SEM_PROGRESSO_MAX`
    ticks (6 por omissão). De quebra: job que volta SEM mudar o status entra em cooldown
-   (`HICODE_CARD_COOLDOWN_MS`, 30 s) — o redespacho em 5 s que virava laço de gasto.
+   (`HII_CARD_COOLDOWN_MS`, 30 s) — o redespacho em 5 s que virava laço de gasto.
 5. Campo `diffHash` + `criterio` do veredito em evento `gate_verdict` — `motor/ciclo/passo-com-gate.ts:114`,
    com `chave: diffHash` do diff acumulado (`motor/ciclo/crivo/gate.ts:131`). Três vezes o mesmo hash =
    laço comprovado, não inferido.
@@ -177,7 +177,7 @@ Dois itens adicionais para o operador diagnosticar à mão, hoje invisíveis:
 
 - `hii doctor` não olha card — `motor/euclides/radar/doctor.ts:196-203` pula de checagem de ambiente direto para
   daemon. Quando um card parou, o doctor responde tudo verde e deixa o humano sem pista.
-- Drenagem incompatível — `motor/oswaldo/mutirao/encerramento.ts:11` (`HICODE_SHUTDOWN_TIMEOUT_MS`=30 s) contra
+- Drenagem incompatível — `motor/oswaldo/mutirao/encerramento.ts:11` (`HII_SHUTDOWN_TIMEOUT_MS`=30 s) contra
   `motor/cordel/alicerce/config.ts:48` (`RUN_TIMEOUT_MS`=900 s). SIGTERM durante agente mata o filho; custo da
   passagem nunca é escrito, portão de orçamento funciona com número subconta.
 

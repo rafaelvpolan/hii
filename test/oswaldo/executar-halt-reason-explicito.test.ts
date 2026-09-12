@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-exec-haltreason-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const FANTASMA = join(BASE, 'repo-que-nao-existe')
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/fantasma', path: FANTASMA, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/fantasma', path: FANTASMA, branch: 'main' }]))
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { handleExecute } = await import('../../motor/oswaldo/executar.ts')

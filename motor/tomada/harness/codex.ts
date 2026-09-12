@@ -100,7 +100,7 @@ export class CodexProvider implements Harness {
   readonly rodaLocal = false
   readonly temLeitorDePlano = false
 
-  modeloPadraoPara(): string | undefined { return process.env.HICODE_CODEX_MODEL || undefined }
+  modeloPadraoPara(): string | undefined { return process.env.HII_CODEX_MODEL || undefined }
   prontoParaUso(): boolean { return true }
   comoObterQuandoAusente(): string { return 'instale o CLI do Codex' }
   autenticado(): boolean { return codexAutenticado() }

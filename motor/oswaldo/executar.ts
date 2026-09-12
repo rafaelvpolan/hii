@@ -325,7 +325,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       const tentados = rotaTentadas(card.fm.rota_tentados)
       const rota = (deps.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: tentados })
       if (rota.acao === 'trocar') {
-        patchCard(id, { provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${rota.para} (${rota.motivo}; HICODE_QUOTA_FALLBACK=on) e tentando de novo`)
+        patchCard(id, { provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${rota.para} (${rota.motivo}; HII_QUOTA_FALLBACK=on) e tentando de novo`)
         return
       }
     }

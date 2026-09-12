@@ -91,7 +91,7 @@ function trocaDeProvedorPorQuota(input: FailurePolicyInput, attempts: number): P
     wait_provider: rota.para,
     ...(input.resumeStep ? { resume_from: input.resumeStep } : {}),
     ...input.extraFields,
-  }, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) cota de ${input.provider || 'provedor'} esgotada — proxima tentativa em ${rota.para} as ${until} (${rota.motivo}; HICODE_QUOTA_FALLBACK=on; a espera e curta porque o retry NAO volta ao provedor esgotado)`)
+  }, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) cota de ${input.provider || 'provedor'} esgotada — proxima tentativa em ${rota.para} as ${until} (${rota.motivo}; HII_QUOTA_FALLBACK=on; a espera e curta porque o retry NAO volta ao provedor esgotado)`)
   return 'waiting'
 }
 
@@ -123,7 +123,7 @@ function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutco
   if (input.failureClass === 'quota') {
     const trocado = trocaDeProvedorPorQuota(input, attempts)
     if (trocado) return trocado
-    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HICODE_QUOTA_FALLBACK para permitir troca explicita`)
+    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HII_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
   }
 

@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-shutdown-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const enc = await import('../../motor/oswaldo/mutirao/encerramento.ts')
@@ -73,8 +73,8 @@ test('a leitura de saude conta o que esta em voo e o que esta pendente', () => {
   fila.liberar('a')
 })
 
-test('sem HICODE_HEALTH_PORT o servidor nao sobe — nao abre porta sem pedir', () => {
-  delete process.env.HICODE_HEALTH_PORT
+test('sem HII_HEALTH_PORT o servidor nao sobe — nao abre porta sem pedir', () => {
+  delete process.env.HII_HEALTH_PORT
   expect(subirServidorDeSaude()).toBeNull()
 })
 
@@ -108,12 +108,12 @@ test('REGRESSAO /health nao devolve a mensagem crua de erro — ela carrega cami
 })
 
 test('REGRESSAO /health liga em loopback por padrao — Bun.serve sem hostname abre em 0.0.0.0', () => {
-  delete process.env.HICODE_HEALTH_BIND
+  delete process.env.HII_HEALTH_BIND
   expect(enderecoDeSaude()).toBe('127.0.0.1')
 })
 
 test('expor o /health alem do loopback exige intencao explicita do operador', () => {
-  process.env.HICODE_HEALTH_BIND = '0.0.0.0'
+  process.env.HII_HEALTH_BIND = '0.0.0.0'
   expect(enderecoDeSaude()).toBe('0.0.0.0')
-  delete process.env.HICODE_HEALTH_BIND
+  delete process.env.HII_HEALTH_BIND
 })

@@ -17,7 +17,7 @@ test('profundidade sai do ambiente, com forcado por cima', () => {
   expect(profundidadeDeCor({ TERM: 'xterm' })).toBe('basico')
   expect(profundidadeDeCor({ TERM: 'dumb' })).toBe('nenhuma')
   expect(profundidadeDeCor({})).toBe('nenhuma')
-  expect(profundidadeDeCor({ HICODE_COLOR_DEPTH: 'basico', COLORTERM: 'truecolor' })).toBe('basico')
+  expect(profundidadeDeCor({ HII_COLOR_DEPTH: 'basico', COLORTERM: 'truecolor' })).toBe('basico')
 })
 
 test('sem cor NENHUM tom emite escape — a garantia vale para todos', () => {

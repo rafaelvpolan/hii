@@ -6,8 +6,8 @@ import { join } from 'node:path'
 let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-ia-'))
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
-  for (const v of ['HICODE_EFFORT', 'HICODE_IMPLEMENT_PROVIDER', 'HICODE_GATE_PROVIDER', 'HICODE_AI_PROVIDER']) {
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  for (const v of ['HII_EFFORT', 'HII_IMPLEMENT_PROVIDER', 'HII_GATE_PROVIDER', 'HII_AI_PROVIDER']) {
     delete process.env[v]
   }
 })
@@ -21,22 +21,22 @@ test('a troca vale sem reiniciar: a leitura seguinte ja ve o novo valor', async 
 })
 
 test('preferencia em arquivo vence a env', async () => {
-  process.env.HICODE_GATE_PROVIDER = 'ollama'
+  process.env.HII_GATE_PROVIDER = 'ollama'
   const { aplicar } = await import('../../motor/mirante/escolher-ia.ts')
   const { providerNameFor } = await import('../../motor/tomada/registro.ts')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   expect(providerNameFor('gate')).toBe('codex')
-  delete process.env.HICODE_GATE_PROVIDER
+  delete process.env.HII_GATE_PROVIDER
 })
 
 test('padrao limpa a preferencia e a env volta a valer', async () => {
-  process.env.HICODE_GATE_PROVIDER = 'ollama'
+  process.env.HII_GATE_PROVIDER = 'ollama'
   const { aplicar, limpar } = await import('../../motor/mirante/escolher-ia.ts')
   const { providerNameFor } = await import('../../motor/tomada/registro.ts')
   aplicar({ papeis: ['gate'], provider: 'codex' })
   limpar(['gate'])
   expect(providerNameFor('gate')).toBe('ollama')
-  delete process.env.HICODE_GATE_PROVIDER
+  delete process.env.HII_GATE_PROVIDER
 })
 
 test('interpretar entende papel, provedor, modelo e esforco em qualquer ordem', async () => {
@@ -152,9 +152,9 @@ test('o esforco do card aparece no rodape quando a tarefa esta aberta', async ()
 
 test('a env continua valendo como configuracao inicial no rodape', async () => {
   const { effortFor } = await import('../../motor/tomada/registro.ts')
-  process.env.HICODE_EFFORT = 'low'
+  process.env.HII_EFFORT = 'low'
   expect(effortFor('implement')).toBe('low')
-  delete process.env.HICODE_EFFORT
+  delete process.env.HII_EFFORT
 })
 
 test('REGRESSAO rodape e motor leem a MESMA fonte de esforco', async () => {
@@ -269,16 +269,16 @@ test('gravar a preferencia e ATOMICO e nao deixa .tmp para tras — writeFileSyn
   const { join } = await import('node:path')
   const { tmpdir } = await import('node:os')
   const raiz = mkdtempSync(join(tmpdir(), 'hii-ia-'))
-  const antes = process.env.HICODE_IA_FILE
-  process.env.HICODE_IA_FILE = join(raiz, 'ia.json')
+  const antes = process.env.HII_IA_FILE
+  process.env.HII_IA_FILE = join(raiz, 'ia.json')
   try {
     const { aplicar } = await import('../../motor/mirante/escolher-ia.ts')
     aplicar({ papeis: ['implement'], provider: 'claude' })
     expect(existsSync(join(raiz, 'ia.json'))).toBe(true)
     expect(readdirSync(raiz).filter(f => f.includes('.tmp.'))).toEqual([])
   } finally {
-    if (antes === undefined) delete process.env.HICODE_IA_FILE
-    else process.env.HICODE_IA_FILE = antes
+    if (antes === undefined) delete process.env.HII_IA_FILE
+    else process.env.HII_IA_FILE = antes
     rmSync(raiz, { recursive: true, force: true })
   }
 })
@@ -291,7 +291,7 @@ test('gravar a preferencia e ATOMICO e nao deixa .tmp para tras — writeFileSyn
 test('com ia.json ILEGIVEL, nenhuma funcao exportada LANCA — a TUI nao pode morrer', async () => {
   const { writeFileSync } = await import('node:fs')
   const M = await import('../../motor/mirante/escolher-ia.ts')
-  writeFileSync(process.env.HICODE_IA_FILE as string, '{ isto nao e json')
+  writeFileSync(process.env.HII_IA_FILE as string, '{ isto nao e json')
 
   for (const [nome, chamada] of [
     ['aplicar', () => M.aplicar({ papeis: ['gate'], provider: 'codex' })],
@@ -315,7 +315,7 @@ test('e o arquivo ILEGIVEL nao e SOBRESCRITO — a preferencia dos outros papeis
   const { writeFileSync, readFileSync } = await import('node:fs')
   const M = await import('../../motor/mirante/escolher-ia.ts')
   const antes = '{ "gate": { "provider": "codex" }, truncad'
-  writeFileSync(process.env.HICODE_IA_FILE as string, antes)
+  writeFileSync(process.env.HII_IA_FILE as string, antes)
   M.aplicar({ papeis: ['implement'], provider: 'claude' })
-  expect(readFileSync(process.env.HICODE_IA_FILE as string, 'utf8'), 'gravar por cima apaga o que ainda esta la para o humano consertar').toBe(antes)
+  expect(readFileSync(process.env.HII_IA_FILE as string, 'utf8'), 'gravar por cima apaga o que ainda esta la para o humano consertar').toBe(antes)
 })

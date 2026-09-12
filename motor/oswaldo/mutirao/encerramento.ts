@@ -9,7 +9,7 @@ import { encerrarHarnessesRegistrados } from '../../tomada/harness-em-voo.ts'
 // acidente e pior que cobrir por design: o card volta a rodar do comeco de uma
 // fase que ja estava quase pronta, e o custo em token e real.
 
-const TETO_PADRAO_MS = Number(process.env.HICODE_SHUTDOWN_TIMEOUT_MS || 30_000)
+const TETO_PADRAO_MS = Number(process.env.HII_SHUTDOWN_TIMEOUT_MS || 30_000)
 
 let drenando = false
 let graciosoInstalado = false

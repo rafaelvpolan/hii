@@ -19,44 +19,44 @@ test('ROOT aponta para a raiz DESTE repo — serve ao motor e ao painel', () => 
 })
 
 test('REGRESSAO sem override, cardsDir e reposFile ficam dentro do ROOT resolvido', () => {
-  const cards = process.env.HICODE_CARDS_DIR
-  const repos = process.env.HICODE_REPOS_FILE
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_REPOS_FILE
+  const cards = process.env.HII_CARDS_DIR
+  const repos = process.env.HII_REPOS_FILE
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_REPOS_FILE
   try {
     expect(cardsDir().startsWith(ROOT)).toBe(true)
     expect(reposFile().startsWith(ROOT)).toBe(true)
   } finally {
-    if (cards !== undefined) process.env.HICODE_CARDS_DIR = cards
-    if (repos !== undefined) process.env.HICODE_REPOS_FILE = repos
+    if (cards !== undefined) process.env.HII_CARDS_DIR = cards
+    if (repos !== undefined) process.env.HII_REPOS_FILE = repos
   }
 })
 
 test('com override, cardsDir sai do ROOT — e isso e o esperado', () => {
-  const prev = process.env.HICODE_CARDS_DIR
-  process.env.HICODE_CARDS_DIR = '/tmp/cards-de-teste'
+  const prev = process.env.HII_CARDS_DIR
+  process.env.HII_CARDS_DIR = '/tmp/cards-de-teste'
   expect(cardsDir()).toBe('/tmp/cards-de-teste')
-  if (prev === undefined) delete process.env.HICODE_CARDS_DIR
-  else process.env.HICODE_CARDS_DIR = prev
+  if (prev === undefined) delete process.env.HII_CARDS_DIR
+  else process.env.HII_CARDS_DIR = prev
 })
 
-test('HICODE_ROOT tem precedencia sobre a deteccao', async () => {
-  const prev = process.env.HICODE_ROOT
-  process.env.HICODE_ROOT = '/tmp/raiz-forcada'
+test('HII_ROOT tem precedencia sobre a deteccao', async () => {
+  const prev = process.env.HII_ROOT
+  process.env.HII_ROOT = '/tmp/raiz-forcada'
   const fresh = await configReavaliada()
   expect(fresh.ROOT).toBe('/tmp/raiz-forcada')
-  if (prev === undefined) delete process.env.HICODE_ROOT
-  else process.env.HICODE_ROOT = prev
+  if (prev === undefined) delete process.env.HII_ROOT
+  else process.env.HII_ROOT = prev
 })
 
 test('listRepos devolve vazio quando o registro nao existe — sem lancar', async () => {
-  const prev = process.env.HICODE_REPOS_FILE
-  process.env.HICODE_REPOS_FILE = '/tmp/hicode-repos-inexistente.json'
+  const prev = process.env.HII_REPOS_FILE
+  process.env.HII_REPOS_FILE = '/tmp/hicode-repos-inexistente.json'
   const { listRepos, repoRegistered } = await import('../../motor/cordel/store.ts')
   expect(listRepos()).toEqual([])
   expect(repoRegistered('owner/x')).toBe(false)
-  if (prev === undefined) delete process.env.HICODE_REPOS_FILE
-  else process.env.HICODE_REPOS_FILE = prev
+  if (prev === undefined) delete process.env.HII_REPOS_FILE
+  else process.env.HII_REPOS_FILE = prev
 })
 
 test('repoRegistered distingue registrado de nao registrado', async () => {
@@ -65,18 +65,18 @@ test('repoRegistered distingue registrado de nao registrado', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'hicode-repos-'))
   const f = join(dir, 'repos.json')
   writeFileSync(f, JSON.stringify([{ name: 'owner/alvo', path: '/tmp/alvo', branch: 'main' }]))
-  const prev = process.env.HICODE_REPOS_FILE
-  process.env.HICODE_REPOS_FILE = f
+  const prev = process.env.HII_REPOS_FILE
+  process.env.HII_REPOS_FILE = f
   const { listRepos, repoRegistered } = await import('../../motor/cordel/store.ts')
   expect(listRepos().length).toBe(1)
   expect(repoRegistered('owner/alvo')).toBe(true)
   expect(repoRegistered('owner/outro')).toBe(false)
-  if (prev === undefined) delete process.env.HICODE_REPOS_FILE
-  else process.env.HICODE_REPOS_FILE = prev
+  if (prev === undefined) delete process.env.HII_REPOS_FILE
+  else process.env.HII_REPOS_FILE = prev
 })
 
 test('knobs da URL de preview leem env, com os defaults de antes da parametrizacao', async () => {
-  const nomes = ['HICODE_URL_WAIT_S', 'HICODE_URL_PROBE_INTERVAL_MS', 'HICODE_URL_PROBE_TIMEOUT_MS', 'HICODE_URL_INSPECT_TIMEOUT_MS', 'HICODE_URL_FREEPORT_SETTLE_MS']
+  const nomes = ['HII_URL_WAIT_S', 'HII_URL_PROBE_INTERVAL_MS', 'HII_URL_PROBE_TIMEOUT_MS', 'HII_URL_INSPECT_TIMEOUT_MS', 'HII_URL_FREEPORT_SETTLE_MS']
   const guardados = nomes.map(n => process.env[n])
   // A query vem de variavel, nao de literal: literal estatico o tsc tenta
   // resolver na hora do typecheck e quebra (TS2307); interpolacao ele deixa
@@ -93,11 +93,11 @@ test('knobs da URL de preview leem env, com os defaults de antes da parametrizac
     expect(fresh.URL_INSPECT_TIMEOUT_MS).toBe(60000)
     expect(fresh.URL_FREEPORT_SETTLE_MS).toBe(400)
 
-    process.env.HICODE_URL_WAIT_S = '5'
-    process.env.HICODE_URL_PROBE_INTERVAL_MS = '250'
-    process.env.HICODE_URL_PROBE_TIMEOUT_MS = '1500'
-    process.env.HICODE_URL_INSPECT_TIMEOUT_MS = '20000'
-    process.env.HICODE_URL_FREEPORT_SETTLE_MS = '100'
+    process.env.HII_URL_WAIT_S = '5'
+    process.env.HII_URL_PROBE_INTERVAL_MS = '250'
+    process.env.HII_URL_PROBE_TIMEOUT_MS = '1500'
+    process.env.HII_URL_INSPECT_TIMEOUT_MS = '20000'
+    process.env.HII_URL_FREEPORT_SETTLE_MS = '100'
     fresh = await configCom('override-url')
     expect(fresh.URL_WAIT_S).toBe(5)
     expect(fresh.URL_PROBE_INTERVAL_MS).toBe(250)
@@ -106,7 +106,7 @@ test('knobs da URL de preview leem env, com os defaults de antes da parametrizac
     expect(fresh.URL_FREEPORT_SETTLE_MS).toBe(100)
 
     // Valor invalido cai no default com aviso (numeroDeEnv), nunca em NaN.
-    process.env.HICODE_URL_WAIT_S = 'rapido'
+    process.env.HII_URL_WAIT_S = 'rapido'
     fresh = await configCom('invalido-url')
     expect(fresh.URL_WAIT_S).toBe(30)
   } finally {
@@ -118,7 +118,7 @@ test('knobs da URL de preview leem env, com os defaults de antes da parametrizac
 })
 
 test('esperarPorPid usa o orcamento parametrizado como default — o botao chega no laco de URL', async () => {
-  delete process.env.HICODE_URL_WAIT_S
+  delete process.env.HII_URL_WAIT_S
   const { esperarPorPid } = await import('../../motor/ciclo/reprise/url-ajuste.ts')
   // pid 0 nunca sonda a rede: a funcao devolve false na hora. O teste trava a
   // LIGACAO do knob (default = URL_WAIT_S) sem esperar 30s de verdade.
@@ -126,17 +126,17 @@ test('esperarPorPid usa o orcamento parametrizado como default — o botao chega
 })
 
 test('pipelineManual: manual por padrao, auto por card ou por env — e o campo do card vence o env', () => {
-  const prev = process.env.HICODE_PIPELINE
-  delete process.env.HICODE_PIPELINE
+  const prev = process.env.HII_PIPELINE
+  delete process.env.HII_PIPELINE
   try {
     expect(pipelineManual(), 'default e manual').toBe(true)
     expect(pipelineManual({}), 'card sem o campo segue o default').toBe(true)
     expect(pipelineManual({ pipeline: 'auto' }), 'opt-in por card').toBe(false)
-    process.env.HICODE_PIPELINE = 'auto'
+    process.env.HII_PIPELINE = 'auto'
     expect(pipelineManual(), 'opt-in global por env').toBe(false)
     expect(pipelineManual({ pipeline: 'manual' }), 'o card vence o env — ninguem liga o sequencial para um card que pediu manual').toBe(true)
   } finally {
-    if (prev === undefined) delete process.env.HICODE_PIPELINE
-    else process.env.HICODE_PIPELINE = prev
+    if (prev === undefined) delete process.env.HII_PIPELINE
+    else process.env.HII_PIPELINE = prev
   }
 })

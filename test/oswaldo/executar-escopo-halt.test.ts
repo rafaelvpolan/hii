@@ -8,8 +8,8 @@ import type { ImplementResult } from '../../motor/cordel/index.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-escopohalt-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -35,8 +35,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { handleExecute } = await import('../../motor/oswaldo/executar.ts')
@@ -136,7 +136,7 @@ test('REGRESSAO: o run do HALT de escopo carimba a falha, nao "ok"', async () =>
   await handleExecute(id, implementQue('edita-referencia'))
   const c = readCard(id)
   expect(c?.fm.status).toBe('HALTED')
-  const dir = join(process.env.HICODE_CARDS_DIR ?? '', 'runs')
+  const dir = join(process.env.HII_CARDS_DIR ?? '', 'runs')
   const arquivos = readdirSync(dir).filter(f => f.startsWith(`${id}-`))
   expect(arquivos.length, 'o HALT tem de gravar um run').toBeGreaterThan(0)
   const runs = arquivos.map(f => JSON.parse(readFileSync(join(dir, f), 'utf8')) as { ok: boolean; failure_class?: string; failure_reason?: string })

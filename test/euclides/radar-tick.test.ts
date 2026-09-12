@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-health-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { reportTickFailure, recordTickSuccess } = await import('../../motor/euclides/radar/tick.ts')
 
@@ -48,14 +48,14 @@ test('o estado persiste em disco entre chamadas (sobrevive a reinicio do process
 })
 
 test('reportTickFailure nunca lanca, mesmo com cardsDir corrompido/inacessivel', () => {
-  const cardsDirValida = process.env.HICODE_CARDS_DIR
+  const cardsDirValida = process.env.HII_CARDS_DIR
   const arquivoNoLugarDoDiretorio = join(tmpdir(), `hicode-health-corrompido-${Date.now()}`)
   writeFileSync(arquivoNoLugarDoDiretorio, 'isto e um arquivo, nao um diretorio de cards\n')
-  process.env.HICODE_CARDS_DIR = arquivoNoLugarDoDiretorio
+  process.env.HII_CARDS_DIR = arquivoNoLugarDoDiretorio
   try {
     expect(() => reportTickFailure('x', new Error('y'))).not.toThrow()
   } finally {
-    process.env.HICODE_CARDS_DIR = cardsDirValida
+    process.env.HII_CARDS_DIR = cardsDirValida
     rmSync(arquivoNoLugarDoDiretorio, { force: true })
   }
 })

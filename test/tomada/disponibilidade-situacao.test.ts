@@ -19,12 +19,12 @@ beforeEach(() => {
   pathAntigo = process.env.PATH ?? ''
   process.env.PATH = `${binDir}${delimiter}${pathAntigo}`
   claudeJson = join(binDir, 'claude.json')
-  process.env.HICODE_CLAUDE_CONFIG = claudeJson
+  process.env.HII_CLAUDE_CONFIG = claudeJson
 })
 
 afterEach(() => {
   process.env.PATH = pathAntigo
-  delete process.env.HICODE_CLAUDE_CONFIG
+  delete process.env.HII_CLAUDE_CONFIG
 })
 
 test('/ia lista os provedores com a situacao real de cada um', async () => {

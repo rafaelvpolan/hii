@@ -9,7 +9,7 @@ import { run } from '../../motor/quilombo/git.ts'
 import { LOGO, METADADOS, METADADOS_GCP_PONTO, destino, movedTo, net, recusa, segue } from '../fixtures/rede-falsa.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-refs-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { refPaths, resolveRefs } = await import('../../motor/quilombo/alfandega/refs.ts')
 

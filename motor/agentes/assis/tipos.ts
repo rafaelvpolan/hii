@@ -20,7 +20,7 @@ export function tetoDeLotes(valor: number): number {
 }
 
 export const LOTE_CHARS_DEFAULT = orcamentoValido(
-  Number(process.env.HICODE_AUDIT_LOTE_CHARS || GATE_DIFF_LIMIT),
+  Number(process.env.HII_AUDIT_LOTE_CHARS || GATE_DIFF_LIMIT),
   ORCAMENTO_FALLBACK,
 )
 

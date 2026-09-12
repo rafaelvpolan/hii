@@ -113,11 +113,12 @@ async function subir(alvo: AlvoDoServe): Promise<string[]> {
   const cmd = devCommand(contrato, alvo.port)
   const h = await ensureUrl(alvo.dir, alvo.port, repoPath(alvo.repo), pidConhecidoDe(alvo))
   if (!h.pid) return [`${nomeDo(alvo)}: nao consegui iniciar "${cmd?.label ?? 'dev'}" em ${alvo.dir}`]
-  if (h.reused) return [`${nomeDo(alvo)}: o modo dev ja esta de pe em ${urlDe(alvo.port)} (pid ${h.pid})`]
+  if (h.reused) return [`${nomeDo(alvo)}: o modo dev ja esta de pe (pid ${h.pid})`, `  ${urlDe(alvo.port)}`]
   lembrarPid(alvo, h.pid)
   const respondeu = await waitHttp(urlDe(alvo.port), TENTATIVAS_DE_ESPERA)
-  const linha = `${nomeDo(alvo)}: modo dev subiu em ${urlDe(alvo.port)} (pid ${h.pid}) — ${cmd?.label ?? 'dev'} em ${alvo.dir}`
-  return respondeu ? [linha] : [linha, `  ainda nao responde em ${urlDe(alvo.port)} — de mais alguns segundos; se nao subir, rode o comando a mao nesse diretorio para ver o erro`]
+  const linha = `${nomeDo(alvo)}: modo dev subiu (pid ${h.pid}) — ${cmd?.label ?? 'dev'} em ${alvo.dir}`
+  const url = `  ${urlDe(alvo.port)}`
+  return respondeu ? [linha, url] : [linha, url, `  ainda nao responde — de mais alguns segundos; se nao subir, rode o comando a mao nesse diretorio para ver o erro`]
 }
 
 async function parar(alvo: AlvoDoServe): Promise<string[]> {
@@ -137,7 +138,7 @@ async function status(alvo: AlvoDoServe): Promise<string[]> {
   const vivo = pidAlive(pid)
   const responde = vivo && await httpOk(urlDe(alvo.port))
   if (!vivo) return [`${nomeDo(alvo)}: modo dev parado — /serve${alvo.kind === 'card' ? ` ${alvo.id}` : ''} sobe em ${urlDe(alvo.port)}`]
-  return [`${nomeDo(alvo)}: modo dev ${responde ? 'de pe' : 'com processo vivo mas sem responder'} em ${urlDe(alvo.port)} (pid ${pid})`]
+  return [`${nomeDo(alvo)}: modo dev ${responde ? 'de pe' : 'com processo vivo mas sem responder'} (pid ${pid})`, `  ${urlDe(alvo.port)}`]
 }
 
 export const AJUDA_DO_SERVE = 'uso: /serve [id|projeto] [stop|status] — sobe o modo dev da tarefa aberta (ou do projeto), para ou mostra o estado'

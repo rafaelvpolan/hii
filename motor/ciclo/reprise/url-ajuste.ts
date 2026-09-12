@@ -2,7 +2,7 @@ import { numeroDeEnv, URL_WAIT_S } from '../../cordel/alicerce/config.ts'
 import { ensureUrl, waitHttp } from '../crivo/url-viva.ts'
 import { anexarEvento } from '../../euclides/eventos.ts'
 
-export const TENTATIVAS_DE_AJUSTE = numeroDeEnv('HICODE_URL_AJUSTES', 2)
+export const TENTATIVAS_DE_AJUSTE = numeroDeEnv('HII_URL_AJUSTES', 2)
 
 export interface TentativaDeUrl {
   pid: number

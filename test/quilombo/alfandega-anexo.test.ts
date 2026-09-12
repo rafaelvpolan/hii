@@ -9,14 +9,14 @@ let fora = ''
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
 
 function semLimiaresDeDisco(): void {
-  delete process.env.HICODE_DISCO_TETO_MB
-  delete process.env.HICODE_DISCO_ALERTA_MB
+  delete process.env.HII_DISCO_TETO_MB
+  delete process.env.HII_DISCO_ALERTA_MB
 }
 
 beforeEach(() => {
   estado = mkdtempSync(join(tmpdir(), 'hii-refs-'))
   fora = mkdtempSync(join(tmpdir(), 'hii-fonte-'))
-  process.env.HICODE_CARDS_DIR = estado
+  process.env.HII_CARDS_DIR = estado
   semLimiaresDeDisco()
 })
 
@@ -136,7 +136,7 @@ test('no teto de disco a ref e recusada em vez de encher o disco', async () => {
   const { anexarNaTarefa } = await import('../../motor/quilombo/alfandega/anexo.ts')
   mkdirSync(join(estado, 'refs', '009'), { recursive: true })
   writeFileSync(join(estado, 'refs', '009', 'gordo.png'), Buffer.alloc(2 * 1024 * 1024))
-  process.env.HICODE_DISCO_TETO_MB = '1'
+  process.env.HII_DISCO_TETO_MB = '1'
   const r = anexarNaTarefa('010', imagemFora('print.png'))
   expect(r.ok).toBe(false)
   expect(r.motivo).toContain('teto')
@@ -160,8 +160,8 @@ test('a limpeza de tmp remove o antigo e preserva a sessao em uso', async () => 
 })
 
 test('os limiares de disco nao vazam para os outros arquivos (bun roda tudo no mesmo processo)', () => {
-  process.env.HICODE_DISCO_TETO_MB = '1'
+  process.env.HII_DISCO_TETO_MB = '1'
   semLimiaresDeDisco()
-  expect(process.env.HICODE_DISCO_TETO_MB).toBeUndefined()
-  expect(process.env.HICODE_DISCO_ALERTA_MB).toBeUndefined()
+  expect(process.env.HII_DISCO_TETO_MB).toBeUndefined()
+  expect(process.env.HII_DISCO_ALERTA_MB).toBeUndefined()
 })

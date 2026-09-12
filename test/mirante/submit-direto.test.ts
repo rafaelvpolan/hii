@@ -18,7 +18,7 @@ const io = dispatchIOFalso({
 beforeEach(() => {
   const dir = mkdtempSync(join(tmpdir(), 'hicode-submit-direto-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   saida = []
 })
 

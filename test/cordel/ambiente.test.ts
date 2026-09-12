@@ -7,14 +7,14 @@ import { snapshotDoAmbiente, candidatosNaPergunta, instalado } from '../../motor
 test('REGRESSAO: "tem X instalado" e respondivel — o motor entrega o fato, nao a IA adivinha', () => {
   const registro = join(mkdtempSync(join(tmpdir(), 'hicode-repos-ambiente-')), 'repos.json')
   writeFileSync(registro, JSON.stringify([{ name: 'acme/site', path: '/tmp/acme-site' }]))
-  process.env.HICODE_REPOS_FILE = registro
+  process.env.HII_REPOS_FILE = registro
 
   const s = snapshotDoAmbiente('tem acesso ao ntn-cli? qual projeto esta configurado?')
   expect(s).toContain('ntn-cli')
   expect(s).toMatch(/ntn-cli: (NAO )?instalado/)
   expect(s).toContain('projetos registrados')
   expect(s).toContain('acme/site')
-  delete process.env.HICODE_REPOS_FILE
+  delete process.env.HII_REPOS_FILE
 })
 
 test('o snapshot sempre cobre os CLIs que o motor usa', () => {

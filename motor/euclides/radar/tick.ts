@@ -12,7 +12,7 @@ export interface DaemonHealth {
 
 const EMPTY_HEALTH: DaemonHealth = { consecutiveFailures: 0, lastError: '', lastErrorAt: '', ticksSemProgresso: 0 }
 
-const ESCALATE_AFTER = Number(process.env.HICODE_TICK_ESCALATE_AFTER || 3)
+const ESCALATE_AFTER = Number(process.env.HII_TICK_ESCALATE_AFTER || 3)
 
 function healthFile(): string {
   return join(cardsDir(), 'runs', 'daemon-health.json')

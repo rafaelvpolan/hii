@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-rm-fixo-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(join(BASE, 'cards'), { recursive: true })
 const { confirmacaoDeRemocao } = await import('../../motor/mirante/cli/confirmacao-de-remocao.ts')
 const { createCard } = await import('../../motor/cordel/store.ts')
@@ -20,7 +20,8 @@ test('REGRESSAO /rm: o plano de remocao vai para o bloco ACIMA do prompt, com os
   const r = handle(`/rm ${Number(a)} ${Number(b)}`, newSession('org/app'))
   const depois = await dispatch(r.effect, r.state, io as never)
   expect(depois.state.removendo, 'o estado arma a confirmacao com os alvos').toBe(`${a} ${b}`)
-  expect(log.join('\n'), 'nada do plano no log rolante quando ha alvo').not.toContain('apagar 2 tarefas')
+  expect(log.join('\n'), 'o log fica com um resumo de uma linha').toContain('apagar 2 tarefas — confira o bloco acima do prompt')
+  expect(log.join('\n'), 'o plano com titulos e custo nao vai para o log rolante').not.toContain('menu mobile')
 
   const fixo = confirmacaoDeRemocao(depois.state.removendo, { color: false, width: 80 })
   const txt = fixo.join('\n')

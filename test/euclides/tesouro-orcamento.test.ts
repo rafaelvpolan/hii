@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-orcamento-'))
 afterAll(() => {
   rmSync(BASE, { recursive: true, force: true })
-  delete process.env.HICODE_TIER_FILE
+  delete process.env.HII_TIER_FILE
 })
 
 const G = await import('../../motor/euclides/tesouro/orcamento.ts')
@@ -15,11 +15,11 @@ let n = 0
 function comArquivo<T>(conteudo: string, fn: () => T): T {
   const caminho = join(BASE, `tier-${n++}.json`)
   writeFileSync(caminho, conteudo)
-  process.env.HICODE_TIER_FILE = caminho
+  process.env.HII_TIER_FILE = caminho
   try {
     return fn()
   } finally {
-    delete process.env.HICODE_TIER_FILE
+    delete process.env.HII_TIER_FILE
   }
 }
 
@@ -32,9 +32,9 @@ test('o arquivo real do repo e legivel e cobre as acoes que o motor executa', ()
 })
 
 test('arquivo ausente LANCA — cair para "sem governanca" seria decidir custo por habito de novo', () => {
-  process.env.HICODE_TIER_FILE = join(BASE, 'nao-existe.json')
+  process.env.HII_TIER_FILE = join(BASE, 'nao-existe.json')
   expect(() => G.lerGovernanca()).toThrow('nao encontrado')
-  delete process.env.HICODE_TIER_FILE
+  delete process.env.HII_TIER_FILE
 })
 
 test('arquivo ilegivel LANCA em vez de virar lista vazia', () => {
@@ -75,17 +75,17 @@ test('acao fora do catalogo NAO cai em tier barato — usa o padrao declarado no
 })
 
 test('o teto do card vem do arquivo versionado, nao mais de env com default zero', () => {
-  delete process.env.HICODE_CARD_BUDGET_USD
+  delete process.env.HII_CARD_BUDGET_USD
   expect(G.tetoDoCard()).toBe(G.lerGovernanca().orcamentoPorCard.tetoUsd)
   expect(G.tetoDoCard(), 'default zero era orcamento desligado — governanca que nao governa').toBeGreaterThan(0)
 })
 
 test('env continua vencendo o arquivo, para quem ja calibrou o proprio teto', () => {
-  process.env.HICODE_CARD_BUDGET_USD = '3'
+  process.env.HII_CARD_BUDGET_USD = '3'
   try {
     expect(G.tetoDoCard()).toBe(3)
   } finally {
-    delete process.env.HICODE_CARD_BUDGET_USD
+    delete process.env.HII_CARD_BUDGET_USD
   }
 })
 

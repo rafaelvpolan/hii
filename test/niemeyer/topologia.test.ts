@@ -169,13 +169,13 @@ function comTopologia<T>(conteudo: string, corpo: () => T): T {
   const dir = mkdtempSync(join(tmpdir(), 'hii-topo-'))
   const arquivo = join(dir, 'topologia.json')
   writeFileSync(arquivo, conteudo)
-  const anterior = process.env.HICODE_TOPOLOGIA_FILE
-  process.env.HICODE_TOPOLOGIA_FILE = arquivo
+  const anterior = process.env.HII_TOPOLOGIA_FILE
+  process.env.HII_TOPOLOGIA_FILE = arquivo
   try {
     return corpo()
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_TOPOLOGIA_FILE
-    else process.env.HICODE_TOPOLOGIA_FILE = anterior
+    if (anterior === undefined) delete process.env.HII_TOPOLOGIA_FILE
+    else process.env.HII_TOPOLOGIA_FILE = anterior
     rmSync(dir, { recursive: true, force: true })
   }
 }

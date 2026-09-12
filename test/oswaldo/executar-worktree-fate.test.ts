@@ -8,9 +8,9 @@ import type { ImplementResult } from '../../motor/cordel/index.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-wtfate-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-process.env.HICODE_IMPLEMENT_QUOTA_FALLBACK_PROVIDER = 'codex'
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+process.env.HII_IMPLEMENT_QUOTA_FALLBACK_PROVIDER = 'codex'
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -35,8 +35,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 let resultadoDoAgente: ImplementResult = { ok: false, reason: 'nao configurado', cost: '0', usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 } }
 
@@ -49,7 +49,7 @@ const agente: ExecuteDeps = {
   verifyVisual: (): Promise<never> => Promise.reject(new Error('nao deveria chamar verifyVisual')),
 }
 
-beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '2' })
+beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '2' })
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
@@ -108,8 +108,8 @@ test('transiente que esgota as tentativas finalmente HALTa mas mantem o worktree
   expect(existsSync(wt)).toBe(true)
 }, TEMPO_COM_GIT_MS)
 
-test('cota esgotada com HICODE_QUOTA_FALLBACK=off para o card e descarta o worktree', async () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'off'
+test('cota esgotada com HII_QUOTA_FALLBACK=off para o card e descarta o worktree', async () => {
+  process.env.HII_QUOTA_FALLBACK = 'off'
   try {
   resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'codex' }
   const wt = worktreeParaTeste()
@@ -120,12 +120,12 @@ test('cota esgotada com HICODE_QUOTA_FALLBACK=off para o card e descarta o workt
   expect(card?.body).toContain('cota do provedor codex esgotada')
   expect(existsSync(wt)).toBe(false)
   } finally {
-    delete process.env.HICODE_QUOTA_FALLBACK
+    delete process.env.HII_QUOTA_FALLBACK
   }
 }, TEMPO_COM_GIT_MS)
 
-test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): a ROTA decide a troca em vez de parar', async () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+test('cota esgotada com fallback configurado (HII_QUOTA_FALLBACK=on): a ROTA decide a troca em vez de parar', async () => {
+  process.env.HII_QUOTA_FALLBACK = 'on'
   try {
     resultadoDoAgente = { ok: false, reason: 'cota', cost: '0.0100', usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 }, failureClass: 'quota', failureReason: 'cota do provedor esgotada', provider: 'claude' }
     const wt = worktreeParaTeste()
@@ -139,6 +139,6 @@ test('cota esgotada com fallback configurado (HICODE_QUOTA_FALLBACK=on): a ROTA 
     expect(card?.body).toContain('trocando para codex')
     expect(existsSync(wt)).toBe(true)
   } finally {
-    delete process.env.HICODE_QUOTA_FALLBACK
+    delete process.env.HII_QUOTA_FALLBACK
   }
 }, TEMPO_COM_GIT_MS)

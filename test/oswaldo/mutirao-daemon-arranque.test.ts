@@ -61,11 +61,11 @@ interface Saida {
 function ambiente(nome: string): Record<string, string | undefined> {
   return {
     ...process.env,
-    HICODE_RUNNER_LOCK: join(BASE, `${nome}.lock`),
-    HICODE_RUNNER_PIDFILE: join(BASE, `${nome}.pid`),
-    HICODE_RUNNER_LOG: join(BASE, `${nome}.log`),
-    HICODE_CARDS_DIR: CARDS,
-    HICODE_REPOS_FILE: join(BASE, 'repos.json'),
+    HII_RUNNER_LOCK: join(BASE, `${nome}.lock`),
+    HII_RUNNER_PIDFILE: join(BASE, `${nome}.pid`),
+    HII_RUNNER_LOG: join(BASE, `${nome}.log`),
+    HII_CARDS_DIR: CARDS,
+    HII_REPOS_FILE: join(BASE, 'repos.json'),
   }
 }
 
@@ -189,11 +189,11 @@ test('REGRESSAO: o daemon sobe SEM bun no PATH — maquina so-node continua supo
   expect(vivo(pid)).toBe(false)
 }, 60000)
 
-test('HICODE_RUNTIME=node manda mesmo com bun disponivel — e o `stop` de um shell que escolheria bun ainda reconhece esse motor', () => {
+test('HII_RUNTIME=node manda mesmo com bun disponivel — e o `stop` de um shell que escolheria bun ainda reconhece esse motor', () => {
   const nome = 'runtime-pedido'
   const pidfile = join(BASE, `${nome}.pid`)
 
-  const r = correrCom('start', nome, { HICODE_RUNTIME: 'node' })
+  const r = correrCom('start', nome, { HII_RUNTIME: 'node' })
 
   expect(r.status, r.stderr).toBe(0)
   const pid = Number(readFileSync(pidfile, 'utf8').trim())
@@ -205,8 +205,8 @@ test('HICODE_RUNTIME=node manda mesmo com bun disponivel — e o `stop` de um sh
   expect(vivo(pid)).toBe(false)
 }, 60000)
 
-test('HICODE_RUNTIME desconhecido PARA o script em vez de cair no padrao em silencio', () => {
-  const r = correrCom('status', 'runtime-invalido', { HICODE_RUNTIME: 'deno' })
+test('HII_RUNTIME desconhecido PARA o script em vez de cair no padrao em silencio', () => {
+  const r = correrCom('status', 'runtime-invalido', { HII_RUNTIME: 'deno' })
 
   expect(r.status).not.toBe(0)
   expect(r.stderr).toContain('nao e um runtime suportado')
@@ -346,7 +346,7 @@ test('REGRESSAO: dois ROOTS diferentes — status consultado por um script de OU
   symlinkSync(SCRIPT, scriptDeFora)
 
   const consulta = spawnSync('bash', [scriptDeFora, 'status'], {
-    env: { ...process.env, HICODE_RUNNER_PIDFILE: pidfile },
+    env: { ...process.env, HII_RUNNER_PIDFILE: pidfile },
     encoding: 'utf8',
     timeout: 40000,
   })
@@ -375,7 +375,7 @@ test('REGRESSAO: "start" disparado por um script de OUTRA raiz com pidfile compa
   symlinkSync(SCRIPT, scriptDeFora)
 
   const startDeFora = spawnSync('bash', [scriptDeFora, 'start'], {
-    env: { ...process.env, HICODE_RUNNER_PIDFILE: pidfile },
+    env: { ...process.env, HII_RUNNER_PIDFILE: pidfile },
     encoding: 'utf8',
     timeout: 40000,
   })
@@ -385,7 +385,7 @@ test('REGRESSAO: "start" disparado por um script de OUTRA raiz com pidfile compa
   expect(daemon('status', nome).stdout).toContain(`online (PID ${pid})`)
 
   const statusDeFora = spawnSync('bash', [scriptDeFora, 'status'], {
-    env: { ...process.env, HICODE_RUNNER_PIDFILE: pidfile },
+    env: { ...process.env, HII_RUNNER_PIDFILE: pidfile },
     encoding: 'utf8',
     timeout: 40000,
   })

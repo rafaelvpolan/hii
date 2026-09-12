@@ -11,7 +11,7 @@ let cache: EstadoDoOllama = { habilitado: false, modelos: [], verificadoEm: 0 }
 let emVoo = false
 
 export function urlDoOllama(): string {
-  return process.env.HICODE_OLLAMA_URL || 'http://127.0.0.1:11434'
+  return process.env.HII_OLLAMA_URL || 'http://127.0.0.1:11434'
 }
 
 interface TagsDoOllama {

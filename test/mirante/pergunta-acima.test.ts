@@ -8,7 +8,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-pergunta-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   writeFileSync(join(dir, '024-x.md'),
     '---\nid: 024\nstatus: CLARIFY\ntitle: corrija todos os itens\nrepo: org/app\n---\n## Objetivo\ncorrija todos os itens\n')
   writeFileSync(join(dir, 'runs', '024.clarify.json'), JSON.stringify([

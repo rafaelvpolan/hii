@@ -1,30 +1,30 @@
-export const ENV_ROOT = 'HICODE_ROOT'
-export const ENV_CARDS_DIR = 'HICODE_CARDS_DIR'
-export const ENV_REPOS_FILE = 'HICODE_REPOS_FILE'
-export const ENV_AGENTS_DIR = 'HICODE_AGENTS_DIR'
-export const ENV_RUNNER_PIDFILE = 'HICODE_RUNNER_PIDFILE'
-export const ENV_RUNNER_LOCK = 'HICODE_RUNNER_LOCK'
-export const ENV_RUNNER_LOG = 'HICODE_RUNNER_LOG'
-export const ENV_IA_FILE = 'HICODE_IA_FILE'
-export const ENV_MODELOS_FILE = 'HICODE_MODELOS_FILE'
-export const ENV_CLAUDE_HOME_DIR = 'HICODE_CLAUDE_HOME_DIR'
-export const ENV_KIMI_HOME_DIR = 'HICODE_KIMI_HOME_DIR'
-export const ENV_TOPOLOGIA_FILE = 'HICODE_TOPOLOGIA_FILE'
-export const ENV_REGRAS_FILE = 'HICODE_REGRAS_FILE'
-export const ENV_CRITERIOS_FILE = 'HICODE_CRITERIOS_FILE'
-export const ENV_SKILLS_DIR = 'HICODE_SKILLS_DIR'
-export const ENV_TIER_FILE = 'HICODE_TIER_FILE'
-export const ENV_RUNTIME = 'HICODE_RUNTIME'
-export const ENV_SECRETS_DIR = 'HICODE_SECRETS_DIR'
-export const ENV_ENQUADRAMENTOS_FILE = 'HICODE_ENQUADRAMENTOS_FILE'
-export const ENV_HEALTH_PORT = 'HICODE_HEALTH_PORT'
-// O Dockerfile definia HICODE_HEALTH_HOST e o codigo lia HICODE_HEALTH_BIND: nome
+export const ENV_ROOT = 'HII_ROOT'
+export const ENV_CARDS_DIR = 'HII_CARDS_DIR'
+export const ENV_REPOS_FILE = 'HII_REPOS_FILE'
+export const ENV_AGENTS_DIR = 'HII_AGENTS_DIR'
+export const ENV_RUNNER_PIDFILE = 'HII_RUNNER_PIDFILE'
+export const ENV_RUNNER_LOCK = 'HII_RUNNER_LOCK'
+export const ENV_RUNNER_LOG = 'HII_RUNNER_LOG'
+export const ENV_IA_FILE = 'HII_IA_FILE'
+export const ENV_MODELOS_FILE = 'HII_MODELOS_FILE'
+export const ENV_CLAUDE_HOME_DIR = 'HII_CLAUDE_HOME_DIR'
+export const ENV_KIMI_HOME_DIR = 'HII_KIMI_HOME_DIR'
+export const ENV_TOPOLOGIA_FILE = 'HII_TOPOLOGIA_FILE'
+export const ENV_REGRAS_FILE = 'HII_REGRAS_FILE'
+export const ENV_CRITERIOS_FILE = 'HII_CRITERIOS_FILE'
+export const ENV_SKILLS_DIR = 'HII_SKILLS_DIR'
+export const ENV_TIER_FILE = 'HII_TIER_FILE'
+export const ENV_RUNTIME = 'HII_RUNTIME'
+export const ENV_SECRETS_DIR = 'HII_SECRETS_DIR'
+export const ENV_ENQUADRAMENTOS_FILE = 'HII_ENQUADRAMENTOS_FILE'
+export const ENV_HEALTH_PORT = 'HII_HEALTH_PORT'
+// O Dockerfile definia HII_HEALTH_HOST e o codigo lia HII_HEALTH_BIND: nome
 // nenhum era escrito e lido pelo mesmo lado, e nenhum dos dois estava neste
 // contrato. O container fazia EXPOSE 8080 e o servidor ligava em 127.0.0.1, ou
 // seja /health inalcancavel de fora — e o HEALTHCHECK sondava loopback, ficando
 // verde por cima da falha. Estar aqui e o que faz o teste de contrato reprovar
 // nome que so um lado conhece.
-export const ENV_HEALTH_BIND = 'HICODE_HEALTH_BIND'
+export const ENV_HEALTH_BIND = 'HII_HEALTH_BIND'
 
 export type LadoDoContrato = 'motor' | 'painel' | 'ambos'
 

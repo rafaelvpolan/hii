@@ -10,7 +10,7 @@ const CARDS = join(BASE, 'cards')
 const WT = join(BASE, 'worktree-do-card')
 const FORA = join(BASE, 'fora-do-worktree')
 const BIN = join(BASE, 'bin')
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 mkdirSync(join(WT, '.git'), { recursive: true })
 mkdirSync(FORA, { recursive: true })

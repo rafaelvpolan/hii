@@ -18,7 +18,7 @@ interface OllamaResponse {
 }
 
 function baseUrl(): string {
-  return process.env.HICODE_OLLAMA_URL || 'http://localhost:11434'
+  return process.env.HII_OLLAMA_URL || 'http://localhost:11434'
 }
 
 function endpointRodaNaRedeLocal(): boolean {
@@ -65,9 +65,9 @@ export class OllamaProvider implements Harness {
   readonly temLeitorDePlano = true
 
   // Unico harness cuja prontidao depende de um servidor local estar de pe.
-  modeloPadraoPara(): string | undefined { return process.env.HICODE_OLLAMA_MODEL || undefined }
+  modeloPadraoPara(): string | undefined { return process.env.HII_OLLAMA_MODEL || undefined }
   prontoParaUso(): boolean { return estadoDoOllama().habilitado }
-  comoObterQuandoAusente(): string { return `suba o ollama (${process.env.HICODE_OLLAMA_URL || 'http://localhost:11434'})` }
+  comoObterQuandoAusente(): string { return `suba o ollama (${process.env.HII_OLLAMA_URL || 'http://localhost:11434'})` }
   autenticado(): boolean { return true }
   plano(): PlanoDoProvedor { return planoLocal('ollama') }
   // Unico harness que descobre modelo ao vivo, sondando o servidor local.
@@ -77,7 +77,7 @@ export class OllamaProvider implements Harness {
   sinaisDeFalha(): SinaisDoHarness { return OLLAMA_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
-    const model = req.model || process.env.HICODE_OLLAMA_MODEL || 'llama3.1'
+    const model = req.model || process.env.HII_OLLAMA_MODEL || 'llama3.1'
     const body = JSON.stringify({ model, prompt: req.prompt, stream: false })
     const endpoint = `${baseUrl()}/api/generate`
     const args = ['-q', ...noProxyArgs(endpoint), '-s', '-H', 'Content-Type: application/json', endpoint, '-d', body]

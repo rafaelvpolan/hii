@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 // para o cache expirar sozinho. Quem vira a janela agora e esquecerLoteEmCache,
 // nao o relogio.
 const TTL_MS = 60_000
-process.env.HICODE_COTA_TTL_MS = String(TTL_MS)
+process.env.HII_COTA_TTL_MS = String(TTL_MS)
 
 const { lerCota } = await import('../../motor/euclides/tesouro/cota.ts')
 const { esquecerLoteEmCache } = await import('../../motor/euclides/tesouro/cota-runs.ts')
@@ -21,7 +21,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-cota-cache-'))
   criados.push(dir)
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   mkdirSync(join(dir, 'runs'), { recursive: true })
 })
 
@@ -124,7 +124,7 @@ test('trocar o diretorio de cards derruba o cache na hora', () => {
 
   const outro = mkdtempSync(join(tmpdir(), 'hicode-cota-cache-'))
   criados.push(outro)
-  process.env.HICODE_CARDS_DIR = outro
+  process.env.HII_CARDS_DIR = outro
   mkdirSync(join(outro, 'runs'), { recursive: true })
   expect(lerCota(agora()).custoUsd).toBe(0)
 })

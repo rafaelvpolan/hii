@@ -14,13 +14,13 @@ import {
 } from '../../motor/cordel/alicerce/contrato.ts'
 
 test('as constantes do contrato batem com os nomes de variavel documentados', () => {
-  expect(ENV_ROOT).toBe('HICODE_ROOT')
-  expect(ENV_CARDS_DIR).toBe('HICODE_CARDS_DIR')
-  expect(ENV_REPOS_FILE).toBe('HICODE_REPOS_FILE')
-  expect(ENV_AGENTS_DIR).toBe('HICODE_AGENTS_DIR')
-  expect(ENV_RUNNER_PIDFILE).toBe('HICODE_RUNNER_PIDFILE')
-  expect(ENV_RUNNER_LOCK).toBe('HICODE_RUNNER_LOCK')
-  expect(ENV_RUNNER_LOG).toBe('HICODE_RUNNER_LOG')
+  expect(ENV_ROOT).toBe('HII_ROOT')
+  expect(ENV_CARDS_DIR).toBe('HII_CARDS_DIR')
+  expect(ENV_REPOS_FILE).toBe('HII_REPOS_FILE')
+  expect(ENV_AGENTS_DIR).toBe('HII_AGENTS_DIR')
+  expect(ENV_RUNNER_PIDFILE).toBe('HII_RUNNER_PIDFILE')
+  expect(ENV_RUNNER_LOCK).toBe('HII_RUNNER_LOCK')
+  expect(ENV_RUNNER_LOG).toBe('HII_RUNNER_LOG')
 })
 
 test('nenhuma variavel do contrato se repete', () => {
@@ -66,7 +66,7 @@ test('toda variavel do contrato declara de que lado ela vive', () => {
 })
 
 function constanteEsperada(nomeDaVariavel: string): string {
-  return `ENV_${nomeDaVariavel.replace(/^HICODE_/, '')}`
+  return `ENV_${nomeDaVariavel.replace(/^HII_/, '')}`
 }
 
 test('todo arquivo resolvedor referencia de fato a variavel — pelo nome literal ou pela constante do contrato, nao so declara e some', () => {
@@ -80,7 +80,7 @@ test('todo arquivo resolvedor referencia de fato a variavel — pelo nome litera
   }
 })
 
-test('HICODE_ROOT nao entra no rol das que precisam do mesmo caminho absoluto nos dois clones — cada clone tem a sua', () => {
+test('HII_ROOT nao entra no rol das que precisam do mesmo caminho absoluto nos dois clones — cada clone tem a sua', () => {
   const raiz = CONTRATO_MOTOR_PAINEL.find(v => v.nome === ENV_ROOT)
   expect(raiz?.precisaSerCompartilhadaEntreClones).toBe(false)
 })
@@ -93,21 +93,21 @@ test('variavel de um lado so NAO pode ser marcada como compartilhada entre clone
 })
 
 // A divergencia que motivou estes tres testes: o Dockerfile definia
-// HICODE_HEALTH_HOST e o codigo lia HICODE_HEALTH_BIND. Nenhum dos dois nomes era
+// HII_HEALTH_HOST e o codigo lia HII_HEALTH_BIND. Nenhum dos dois nomes era
 // escrito e lido pelo mesmo lado, e nenhum estava no contrato acima — entao
 // nenhuma guarda podia ver. O container fazia EXPOSE 8080 com o servidor ligado em
 // 127.0.0.1: /health inalcancavel de fora, e o HEALTHCHECK sondando loopback
 // ficava verde por cima da falha.
 function envsDoDockerfile(): string[] {
   const texto = readFileSync(join(ROOT, 'Dockerfile'), 'utf8')
-  return [...texto.matchAll(/\b(HICODE_[A-Z0-9_]+)\s*=/g)].map(m => m[1] ?? '').filter(Boolean)
+  return [...texto.matchAll(/\b(HII_[A-Z0-9_]+)\s*=/g)].map(m => m[1] ?? '').filter(Boolean)
 }
 
 test('a varredura do Dockerfile enxerga variaveis — senao o invariante abaixo passaria vazio', () => {
-  expect(envsDoDockerfile().length, 'regex quebrou: nenhuma HICODE_* encontrada no Dockerfile').toBeGreaterThan(5)
+  expect(envsDoDockerfile().length, 'regex quebrou: nenhuma HII_* encontrada no Dockerfile').toBeGreaterThan(5)
 })
 
-test('toda HICODE_* definida no Dockerfile esta no contrato — nome que so o Dockerfile conhece nao chega no codigo', () => {
+test('toda HII_* definida no Dockerfile esta no contrato — nome que so o Dockerfile conhece nao chega no codigo', () => {
   const doContrato = new Set(CONTRATO_MOTOR_PAINEL.map(v => v.nome))
   const orfas = [...new Set(envsDoDockerfile())].filter(n => !doContrato.has(n))
   expect(orfas, 'o Dockerfile define estas e o contrato nao as conhece: o codigo pode estar lendo outro nome').toEqual([])
@@ -117,7 +117,7 @@ test('o /health do container liga onde o EXPOSE promete — bind de loopback com
   const texto = readFileSync(join(ROOT, 'Dockerfile'), 'utf8')
   const porta = texto.match(/^EXPOSE\s+(\d+)/m)?.[1]
   expect(porta, 'sem EXPOSE nao ha promessa a conferir').toBeTruthy()
-  expect(texto, `EXPOSE ${porta} exige HICODE_HEALTH_PORT=${porta}`).toContain(`HICODE_HEALTH_PORT=${porta}`)
-  const bind = texto.match(/HICODE_HEALTH_BIND=(\S+)/)?.[1]
+  expect(texto, `EXPOSE ${porta} exige HII_HEALTH_PORT=${porta}`).toContain(`HII_HEALTH_PORT=${porta}`)
+  const bind = texto.match(/HII_HEALTH_BIND=(\S+)/)?.[1]
   expect(bind, 'porta exposta com bind em loopback = ECONNREFUSED para o consumidor real, com HEALTHCHECK interno verde').toBe('0.0.0.0')
 })

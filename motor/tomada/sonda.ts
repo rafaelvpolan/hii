@@ -1,11 +1,11 @@
 import { run } from '../quilombo/git.ts'
 import { noProxyArgs } from '../quilombo/alfandega/loopback.ts'
 
-const PROBE_TIMEOUT_MS = Number(process.env.HICODE_HEALTH_PROBE_TIMEOUT_MS || 5000)
+const PROBE_TIMEOUT_MS = Number(process.env.HII_HEALTH_PROBE_TIMEOUT_MS || 5000)
 
 const CODIGOS_DE_INDISPONIBILIDADE = new Set([403, 408, 429])
 
-const PROBE_BIN_TIMEOUT_MS = Number(process.env.HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS || 15000)
+const PROBE_BIN_TIMEOUT_MS = Number(process.env.HII_HEALTH_PROBE_BIN_TIMEOUT_MS || 15000)
 
 // O card 002 provou que sondar a URL nao mede a falha: um timeout de 900 s do CLI
 // foi "curado" por um GET de 5 s no host da API. A sonda do binario mede quem de
@@ -34,5 +34,5 @@ export async function alcancavelPorHttp(url: string): Promise<boolean> {
 }
 
 export function urlDoOllama(): string {
-  return `${process.env.HICODE_OLLAMA_URL || 'http://localhost:11434'}/api/tags`
+  return `${process.env.HII_OLLAMA_URL || 'http://localhost:11434'}/api/tags`
 }

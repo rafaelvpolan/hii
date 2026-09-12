@@ -21,7 +21,7 @@ services:
   hii:
     image: ${HII_IMAGEM:?defina HII_IMAGEM com a imagem publicada}
     environment:
-      HICODE_RUNTIME: ${HICODE_RUNTIME:-bun}
+      HII_RUNTIME: ${HII_RUNTIME:-bun}
       # Onda 5, itens 5/22/4: LIGADO. As tres exigencias que so BARRAM com este
       # interruptor sao RED antes do GREEN no perfil completo (`red_antes_do_green`),
       # comando de teste no contrato quando a area e nova (`setup_ferramental`) e
@@ -40,31 +40,31 @@ services:
       # (motor/quilombo/cartorio/fechar.ts:295) e ha um segundo produtor a partir do
       # relato do agente (`:278`).
       #
-      # Saida de emergencia: `HICODE_RIGOR_ESTRITO=0 docker stack deploy ...`.
-      HICODE_RIGOR_ESTRITO: ${HICODE_RIGOR_ESTRITO:-1}
+      # Saida de emergencia: `HII_RIGOR_ESTRITO=0 docker stack deploy ...`.
+      HII_RIGOR_ESTRITO: ${HII_RIGOR_ESTRITO:-1}
       # O default do motor e pipeline MANUAL (motor/cordel/alicerce/config.ts,
       # pipelineManual) — desenhado para a TUI, onde ha um humano para pedir cada
       # passo. Neste stack NAO ha TUI, e PAUSED nao tem consumidor automatico
       # (motor/euclides/radar/saude.ts, SEM_CONSUMIDOR_AUTOMATICO): sem esta linha,
       # todo card com url aprovada pararia em PAUSED para sempre, em silencio.
       # Headless roda automatico; quem quiser o manual sobrescreve no deploy.
-      HICODE_PIPELINE: ${HICODE_PIPELINE:-auto}
+      HII_PIPELINE: ${HII_PIPELINE:-auto}
       # Item 32: estes numeros e o bloco deploy.resources.limits precisam contar
       # a mesma historia. O swarm impoe o teto; o motor le os mesmos valores para
       # decidir quantos worktrees abre em paralelo. Quem le: orcamentoDeRecurso e
       # quantosWorktreesCabem em motor/quilombo/limites.ts, aplicados pelo escalonador
       # em motor/oswaldo/mutirao/fila.ts (tetoDeParalelismo). Enquanto nao havia esse
       # ultimo elo, este comentario afirmava com file:line uma leitura que nao
-      # acontecia — o escalonador usava so HICODE_CONCURRENCY e abria 3 worktrees
+      # acontecia — o escalonador usava so HII_CONCURRENCY e abria 3 worktrees
       # de 2048MB contra o limite de 4096MB.
-      HICODE_MEM_TOTAL_MB: "4096"
-      HICODE_CPUS_TOTAL: "2"
-      HICODE_MEM_POR_WORKTREE_MB: "2048"
-      HICODE_CPU_POR_WORKTREE: "1"
+      HII_MEM_TOTAL_MB: "4096"
+      HII_CPUS_TOTAL: "2"
+      HII_MEM_POR_WORKTREE_MB: "2048"
+      HII_CPU_POR_WORKTREE: "1"
       # Item 29: o caminho sempre-funcional e variavel de ambiente. Em swarm o
       # segredo entra como ARQUIVO em /run/secrets/<nome>, e o provedor de
       # arquivo le de la — cofre opcional e plugavel, nunca hard-requirement.
-      HICODE_SECRETS_DIR: /run/secrets
+      HII_SECRETS_DIR: /run/secrets
     secrets:
       - anthropic_api_key
       - gh_token

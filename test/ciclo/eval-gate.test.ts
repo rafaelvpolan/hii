@@ -14,8 +14,8 @@ import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 import type { EvalResult } from '../../motor/ciclo/crivo/avaliar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-evalgate-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -40,8 +40,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const IMPLEMENT_RESULT: ImplementResult = {
   ok: true,
@@ -65,7 +65,7 @@ function depsComEval(e: Partial<EvalResult>): ExecuteDeps {
 }
 
 beforeEach(() => {
-  delete process.env.HICODE_EVAL_MIN
+  delete process.env.HII_EVAL_MIN
 })
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
@@ -125,8 +125,8 @@ test('decisaoDoEval: limiar, marca de uso unico e eval-que-nao-rodou', () => {
 
 test('evalMin: default 1, numero da env vale, e "off" desliga so o gate', () => {
   expect(evalMin()).toBe(1)
-  process.env.HICODE_EVAL_MIN = '2'
+  process.env.HII_EVAL_MIN = '2'
   expect(evalMin()).toBe(2)
-  process.env.HICODE_EVAL_MIN = 'off'
+  process.env.HII_EVAL_MIN = 'off'
   expect(evalMin()).toBe(-1)
 })

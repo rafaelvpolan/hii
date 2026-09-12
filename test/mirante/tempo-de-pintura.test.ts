@@ -26,9 +26,9 @@ function tetoDeEnv(nome: string, padrao: number): number {
   return Number.isFinite(v) && v > 0 ? v : padrao
 }
 
-const TETO_QUADRO_MS = tetoDeEnv('HICODE_TETO_QUADRO_MS', 8)
-const TETO_QUADRO_CJK_MS = tetoDeEnv('HICODE_TETO_QUADRO_CJK_MS', 30)
-const TETO_PINTURA_MS = tetoDeEnv('HICODE_TETO_PINTURA_MS', 6)
+const TETO_QUADRO_MS = tetoDeEnv('HII_TETO_QUADRO_MS', 8)
+const TETO_QUADRO_CJK_MS = tetoDeEnv('HII_TETO_QUADRO_CJK_MS', 30)
+const TETO_PINTURA_MS = tetoDeEnv('HII_TETO_PINTURA_MS', 6)
 
 // Mediana, nao maxima: uma pausa de GC ou o escalonador do CI tirando a CPU
 // produz um outlier que nao diz nada sobre o custo do algoritmo.

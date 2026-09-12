@@ -11,11 +11,11 @@ function comCriterios<T>(conteudo: string | null, corpo: () => T): T {
   const dir = mkdtempSync(join(tmpdir(), 'hii-crit-')); criados.push(dir)
   const arquivo = join(dir, 'crit.json')
   if (conteudo !== null) writeFileSync(arquivo, conteudo)
-  const anterior = process.env.HICODE_CRITERIOS_FILE
-  process.env.HICODE_CRITERIOS_FILE = arquivo
+  const anterior = process.env.HII_CRITERIOS_FILE
+  process.env.HII_CRITERIOS_FILE = arquivo
   try { return corpo() } finally {
-    if (anterior === undefined) delete process.env.HICODE_CRITERIOS_FILE
-    else process.env.HICODE_CRITERIOS_FILE = anterior
+    if (anterior === undefined) delete process.env.HII_CRITERIOS_FILE
+    else process.env.HII_CRITERIOS_FILE = anterior
   }
 }
 

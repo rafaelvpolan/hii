@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os'
 // a HALT, entao TUDO o que chega a WAITING e `transient`. Quem separa e ClasseDeEspera.
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-backoff-classe-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { applyFailurePolicy, backoffMsFor, CLASSE_DE_ESPERA_PADRAO } = await import('../../motor/ciclo/reprise/politica.ts')
@@ -23,9 +23,9 @@ const { wakeDueWaiting } = await import('../../motor/ciclo/reprise/espera.ts')
 const { RUN_TIMEOUT_MS } = await import('../../motor/cordel/alicerce/config.ts')
 
 beforeEach(() => {
-  process.env.HICODE_WAITING_MAX_ATTEMPTS = '8'
-  delete process.env.HICODE_ESPERA_PISO_TIMEOUT_MS
-  delete process.env.HICODE_ESPERA_PISO_TAXA_MS
+  process.env.HII_WAITING_MAX_ATTEMPTS = '8'
+  delete process.env.HII_ESPERA_PISO_TIMEOUT_MS
+  delete process.env.HII_ESPERA_PISO_TAXA_MS
 })
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
@@ -68,9 +68,9 @@ test('o piso LEVANTA o degrau, nunca o abaixa: escada acima do piso continua man
 })
 
 test('o piso e do operador: variavel de ambiente manda, e o de timeout acompanha o teto de execucao', () => {
-  process.env.HICODE_ESPERA_PISO_TIMEOUT_MS = '5000'
+  process.env.HII_ESPERA_PISO_TIMEOUT_MS = '5000'
   expect(backoffMsFor(1, 'timeout')).toBe(30_000)
-  process.env.HICODE_ESPERA_PISO_TAXA_MS = '900000'
+  process.env.HII_ESPERA_PISO_TAXA_MS = '900000'
   expect(backoffMsFor(1, 'taxa')).toBe(900_000)
 })
 

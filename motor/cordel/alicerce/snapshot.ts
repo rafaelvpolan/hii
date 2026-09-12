@@ -107,8 +107,8 @@ export function lerConfig(repo: string, selecionado: string, agoraMs: number = D
     sessao: ledgerDaSessao(),
     gastoHoje: Number(gasto.total) || 0,
     // O teto do painel vem do MESMO lugar que o motor usa para barrar o card
-    // (tetoDoCard: HICODE_CARD_BUDGET_USD, senao model-tier.json). Antes lia
-    // `HICODE_BUDGET_USD`, variavel que nenhuma outra linha do repo escreve ou
+    // (tetoDoCard: HII_CARD_BUDGET_USD, senao model-tier.json). Antes lia
+    // `HII_BUDGET_USD`, variavel que nenhuma outra linha do repo escreve ou
     // le: o painel mostrava teto 0 — "sem teto" — enquanto o motor barrava em
     // US$16. Numero na tela que nao e o numero aplicado e pior que numero
     // nenhum, porque parece informacao.

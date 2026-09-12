@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-previews-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 const WORKTREE = mkdtempSync(join(tmpdir(), 'hicode-prev-wt-'))
 const FORA_DO_WORKTREE = mkdtempSync(join(tmpdir(), 'hicode-prev-fora-'))
 
