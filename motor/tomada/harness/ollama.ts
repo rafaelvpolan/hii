@@ -80,7 +80,7 @@ export class OllamaProvider implements Harness {
     const body = JSON.stringify({ model, prompt: req.prompt, stream: false })
     const endpoint = `${baseUrl()}/api/generate`
     const args = ['-q', ...noProxyArgs(endpoint), '-s', '-H', 'Content-Type: application/json', endpoint, '-d', body]
-    const { err, stdout, stderr } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs })
+    const { err, stdout, stderr } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const usage = emptyUsage()
     let text = ''
     let isError = false

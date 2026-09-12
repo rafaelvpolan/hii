@@ -147,7 +147,7 @@ export class KimiProvider implements Harness {
   sinaisDeFalha(): SinaisDoHarness { return KIMI_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
-    const { err, stdout, stderr } = await run('kimi', kimiArgv(req), { cwd: req.cwd, timeout: req.timeoutMs })
+    const { err, stdout, stderr } = await run('kimi', kimiArgv(req), { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const lido = readStream(stdout)
     if (req.liveLog) gravarLiveLog(req.liveLog, stdout)
     const erroDeStream = !!lido.erroFatal || semResposta(lido)

@@ -73,7 +73,7 @@ export class ClaudeProvider implements Harness {
 
   async run(req: AgentRequest): Promise<AgentResult> {
     if (req.liveLog) return runClaudeStream(req, req.liveLog)
-    const { err, stdout, stderr } = await run('claude', claudeArgv(req), { cwd: req.cwd, timeout: req.timeoutMs })
+    const { err, stdout, stderr } = await run('claude', claudeArgv(req), { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     let reading: CostReading = COST_UNKNOWN
     let text = ''
     let isError = false

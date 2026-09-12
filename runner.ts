@@ -1,6 +1,7 @@
 import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './motor/cordel/alicerce/config.ts'
 import { halteradosDoLote, pending, reconcileStranded, runJob, tick } from './motor/oswaldo/mutirao/fila.ts'
 import { varrerPreviewsOrfaos } from './motor/ciclo/crivo/url-viva.ts'
+import { varrerHarnessesOrfaos } from './motor/tomada/harness-em-voo.ts'
 import { renderProgress } from './motor/euclides/radar/progresso.ts'
 import { initHicodeHome } from './motor/cordel/alicerce/home.ts'
 import { runSync, relatoDeSync } from './motor/tomada/ponte/tarefas/sync.ts'
@@ -69,6 +70,15 @@ if (process.argv.includes('--init')) {
     for (const id of varrida.orfaosParados) process.stdout.write(`[runner] #${id}: preview orfao parado no arranque\n`)
   } catch (e) {
     reportTickFailure('varredura de previews', e as Error)
+  }
+  try {
+    const harnesses = varrerHarnessesOrfaos()
+    for (const id of harnesses.mortosLimpos) process.stdout.write(`[runner] #${id}: registro de harness morto limpo no arranque\n`)
+    for (const h of harnesses.encerrados) process.stdout.write(`[runner] #${h.id}: harness orfao (pid ${h.pid}) encerrado no arranque (${h.sinal})\n`)
+    for (const id of harnesses.recusados) process.stdout.write(`[runner] #${id}: registro de harness apontava para processo que nao e harness — descartado sem matar\n`)
+    for (const id of harnesses.deixados) process.stdout.write(`[runner] #${id}: harness registrado ainda vivo e o card segue ativo — nao tocado\n`)
+  } catch (e) {
+    reportTickFailure('varredura de harnesses', e as Error)
   }
   retomarAoIniciar(linha => process.stdout.write(linha))
   if (process.argv.includes('--once')) {
