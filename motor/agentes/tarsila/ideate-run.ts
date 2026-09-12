@@ -1,4 +1,5 @@
-import { ROOT } from '../../cordel/alicerce/config.ts'
+import { join } from 'node:path'
+import { cardsDir, ROOT } from '../../cordel/alicerce/config.ts'
 import { providerFor, modelFor } from '../../tomada/registro.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
@@ -21,11 +22,14 @@ export interface IdeacaoResultado {
   tokens: number
 }
 
-async function chamar(prompt: string, timeoutMs: number, id: string): Promise<{ texto: string; cost: number; tokens: number; ok: boolean }> {
+async function chamar(prompt: string, timeoutMs: number, id: string, raia: string): Promise<{ texto: string; cost: number; tokens: number; ok: boolean }> {
   const provider = providerFor('verify')
   const res = await runProvider(id, provider, {
     prompt, cwd: ROOT, dirs: [], mode: 'readonly',
     useAgents: false, model: modelFor('verify'), timeoutMs,
+    liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
+    rotulo: `ideacao · ${raia}`,
+    raia,
   }, 'ideacao')
   return { texto: res.text, cost: res.cost, tokens: sumTokens(res.usage), ok: res.ok }
 }
@@ -33,7 +37,7 @@ async function chamar(prompt: string, timeoutMs: number, id: string): Promise<{ 
 export async function idear(objetivo: string, semente: string): Promise<IdeacaoResultado> {
   const lentes = escolherLentes(IDEATE_LENTES, semente)
   const ramos = await Promise.all(
-    lentes.map(l => chamar(promptDivergir(l, objetivo, IDEATE_IDEIAS), 120000, semente)
+    lentes.map((l, i) => chamar(promptDivergir(l, objetivo, IDEATE_IDEIAS), 120000, semente, `lente ${i + 1}/${lentes.length}`)
       .then(r => ({ lente: l.nome, ...r }))),
   )
   const cost = ramos.reduce((a, r) => a + r.cost, 0)
@@ -42,7 +46,7 @@ export async function idear(objetivo: string, semente: string): Promise<IdeacaoR
   if (!ideias.length) {
     return { ok: false, motivo: 'nenhuma ideia parseavel nos ramos', convergencia: null, ideias: 0, cost, tokens }
   }
-  const critico = await chamar(promptConvergir(objetivo, ideias, IDEATE_TOPK), 180000, semente)
+  const critico = await chamar(promptConvergir(objetivo, ideias, IDEATE_TOPK), 180000, semente, 'critico')
   const total = { cost: cost + critico.cost, tokens: tokens + critico.tokens }
   if (!critico.ok) {
     return { ok: false, motivo: 'o critico nao executou', convergencia: null, ideias: ideias.length, ...total }

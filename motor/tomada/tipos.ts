@@ -25,6 +25,7 @@ export interface AgentRequest {
   agentsJson?: string
   aoIniciar?: (pid: number) => void
   rotulo?: string
+  raia?: string
 }
 
 export interface AgentResult {

@@ -1,6 +1,6 @@
 import { isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, FailureClass } from '../../cordel/index.ts'
-import { GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cordel/alicerce/config.ts'
+import { cardsDir, GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cordel/alicerce/config.ts'
 import { runGit, stageAll } from '../../quilombo/git.ts'
 import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
 import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
@@ -17,6 +17,7 @@ import { skillsPara } from '../../cascudo/acervo.ts'
 import { gauntletLigado } from '../../tomada/preferencias.ts'
 import { gastoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 // Derivado de ROTULOS, nao copiado: `cegar()` aceita `MAX_CANDIDATOS_CEGOS`
 // candidatos e um deles e sempre a tela do motor. Como copia manual, mudar ROTULOS
@@ -276,6 +277,8 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
     effort: esforcoGovernado('gate', 'review', (id ? readCard(id)?.fm : undefined) ?? {}),
     expectsJson: true,
     timeoutMs: timeoutForDiff(diff),
+    liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
+    rotulo: gauntlet ? `gate · crivo · gauntlet ${1 + referencias.length} candidatos cegos` : 'gate · crivo',
   }, 'gate')
   const tokens = sumTokens(res.usage)
   if (res.failed) {

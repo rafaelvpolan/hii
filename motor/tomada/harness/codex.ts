@@ -6,13 +6,14 @@ import { codexAutenticado } from '../../euclides/tesouro/planos.ts'
 import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
 import { SEM_PLANO } from '../tipos.ts'
 import { cliSaudavel } from '../sonda.ts'
+import { gravarChamadaNoLiveLog } from './live-log.ts'
 import type { Usage } from '../../cordel/index.ts'
 
 export const CODEX_MODOS: CatalogoDeModo = { modos: ['untrusted', 'on-request', 'never'], padrao: 'never' }
 
 interface CodexEvent {
   type?: string
-  item?: { type?: string; text?: string }
+  item?: { type?: string; text?: string; command?: string; path?: string }
   usage?: { input_tokens?: number; output_tokens?: number; cached_input_tokens?: number }
 }
 
@@ -49,6 +50,22 @@ function parse(stdout: string): { text: string; usage: Usage; isError: boolean }
     }
   }
   return { text, usage, isError }
+}
+
+export function linhasDoLiveLog(stdout: string): string[] {
+  const linhas: string[] = []
+  for (const line of stdout.split('\n')) {
+    const t = line.trim()
+    if (!t || t[0] !== '{') continue
+    let ev: CodexEvent
+    try { ev = JSON.parse(t) as CodexEvent } catch { continue }
+    if (ev.type !== 'item.completed' || !ev.item?.type) continue
+    if (ev.item.type === 'agent_message') { if (ev.item.text) linhas.push(ev.item.text) }
+    else if (ev.item.type === 'command_execution') linhas.push(`  → Bash(${JSON.stringify({ command: ev.item.command ?? '' })})`)
+    else if (ev.item.type === 'file_change') linhas.push(`  → Edit(${JSON.stringify({ file_path: ev.item.path ?? '' })})`)
+    else linhas.push(`  → ${ev.item.type}(${JSON.stringify({ description: ev.item.text ?? '' })})`)
+  }
+  return linhas
 }
 
 const URL_DA_API = 'https://api.openai.com'
@@ -97,6 +114,7 @@ export class CodexProvider implements Harness {
     const workdir = req.dirs[0] ?? req.cwd
     const { err, stdout, stderr } = await run('codex', argv(req, workdir), { cwd: workdir, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const parsed = parse(stdout)
+    if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: linhasDoLiveLog(stdout) })
     const failed = !!err
     return {
       ok: !failed && !parsed.isError,

@@ -4,6 +4,7 @@ import { appendFileSync, writeFileSync, readFileSync, statSync, mkdirSync, exist
 import { dirname } from 'node:path'
 import { emptyUsage } from '../uso.ts'
 import { semControle } from '../../cordel/util.ts'
+import { cabecalhoDaChamada, carimboAgora, comRaia } from './live-log.ts'
 import { COST_UNKNOWN, readReportedCost } from '../../euclides/tesouro/custo.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
 import type { AgentRequest, AgentResult } from '../tipos.ts'
@@ -30,9 +31,7 @@ interface StreamPart {
 const FERRAMENTAS_DE_IA = ['Task']
 const LIMITE_DA_RESPOSTA_DE_IA = 4000
 
-export function cabecalhoDaChamada(ts: string, rotulo = ''): string {
-  return `— chamada em ${ts}${rotulo ? ` · ${rotulo}` : ''} —`
-}
+export { cabecalhoDaChamada }
 
 function textoDoResultado(content: string | object | undefined): string {
   if (typeof content === 'string') return content
@@ -127,8 +126,8 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
   const dir = dirname(liveLog)
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
-  const write = (s: string): void => { try { appendFileSync(liveLog, s) } catch { void 0 } }
-  write(`\n${cabecalhoDaChamada(new Date().toISOString().replace(/\.\d+Z$/, 'Z'), req.rotulo)}\n`)
+  const write = (s: string): void => { try { appendFileSync(liveLog, comRaia(s, req.raia)) } catch { void 0 } }
+  write(`\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`)
   const ferramentasEmVoo = new Map<string, string>()
 
   return new Promise<AgentResult>((resolve) => {

@@ -9,6 +9,7 @@ export interface Atividade {
   ts: string
   args?: string
   resultado?: string
+  raia?: string
 }
 
 export interface EntradaFerramenta {
@@ -77,7 +78,8 @@ export function classificar(ev: EventoBruto, ts = ''): Atividade {
 const RE_TOOL = /^\s*→\s*([A-Za-z_][\w.-]*)\((.*)$/
 const RE_SESSAO = /^—\s*sessao iniciada(?:\s*\(([^)]+)\))?/
 const RE_CHAMADA = /^—\s*chamada em (\S+)(?:\s*·\s*([^—]+?))?\s*—?\s*$/
-const RE_FIM = /^—\s*concluido \(custo \$([0-9.]+)\)/
+const RE_FIM = /^—\s*concluido(?: \(custo \$([0-9.]+)\))?/
+const RE_RAIA = /^\[([^\]]{1,40})\] (.*)$/
 const RE_TIMEOUT = /^—\s*TIMEOUT/
 
 function entradaDe(bruto: string): EntradaFerramenta {
@@ -104,13 +106,24 @@ function desescapar(s: string): string {
   return s.replace(/\\(["\\/])/g, '$1').replace(/\\[nrt]/g, ' ')
 }
 
-export function parseLinha(linha: string, ts = ''): Atividade | null {
+export function separarRaia(linha: string): { raia: string; linha: string } {
+  const m = linha.match(RE_RAIA)
+  return m ? { raia: m[1] ?? '', linha: m[2] ?? '' } : { raia: '', linha }
+}
+
+export function parseLinha(bruta: string, ts = ''): Atividade | null {
+  const { raia, linha } = separarRaia(bruta)
+  const a = parseLinhaSemRaia(linha, ts)
+  return a && raia ? { ...a, raia } : a
+}
+
+function parseLinhaSemRaia(linha: string, ts = ''): Atividade | null {
   const chamada = linha.match(RE_CHAMADA)
   if (chamada) return { tipo: 'sessao', nome: 'chamada', alvo: '', ts: chamada[1] ?? ts, args: (chamada[2] ?? '').trim() }
   const sessao = linha.match(RE_SESSAO)
   if (sessao) return { tipo: 'sessao', nome: 'sessao', alvo: sessao[1] ?? '', ts }
   const fim = linha.match(RE_FIM)
-  if (fim) return { tipo: 'fim', nome: 'concluido', alvo: `US$${fim[1]}`, ts }
+  if (fim) return { tipo: 'fim', nome: 'concluido', alvo: fim[1] ? `US$${fim[1]}` : '', ts }
   if (RE_TIMEOUT.test(linha)) return { tipo: 'fim', nome: 'timeout', alvo: '', ts }
   const tool = linha.match(RE_TOOL)
   if (tool?.[1]) {
@@ -135,33 +148,44 @@ function lerResultado(linha: string): string | null {
   return t.startsWith('←') ? t.slice(1).trim() : null
 }
 
+function mesmaRaia(a: Atividade, b: Atividade): boolean {
+  return (a.raia ?? '') === (b.raia ?? '')
+}
+
 export function parseLog(conteudo: string): Atividade[] {
   const saida: Atividade[] = []
-  const esperandoResultado: Atividade[] = []
-  for (const linha of conteudo.split('\n')) {
+  const esperandoResultado = new Map<string, Atividade[]>()
+  const ultimaDaRaia = new Map<string, Atividade>()
+  for (const bruta of conteudo.split('\n')) {
+    const { raia, linha } = separarRaia(bruta)
     const resultado = lerResultado(linha)
-    const ultima = saida[saida.length - 1]
+    const ultima = ultimaDaRaia.get(raia)
     if (resultado !== null) {
-      const dono = esperandoResultado.shift()
+      const dono = esperandoResultado.get(raia)?.shift()
       if (dono) dono.resultado = resultado
       continue
     }
-    const a = parseLinha(linha)
+    const a = parseLinha(bruta)
     if (!a) {
       if (!linha.trim() && ultima && ehProsa(ultima)) ultima.alvo = `${ultima.alvo}\n`
       continue
     }
-    if (ultima && ehProsa(ultima) && ehProsa(a)) {
+    if (ultima && ehProsa(ultima) && ehProsa(a) && mesmaRaia(ultima, a)) {
       ultima.alvo = `${ultima.alvo}\n${a.alvo}`
       continue
     }
-    if (ultima?.nome === 'chamada' && a.nome === 'sessao') {
+    if (ultima?.nome === 'chamada' && a.nome === 'sessao' && mesmaRaia(ultima, a)) {
       ultima.nome = 'sessao'
       ultima.alvo = a.alvo
       continue
     }
-    if (ehFerramenta(a)) esperandoResultado.push(a)
+    if (ehFerramenta(a)) {
+      const fila = esperandoResultado.get(raia) ?? []
+      fila.push(a)
+      esperandoResultado.set(raia, fila)
+    }
     saida.push(a)
+    ultimaDaRaia.set(raia, a)
   }
   return saida
 }

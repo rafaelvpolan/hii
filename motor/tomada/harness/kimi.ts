@@ -1,4 +1,5 @@
-import { appendFileSync } from 'node:fs'
+import { gravarChamadaNoLiveLog } from './live-log.ts'
+import type { AgentRequest as Pedido } from '../tipos.ts'
 import { run } from '../../quilombo/git.ts'
 import { emptyUsage } from '../uso.ts'
 import { COST_UNKNOWN } from '../../euclides/tesouro/custo.ts'
@@ -106,7 +107,7 @@ function failureDetail(message: string, retryDetail: string): string {
   return [message, retryDetail].filter(s => s.length > 0).join(' | ')
 }
 
-function gravarLiveLog(caminho: string, stdout: string): void {
+function gravarLiveLog(caminho: string, stdout: string, req: Pedido): void {
   const linhas: string[] = []
   for (const raw of stdout.split('\n')) {
     const linha = raw.trim()
@@ -116,7 +117,7 @@ function gravarLiveLog(caminho: string, stdout: string): void {
     if (ev.role === 'assistant' && typeof ev.content === 'string' && ev.content.length > 0) linhas.push(ev.content)
     else if (ev.role === 'meta' && ev.type) linhas.push(`  \u2192 ${ev.type}(${retryDetailOf(ev)})`)
   }
-  if (linhas.length) appendFileSync(caminho, linhas.join('\n') + '\n')
+  gravarChamadaNoLiveLog({ caminho, rotulo: req.rotulo, raia: req.raia, linhas })
 }
 
 export class KimiProvider implements Harness {
@@ -149,7 +150,7 @@ export class KimiProvider implements Harness {
   async run(req: AgentRequest): Promise<AgentResult> {
     const { err, stdout, stderr } = await run('kimi', kimiArgv(req), { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const lido = readStream(stdout)
-    if (req.liveLog) gravarLiveLog(req.liveLog, stdout)
+    if (req.liveLog) gravarLiveLog(req.liveLog, stdout, req)
     const erroDeStream = !!lido.erroFatal || semResposta(lido)
     const failed = !!err || erroDeStream
     return {

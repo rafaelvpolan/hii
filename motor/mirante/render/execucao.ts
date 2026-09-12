@@ -77,7 +77,7 @@ function marco(a: Atividade, o: OpcoesExecucao): string[] {
     const partes = ['IA', a.args || '', a.alvo || 'sessao iniciada', horaDe(a.ts)].filter(Boolean)
     return ['', separador(INICIO_DE_BLOCO, partes.join(' · '), o.largura, CIANO, o)]
   }
-  return [separador(FIM_DE_BLOCO, `concluido · ${a.alvo}`, o.largura, VERDE, o)]
+  return [separador(FIM_DE_BLOCO, a.alvo ? `concluido · ${a.alvo}` : 'concluido', o.largura, VERDE, o)]
 }
 
 export function linhasDaAtividade(a: Atividade, opts: Partial<OpcoesExecucao> = {}): string[] {

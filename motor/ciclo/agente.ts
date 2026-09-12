@@ -249,6 +249,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     modo: modoFor('implement', override),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
+    rotulo: ['implement', ...nomesInjetados].join(' · '),
     extraTools,
     agentsJson: nomesInjetados.length ? JSON.stringify(agentesInjetados) : '',
   }, 'implement')
@@ -334,7 +335,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     modo: modoFor('step', overrideDoPasso),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
-    rotulo: agent,
+    rotulo: `step · ${agent}`,
     extraTools: navegacao,
     agentsJson: injetou ? JSON.stringify(agenteInjetado) : '',
   }, 'step')
