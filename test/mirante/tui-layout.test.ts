@@ -30,12 +30,20 @@ test('todas as linhas do quadro tem a mesma largura visivel', () => {
   expect([...larguras][0]).toBe(50)
 })
 
-test('quadro tem cabecalho, moldura e input', () => {
-  const f = quadro({ header: 'hii · org/app', input: 'tarefa' })
+test('quadro tem cabecalho, divisa sem cantos e input', () => {
+  const f = quadro({ header: 'hii · org/app', input: 'tarefa', corpo: ['log'] })
   expect(f.lines[0]).toContain('hii · org/app')
-  expect(f.lines[1]).toContain(`${CANTO.supEsq}`)
-  expect(f.lines[f.lines.length - 2]).toContain(`${CANTO.infEsq}`)
+  expect(f.lines[1]).toBe('─'.repeat(40))
+  expect(f.lines.join('\n')).not.toContain(CANTO.supEsq)
+  expect(f.lines.join('\n')).not.toContain(CANTO.infEsq)
+  expect(f.lines.some(l => l.startsWith('log'))).toBe(true)
   expect(f.lines[f.lines.length - 1]).toContain('tarefa')
+})
+
+test('a divisa recebe a tinta propria e o resto do quadro nao', () => {
+  const f = quadro({ corpo: ['log'], pintarDivisa: s => `<${s}>` })
+  expect(f.lines[1]).toBe(`<${'─'.repeat(40)}>`)
+  expect(f.lines.filter(l => l.includes('<')).length).toBe(1)
 })
 
 // `not.toContain('linha 0\n')` nao podia falhar: cada linha do quadro e padded
@@ -104,12 +112,12 @@ test('largura minima evita moldura negativa', () => {
 test('cursor aponta para a coluna certa dentro do input', () => {
   const f = quadro({ input: 'abcdef', cursor: 3 })
   expect(f.cursorRow).toBe(f.lines.length)
-  expect(f.cursorCol).toBe(3 + 2 + 3)
+  expect(f.cursorCol).toBe(1 + 2 + 3)
 })
 
 test('cursor nao passa do fim do input', () => {
   const f = quadro({ input: 'ab', cursor: 99 })
-  expect(f.cursorCol).toBe(3 + 2 + 2)
+  expect(f.cursorCol).toBe(1 + 2 + 2)
 })
 
 test('dica fica alinhada a direita sem estourar a linha', () => {
@@ -173,7 +181,7 @@ test('input multilinha ocupa uma linha do quadro por linha do texto', () => {
 test('cursor cai na linha certa do input multilinha', () => {
   const f = quadro({ rows: 14, input: 'um\ndois', cursor: 5 })
   expect(f.cursorRow).toBe(f.lines.length)
-  expect(f.cursorCol).toBe(3 + 2 + 2)
+  expect(f.cursorCol).toBe(1 + 2 + 2)
 })
 
 test('input multilinha nao quebra o alinhamento do quadro', () => {
@@ -357,3 +365,30 @@ test('REGRESSAO: url colorida nao engole o ANSI para dentro do link OSC 8', () =
   if (antes === undefined) delete process.env.HICODE_HYPERLINKS
   else process.env.HICODE_HYPERLINKS = antes
 })
+
+test('a moldura do prompt recebe a tinta de foco e o conteudo nao', () => {
+  const marca = (s: string): string => `<${s}>`
+  const f = quadro({ rows: 14, legenda: 'proj', input: 'abc', pintarMoldura: marca })
+  const texto = f.lines.map(stripAnsi)
+  const abre = texto.findIndex(l => l.includes(`<${CANTO.supEsq}─>`))
+  expect(abre).toBeGreaterThan(0)
+  expect(texto[abre]).toContain('proj')
+  expect(texto[abre]).not.toContain('<proj')
+  expect(texto[abre + 1]).toContain('<│> <› >abc')
+  expect(texto[abre + 1]).toMatch(/<│>$/)
+  expect(texto[abre + 2]).toMatch(new RegExp(`^<${CANTO.infEsq}─+${CANTO.infDir}>$`))
+  const semTinta = quadro({ rows: 14, legenda: 'proj', input: 'abc' })
+  const semEspacos = (l: string): string => stripAnsi(l).replace(/[<>]/g, '').replace(/ +/g, ' ')
+  expect(f.lines.map(semEspacos)).toEqual(semTinta.lines.map(semEspacos))
+  expect(semTinta.cursorCol).toBe(f.cursorCol)
+})
+
+test('sem legenda a tinta da moldura so alcanca a seta do prompt', () => {
+  const f = quadro({ rows: 14, input: 'abc', pintarMoldura: s => `<${s}>` })
+  const comTinta = f.lines.filter(l => l.includes('<'))
+  expect(comTinta.length).toBe(1)
+  expect(comTinta[0]).toContain('<› >abc')
+})
+
+
+

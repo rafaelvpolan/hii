@@ -2,6 +2,7 @@ import { test, expect } from '../apoio/runner.ts'
 import { parseLog, classificar, ehProsa } from '../../motor/mirante/atividade.ts'
 import { renderExecucao, linhasDaAtividade, chamadaDe } from '../../motor/mirante/render/execucao.ts'
 import { renderFrame } from '../../motor/mirante/tui/layout.ts'
+import { CANTO } from '../../motor/mirante/tui/paleta.ts'
 
 const semCor = { color: false }
 
@@ -38,18 +39,47 @@ test('prosa de varias linhas fica sob um unico bullet', () => {
   const at = parseLog('Nao consegui executar.\nO conector esta bloqueado.')
   expect(at).toHaveLength(1)
   expect(ehProsa(at[0]!)).toBe(true)
-  expect(renderExecucao(at, semCor)).toEqual(['● Nao consegui executar.', '  O conector esta bloqueado.'])
+  expect(renderExecucao(at, semCor)).toEqual(['┃ Nao consegui executar.', '┃ O conector esta bloqueado.'])
 })
 
 test('linha em branco preserva a quebra de paragrafo dentro do bullet', () => {
   const at = parseLog('primeiro paragrafo\n\nsegundo paragrafo')
-  expect(renderExecucao(at, semCor)).toEqual(['● primeiro paragrafo', '  ', '  segundo paragrafo'])
+  expect(renderExecucao(at, semCor)).toEqual(['┃ primeiro paragrafo', '┃ ', '┃ segundo paragrafo'])
 })
 
-test('chamada em + sessao iniciada viram UM marco com modelo e hora', () => {
+test('chamada em + sessao iniciada viram UM separador de bloco com modelo e hora, na largura pedida', () => {
   const at = parseLog('— chamada em 2026-08-17T15:19:13Z —\n— sessao iniciada (claude-opus-5[1m]) —')
   expect(at).toHaveLength(1)
-  expect(renderExecucao(at, semCor)).toEqual(['◇ claude-opus-5[1m] · 15:19:13'])
+  const linhas = renderExecucao(at, { color: false, largura: 60 })
+  expect(linhas).toEqual(['', '── ▶ IA · claude-opus-5[1m] · 15:19:13 ─────────────────────'])
+  expect(linhas[1]?.length).toBe(60)
+})
+
+test('o rotulo do bloco (papel/agente) escrito na linha de chamada entra no separador', () => {
+  const at = parseLog('— chamada em 2026-08-17T15:19:13Z · implement —\n— sessao iniciada (claude-fable-5-1) —')
+  expect(at[0]?.args).toBe('implement')
+  const linha = renderExecucao(at, { color: false, largura: 70 })[1] ?? ''
+  expect(linha.startsWith('── ▶ IA · implement · claude-fable-5-1 · 15:19:13 ──')).toBe(true)
+  expect(linha.length).toBe(70)
+})
+
+test('fim e timeout fecham o bloco com separador proprio; a prosa da IA sai literal, com calha', () => {
+  const at = parseLog('— chamada em 2026-08-17T15:19:13Z · gate —\n— sessao iniciada (m) —\n**limpio** implementou o menu.\nSegunda linha, com `codigo`.\n— concluido (custo $2.4524) —')
+  const linhas = renderExecucao(at, { color: false, largura: 50 })
+  expect(linhas).toEqual([
+    '',
+    '── ▶ IA · gate · m · 15:19:13 ────────────────────',
+    '┃ **limpio** implementou o menu.',
+    '┃ Segunda linha, com `codigo`.',
+    '── ■ concluido · US$2.4524 ───────────────────────',
+  ])
+  expect(renderExecucao(parseLog('— TIMEOUT: encerrando a IA —'), { color: false, largura: 50 })[0]).toBe('── ✕ TIMEOUT — a IA foi encerrada ────────────────')
+})
+
+test('separador nunca fica menor que a largura nem estoura por rotulo longo', () => {
+  const curto = renderExecucao(parseLog('— chamada em 2026-08-17T15:19:13Z —\n— sessao iniciada (' + 'x'.repeat(80) + ') —'), { color: false, largura: 40 })
+  expect(curto[1]?.startsWith('── ▶ IA · ')).toBe(true)
+  expect(curto[1]?.endsWith('──')).toBe(true)
 })
 
 test('falha no resultado ganha cor de erro; sucesso fica dim', () => {
@@ -160,8 +190,10 @@ test('a regiao pinada nunca passa de 40% da caixa', () => {
       rows, cols: 60, header: 'h', fixo: pinado, corpo: ['ultima'], input: '', cursor: 0,
       dica: '', prompt: '› ', rodape: [], legenda: 'p',
     })
-    const dentro = f.lines.filter(l => l.startsWith('  │')).length
-    const pinadas = f.lines.filter(l => /│p\d+/.test(l)).length
+    const iAbre = f.lines.findIndex(l => l.includes(CANTO.supEsq))
+    const dentro = iAbre - 2
+    const pinadas = f.lines.filter(l => /^p\d+/.test(l)).length
+    expect(pinadas).toBeGreaterThan(0)
     expect(pinadas).toBeLessThanOrEqual(Math.ceil(dentro * 0.4))
     expect(f.lines.join('\n')).toContain('ultima')
   }

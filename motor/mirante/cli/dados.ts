@@ -35,5 +35,5 @@ export function reposRegistrados(): ReturnType<typeof listRepos> {
 }
 
 export function larguraUtil(): number {
-  return Math.max(40, (Number(process.stdout.columns) || 78) - 6)
+  return Math.max(40, (Number(process.stdout.columns) || 78) - 2)
 }

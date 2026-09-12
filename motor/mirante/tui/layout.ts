@@ -86,6 +86,8 @@ export interface FrameInput {
   corInput?: (linha: string) => string
   sugestoes?: string[]
   legenda?: string
+  pintarMoldura?: (borda: string) => string
+  pintarDivisa?: (linha: string) => string
   cursor: number
   dica: string
   prompt: string
@@ -121,7 +123,7 @@ export interface CorpoRecortado {
 export function orcamentoDoCorpo(o: OrcamentoDoCorpo): CorpoRecortado {
   const moldura = o.temLegenda && o.rows >= ALTURA_MINIMA + 2 ? 2 : 0
   const linhaDica = o.temDica && o.rows >= ALTURA_MINIMA + moldura + 1 ? 1 : 0
-  const fixo = 3 + Math.max(1, o.linhasDeEntrada) + moldura + linhaDica
+  const fixo = 2 + Math.max(1, o.linhasDeEntrada) + moldura + linhaDica
   const disponivel = Math.max(0, o.rows - fixo)
   const sugVisiveis = Math.min(o.linhasAcima, Math.max(0, disponivel - 1))
   const rodapeVisivel = Math.min(o.linhasDeRodape, Math.max(0, disponivel - sugVisiveis - MIN_CORPO))
@@ -236,14 +238,14 @@ export function janelaHorizontal(linha: string, coluna: number, largura: number,
 
 export function renderFrame(f: FrameInput): Frame {
   const largura = Math.max(24, f.cols)
-  const interno = largura - 4
+  const interno = largura - 2
   const rodape = f.rodape ?? []
   const sugestoes = f.sugestoes ?? []
   const moldura = f.legenda !== undefined && f.rows >= ALTURA_MINIMA + 2 ? 2 : 0
   const linhaDica = f.dica && f.rows >= ALTURA_MINIMA + moldura + 1 ? 1 : 0
   const pos = posicaoNoTexto(f.input, f.cursor)
   const todasEntradas = f.input.split('\n')
-  const maxEntrada = Math.max(1, f.rows - 3 - moldura - linhaDica - MIN_CORPO)
+  const maxEntrada = Math.max(1, f.rows - 2 - moldura - linhaDica - MIN_CORPO)
   const inicioEntrada = todasEntradas.length <= maxEntrada
     ? 0
     : Math.max(0, Math.min(pos.linha - maxEntrada + 1, todasEntradas.length - maxEntrada))
@@ -272,24 +274,24 @@ export function renderFrame(f: FrameInput): Frame {
   const rolantes = alturaRolante ? f.corpo.slice(-alturaRolante) : []
   const visiveis = [...pinadoVisivel, ...rolantes]
   const lines: string[] = []
-  lines.push(padVisible('  ' + truncVisible(f.header, largura - 2), largura))
-  lines.push('  ' + CANTO.supEsq + '─'.repeat(interno) + CANTO.supDir)
+  lines.push(padVisible(truncVisible(f.header, largura), largura))
+  const divisa = f.pintarDivisa ?? ((s: string): string => s)
+  lines.push(divisa('─'.repeat(largura)))
   for (let i = 0; i < alturaCorpo; i++) {
-    const conteudo = visiveis[i] ?? ''
-    lines.push('  │' + padVisible(truncVisible(conteudo, interno), interno) + '│')
+    lines.push(padVisible(truncVisible(visiveis[i] ?? '', largura), largura))
   }
-  lines.push('  ' + CANTO.infEsq + '─'.repeat(interno) + CANTO.infDir)
-  for (const sg of sugVisiveis) lines.push(padVisible('  ' + truncVisible(sg, largura - 2), largura))
+  for (const sg of sugVisiveis) lines.push(padVisible(truncVisible(sg, largura), largura))
   const comMoldura = moldura === 2
+  const borda = f.pintarMoldura ?? ((s: string): string => s)
   if (comMoldura) {
     const rotulo = f.legenda ? ` ${truncVisible(f.legenda, Math.max(4, interno - 4))} ` : ''
     const sobra = Math.max(0, interno - 1 - visibleLen(rotulo))
-    lines.push('  ' + CANTO.supEsq + '─' + rotulo + '─'.repeat(sobra) + CANTO.supDir)
+    lines.push(borda(CANTO.supEsq + '─') + rotulo + borda('─'.repeat(sobra) + CANTO.supDir))
   }
   const recuo = ' '.repeat(visibleLen(f.prompt))
   const primeira = lines.length + 1
   // Largura util para o TEXTO da entrada, ja descontado o prompt e a moldura.
-  const larguraDoTextoDeEntrada = Math.max(1, (comMoldura ? interno - 2 : largura - 2) - visibleLen(f.prompt))
+  const larguraDoTextoDeEntrada = Math.max(1, (comMoldura ? interno - 2 : largura) - visibleLen(f.prompt))
   const linhaDoCursor = todasEntradas[pos.linha] ?? ''
   const janelaDoCursor = janelaHorizontal(linhaDoCursor, colunaVisualDoCursor(linhaDoCursor, pos.coluna), larguraDoTextoDeEntrada)
   // Todas as linhas de entrada andam com o MESMO deslocamento — o da linha do
@@ -298,25 +300,25 @@ export function renderFrame(f: FrameInput): Frame {
   // diferentes por linha, e o comentario afirmando o contrario.
   const deslocamento = janelaDoCursor.deslocamento
   entrada.forEach((linha, i) => {
-    const prefixo = i === 0 ? f.prompt : recuo
+    const prefixo = i === 0 ? borda(f.prompt) : recuo
     const visivel = deslocamento > 0
       ? janelaHorizontal(linha, 0, larguraDoTextoDeEntrada, deslocamento).texto
       : truncVisible(linha, larguraDoTextoDeEntrada)
     const pintada = f.corInput ? f.corInput(visivel) : visivel
     const conteudo = prefixo + pintada
     lines.push(comMoldura
-      ? '  │ ' + padVisible(truncVisible(conteudo, interno - 2), interno - 2) + ' │'
-      : padVisible('  ' + conteudo, largura))
+      ? borda('│') + ' ' + padVisible(truncVisible(conteudo, interno - 2), interno - 2) + ' ' + borda('│')
+      : padVisible(conteudo, largura))
   })
-  if (comMoldura) lines.push('  ' + CANTO.infEsq + '─'.repeat(interno) + CANTO.infDir)
-  if (linhaDica) lines.push(padVisible('    ' + truncVisible(f.dica ?? '', largura - 4), largura))
-  for (const r of rodapeVisivel) lines.push(padVisible('  ' + truncVisible(r, largura - 2), largura))
+  if (comMoldura) lines.push(borda(CANTO.infEsq + '─'.repeat(interno) + CANTO.infDir))
+  if (linhaDica) lines.push(padVisible('  ' + truncVisible(f.dica ?? '', largura - 2), largura))
+  for (const r of rodapeVisivel) lines.push(padVisible(truncVisible(r, largura), largura))
   return {
     lines,
     cursorRow: primeira + (pos.linha - inicioEntrada),
     // A coluna vem da JANELA, nao do texto inteiro: senao ela cresce alem da
     // largura do terminal e o cursor visual para de acompanhar o caractere.
-    cursorCol: (comMoldura ? 5 : 3) + visibleLen(f.prompt) + janelaDoCursor.colunaDoCursor,
+    cursorCol: (comMoldura ? 3 : 1) + visibleLen(f.prompt) + janelaDoCursor.colunaDoCursor,
   }
 }
 

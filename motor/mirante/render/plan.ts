@@ -19,7 +19,7 @@ function paint(s: string, code: string, o: RenderOptions): string {
 
 function rule(label: string, o: RenderOptions): string {
   const head = label ? `── ${label} ` : '── '
-  return paint(head + '─'.repeat(Math.max(0, o.width - head.length)), DIM, o)
+  return paint(`  ${head}${'─'.repeat(Math.max(0, o.width - 2 - head.length))}`, DIM, o)
 }
 
 function oneLine(s: string, max: number): string {

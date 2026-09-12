@@ -3,6 +3,8 @@ import { openScreen, pinturaDiferencial, frameToAnsi } from '../../motor/mirante
 import { renderFrame } from '../../motor/mirante/tui/layout.ts'
 import type { Terminal } from '../../motor/mirante/tui/screen.ts'
 import type { FrameInput } from '../../motor/mirante/tui/layout.ts'
+import { CANTO } from '../../motor/mirante/tui/paleta.ts'
+import { telaVirtual } from '../fixtures/tela-virtual.ts'
 
 function quadro(over: Partial<FrameInput> = {}): ReturnType<typeof renderFrame> {
   return renderFrame({
@@ -81,4 +83,25 @@ test('depois de fechar a tela, desenhar nao escreve mais nada', () => {
   b.zerar()
   tela.draw(conteudo(['  b']))
   expect(b.escrito()).toBe('')
+})
+
+test('REGRESSAO a borda direita sobrevive num terminal que segura o cursor na ultima coluna', () => {
+  const cols = 40
+  const f = renderFrame({
+    rows: 10, cols, header: 'hii', corpo: ['log'], input: 'abc', cursor: 3,
+    dica: '', prompt: '› ', rodape: [], legenda: 'proj',
+  })
+  const primeira = telaVirtual([frameToAnsi(f)], cols).split('\n')
+  const iAbre = primeira.findIndex(l => l.includes(CANTO.supEsq))
+  expect(primeira[iAbre]?.endsWith(CANTO.supDir)).toBe(true)
+  expect(primeira[iAbre + 1]?.endsWith(CANTO.vertical)).toBe(true)
+  expect(primeira[iAbre + 2]?.endsWith(CANTO.infDir)).toBe(true)
+  const g = renderFrame({
+    rows: 10, cols, header: 'hii', corpo: ['log', 'outro'], input: 'abcd', cursor: 4,
+    dica: '', prompt: '› ', rodape: [], legenda: 'proj',
+  })
+  const segunda = telaVirtual([frameToAnsi(f), pinturaDiferencial(g, f.lines)], cols).split('\n')
+  expect(segunda[iAbre]?.endsWith(CANTO.supDir)).toBe(true)
+  expect(segunda[iAbre + 1]?.endsWith(CANTO.vertical)).toBe(true)
+  expect(segunda[iAbre + 2]?.endsWith(CANTO.infDir)).toBe(true)
 })

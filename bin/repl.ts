@@ -17,8 +17,10 @@ import { emExecucao } from '../motor/mirante/render/rodape.ts'
 import { floorProviders, formatProviders } from '../motor/euclides/tesouro/lacuna.ts'
 import { createApp } from '../motor/mirante/tui/app.ts'
 import { nodeTerminal } from '../motor/mirante/tui/screen.ts'
+import { esmaecer, pintar } from '../motor/mirante/tui/paleta.ts'
 import { ACC, RESET, color, dim, say, escolherProjeto } from '../motor/mirante/cli/saida.ts'
 import { larguraUtil, reposRegistrados, todosOsCards } from '../motor/mirante/cli/dados.ts'
+import { branchAtual } from '../motor/mirante/cli/branch.ts'
 import { definirModo, modoAtual, selecionado, selecionar } from '../motor/mirante/cli/estado.ts'
 import { cabecalhoDaTarefa, planoDe } from '../motor/mirante/cli/tela-tarefa.ts'
 import { dicaDaNavegacao, pintarComando, rodapeDa } from '../motor/mirante/cli/rodape-tui.ts'
@@ -30,7 +32,7 @@ import { definirEstadoDoOllama, sondarOllama } from '../motor/tomada/harness/oll
 // O painel de aprovacao de URL tem tres opcoes fixas (aprova · refaz · ajusta),
 // as mesmas que `alvoDeEntrada` gera como op:1..op:3.
 const OPCOES_DE_APROVACAO = 3
-import { etiquetaDoProjeto } from '../motor/mirante/render/projeto.ts'
+import { etiquetaDoProjeto, tintaDoProjeto } from '../motor/mirante/render/projeto.ts'
 import { cabemQuantasSugestoes, renderSugestoes, prefixoComum } from '../motor/mirante/render/sugestoes.ts'
 import type { GrupoDeSugestao } from '../motor/mirante/render/sugestoes.ts'
 import { comandosDaIaAtiva, corDaIa } from '../motor/tomada/mapa/comandos.ts'
@@ -85,6 +87,7 @@ async function tui(state0: SessionState): Promise<void> {
     if (!r.tratado && effect.kind === 'historico') state = { ...state, seguindo: '' }
   }
 
+  const indiceDoRepo = (): number => reposRegistrados().findIndex(r => r.name === state.repo)
   const app = createApp(term, {
     header: () => `${color ? ACC : ''}hii${color ? RESET : ''}${dim(`   daemon ${daemonStatus()}`)}`,
     corpo: (ctx) => {
@@ -121,14 +124,15 @@ async function tui(state0: SessionState): Promise<void> {
         verificacao: verificacaoDoCard(String(cardEmAprovacao?.fm.verify ?? '')),
       })
     },
-    dica: (ctx) => dicaDaNavegacao(ctx, state),
-    prompt: () => '› ',
+    dica: (ctx) => esmaecer(dicaDaNavegacao(ctx, state), { color }),
+    prompt: () => '❯ ',
     legenda: () => etiquetaDoProjeto(state.repo, {
       color,
-      indice: reposRegistrados().findIndex(r => r.name === state.repo),
+      indice: indiceDoRepo(),
+      branch: state.repo ? branchAtual(repoPath(state.repo)) : '',
       detalhe: state.seguindo ? `tarefa #${state.seguindo}` : '',
     }),
-    rodape: () => rodapeDa(state, modoAtual() === 'rodape'),
+    rodape: () => rodapeDa(state, modoAtual() === 'rodape').map(l => esmaecer(l, { color })),
     intervalMs: 400,
     onComplete: (linha) => completer(linha, state.repo)[0],
     sugestoes: (opcoes, selecionado) => {
@@ -137,7 +141,7 @@ async function tui(state0: SessionState): Promise<void> {
       const grupoDe = (opcao: string): GrupoDeSugestao | null =>
         descricaoPorComando.has(opcao) ? { titulo: daIa.provedor, cor: corDaIa(daIa.provedor) } : null
       return renderSugestoes(opcoes, {
-        color, selecionado, width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+        color, selecionado, width: larguraUtil(),
         // A janela e dimensionada pelas linhas do terminal: sem isto o quadro
         // cortava as primeiras N por falta de altura e a navegacao morria num
         // terminal baixo.
@@ -147,6 +151,10 @@ async function tui(state0: SessionState): Promise<void> {
     },
     prefixoComum,
     corInput: (linha) => pintarComando(linha),
+    molduraDoPrompt: (focada) => (borda) => (focada
+      ? (color ? `${tintaDoProjeto(state.repo, indiceDoRepo(), { color })}${borda}${RESET}` : borda)
+      : pintar(borda, 'apagado', { color })),
+    divisa: (linha) => pintar(linha, 'apagado', { color }),
     onInterrupt: () => {
       const id = state.seguindo
       const card = id ? readCard(id) : null
@@ -161,7 +169,7 @@ async function tui(state0: SessionState): Promise<void> {
       for (const l of renderParada(id, {
         color, custo: custo.toFixed(2),
         pisoDoGasto: formatProviders(floorProviders(card.fm)),
-        width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+        width: larguraUtil(),
       })) app.log(l)
       return false
     },
@@ -274,7 +282,7 @@ async function main(): Promise<void> {
   fleet(state)
 
   for (;;) {
-    const line = await ask(color ? `${ACC}› ${RESET}` : '› ')
+    const line = await ask(color ? `${ACC}❯ ${RESET}` : '❯ ')
     if (line === null) break
     const { effect, state: next } = handle(line, state)
     state = next

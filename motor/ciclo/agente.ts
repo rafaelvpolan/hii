@@ -334,6 +334,7 @@ export async function runStep(wt: string, agent: string, instruction: string, id
     modo: modoFor('step', overrideDoPasso),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
+    rotulo: agent,
     extraTools: navegacao,
     agentsJson: injetou ? JSON.stringify(agenteInjetado) : '',
   }, 'step')

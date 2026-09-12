@@ -38,6 +38,8 @@ export interface AppHooks {
   sugestoes?: (opcoes: string[], selecionado: number) => string[]
   prefixoComum?: (opcoes: string[]) => string
   corInput?: (linha: string) => string
+  molduraDoPrompt?: (focada: boolean) => (borda: string) => string
+  divisa?: (linha: string) => string
   onInterrupt: () => boolean
   onNav?: (dir: -1 | 1, modo: ModoNavegacao) => boolean
   onEntrar?: (modo: ModoNavegacao) => void
@@ -68,6 +70,8 @@ export interface App {
 const PADRAO = {
   fixo: (): string[] => [],
   legenda: (): string | undefined => undefined,
+  molduraDoPrompt: () => (borda: string): string => borda,
+  divisa: (linha: string): string => linha,
   sugestoes: (): string[] => [],
   prefixoComum: (): string => '',
   podeLimpar: (): string => '',
@@ -116,7 +120,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
 
   const ctxAtual = (): CorpoContexto => ({
     navegando: input.navegando,
-    altura: Math.max(4, term.rows() - 6 - quadro.rodape.length - sugestoes.length),
+    altura: Math.max(4, term.rows() - 5 - quadro.rodape.length - sugestoes.length),
     sugerindo: sugestoes.length > 0,
   })
 
@@ -132,12 +136,12 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       const rodape = hooks.rodape()
       const ctx: CorpoContexto = {
         navegando: input.navegando,
-        altura: Math.max(4, term.rows() - 6 - rodape.length - sugestoes.length),
+        altura: Math.max(4, term.rows() - 5 - rodape.length - sugestoes.length),
         sugerindo: sugestoes.length > 0,
       }
       const fixo = hooks.fixo(ctx)
       const corpo = hooks.corpo(ctx)
-      const interno = Math.max(20, term.cols() - 4)
+      const interno = Math.max(20, term.cols())
       const emTelaPropria = hooks.telaPropria(ctx)
       const rolante = ctx.navegando === 'board' || emTelaPropria
         ? corpo
@@ -168,6 +172,8 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       dica: hooks.dica(ctx),
       prompt: hooks.prompt(),
       corInput: hooks.corInput,
+      pintarMoldura: hooks.molduraDoPrompt(ctx.navegando === '' && !escondePrompt),
+      pintarDivisa: hooks.divisa,
       sugestoes: [...acima, ...hooks.sugestoes(sugestoes, sugIdx)],
       legenda: hooks.legenda(),
       rodape: quadro.rodape,

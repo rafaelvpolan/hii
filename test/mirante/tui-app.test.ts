@@ -422,3 +422,20 @@ test('/config vira pagina propria: o log nao invade a tela de configuracao', asy
   expect(tela).toContain('IAS')
   expect(tela).not.toContain('ruido do log')
 })
+
+test('a moldura do prompt acende quando a entrada tem o foco e apaga ao navegar o rodape', () => {
+  const t = fakeTerminal(16, 50)
+  const focos: boolean[] = []
+  void app(t, {
+    legenda: () => 'proj',
+    rodape: () => ['opcao a', 'opcao b'],
+    onNav: () => true,
+    molduraDoPrompt: (focada) => { focos.push(focada); return (s) => s },
+  }).run()
+  expect(focos[focos.length - 1]).toBe(true)
+  t.tecla('\x1b[B')
+  expect(focos[focos.length - 1]).toBe(false)
+  t.tecla('\x1b')
+  expect(focos[focos.length - 1]).toBe(true)
+})
+

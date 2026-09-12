@@ -44,7 +44,7 @@ export function moveCursor(row: number, col: number): string {
 }
 
 export function frameToAnsi(f: ReturnType<typeof renderFrame>): string {
-  const corpo = f.lines.map(l => l + CLEAR_EOL).join('\n')
+  const corpo = f.lines.map(l => CLEAR_EOL + l).join('\n')
   return HOME + corpo + moveCursor(f.cursorRow, f.cursorCol)
 }
 
@@ -55,7 +55,7 @@ export function pinturaDiferencial(f: ReturnType<typeof renderFrame>, anteriores
   for (let i = 0; i < total; i++) {
     const nova = f.lines[i] ?? ''
     if (nova === (anteriores[i] ?? '')) continue
-    saida += moveCursor(i + 1, 1) + nova + CLEAR_EOL
+    saida += moveCursor(i + 1, 1) + CLEAR_EOL + nova
   }
   return saida + moveCursor(f.cursorRow, f.cursorCol)
 }
