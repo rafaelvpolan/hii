@@ -187,8 +187,8 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const tokensDaRodada = voltas ? voltas.tokens : r.tokens
   const tokensAntes = Number(card.fm.tokens_total || '0') || 0
   if (!r.ok) {
-    if (voltas && (voltas.cost || voltas.tokens)) {
-      patchCard(id, { cost_usd: (gasto + voltas.cost).toFixed(4), tokens_total: String(tokensAntes + voltas.tokens) }, `${isoNow()} refação falhou depois de gastar $${voltas.cost.toFixed(4)} · ${voltas.tokens} tokens nas voltas que rodaram — custo contabilizado`)
+    if (custoDaRodada || tokensDaRodada) {
+      patchCard(id, { cost_usd: (gasto + custoDaRodada).toFixed(4), tokens_total: String(tokensAntes + tokensDaRodada) }, `${isoNow()} ${redo ? 'refação' : 'correção'} falhou depois de gastar $${custoDaRodada.toFixed(4)} · ${tokensDaRodada} tokens — custo contabilizado`)
     }
     const outcome = applyFailurePolicy({
       id,

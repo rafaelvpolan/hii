@@ -257,12 +257,8 @@ export function encerrarHarnessDoCard(id: string, contexto: string): ResultadoDe
   return harnessesDoCard(id).map(registro => encerrar(id, registro, contexto))
 }
 
-export async function encerrarHarnessDoCardAsync(id: string, contexto: string): Promise<ResultadoDeEncerramento[]> {
-  const saida: ResultadoDeEncerramento[] = []
-  for (const registro of harnessesDoCard(id)) {
-    saida.push(antesDeMatar(id, registro) ?? depoisDeMatar(id, registro, await matarComEscaladaAsync(registro), contexto))
-  }
-  return saida
+export function encerrarHarnessDoCardAsync(id: string, contexto: string): Promise<ResultadoDeEncerramento[]> {
+  return Promise.all(harnessesDoCard(id).map(async registro => antesDeMatar(id, registro) ?? depoisDeMatar(id, registro, await matarComEscaladaAsync(registro), contexto)))
 }
 
 function cardSemUsoDeHarness(id: string): boolean {
