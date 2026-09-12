@@ -168,3 +168,24 @@ test('card sem instrucoes numeradas segue o caminho antigo: um pedido com o text
   expect(conferiu).toBe(false)
   expect(readCard(id)?.fm.status).toBe('URL')
 }, TEMPO_COM_GIT_MS)
+
+test('REGRESSAO volta 1 ok e volta 2 falha: o custo da volta 1 e da conferencia chega ao cost_usd, nao so ao diario', async () => {
+  const id = cardEmCorrecao()
+  let volta = 0
+  const deps: CorrectDeps = {
+    implement: (_c, dir): Promise<ImplementResult> => {
+      volta++
+      appendFileSync(join(dir, 'a.txt'), `volta ${volta}\n`)
+      if (volta === 1) return Promise.resolve(sucesso('volta 1'))
+      return Promise.resolve({ ok: false, reason: 'harness caiu', cost: '0.0500', failureClass: 'terminal', failureReason: 'harness caiu' })
+    },
+    runStep,
+    conferir: (_id, _wt, _base, instrucoes) => Promise.resolve(conclusiva([1, 2], instrucoes)),
+  }
+  await handleCorrect(id, deps)
+  const c = readCard(id)
+  expect(volta).toBe(2)
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.cost_usd, 'volta 1 (0.10) + conferencia (0.01) + volta 2 falhada (0.05)').toBe('0.1600')
+  expect(c?.body).toContain('custo contabilizado')
+}, TEMPO_COM_GIT_MS)

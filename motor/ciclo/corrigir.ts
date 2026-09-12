@@ -185,7 +185,11 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   if (!voltas) appendAttempt(id, 'correcao', instruction, r.fullText, r.provider ?? '')
   const custoDaRodada = voltas ? voltas.cost : r.cost
   const tokensDaRodada = voltas ? voltas.tokens : r.tokens
+  const tokensAntes = Number(card.fm.tokens_total || '0') || 0
   if (!r.ok) {
+    if (voltas && (voltas.cost || voltas.tokens)) {
+      patchCard(id, { cost_usd: (gasto + voltas.cost).toFixed(4), tokens_total: String(tokensAntes + voltas.tokens) }, `${isoNow()} refação falhou depois de gastar $${voltas.cost.toFixed(4)} · ${voltas.tokens} tokens nas voltas que rodaram — custo contabilizado`)
+    }
     const outcome = applyFailurePolicy({
       id,
       fromStatus: 'CORRECTING',
@@ -207,7 +211,6 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   // Como cinco portoes de orcamento leem `cost_usd`, todos decidiam sobre um numero
   // 41% menor que o real. `gasto` e o valor conferido na entrada deste handler
   // (linha 88), ja garantido numerico; somar sobre ele e o mesmo que o fecho faz.
-  const tokensAntes = Number(card.fm.tokens_total || '0') || 0
   patchCard(id, {
     status: 'URL',
     correction: '',
