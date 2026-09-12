@@ -18,14 +18,14 @@ const io = dispatchIOFalso({ log: (l: string) => { saida.push(l) } })
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-cmd-modelo-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
   saida = []
 })
 
 afterEach(() => {
-  delete process.env.HICODE_CARDS_DIR
-  delete process.env.HICODE_IA_FILE
+  delete process.env.HII_CARDS_DIR
+  delete process.env.HII_IA_FILE
 })
 
 const CASOS: ReadonlyArray<readonly [string, string, readonly string[]]> = [

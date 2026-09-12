@@ -8,8 +8,8 @@ export interface ProviderConfigIssue {
 
 export function providerConfigIssues(): ProviderConfigIssue[] {
   const issues: ProviderConfigIssue[] = []
-  const dflt = process.env.HICODE_AI_PROVIDER
-  if (dflt && !isProviderName(dflt)) issues.push({ origin: 'HICODE_AI_PROVIDER', requested: dflt, effect: `usando ${DEFAULT_PROVIDER}` })
+  const dflt = process.env.HII_AI_PROVIDER
+  if (dflt && !isProviderName(dflt)) issues.push({ origin: 'HII_AI_PROVIDER', requested: dflt, effect: `usando ${DEFAULT_PROVIDER}` })
   for (const role of agentRoles()) {
     const perRoleEnv = roleProviderEnv(role)
     const perRole = process.env[perRoleEnv]

@@ -7,8 +7,8 @@ import { isProviderName, modelFor, providerLimits, providerNames } from '../../m
 import type { AgentMode, AgentRequest } from '../../motor/tomada/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-kimi-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const binDir = join(BASE, 'bin')
 mkdirSync(binDir, { recursive: true })
@@ -143,14 +143,14 @@ test('o kimi aparece no registry ao lado de claude/codex/ollama', () => {
   expect(providerNames().filter(n => n === 'kimi')).toHaveLength(1)
 })
 
-test('HICODE_KIMI_MODEL escolhe o modelo do kimi por papel', () => {
-  const anterior = process.env.HICODE_KIMI_MODEL
-  process.env.HICODE_KIMI_MODEL = 'kimi-k2-turbo'
+test('HII_KIMI_MODEL escolhe o modelo do kimi por papel', () => {
+  const anterior = process.env.HII_KIMI_MODEL
+  process.env.HII_KIMI_MODEL = 'kimi-k2-turbo'
   try {
     expect(modelFor('step', 'kimi')).toBe('kimi-k2-turbo')
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_KIMI_MODEL
-    else process.env.HICODE_KIMI_MODEL = anterior
+    if (anterior === undefined) delete process.env.HII_KIMI_MODEL
+    else process.env.HII_KIMI_MODEL = anterior
   }
 })
 

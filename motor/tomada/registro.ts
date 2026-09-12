@@ -16,10 +16,10 @@ const PROVIDERS: ReadonlyMap<HarnessId, Harness> = new Map<HarnessId, Harness>(
 )
 
 const ROLE_PROVIDER_ENV: Record<AgentRole, string> = {
-  implement: 'HICODE_IMPLEMENT_PROVIDER',
-  verify: 'HICODE_VERIFY_PROVIDER',
-  gate: 'HICODE_GATE_PROVIDER',
-  step: 'HICODE_STEP_PROVIDER',
+  implement: 'HII_IMPLEMENT_PROVIDER',
+  verify: 'HII_VERIFY_PROVIDER',
+  gate: 'HII_GATE_PROVIDER',
+  step: 'HII_STEP_PROVIDER',
 }
 
 // Nao e mais type predicate de proposito: com HarnessId = string, um predicado
@@ -42,7 +42,7 @@ export function roleProviderEnv(role: AgentRole): string {
 }
 
 export function roleQuotaFallbackEnv(role: AgentRole): string {
-  return `HICODE_${role.toUpperCase()}_QUOTA_FALLBACK_PROVIDER`
+  return `HII_${role.toUpperCase()}_QUOTA_FALLBACK_PROVIDER`
 }
 
 export function providerNameFor(role: AgentRole, override?: string): HarnessId {
@@ -51,7 +51,7 @@ export function providerNameFor(role: AgentRole, override?: string): HarnessId {
   if (escolhido !== undefined && isProviderName(escolhido)) return escolhido
   const perRole = process.env[ROLE_PROVIDER_ENV[role]]
   if (perRole !== undefined && isProviderName(perRole)) return perRole
-  const dflt = process.env.HICODE_AI_PROVIDER
+  const dflt = process.env.HII_AI_PROVIDER
   return dflt !== undefined && isProviderName(dflt) ? dflt : DEFAULT_PROVIDER
 }
 

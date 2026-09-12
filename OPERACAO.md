@@ -86,7 +86,7 @@ Conferir o alvo e o estado local:
 hii repo ls               # alvos registrados e estado de cada clone
 hii contract [caminho]    # redetecta stack e comandos do alvo
 hii init [caminho]        # provisiona .hii/ num repo-alvo
-hii sync                  # sincroniza tarefas externas (HICODE_TASK_SYNC)
+hii sync                  # sincroniza tarefas externas (HII_TASK_SYNC)
 ```
 
 ---
@@ -122,8 +122,8 @@ Todos têm alias em português — `/provedor`, `/modelo`, `/modo`, `/esforco` �
 Ou por ambiente, o que é o caminho para script e container:
 
 ```bash
-HICODE_IMPLEMENT_PROVIDER=kimi HICODE_KIMI_MODEL='K2.7 Coding' hii start
-HICODE_GATE_PROVIDER=claude HICODE_GATE_MODEL=opus hii start
+HII_IMPLEMENT_PROVIDER=kimi HII_KIMI_MODEL='K2.7 Coding' hii start
+HII_GATE_PROVIDER=claude HII_GATE_MODEL=opus hii start
 ```
 
 **O que muda de verdade entre harnesses.** Duas capacidades têm consequência
@@ -333,7 +333,7 @@ Cinco laços, com propósitos distintos. Confundi-los ao depurar custa tempo.
 
 `hii start` (ou `hii run`) faz *tick* continuamente: lê a fila, escolhe o que cabe, executa.
 
-- **Paralelismo**: o menor entre `HICODE_CONCURRENCY` e o que a máquina comporta
+- **Paralelismo**: o menor entre `HII_CONCURRENCY` e o que a máquina comporta
   (CPU e memória por worktree). O operador pode **baixar**, não subir acima do
   teto físico — a versão anterior abria 3 worktrees pedindo 6GB contra um limite
   de 4GB.
@@ -345,7 +345,7 @@ Cinco laços, com propósitos distintos. Confundi-los ao depurar custa tempo.
 ### 8.2 Laço de reparo
 
 Quando um gate reprova, o motor tenta consertar em vez de parar:
-`HICODE_REAJUSTE_RETRIES` (padrão **2**). O reparador é escolhido por domínio — a
+`HII_REAJUSTE_RETRIES` (padrão **2**). O reparador é escolhido por domínio — a
 saída de um `composer` quebrado não se parece com a de um `tsc` quebrado.
 
 Esgotou as tentativas → `HALTED`, com o worktree preservado para inspeção.
@@ -353,16 +353,16 @@ Esgotou as tentativas → `HALTED`, com o worktree preservado para inspeção.
 ### 8.3 Laço de espera (backoff)
 
 Falha classificada como **transitória** manda o card para `WAITING` com backoff
-crescente, até `HICODE_WAITING_MAX_ATTEMPTS`. Falha de **cota** troca de provedor
-pelo roteador de rotas (ligado por omissão desde 09/09; `HICODE_QUOTA_FALLBACK=off`
+crescente, até `HII_WAITING_MAX_ATTEMPTS`. Falha de **cota** troca de provedor
+pelo roteador de rotas (ligado por omissão desde 09/09; `HII_QUOTA_FALLBACK=off`
 devolve o comportamento antigo de parar na primeira cota). Falha **terminal** não é
 repetida — repetir daria o mesmo resultado.
 
 ### 8.4 Laço de divergência (Macunaíma)
 
 Para pergunta **aberta de desenho**, o motor gera N alternativas isoladas e
-compara, em vez de iterar uma só. `HICODE_MCN_RAMOS` (padrão **4**) e
-`HICODE_MCN_IDEIAS`.
+compara, em vez de iterar uma só. `HII_MCN_RAMOS` (padrão **4**) e
+`HII_MCN_IDEIAS`.
 
 `valeDivergir` decide, e a decisão aparece no plano **antes** de você aprovar.
 Enunciado com resposta única (cálculo, comissão, imposto, arredondamento) **não**
@@ -421,8 +421,8 @@ hii estado --revisao    # só o token de revisão (para polling barato)
 ```
 
 - **Teto por card**: `orcamentoPorCard.tetoUsd` em `config/model-tier.json`, ou
-  `HICODE_CARD_BUDGET_USD`. Ultrapassar → `HALTED`.
-- **Teto global**: `HICODE_BUDGET_USD` (ou `orcamentoGlobal.tetoUsd` em
+  `HII_CARD_BUDGET_USD`. Ultrapassar → `HALTED`.
+- **Teto global**: `HII_BUDGET_USD` (ou `orcamentoGlobal.tetoUsd` em
   `config/model-tier.json`; a env vence). Soma o gasto de TODOS os provedores nos
   runs de uma janela móvel (`orcamentoGlobal.janela`, padrão 24h). Ao atingir:
   nenhum job novo é despachado, os em voo terminam, nenhum card muda de status, e
@@ -481,12 +481,12 @@ que isso é do painel web.
 Health HTTP, para container e monitoração — **só sobe se você pedir**:
 
 ```bash
-HICODE_HEALTH_PORT=8080 hii start
+HII_HEALTH_PORT=8080 hii start
 curl localhost:8080/health
 ```
 
-Sem `HICODE_HEALTH_PORT`, nada é aberto. O bind é loopback por padrão
-(`HICODE_HEALTH_BIND`).
+Sem `HII_HEALTH_PORT`, nada é aberto. O bind é loopback por padrão
+(`HII_HEALTH_BIND`).
 
 ---
 
@@ -508,7 +508,7 @@ hii tarefa nova "cálculo de comissão do plano anual" --repo org/produto
 ```
 
 Para forçar o perfil `completo`, marque `risk: high` no card (o vocabulário de
-segurança, backend e dados também tira a tarefa dos perfis leves sozinho). Com `HICODE_RIGOR_ESTRITO=1`, o perfil
+segurança, backend e dados também tira a tarefa dos perfis leves sozinho). Com `HII_RIGOR_ESTRITO=1`, o perfil
 `completo` também exige **evidência de RED**: o passo de testes tem de colar a
 saída real do comando de teste reprovando, entre `<<<RED>>>` e `<<<FIM RED>>>`,
 antes de implementar.
@@ -516,7 +516,7 @@ antes de implementar.
 ### Rodar em modelo local, sem custo externo
 
 ```bash
-HICODE_IMPLEMENT_PROVIDER=ollama HICODE_OLLAMA_MODEL=qwen2.5-coder hii run
+HII_IMPLEMENT_PROVIDER=ollama HII_OLLAMA_MODEL=qwen2.5-coder hii run
 ```
 
 O ollama isola só-leitura e reporta custo; o que ele não faz é restringir
@@ -577,7 +577,7 @@ morria no arranque.
 | `HALTED` logo após o implement | escreveu fora do escopo | diário do card diz qual caminho; o worktree está preservado |
 | `HALTED` com "o crivo reprovou" | esgotou os reajustes | leia o veredito no diário; `hii reject 42 "<o que corrigir>"` |
 | `WAITING` que não sai | falha transitória repetida | `hii estado` mostra esperas e provedores indisponíveis |
-| "cota esgotada" e HALTED | nenhum provedor apto restou na rodada | `/ia <outro>` quando a cota voltar; `HICODE_QUOTA_FALLBACK=off` desliga a troca automática |
+| "cota esgotada" e HALTED | nenhum provedor apto restou na rodada | `/ia <outro>` quando a cota voltar; `HII_QUOTA_FALLBACK=off` desliga a troca automática |
 | Perfil `visual` numa tarefa que não é visual | vocabulário do enunciado | reescreva o título, ou marque `risk: high` |
 | Perfil pesado numa troca de cor | palavra de sinal duro no enunciado | é deliberado — sinal duro vence estilo |
 | Disco crescendo | worktrees e runs acumulados | `hii disco`, depois `hii disco --limpar` |
@@ -600,53 +600,53 @@ são as que valem memorizar.
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_IMPLEMENT_PROVIDER` | harness do passo de implementação |
-| `HICODE_GATE_PROVIDER` / `HICODE_GATE_MODEL` | harness e modelo do crivo |
-| `HICODE_VERIFY_PROVIDER` / `HICODE_VERIFY_MODEL` | verificação |
-| `HICODE_STEP_PROVIDER` | passos do pipeline |
-| `HICODE_CLAUDE_MODEL`, `HICODE_CODEX_MODEL`, `HICODE_KIMI_MODEL`, `HICODE_OLLAMA_MODEL` | modelo por harness |
-| `HICODE_QUOTA_FALLBACK` | troca de provedor quando a cota estoura — `on` por omissão; `off` para parar na primeira cota |
+| `HII_IMPLEMENT_PROVIDER` | harness do passo de implementação |
+| `HII_GATE_PROVIDER` / `HII_GATE_MODEL` | harness e modelo do crivo |
+| `HII_VERIFY_PROVIDER` / `HII_VERIFY_MODEL` | verificação |
+| `HII_STEP_PROVIDER` | passos do pipeline |
+| `HII_CLAUDE_MODEL`, `HII_CODEX_MODEL`, `HII_KIMI_MODEL`, `HII_OLLAMA_MODEL` | modelo por harness |
+| `HII_QUOTA_FALLBACK` | troca de provedor quando a cota estoura — `on` por omissão; `off` para parar na primeira cota |
 
 ### Limites e laços
 
 | Variável | Padrão | Efeito |
 |---|---|---|
-| `HICODE_CONCURRENCY` | teto físico | cards em paralelo (só reduz) |
-| `HICODE_REAJUSTE_RETRIES` | 2 | tentativas de reparo por gate |
-| `HICODE_CONFLICT_RETRIES` | 2 | tentativas de resolver conflito |
-| `HICODE_GATE_RETRIES` | 1 | repetição do gate que não executou |
-| `HICODE_WAITING_MAX_ATTEMPTS` | — | teto do backoff |
-| `HICODE_MCN_RAMOS` | 4 | ramos de divergência |
+| `HII_CONCURRENCY` | teto físico | cards em paralelo (só reduz) |
+| `HII_REAJUSTE_RETRIES` | 2 | tentativas de reparo por gate |
+| `HII_CONFLICT_RETRIES` | 2 | tentativas de resolver conflito |
+| `HII_GATE_RETRIES` | 1 | repetição do gate que não executou |
+| `HII_WAITING_MAX_ATTEMPTS` | — | teto do backoff |
+| `HII_MCN_RAMOS` | 4 | ramos de divergência |
 
 ### Rigor
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_RIGOR_ESTRITO=1` | liga as exigências que hoje só escrevem veredito no card |
-| `HICODE_CLARIFY` | controla o passo de clarificação |
+| `HII_RIGOR_ESTRITO=1` | liga as exigências que hoje só escrevem veredito no card |
+| `HII_CLARIFY` | controla o passo de clarificação |
 
 ### Orçamento
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_BUDGET_USD` | teto global por janela móvel (drena o despacho; vence o valor de `model-tier.json`) |
-| `HICODE_CARD_BUDGET_USD` | teto por card |
+| `HII_BUDGET_USD` | teto global por janela móvel (drena o despacho; vence o valor de `model-tier.json`) |
+| `HII_CARD_BUDGET_USD` | teto por card |
 
 ### Estado fora do clone
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_ROOT` | raiz do estado (tem precedência sobre a detecção) |
-| `HICODE_CARDS_DIR` | onde ficam os cards |
-| `HICODE_REPOS_FILE` | registro de repositórios |
-| `HICODE_SECRETS_DIR` | segredos |
+| `HII_ROOT` | raiz do estado (tem precedência sobre a detecção) |
+| `HII_CARDS_DIR` | onde ficam os cards |
+| `HII_REPOS_FILE` | registro de repositórios |
+| `HII_SECRETS_DIR` | segredos |
 
 ### Saúde
 
 | Variável | Efeito |
 |---|---|
-| `HICODE_HEALTH_PORT` | sobe o servidor de health (sem ela, nada sobe) |
-| `HICODE_HEALTH_BIND` | interface (loopback por padrão) |
+| `HII_HEALTH_PORT` | sobe o servidor de health (sem ela, nada sobe) |
+| `HII_HEALTH_BIND` | interface (loopback por padrão) |
 
 ### Referência completa de variáveis (gerada)
 
@@ -659,114 +659,115 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 <!-- hicode:envs:inicio -->
 | Variável | Padrão no código | Contrato motor/painel | Lida em |
 |---|---|---|---|
-| `HICODE_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
-| `HICODE_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
-| `HICODE_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
-| `HICODE_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
-| `HICODE_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
-| `HICODE_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
-| `HICODE_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
-| `HICODE_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_CLAUDE_MODEL` | — | — | `motor/tomada/harness/claude.ts` |
-| `HICODE_CODEX_MODEL` | — | — | `motor/tomada/harness/codex.ts` |
-| `HICODE_COLOR_DEPTH` | — | — | `motor/mirante/tui/paleta.ts` |
-| `HICODE_CONCURRENCY` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
-| `HICODE_CONFLICT_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
-| `HICODE_COTA_TTL_MS` | `'2000'` | — | `motor/euclides/tesouro/cota-runs.ts` |
-| `HICODE_CPU_POR_WORKTREE` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
-| `HICODE_CPUS_TOTAL` | — | — | `motor/quilombo/limites.ts` |
-| `HICODE_CRITERIOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_DISCO_ALERTA_MB` | — | — | `motor/euclides/estado-em-disco.ts` |
-| `HICODE_DISCO_TETO_MB` | — | — | `motor/euclides/estado-em-disco.ts`, `motor/mirante/render/disco.ts` |
-| `HICODE_EFFORT` | — | — | `motor/tomada/preferencias.ts` |
-| `HICODE_ENQUADRAMENTOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_ESPERA_PISO_TAXA_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_ESPERA_PISO_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_EVAL` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_EVAL_MIN` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_DIFF_LIMIT` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_PROVIDER` | — | — | `motor/tomada/registro.ts` |
-| `HICODE_GATE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MAX_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MIN_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GATE_TIMEOUT_MS_PER_KB` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_GH_REPO` | `''` | — | `motor/tomada/ponte/tarefas/github-issues.ts` |
-| `HICODE_HEALTH_BIND` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_HEALTH_HOST` | — | — | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_HEALTH_PORT` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
-| `HICODE_HEALTH_PROBE_BIN_TIMEOUT_MS` | `15000` | — | `motor/tomada/sonda.ts` |
-| `HICODE_HEALTH_PROBE_TIMEOUT_MS` | `5000` | — | `motor/tomada/sonda.ts` |
-| `HICODE_HYPERLINKS` | — | — | `motor/mirante/tui/layout.ts` |
-| `HICODE_IA_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
-| `HICODE_IDEATE_FRAMES` | `4` | — | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IDEATE_IDEAS` | `5` | — | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IDEATE_TOPK` | `3` | — | `motor/agentes/tarsila/ideate-run.ts` |
-| `HICODE_IMPLEMENT_PROVIDER` | — | — | `motor/tomada/registro.ts` |
-| `HICODE_JANELAS_` | — | — | `motor/euclides/tesouro/janelas.ts` |
-| `HICODE_KIMI_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
-| `HICODE_KIMI_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_KIMI_MODEL` | — | — | `motor/tomada/harness/kimi.ts` |
-| `HICODE_KIMI_URL` | `'https://api.moonshot.ai'` | — | `motor/tomada/harness/kimi.ts` |
-| `HICODE_LIVELOG_KEEP_BYTES` | `200_000` | — | `motor/tomada/harness/claude-stream.ts` |
-| `HICODE_LIVELOG_MAX_BYTES` | `1_000_000` | — | `motor/tomada/harness/claude-stream.ts` |
-| `HICODE_LOCK_STALE_MS` | `15000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
-| `HICODE_LOCK_TIMEOUT_MS` | `10000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
-| `HICODE_MAX_CARDS` | `10` | — | `motor/cordel/arquivar.ts` |
-| `HICODE_MCN_IDEIAS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
-| `HICODE_MCN_RAMOS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
-| `HICODE_MEM_POR_WORKTREE_MB` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
-| `HICODE_MEM_TOTAL_MB` | — | — | `motor/quilombo/limites.ts` |
-| `HICODE_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
-| `HICODE_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
-| `HICODE_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
-| `HICODE_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
-| `HICODE_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
-| `HICODE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_PREVIEW_BASE` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_PROJECT_MEMORY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_QUOTA_FALLBACK` | `'on'` | — | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
-| `HICODE_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
-| `HICODE_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
-| `HICODE_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
-| `HICODE_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs` |
-| `HICODE_RUN_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_RUNTIME` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
-| `HICODE_SECRETS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
-| `HICODE_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |
-| `HICODE_SKILLS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_STEP_PROVIDER` | — | — | `motor/tomada/registro.ts` |
-| `HICODE_TASK_SYNC` | `'none'` | — | `bin/hii.ts`, `motor/euclides/radar/doctor.ts`, `motor/tomada/ponte/tarefas/registro.ts` |
-| `HICODE_TEST_JOBS` | `0` | — | `scripts/test-bun.mjs` |
-| `HICODE_TEST_TIMEOUT_MS` | `0` | — | `scripts/test-bun.mjs` |
-| `HICODE_TICK_ESCALATE_AFTER` | `3` | — | `motor/euclides/radar/tick.ts` |
-| `HICODE_TICKS_SEM_PROGRESSO_MAX` | `0` | — | `motor/euclides/radar/servidor.ts` |
-| `HICODE_TIER_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_TMP_TTL_H` | — | — | `motor/euclides/estado-em-disco.ts` |
-| `HICODE_TOPOLOGIA_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HICODE_URL_AJUSTES` | — | — | `motor/ciclo/reprise/url-ajuste.ts` |
-| `HICODE_URL_FREEPORT_SETTLE_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_INSPECT_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_PROBE_INTERVAL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_PROBE_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_URL_WAIT_S` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_VERIFY_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_VERIFY_PROVIDER` | — | — | `motor/tomada/registro.ts` |
-| `HICODE_VISUAL_AI` | `'off'` | — | `motor/cordel/alicerce/config.ts` |
-| `HICODE_WAITING_MAX_ATTEMPTS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HII_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
+| `HII_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
+| `HII_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
+| `HII_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
+| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
+| `HII_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
+| `HII_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_CLAUDE_MODEL` | — | — | `motor/tomada/harness/claude.ts` |
+| `HII_CODEX_MODEL` | — | — | `motor/tomada/harness/codex.ts` |
+| `HII_COLOR_DEPTH` | — | — | `motor/mirante/tui/paleta.ts` |
+| `HII_CONCURRENCY` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
+| `HII_CONFLICT_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
+| `HII_COTA_TTL_MS` | `'2000'` | — | `motor/euclides/tesouro/cota-runs.ts` |
+| `HII_CPU_POR_WORKTREE` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
+| `HII_CPUS_TOTAL` | — | — | `motor/quilombo/limites.ts` |
+| `HII_CRITERIOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_DISCO_ALERTA_MB` | — | — | `motor/euclides/estado-em-disco.ts` |
+| `HII_DISCO_TETO_MB` | — | — | `motor/euclides/estado-em-disco.ts`, `motor/mirante/render/disco.ts` |
+| `HII_EFFORT` | — | — | `motor/tomada/preferencias.ts` |
+| `HII_ENQUADRAMENTOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_ESPERA_PISO_TAXA_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_ESPERA_PISO_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_EVAL` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_EVAL_MIN` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_DIFF_LIMIT` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HII_GATE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_TIMEOUT_MAX_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_TIMEOUT_MIN_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GATE_TIMEOUT_MS_PER_KB` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_GH_REPO` | `''` | — | `motor/tomada/ponte/tarefas/github-issues.ts` |
+| `HII_HEALTH_BIND` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_HEALTH_HOST` | — | — | `motor/cordel/alicerce/contrato.ts` |
+| `HII_HEALTH_PORT` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
+| `HII_HEALTH_PROBE_BIN_TIMEOUT_MS` | `15000` | — | `motor/tomada/sonda.ts` |
+| `HII_HEALTH_PROBE_TIMEOUT_MS` | `5000` | — | `motor/tomada/sonda.ts` |
+| `HII_HYPERLINKS` | — | — | `motor/mirante/tui/layout.ts` |
+| `HII_IA_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
+| `HII_IDEATE_FRAMES` | `4` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HII_IDEATE_IDEAS` | `5` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HII_IDEATE_TOPK` | `3` | — | `motor/agentes/tarsila/ideate-run.ts` |
+| `HII_IMPLEMENT_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HII_JANELAS_` | — | — | `motor/euclides/tesouro/janelas.ts` |
+| `HII_KIMI_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
+| `HII_KIMI_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_KIMI_MODEL` | — | — | `motor/tomada/harness/kimi.ts` |
+| `HII_KIMI_URL` | `'https://api.moonshot.ai'` | — | `motor/tomada/harness/kimi.ts` |
+| `HII_LIVELOG_KEEP_BYTES` | `200_000` | — | `motor/tomada/harness/claude-stream.ts` |
+| `HII_LIVELOG_MAX_BYTES` | `1_000_000` | — | `motor/tomada/harness/claude-stream.ts` |
+| `HII_LOCK_STALE_MS` | `15000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
+| `HII_LOCK_TIMEOUT_MS` | `10000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
+| `HII_MAX_CARDS` | `10` | — | `motor/cordel/arquivar.ts` |
+| `HII_MCN_IDEIAS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
+| `HII_MCN_RAMOS` | — | — | `motor/ciclo/macunaima/divergir.ts` |
+| `HII_MEM_POR_WORKTREE_MB` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
+| `HII_MEM_TOTAL_MB` | — | — | `motor/quilombo/limites.ts` |
+| `HII_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
+| `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
+| `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
+| `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
+| `HII_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
+| `HII_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_PREVIEW_BASE` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_PROJECT_MEMORY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_QUOTA_FALLBACK` | `'on'` | — | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
+| `HII_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
+| `HII_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
+| `HII_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
+| `HII_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
+| `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs` |
+| `HII_RUN_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HII_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HII_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HII_RUNTIME` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
+| `HII_SECRETS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
+| `HII_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |
+| `HII_SKILLS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_STEP_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HII_TASK_SYNC` | `'none'` | — | `bin/hii.ts`, `motor/euclides/radar/doctor.ts`, `motor/tomada/ponte/tarefas/registro.ts` |
+| `HII_TEST_JOBS` | `0` | — | `scripts/test-bun.mjs` |
+| `HII_TEST_TIMEOUT_MS` | `0` | — | `scripts/test-bun.mjs` |
+| `HII_TICK_ESCALATE_AFTER` | `3` | — | `motor/euclides/radar/tick.ts` |
+| `HII_TICKS_SEM_PROGRESSO_MAX` | `0` | — | `motor/euclides/radar/servidor.ts` |
+| `HII_TIER_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_TMP_TTL_H` | — | — | `motor/euclides/estado-em-disco.ts` |
+| `HII_TOPOLOGIA_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_URL_AJUSTES` | — | — | `motor/ciclo/reprise/url-ajuste.ts` |
+| `HII_URL_AUTO_OK` | `'on'` | — | `motor/ciclo/crivo/aprovacao-automatica.ts`, `motor/cordel/alicerce/config.ts` |
+| `HII_URL_FREEPORT_SETTLE_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_URL_INSPECT_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_URL_PROBE_INTERVAL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_URL_PROBE_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_URL_WAIT_S` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_VERIFY_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_VERIFY_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HII_VISUAL_AI` | `'off'` | — | `motor/cordel/alicerce/config.ts` |
+| `HII_WAITING_MAX_ATTEMPTS` | — | — | `motor/cordel/alicerce/config.ts` |
 <!-- hicode:envs:fim -->
 
 ---
 
-## Antes de ligar `HICODE_RIGOR_ESTRITO=1`
+## Antes de ligar `HII_RIGOR_ESTRITO=1`
 
 Ligar é ato de **operação**, não de commit: quem liga escolhe o momento em que os
 cards em voo podem parar. Ligar com a fila vazia é mais barato que no meio de uma

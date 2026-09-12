@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Fields } from '../../motor/cordel/index.ts'
 
-process.env.HICODE_COTA_TTL_MS = '0'
+process.env.HII_COTA_TTL_MS = '0'
 
 const { lerSaudeDoMotor } = await import('../../motor/euclides/radar/saude.ts')
 const { PROVEDOR_DESCONHECIDO } = await import('../../motor/euclides/tesouro/cota.ts')
@@ -16,7 +16,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-saude-'))
   criados.push(dir)
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   mkdirSync(join(dir, 'runs'), { recursive: true })
 })
 

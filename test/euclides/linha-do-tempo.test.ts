@@ -146,3 +146,8 @@ test('REGRESSAO log antigo (kimi/codex sem cabecalho) depois de um bloco com hor
     'chamada@2026-09-12T10:00:00Z:sem-rotulo',
   ])
 })
+
+test('REGRESSAO card 007: conclusao repetida no log nao abre um bloco vazio — o segundo fim sem bloco aberto e ignorado', () => {
+  const blocos = blocosDeChamada(parseLog('— chamada em 2026-09-12T09:17:48Z · implement · vitro —\nfiz\n— concluido (custo $5.0747) —\n— concluido (custo $5.0747) —\n— chamada em 2026-09-12T09:26:45Z · implement · vitro —'))
+  expect(blocos.map(b => [b.rotulo, b.concluida])).toEqual([['implement · vitro', true], ['implement · vitro', false]])
+})

@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-instab-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const I = await import('../../motor/euclides/tesouro/instabilidade.ts')
@@ -56,7 +56,7 @@ test('media por card e o numero que decide o teto, nao o total', () => {
 test('o relato diz o teto atual, senao o numero nao serve de decisao', () => {
   const r = I.relatoDeInstabilidade(I.instabilidadePorAlvo())
   expect(r).toContain('org/instavel')
-  expect(r, 'sem o teto vigente ao lado, o operador nao sabe se 2,5 e muito').toContain('HICODE_REAJUSTE_RETRIES')
+  expect(r, 'sem o teto vigente ao lado, o operador nao sabe se 2,5 e muito').toContain('HII_REAJUSTE_RETRIES')
 })
 
 test('hii status mostra o reparo por alvo quando houver — numero sem quem ver nao decide nada', async () => {

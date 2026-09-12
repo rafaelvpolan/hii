@@ -38,22 +38,22 @@ export const AJUDA_CURL = TEM_CURL ? saidaDeAjuda('curl', ['--help', 'all']) : '
 const HOME_VAZIO = mkdtempSync(join(tmpdir(), 'hii-matriz-provedores-home-'))
 
 const ENV_GUARDADAS = [
-  'HICODE_IA_FILE', 'HICODE_EFFORT', 'HICODE_CODEX_MODEL', 'HICODE_KIMI_MODEL', 'HICODE_OLLAMA_MODEL',
-  'HICODE_IMPLEMENT_PROVIDER', 'HICODE_VERIFY_PROVIDER', 'HICODE_GATE_PROVIDER', 'HICODE_STEP_PROVIDER', 'HICODE_AI_PROVIDER',
+  'HII_IA_FILE', 'HII_EFFORT', 'HII_CODEX_MODEL', 'HII_KIMI_MODEL', 'HII_OLLAMA_MODEL',
+  'HII_IMPLEMENT_PROVIDER', 'HII_VERIFY_PROVIDER', 'HII_GATE_PROVIDER', 'HII_STEP_PROVIDER', 'HII_AI_PROVIDER',
 ] as const
 
 const ENV_ANTIGO = new Map<string, string | undefined>()
 for (const chave of ENV_GUARDADAS) ENV_ANTIGO.set(chave, process.env[chave])
-process.env.HICODE_IA_FILE = join(HOME_VAZIO, 'sem-preferencias.json')
-delete process.env.HICODE_EFFORT
-delete process.env.HICODE_CODEX_MODEL
-delete process.env.HICODE_KIMI_MODEL
-delete process.env.HICODE_OLLAMA_MODEL
-delete process.env.HICODE_IMPLEMENT_PROVIDER
-delete process.env.HICODE_VERIFY_PROVIDER
-delete process.env.HICODE_GATE_PROVIDER
-delete process.env.HICODE_STEP_PROVIDER
-delete process.env.HICODE_AI_PROVIDER
+process.env.HII_IA_FILE = join(HOME_VAZIO, 'sem-preferencias.json')
+delete process.env.HII_EFFORT
+delete process.env.HII_CODEX_MODEL
+delete process.env.HII_KIMI_MODEL
+delete process.env.HII_OLLAMA_MODEL
+delete process.env.HII_IMPLEMENT_PROVIDER
+delete process.env.HII_VERIFY_PROVIDER
+delete process.env.HII_GATE_PROVIDER
+delete process.env.HII_STEP_PROVIDER
+delete process.env.HII_AI_PROVIDER
 
 export const BASE = mkdtempSync(join(tmpdir(), 'hii-matriz-provedores-'))
 const binDir = join(BASE, 'bin')

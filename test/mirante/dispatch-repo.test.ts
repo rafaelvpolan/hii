@@ -18,7 +18,7 @@ const io = dispatchIOFalso({
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-disp-repo-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   saida = []
 })
 
@@ -36,7 +36,7 @@ const REGISTRO = [{ name: 'acme/site', path: '/tmp/site' }, { name: 'acme/api', 
 
 function comRepos(): void {
   writeFileSync(join(dir, '..', 'repos-teste.json'), JSON.stringify(REGISTRO))
-  process.env.HICODE_REPOS_FILE = join(dir, '..', 'repos-teste.json')
+  process.env.HII_REPOS_FILE = join(dir, '..', 'repos-teste.json')
 }
 
 test('escolher projeto por numero muda o alvo', async () => {
@@ -85,7 +85,7 @@ test('/repo sem argumento lista os projetos registrados', async () => {
 
 test('sem projeto registrado, ensina a registrar', async () => {
   writeFileSync(join(dir, '..', 'repos-vazio.json'), '[]')
-  process.env.HICODE_REPOS_FILE = join(dir, '..', 'repos-vazio.json')
+  process.env.HII_REPOS_FILE = join(dir, '..', 'repos-vazio.json')
   await digitar(['/repo'])
   expect(saida.join(' ')).toContain('nenhum projeto registrado')
 })

@@ -7,8 +7,8 @@ import type { StepResult } from '../../motor/ciclo/agente.ts'
 import type { GatedDeps } from '../../motor/ciclo/passo-com-gate.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-gated-'))
-process.env.HICODE_CARDS_DIR = CARDS
-process.env.HICODE_REAJUSTE_RETRIES = '2'
+process.env.HII_CARDS_DIR = CARDS
+process.env.HII_REAJUSTE_RETRIES = '2'
 
 interface Chamada {
   instrucao: string

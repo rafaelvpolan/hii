@@ -8,10 +8,10 @@ import type { ImplementResult, Run } from '../../motor/cordel/index.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telemfalha-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-process.env.HICODE_COTA_TTL_MS = '0'
-process.env.HICODE_QUOTA_FALLBACK = 'off'
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+process.env.HII_COTA_TTL_MS = '0'
+process.env.HII_QUOTA_FALLBACK = 'off'
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -36,8 +36,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
 const { handleExecute } = await import('../../motor/oswaldo/executar.ts')
@@ -56,7 +56,7 @@ const agente: ExecuteDeps = {
   verifyVisual: (): Promise<never> => Promise.reject(new Error('nao deveria chamar verifyVisual')),
 }
 
-beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '3' })
+beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '3' })
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

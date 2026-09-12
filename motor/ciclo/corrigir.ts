@@ -8,6 +8,7 @@ import type { Card } from '../cordel/index.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { runGit, stageAll } from '../quilombo/git.ts'
 import { ensureUrl, hasDevServer, urlPort, httpOk, inspectUrl, waitHttp } from './crivo/url-viva.ts'
+import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from './crivo/aprovacao-automatica.ts'
 import { implement, runStep } from './agente.ts'
 import { appendAttempt, readAttempts } from './reprise/tentativas.ts'
 import { applyFailurePolicy } from './reprise/politica.ts'
@@ -226,4 +227,14 @@ export async function handleCorrect(id: string, deps: CorrectDeps = { implement,
   const reval = await revalidate(id, wt, target)
   const estado = reval.conclusive === false ? 'inconclusivo' : (reval.ok ? 'ok' : 'falhou')
   patchCard(id, { verify: estado }, `${isoNow()} inspecao pos-${redo ? 'refação' : 'correção'}: ${estado} — ${reval.reason}`)
+  if (readCard(id)?.fm.status !== 'URL') return
+  const temUrl = hasDevServer(target)
+  const respondeu = temUrl ? await httpOk(`http://localhost:${urlPort(id)}`) : false
+  const decisao = decisaoDeAprovacaoDeUrl({ temUrl, respondeu, verify: estado })
+  if (decisao.aprova) {
+    aprovarUrlPeloMotor(id, decisao.motivo)
+    process.stdout.write(`[runner] #${id}: URL_OK sem pergunta — ${decisao.motivo}\n`)
+  } else {
+    patchCard(id, {}, `${isoNow()} url fica com voce: ${decisao.motivo}`)
+  }
 }

@@ -17,8 +17,8 @@ function arg(nome, dflt) {
   return i >= 0 ? process.argv[i + 1] : dflt
 }
 
-const model = arg('model', process.env.HICODE_OLLAMA_MODEL || 'qwen3-coder:30b')
-const base = (arg('url', process.env.HICODE_OLLAMA_URL || 'http://localhost:11434')).replace(/\/$/, '')
+const model = arg('model', process.env.HII_OLLAMA_MODEL || 'qwen3-coder:30b')
+const base = (arg('url', process.env.HII_OLLAMA_URL || 'http://localhost:11434')).replace(/\/$/, '')
 const promptFile = arg('prompt-file', null)
 const respostaPath = arg('resposta', null)
 const logPath = arg('log', 'generativo/runs/chamadas.jsonl')

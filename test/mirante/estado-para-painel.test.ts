@@ -8,13 +8,13 @@ let estado = ''
 beforeEach(() => {
   estado = mkdtempSync(join(tmpdir(), 'hii-painel-'))
   mkdirSync(join(estado, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = estado
-  process.env.HICODE_COTA_TTL_MS = '0'
-  process.env.HICODE_RUNNER_PIDFILE = join(estado, '.runner.pid')
+  process.env.HII_CARDS_DIR = estado
+  process.env.HII_COTA_TTL_MS = '0'
+  process.env.HII_RUNNER_PIDFILE = join(estado, '.runner.pid')
 })
 
 afterEach(() => {
-  delete process.env.HICODE_RUNNER_PIDFILE
+  delete process.env.HII_RUNNER_PIDFILE
 })
 
 function card(id: string, campos: Record<string, string> = {}): void {

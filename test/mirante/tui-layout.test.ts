@@ -141,11 +141,11 @@ test('link OSC 8 nao conta como largura visivel', () => {
 })
 
 test('linkificar transforma url em link mantendo a largura do texto', () => {
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   const t = linkificar('veja https://exemplo.com/x agora')
   expect(visibleLen(t)).toBe('veja https://exemplo.com/x agora'.length)
   expect(t).toContain('\x1b]8;;')
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('linkificar nao mexe em texto sem url', () => {
@@ -217,28 +217,28 @@ test('rodape longo e truncado dentro da largura', () => {
 import { suportaLink } from '../../motor/mirante/tui/layout.ts'
 
 test('REGRESSAO linkificar NAO embrulha url que ja esta dentro de um link', () => {
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   const uma = link('http://localhost:5222')
   const duas = linkificar(uma)
   expect(duas).toBe(uma)
   expect(stripAnsi(duas)).toBe('http://localhost:5222')
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('REGRESSAO linha do plano com link nao repete a url', () => {
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   const linha = `    Url    ${link('http://localhost:5222')}  sobe quando executar`
   const visivel = stripAnsi(linkificar(linha))
   expect(visivel.match(/localhost:5222/g)?.length).toBe(1)
   expect(visivel).not.toContain(']8;;')
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('terminal sem suporte recebe texto puro, sem escape de link', () => {
-  process.env.HICODE_HYPERLINKS = 'off'
+  process.env.HII_HYPERLINKS = 'off'
   expect(link('http://x', 'texto')).toBe('texto')
   expect(linkificar('veja http://x aqui')).toBe('veja http://x aqui')
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('deteccao por variavel de ambiente do terminal', () => {
@@ -248,15 +248,15 @@ test('deteccao por variavel de ambiente do terminal', () => {
   expect(suportaLink({ VTE_VERSION: '6003' })).toBe(true)
   expect(suportaLink({ VTE_VERSION: '4000' })).toBe(false)
   expect(suportaLink({})).toBe(false)
-  expect(suportaLink({ HICODE_HYPERLINKS: 'off', WT_SESSION: '1' })).toBe(false)
+  expect(suportaLink({ HII_HYPERLINKS: 'off', WT_SESSION: '1' })).toBe(false)
 })
 
 test('url no meio de texto ainda vira link quando suportado', () => {
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   const t = linkificar('url → http://localhost:5222 agora')
   expect(t).toContain('\x1b]8;;http://localhost:5222')
   expect(visibleLen(t)).toBe('url → http://localhost:5222 agora'.length)
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('a dica fica ABAIXO do campo, em linha propria', () => {
@@ -310,14 +310,14 @@ test('REGRESSAO nenhum teste pode depender do terminal de quem roda', () => {
   for (const v of ['WT_SESSION', 'TERM_PROGRAM', 'KITTY_WINDOW_ID', 'VTE_VERSION', 'GHOSTTY_RESOURCES_DIR']) {
     delete process.env[v]
   }
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
   expect(suportaLink()).toBe(false)
   expect(link('http://x', 'texto')).toBe('texto')
 
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   expect(link('http://x', 'texto')).toContain('\x1b]8;;')
 
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
   Object.assign(process.env, guardado)
 })
 
@@ -354,16 +354,16 @@ test('texto vazio nao gera linha fantasma', () => {
 })
 
 test('REGRESSAO: url colorida nao engole o ANSI para dentro do link OSC 8', () => {
-  const antes = process.env.HICODE_HYPERLINKS
-  process.env.HICODE_HYPERLINKS = 'on'
+  const antes = process.env.HII_HYPERLINKS
+  process.env.HII_HYPERLINKS = 'on'
   const visivel = 'veja https://exemplo.com/x agora'
   const linha = linkificar('veja \x1b[2mhttps://exemplo.com/x\x1b[0m agora')
   expect(linha).toContain('\x1b]8;;https://exemplo.com/x\x1b\\')
   expect(linha).not.toContain('https://exemplo.com/x\x1b[0m\x1b\\')
   expect(stripAnsi(linha)).toBe(visivel)
   expect(visibleLen(linha)).toBe(visivel.length)
-  if (antes === undefined) delete process.env.HICODE_HYPERLINKS
-  else process.env.HICODE_HYPERLINKS = antes
+  if (antes === undefined) delete process.env.HII_HYPERLINKS
+  else process.env.HII_HYPERLINKS = antes
 })
 
 test('a moldura do prompt recebe a tinta de foco e o conteudo nao', () => {

@@ -9,7 +9,7 @@ let estado = ''
 beforeEach(async () => {
   estado = mkdtempSync(join(tmpdir(), 'hii-ias-'))
   mkdirSync(join(estado, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = estado
+  process.env.HII_CARDS_DIR = estado
   const { esquecerSessoes } = await import('../../motor/euclides/ias-da-sessao.ts')
   esquecerSessoes()
 })

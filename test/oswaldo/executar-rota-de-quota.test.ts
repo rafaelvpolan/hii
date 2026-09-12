@@ -17,8 +17,8 @@ import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../motor/tomada/rota.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-rotaquota-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -43,8 +43,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { handleExecute } = await import('../../motor/oswaldo/executar.ts')
@@ -92,9 +92,9 @@ function cardExecutando(): string {
   }, '## Objetivo\nqualquer mudanca\n')
 }
 
-beforeEach(() => { process.env.HICODE_QUOTA_FALLBACK = 'on' })
+beforeEach(() => { process.env.HII_QUOTA_FALLBACK = 'on' })
 afterAll(() => {
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
   rmSync(BASE, { recursive: true, force: true })
 })
 
@@ -141,8 +141,8 @@ test('implement bem-sucedido depois da troca limpa override E rodada — a proxi
   expect(c?.fm.rota_tentados).toBe('')
 }, TEMPO_COM_GIT_MS)
 
-test('com HICODE_QUOTA_FALLBACK=off a primeira quota ja e HALTED — o opt-out do operador', async () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'off'
+test('com HII_QUOTA_FALLBACK=off a primeira quota ja e HALTED — o opt-out do operador', async () => {
+  process.env.HII_QUOTA_FALLBACK = 'off'
   const id = cardExecutando()
 
   await handleExecute(id, depsQueEstouram())

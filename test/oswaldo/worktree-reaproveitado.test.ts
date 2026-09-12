@@ -8,8 +8,8 @@ import type { ImplementResult } from '../../motor/cordel/index.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-wt-reuso-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -34,8 +34,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')

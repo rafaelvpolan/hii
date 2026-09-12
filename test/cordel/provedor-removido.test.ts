@@ -58,15 +58,15 @@ function comEnv<T>(vars: Record<string, string | undefined>, fn: () => T): T {
 }
 
 const SEM_PROVEDOR: Record<string, string | undefined> = {
-  HICODE_AI_PROVIDER: undefined,
-  HICODE_IMPLEMENT_PROVIDER: undefined,
-  HICODE_VERIFY_PROVIDER: undefined,
-  HICODE_GATE_PROVIDER: undefined,
-  HICODE_STEP_PROVIDER: undefined,
-  HICODE_IMPLEMENT_QUOTA_FALLBACK_PROVIDER: undefined,
-  HICODE_VERIFY_QUOTA_FALLBACK_PROVIDER: undefined,
-  HICODE_GATE_QUOTA_FALLBACK_PROVIDER: undefined,
-  HICODE_STEP_QUOTA_FALLBACK_PROVIDER: undefined,
+  HII_AI_PROVIDER: undefined,
+  HII_IMPLEMENT_PROVIDER: undefined,
+  HII_VERIFY_PROVIDER: undefined,
+  HII_GATE_PROVIDER: undefined,
+  HII_STEP_PROVIDER: undefined,
+  HII_IMPLEMENT_QUOTA_FALLBACK_PROVIDER: undefined,
+  HII_VERIFY_QUOTA_FALLBACK_PROVIDER: undefined,
+  HII_GATE_QUOTA_FALLBACK_PROVIDER: undefined,
+  HII_STEP_QUOTA_FALLBACK_PROVIDER: undefined,
 }
 
 function avisos(vars: Record<string, string | undefined>): string {
@@ -78,7 +78,7 @@ function avisos(vars: Record<string, string | undefined>): string {
 }
 
 function comCards<T>(fn: () => T): T {
-  return comEnv({ HICODE_CARDS_DIR: CARDS, HICODE_REPOS_FILE: REPOS }, fn)
+  return comEnv({ HII_CARDS_DIR: CARDS, HII_REPOS_FILE: REPOS }, fn)
 }
 
 function cardComOverride(title: string, objetivo: string): string {
@@ -102,11 +102,11 @@ function implementarComCodex(id: string): SaidaImplement {
     env: {
       ...process.env,
       PATH: `${BIN}:${process.env.PATH ?? ''}`,
-      HICODE_CARDS_DIR: CARDS,
-      HICODE_REPOS_FILE: REPOS,
-      HICODE_PROJECT_MEMORY: 'off',
-      HICODE_AI_PROVIDER: 'codex',
-      HICODE_IMPLEMENT_PROVIDER: 'codex',
+      HII_CARDS_DIR: CARDS,
+      HII_REPOS_FILE: REPOS,
+      HII_PROJECT_MEMORY: 'off',
+      HII_AI_PROVIDER: 'codex',
+      HII_IMPLEMENT_PROVIDER: 'codex',
     },
     encoding: 'utf8',
     timeout: 40000,
@@ -119,31 +119,31 @@ function ocorrencias(texto: string, alvo: string): number {
   return texto.split(alvo).length - 1
 }
 
-test('REGRESSAO: HICODE_IMPLEMENT_PROVIDER=opencode (o que o README recomendava) avisa em vez de trocar calado', () => {
-  const saida = avisos({ ...SEM_PROVEDOR, HICODE_AI_PROVIDER: 'codex', HICODE_IMPLEMENT_PROVIDER: 'opencode' })
+test('REGRESSAO: HII_IMPLEMENT_PROVIDER=opencode (o que o README recomendava) avisa em vez de trocar calado', () => {
+  const saida = avisos({ ...SEM_PROVEDOR, HII_AI_PROVIDER: 'codex', HII_IMPLEMENT_PROVIDER: 'opencode' })
 
   expect(saida).toContain('"opencode"')
-  expect(saida).toContain('HICODE_IMPLEMENT_PROVIDER')
+  expect(saida).toContain('HII_IMPLEMENT_PROVIDER')
   expect(saida).toContain('usando codex')
   expect(saida).toContain('claude, codex, ollama')
 })
 
 test('provedor global removido avisa que o default assumiu', () => {
-  const saida = avisos({ ...SEM_PROVEDOR, HICODE_AI_PROVIDER: 'opencode' })
+  const saida = avisos({ ...SEM_PROVEDOR, HII_AI_PROVIDER: 'opencode' })
 
-  expect(saida).toContain('HICODE_AI_PROVIDER')
+  expect(saida).toContain('HII_AI_PROVIDER')
   expect(saida).toContain('usando claude')
 })
 
 test('fallback de cota com provedor removido avisa que nao havera troca', () => {
-  const saida = avisos({ ...SEM_PROVEDOR, HICODE_IMPLEMENT_QUOTA_FALLBACK_PROVIDER: 'opencode' })
+  const saida = avisos({ ...SEM_PROVEDOR, HII_IMPLEMENT_QUOTA_FALLBACK_PROVIDER: 'opencode' })
 
-  expect(saida).toContain('HICODE_IMPLEMENT_QUOTA_FALLBACK_PROVIDER')
+  expect(saida).toContain('HII_IMPLEMENT_QUOTA_FALLBACK_PROVIDER')
   expect(saida).toContain('sem troca de provedor por cota')
 })
 
 test('configuracao valida nao gera aviso nenhum (sem alarme falso)', () => {
-  expect(avisos({ ...SEM_PROVEDOR, HICODE_AI_PROVIDER: 'claude', HICODE_STEP_PROVIDER: 'codex' })).toBe('')
+  expect(avisos({ ...SEM_PROVEDOR, HII_AI_PROVIDER: 'claude', HII_STEP_PROVIDER: 'codex' })).toBe('')
   expect(avisos(SEM_PROVEDOR)).toBe('')
 })
 
@@ -174,18 +174,18 @@ test('o motor avisa no arranque, antes de gastar dinheiro com o provedor errado'
     cwd: REPO,
     env: {
       ...process.env,
-      HICODE_CARDS_DIR: CARDS_VAZIO,
-      HICODE_REPOS_FILE: REPOS,
-      HICODE_RUNNER_LOCK: join(BASE, 'arranque.lock'),
-      HICODE_RUNNER_PIDFILE: join(BASE, 'arranque.pid'),
-      HICODE_AI_PROVIDER: 'claude',
-      HICODE_IMPLEMENT_PROVIDER: 'opencode',
+      HII_CARDS_DIR: CARDS_VAZIO,
+      HII_REPOS_FILE: REPOS,
+      HII_RUNNER_LOCK: join(BASE, 'arranque.lock'),
+      HII_RUNNER_PIDFILE: join(BASE, 'arranque.pid'),
+      HII_AI_PROVIDER: 'claude',
+      HII_IMPLEMENT_PROVIDER: 'opencode',
     },
     encoding: 'utf8',
     timeout: 40000,
   })
 
   expect(r.status).toBe(0)
-  expect(String(r.stderr)).toContain('provedor "opencode" configurado em HICODE_IMPLEMENT_PROVIDER')
+  expect(String(r.stderr)).toContain('provedor "opencode" configurado em HII_IMPLEMENT_PROVIDER')
   expect(String(r.stderr)).toContain('usando claude')
 }, 60000)

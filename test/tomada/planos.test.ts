@@ -12,9 +12,9 @@ import { sondarOllama } from '../../motor/tomada/harness/ollama-estado.ts'
 const dir = mkdtempSync(join(tmpdir(), 'hicode-planos-'))
 
 afterEach(() => {
-  delete process.env.HICODE_CLAUDE_CONFIG
-  delete process.env.HICODE_KIMI_CONFIG
-  delete process.env.HICODE_OLLAMA_URL
+  delete process.env.HII_CLAUDE_CONFIG
+  delete process.env.HII_KIMI_CONFIG
+  delete process.env.HII_OLLAMA_URL
   delete process.env.CODEX_HOME
 })
 
@@ -45,7 +45,7 @@ test('janelas de uso: so entram as que o provedor realmente reportou', () => {
 
 test('plano do claude sai do config local, com a idade do dado', () => {
   const agora = 1_800_000_000_000
-  process.env.HICODE_CLAUDE_CONFIG = claudeFake({
+  process.env.HII_CLAUDE_CONFIG = claudeFake({
     oauthAccount: { userRateLimitTier: 'default_claude_max_20x', organizationType: 'claude_team', seatTier: 'team_tier_2', billingType: 'stripe_subscription' },
     cachedUsageUtilization: { fetchedAtMs: agora - 2 * 3600000, utilization: { five_hour: { utilization: 7 } } },
   }, 'claude-a.json')
@@ -58,7 +58,7 @@ test('plano do claude sai do config local, com a idade do dado', () => {
 })
 
 test('sem config o plano nao inventa nada', () => {
-  process.env.HICODE_CLAUDE_CONFIG = join(dir, 'nao-existe.json')
+  process.env.HII_CLAUDE_CONFIG = join(dir, 'nao-existe.json')
   const p = planoDoClaude(1_800_000_000_000)
   expect(p.plano).toBe('')
   expect(p.janelas).toEqual([])
@@ -68,7 +68,7 @@ test('sem config o plano nao inventa nada', () => {
 test('config corrompido nao lanca', () => {
   const p = join(dir, 'ruim.json')
   writeFileSync(p, '{ nao e json')
-  process.env.HICODE_CLAUDE_CONFIG = p
+  process.env.HII_CLAUDE_CONFIG = p
   expect(() => planoDoClaude(1)).not.toThrow()
 })
 
@@ -92,7 +92,7 @@ test('modelos e provedor do kimi saem do toml', () => {
 test('SEGURANCA: nada do plano do kimi carrega api_key nem token', () => {
   const p = join(dir, 'kimi.toml')
   writeFileSync(p, TOML)
-  process.env.HICODE_KIMI_CONFIG = p
+  process.env.HII_KIMI_CONFIG = p
   const serializado = JSON.stringify(planoDoKimi())
   expect(serializado).not.toContain('SEGREDO')
   expect(serializado).not.toContain('sk-')
@@ -100,26 +100,26 @@ test('SEGURANCA: nada do plano do kimi carrega api_key nem token', () => {
 })
 
 test('claude: sem oauthAccount no config, conta como nao autenticado', () => {
-  process.env.HICODE_CLAUDE_CONFIG = claudeFake({}, 'claude-sem-conta.json')
+  process.env.HII_CLAUDE_CONFIG = claudeFake({}, 'claude-sem-conta.json')
   expect(claudeAutenticado()).toBe(false)
 })
 
 test('claude: com oauthAccount no config, conta como autenticado', () => {
-  process.env.HICODE_CLAUDE_CONFIG = claudeFake({ oauthAccount: { userRateLimitTier: 'default_claude_pro' } }, 'claude-com-conta.json')
+  process.env.HII_CLAUDE_CONFIG = claudeFake({ oauthAccount: { userRateLimitTier: 'default_claude_pro' } }, 'claude-com-conta.json')
   expect(claudeAutenticado()).toBe(true)
 })
 
 test('kimi: sem provider configurado no toml, conta como nao autenticado', () => {
   const p = join(dir, 'kimi-vazio.toml')
   writeFileSync(p, '# vazio, sem login ainda\n')
-  process.env.HICODE_KIMI_CONFIG = p
+  process.env.HII_KIMI_CONFIG = p
   expect(kimiAutenticado()).toBe(false)
 })
 
 test('kimi: com provider gravado no toml, conta como autenticado', () => {
   const p = join(dir, 'kimi-logado.toml')
   writeFileSync(p, TOML)
-  process.env.HICODE_KIMI_CONFIG = p
+  process.env.HII_KIMI_CONFIG = p
   expect(kimiAutenticado()).toBe(true)
 })
 
@@ -142,7 +142,7 @@ test('ollama nao tem conceito de login, sempre passa — quem declara isso e o p
 })
 
 test('ollama: sonda que nao responde devolve desabilitado em vez de travar', async () => {
-  process.env.HICODE_OLLAMA_URL = 'http://127.0.0.1:1'
+  process.env.HII_OLLAMA_URL = 'http://127.0.0.1:1'
   const e = await sondarOllama(123)
   expect(e.habilitado).toBe(false)
   expect(e.modelos).toEqual([])

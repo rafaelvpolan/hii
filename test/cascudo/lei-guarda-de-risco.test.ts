@@ -15,11 +15,11 @@ function comRegras<T>(conteudo: string, corpo: () => T): T {
   criados.push(dir)
   const arquivo = join(dir, 'regras.json')
   writeFileSync(arquivo, conteudo)
-  const anterior = process.env.HICODE_REGRAS_FILE
-  process.env.HICODE_REGRAS_FILE = arquivo
+  const anterior = process.env.HII_REGRAS_FILE
+  process.env.HII_REGRAS_FILE = arquivo
   try { return corpo() } finally {
-    if (anterior === undefined) delete process.env.HICODE_REGRAS_FILE
-    else process.env.HICODE_REGRAS_FILE = anterior
+    if (anterior === undefined) delete process.env.HII_REGRAS_FILE
+    else process.env.HII_REGRAS_FILE = anterior
   }
 }
 

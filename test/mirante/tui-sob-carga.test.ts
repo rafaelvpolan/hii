@@ -11,7 +11,7 @@ import type { FrameInput } from '../../motor/mirante/tui/layout.ts'
 // do estado". Uma TUI que fica 1ms mais lenta a cada card acumulado trava depois
 // de uma semana ligada, e o teste que so mede o caso pequeno nunca ve isso.
 
-const TETO_MS = Number(process.env.HICODE_TETO_CARGA_MS) > 0 ? Number(process.env.HICODE_TETO_CARGA_MS) : 50
+const TETO_MS = Number(process.env.HII_TETO_CARGA_MS) > 0 ? Number(process.env.HII_TETO_CARGA_MS) : 50
 
 function ms(fn: () => void): number {
   for (let i = 0; i < 10; i++) fn()

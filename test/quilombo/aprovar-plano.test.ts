@@ -4,12 +4,12 @@ import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-parede-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
-delete process.env.HICODE_RIGOR_ESTRITO
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
+delete process.env.HII_RIGOR_ESTRITO
 afterAll(() => {
   rmSync(BASE, { recursive: true, force: true })
-  delete process.env.HICODE_RIGOR_ESTRITO
+  delete process.env.HII_RIGOR_ESTRITO
 })
 
 const { conferirParedeDoPlano, prepararMatriz } = await import('../../motor/quilombo/cartorio/aprovar-plano.ts')
@@ -31,11 +31,11 @@ function responderTudo(card: string): void {
 }
 
 function comRigorEstrito<T>(fn: () => T): T {
-  process.env.HICODE_RIGOR_ESTRITO = '1'
+  process.env.HII_RIGOR_ESTRITO = '1'
   try {
     return fn()
   } finally {
-    delete process.env.HICODE_RIGOR_ESTRITO
+    delete process.env.HII_RIGOR_ESTRITO
   }
 }
 

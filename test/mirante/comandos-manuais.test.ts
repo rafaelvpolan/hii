@@ -25,10 +25,10 @@ const io = dispatchIOFalso({ log: (l: string) => { saida.push(l) } })
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-intake-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   saida = []
 })
-afterEach(() => { delete process.env.HICODE_CARDS_DIR })
+afterEach(() => { delete process.env.HII_CARDS_DIR })
 
 test('INVARIANTE todo pack citado por um comando manual EXISTE no acervo', () => {
   // Esta e a guarda que manteve o item 16 adiado por tres ondas: atalho que

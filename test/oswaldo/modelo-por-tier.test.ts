@@ -10,19 +10,19 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-tiermodelo-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const { createCard } = await import('../../motor/cordel/store.ts')
 const { acaoDoAgente, modeloGovernado, modeloDoPasso, tierDaAcaoDoCard } = await import('../../motor/oswaldo/rui.ts')
 const { lerGovernanca, modeloDoTier } = await import('../../motor/euclides/tesouro/orcamento.ts')
 
-const ENVS = ['HICODE_IA_FILE', 'HICODE_TIER_FILE', 'HICODE_STEP_PROVIDER', 'HICODE_GATE_PROVIDER', 'HICODE_VERIFY_PROVIDER', 'HICODE_AI_PROVIDER'] as const
+const ENVS = ['HII_IA_FILE', 'HII_TIER_FILE', 'HII_STEP_PROVIDER', 'HII_GATE_PROVIDER', 'HII_VERIFY_PROVIDER', 'HII_AI_PROVIDER'] as const
 const anteriores = new Map<string, string | undefined>(ENVS.map(n => [n, process.env[n]]))
 
 beforeEach(() => {
   for (const n of ENVS) delete process.env[n]
-  process.env.HICODE_IA_FILE = join(BASE, 'ia-inexistente.json')
+  process.env.HII_IA_FILE = join(BASE, 'ia-inexistente.json')
 })
 
 afterAll(() => {
@@ -81,7 +81,7 @@ test('card que ELEVA o tier tira o passo do modelo barato — pedido de tier so 
 test('a escolha explicita do humano em ia.json vence o dado de governanca', () => {
   const iaFile = join(BASE, 'ia-humano.json')
   writeFileSync(iaFile, JSON.stringify({ step: { model: 'opus' } }))
-  process.env.HICODE_IA_FILE = iaFile
+  process.env.HII_IA_FILE = iaFile
   const id = createCard({ title: 'humano', status: 'URL_OK', repo: 'org/repo' }, '## Objetivo\nh\n')
   expect(modeloDoPasso('pura', id)).toBe('opus')
 })
@@ -91,16 +91,16 @@ test('acao governada em tier NAO mapeado cai no padrao do harness (gate review c
 })
 
 test('tier1 mapeado no dado passa a governar o gate — editar o JSON troca o modelo, sem tocar codigo', () => {
-  process.env.HICODE_TIER_FILE = governancaDeTeste(`,
+  process.env.HII_TIER_FILE = governancaDeTeste(`,
     "modelosPorTier": { "porProvedor": { "claude": { "tier1_caro": "opus" } } }`)
   expect(modeloGovernado('gate', 'review', {})).toBe('opus')
 })
 
 test('modelosPorTier invalido LANCA: tier desconhecido e modelo vazio nao passam calados', () => {
-  process.env.HICODE_TIER_FILE = governancaDeTeste(`,
+  process.env.HII_TIER_FILE = governancaDeTeste(`,
     "modelosPorTier": { "porProvedor": { "claude": { "tier_maluco": "x" } } }`)
   expect(() => lerGovernanca()).toThrow()
-  process.env.HICODE_TIER_FILE = governancaDeTeste(`,
+  process.env.HII_TIER_FILE = governancaDeTeste(`,
     "modelosPorTier": { "porProvedor": { "claude": { "tier1_caro": "" } } }`)
   expect(() => lerGovernanca()).toThrow()
 })

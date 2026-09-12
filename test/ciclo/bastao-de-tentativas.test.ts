@@ -11,8 +11,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-bastao-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const { appendAttempt, readAttempts } = await import('../../motor/ciclo/reprise/tentativas.ts')
 const { attemptHistory } = await import('../../motor/ciclo/corrigir.ts')

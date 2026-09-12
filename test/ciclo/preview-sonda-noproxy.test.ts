@@ -28,7 +28,7 @@ for (const chave of CHAVES_SEM_PROXY) {
   envAntes[chave] = process.env[chave]
   delete process.env[chave]
 }
-const ollamaAntes = process.env.HICODE_OLLAMA_URL
+const ollamaAntes = process.env.HII_OLLAMA_URL
 
 afterAll(() => {
   for (const chave of [...CHAVES_PROXY, ...CHAVES_SEM_PROXY]) {
@@ -36,8 +36,8 @@ afterAll(() => {
     if (valor === undefined) delete process.env[chave]
     else process.env[chave] = valor
   }
-  if (ollamaAntes === undefined) delete process.env.HICODE_OLLAMA_URL
-  else process.env.HICODE_OLLAMA_URL = ollamaAntes
+  if (ollamaAntes === undefined) delete process.env.HII_OLLAMA_URL
+  else process.env.HII_OLLAMA_URL = ollamaAntes
   app.stop(true)
   proxy.stop(true)
 })
@@ -77,7 +77,7 @@ test('loopback reconhecido nas formas que url e ollama usam; rede alheia fica de
 })
 
 test('health-probe do ollama local passa atras de proxy que nao serve o app', async () => {
-  process.env.HICODE_OLLAMA_URL = URL_LOCAL
+  process.env.HII_OLLAMA_URL = URL_LOCAL
   const marca = acessosAoProxy
   expect(await probeProviderHealth('ollama')).toBe(true)
   expect(acessosAoProxy).toBe(marca)

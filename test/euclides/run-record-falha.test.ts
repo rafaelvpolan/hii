@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import type { Run } from '../../motor/cordel/index.ts'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-run-falha-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { writeRun } = await import('../../motor/euclides/registros.ts')
 

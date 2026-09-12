@@ -6,8 +6,8 @@ import { MAX_CONFLICT } from '../../cordel/alicerce/config.ts'
 // Tesouro — medir antes de automatizar.
 //
 // A pergunta que isto responde e "quais alvos consomem reparo demais", que e o
-// insumo que faltava para decidir baixar HICODE_REAJUSTE_RETRIES ou
-// HICODE_CONFLICT_RETRIES para um alvo especifico.
+// insumo que faltava para decidir baixar HII_REAJUSTE_RETRIES ou
+// HII_CONFLICT_RETRIES para um alvo especifico.
 //
 // Nao existe detector automatico de propósito: um limiar automatico precisaria
 // de politica de decaimento e armazenamento, e ainda seria proxy para "isto esta
@@ -60,7 +60,7 @@ export function relatoDeInstabilidade(medidas: readonly InstabilidadeDoAlvo[]): 
     return `  ${m.alvo}: ${m.mediaPorCard.toFixed(1)} reparo(s)/card em ${m.cards} card(s) — ${fases}`
   })
   return [
-    `reparo por alvo (tetos vigentes: HICODE_REAJUSTE_RETRIES=${maxReajuste()} HICODE_CONFLICT_RETRIES=${MAX_CONFLICT}):`,
+    `reparo por alvo (tetos vigentes: HII_REAJUSTE_RETRIES=${maxReajuste()} HII_CONFLICT_RETRIES=${MAX_CONFLICT}):`,
     ...linhas,
   ].join('\n')
 }

@@ -18,13 +18,13 @@ const PID_MOTOR = motor.pid ?? 0
 const motorDentroDoRoot = spawn('bun', [MOTOR_FALSO], { cwd: ROOT, stdio: 'ignore' })
 const PID_MOTOR_DENTRO_DO_ROOT = motorDentroDoRoot.pid ?? 0
 
-const pidfileOriginal = process.env.HICODE_RUNNER_PIDFILE
+const pidfileOriginal = process.env.HII_RUNNER_PIDFILE
 
 afterAll(() => {
   motor.kill('SIGKILL')
   motorDentroDoRoot.kill('SIGKILL')
-  if (pidfileOriginal === undefined) delete process.env.HICODE_RUNNER_PIDFILE
-  else process.env.HICODE_RUNNER_PIDFILE = pidfileOriginal
+  if (pidfileOriginal === undefined) delete process.env.HII_RUNNER_PIDFILE
+  else process.env.HII_RUNNER_PIDFILE = pidfileOriginal
   rmSync(BASE, { recursive: true, force: true })
 })
 
@@ -35,7 +35,7 @@ test('pre-condicao: os motores falsos de apoio ao teste subiram de verdade — s
 
 test('REGRESSAO: a raiz gravada no sidecar do pidfile prova o daemon mesmo quando o cwd do pid difere do ROOT de quem pergunta', () => {
   const pidfile = join(BASE, 'motor-de-outra-raiz.pid')
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
   writeFileSync(pidfile, `${PID_MOTOR}\n`)
   writeFileSync(rootFile(), `${RAIZ_DO_MOTOR}\n`)
 
@@ -45,7 +45,7 @@ test('REGRESSAO: a raiz gravada no sidecar do pidfile prova o daemon mesmo quand
 
 test('registro cujo sidecar aponta para uma raiz que nao bate com o cwd real do pid e recusado — nao basta declarar, tem de provar', () => {
   const pidfile = join(BASE, 'motor-com-raiz-falsa.pid')
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
   writeFileSync(pidfile, `${PID_MOTOR}\n`)
   writeFileSync(rootFile(), `${join(BASE, 'raiz-inventada-que-nao-e-o-cwd-real')}\n`)
 
@@ -54,7 +54,7 @@ test('registro cujo sidecar aponta para uma raiz que nao bate com o cwd real do 
 
 test('sem sidecar de raiz (pidfile legado), a prova cai no comportamento de hoje: compara com o ROOT de quem pergunta', () => {
   const pidfile = join(BASE, 'motor-legado.pid')
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
   writeFileSync(pidfile, `${PID_MOTOR_DENTRO_DO_ROOT}\n`)
 
   expect(daemonPid()).toBe(PID_MOTOR_DENTRO_DO_ROOT)
@@ -62,7 +62,7 @@ test('sem sidecar de raiz (pidfile legado), a prova cai no comportamento de hoje
 
 test('sem sidecar de raiz, um pid vivo fora do ROOT de quem pergunta continua recusado (nao regrediu a seguranca de hoje)', () => {
   const pidfile = join(BASE, 'motor-legado-fora-do-root.pid')
-  process.env.HICODE_RUNNER_PIDFILE = pidfile
+  process.env.HII_RUNNER_PIDFILE = pidfile
   writeFileSync(pidfile, `${PID_MOTOR}\n`)
 
   expect(daemonPid()).toBe(0)

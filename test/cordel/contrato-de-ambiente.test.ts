@@ -15,7 +15,7 @@ test('REGRESSAO todo estado compartilhado por ARQUIVO esta no contrato de ambien
       if (!it.name.endsWith('.ts')) continue
       varridos++
       const fonte = readFileSync(caminho, 'utf8')
-      for (const m of fonte.matchAll(/process\.env\.(HICODE_[A-Z_]*(?:FILE|DIR|PIDFILE|LOCK))\b/g)) {
+      for (const m of fonte.matchAll(/process\.env\.(HII_[A-Z_]*(?:FILE|DIR|PIDFILE|LOCK))\b/g)) {
         const nome = m[1] ?? ''
         if (nome && !declaradas.has(nome)) fora.push(`${caminho}: ${nome}`)
       }

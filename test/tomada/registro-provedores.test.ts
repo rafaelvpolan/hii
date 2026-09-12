@@ -22,26 +22,26 @@ test('o registry expoe exatamente os provedores do motor — opencode saiu, kimi
 })
 
 test('"opencode" nao e mais nome de provedor valido — override cai no default', () => {
-  comEnv({ HICODE_AI_PROVIDER: 'claude' }, () => {
+  comEnv({ HII_AI_PROVIDER: 'claude' }, () => {
     expect(providerNameFor('implement', 'opencode')).toBe('claude')
   })
 })
 
-test('HICODE_OPENCODE_MODEL nao decide mais modelo nenhum', () => {
-  comEnv({ HICODE_AI_PROVIDER: 'claude', HICODE_OPENCODE_MODEL: 'ollama/qwen' }, () => {
+test('HII_OPENCODE_MODEL nao decide mais modelo nenhum', () => {
+  comEnv({ HII_AI_PROVIDER: 'claude', HII_OPENCODE_MODEL: 'ollama/qwen' }, () => {
     expect(modelFor('implement', 'opencode')).toBeUndefined()
   })
 })
 
 test('modelFor segue exaustivo: cada provedor le a propria env de modelo', () => {
-  comEnv({ HICODE_CODEX_MODEL: 'gpt-x', HICODE_OLLAMA_MODEL: 'qwen' }, () => {
+  comEnv({ HII_CODEX_MODEL: 'gpt-x', HII_OLLAMA_MODEL: 'qwen' }, () => {
     expect(modelFor('step', 'codex')).toBe('gpt-x')
     expect(modelFor('step', 'ollama')).toBe('qwen')
   })
 })
 
 test('modelFor do claude continua respondendo por papel', () => {
-  comEnv({ HICODE_OPENCODE_MODEL: 'ollama/qwen' }, () => {
+  comEnv({ HII_OPENCODE_MODEL: 'ollama/qwen' }, () => {
     expect(modelFor('verify', 'claude')).toBe('sonnet')
     expect(modelFor('gate', 'claude')).toBe('sonnet')
     expect(modelFor('implement', 'claude')).toBeUndefined()

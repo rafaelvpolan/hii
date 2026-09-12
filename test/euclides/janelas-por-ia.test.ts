@@ -11,17 +11,17 @@ const AGORA = Date.parse('2026-08-19T18:00:00Z')
 beforeEach(() => {
   estado = mkdtempSync(join(tmpdir(), 'hii-janelas-'))
   mkdirSync(join(estado, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = estado
-  process.env.HICODE_COTA_TTL_MS = '0'
+  process.env.HII_CARDS_DIR = estado
+  process.env.HII_COTA_TTL_MS = '0'
   claudeJson = join(estado, 'claude.json')
-  process.env.HICODE_CLAUDE_CONFIG = claudeJson
+  process.env.HII_CLAUDE_CONFIG = claudeJson
 })
 
 afterEach(() => {
-  delete process.env.HICODE_JANELAS_CLAUDE
-  delete process.env.HICODE_JANELAS_CODEX
-  delete process.env.HICODE_CLAUDE_CONFIG
-  delete process.env.HICODE_COTA_TTL_MS
+  delete process.env.HII_JANELAS_CLAUDE
+  delete process.env.HII_JANELAS_CODEX
+  delete process.env.HII_CLAUDE_CONFIG
+  delete process.env.HII_COTA_TTL_MS
 })
 
 function claudeReporta(utilization: Record<string, { utilization: number; resets_at?: string }>, medidoEmMs = AGORA): void {
@@ -52,9 +52,9 @@ test('cada ia tem suas janelas, e a env manda quando quero 4h em vez de 5h', asy
   const { rotulosDoProvedor } = await import('../../motor/euclides/tesouro/janelas.ts')
   expect(rotulosDoProvedor('claude')).toEqual(['5h', '7d'])
   expect(rotulosDoProvedor('ollama')).toEqual([])
-  process.env.HICODE_JANELAS_CODEX = '4h, 7d'
+  process.env.HII_JANELAS_CODEX = '4h, 7d'
   expect(rotulosDoProvedor('codex')).toEqual(['4h', '7d'])
-  process.env.HICODE_JANELAS_CODEX = 'lixo'
+  process.env.HII_JANELAS_CODEX = 'lixo'
   expect(rotulosDoProvedor('codex')).toEqual(['5h', '7d'])
 })
 

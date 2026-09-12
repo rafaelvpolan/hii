@@ -21,7 +21,7 @@ interface GhIssue {
 //    `hii sync` no mesmo card geravam dois comentarios na mesma issue.
 
 function repoArgs(): string[] {
-  const repo = process.env.HICODE_GH_REPO || ''
+  const repo = process.env.HII_GH_REPO || ''
   return repo ? ['--repo', repo] : []
 }
 

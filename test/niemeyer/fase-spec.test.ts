@@ -4,12 +4,12 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-fase-spec-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
 mkdirSync(join(BASE, 'cards', 'runs'), { recursive: true })
 const ALVO = join(BASE, 'alvo')
 mkdirSync(ALVO, { recursive: true })
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/app', path: ALVO, branch: 'main' }]))
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/app', path: ALVO, branch: 'main' }]))
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
@@ -94,8 +94,8 @@ test('cost_usd CORROMPIDO faz HALT em vez de virar zero e ser gravado de volta',
 })
 
 test('orcamento ja estourado nao paga a fase de spec', async () => {
-  const anterior = process.env.HICODE_CARD_BUDGET_USD
-  process.env.HICODE_CARD_BUDGET_USD = '2'
+  const anterior = process.env.HII_CARD_BUDGET_USD
+  process.env.HII_CARD_BUDGET_USD = '2'
   patchCard(id, { cost_usd: '5.0000' })
   let chamou = 0
   try {
@@ -104,14 +104,14 @@ test('orcamento ja estourado nao paga a fase de spec', async () => {
     expect(readCard(id)?.fm.status).toBe('HALTED')
     expect(readCard(id)?.body ?? '').toContain('orcamento excedido')
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_CARD_BUDGET_USD
-    else process.env.HICODE_CARD_BUDGET_USD = anterior
+    if (anterior === undefined) delete process.env.HII_CARD_BUDGET_USD
+    else process.env.HII_CARD_BUDGET_USD = anterior
   }
 })
 
 test('a fase para no meio se o laco de reajuste estourar o teto', async () => {
-  const anterior = process.env.HICODE_CARD_BUDGET_USD
-  process.env.HICODE_CARD_BUDGET_USD = '1'
+  const anterior = process.env.HII_CARD_BUDGET_USD
+  process.env.HII_CARD_BUDGET_USD = '1'
   let chamou = 0
   try {
     await handleSpec(id, deps({
@@ -122,7 +122,7 @@ test('a fase para no meio se o laco de reajuste estourar o teto', async () => {
     expect(readCard(id)?.fm.status).toBe('HALTED')
     expect(readCard(id)?.body ?? '').toContain('orcamento excedido na fase de spec')
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_CARD_BUDGET_USD
-    else process.env.HICODE_CARD_BUDGET_USD = anterior
+    if (anterior === undefined) delete process.env.HII_CARD_BUDGET_USD
+    else process.env.HII_CARD_BUDGET_USD = anterior
   }
 })

@@ -3,32 +3,32 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const R = await import('../../motor/cordel/alicerce/runtime.ts')
-afterAll(() => { delete process.env.HICODE_RUNTIME })
+afterAll(() => { delete process.env.HII_RUNTIME })
 
 test('os runtimes suportados sao declarados, nao adivinhados', () => {
   expect([...R.RUNTIMES]).toEqual(['bun', 'node'])
 })
 
-test('HICODE_RUNTIME manda quando definido — 12-factor, o operador escolhe', () => {
-  process.env.HICODE_RUNTIME = 'node'
+test('HII_RUNTIME manda quando definido — 12-factor, o operador escolhe', () => {
+  process.env.HII_RUNTIME = 'node'
   try {
     expect(R.runtimeDeScript()).toBe('node')
   } finally {
-    delete process.env.HICODE_RUNTIME
+    delete process.env.HII_RUNTIME
   }
 })
 
 test('runtime desconhecido LANCA em vez de cair calado no padrao', () => {
-  process.env.HICODE_RUNTIME = 'deno'
+  process.env.HII_RUNTIME = 'deno'
   try {
     expect(() => R.runtimeDeScript()).toThrow('deno')
   } finally {
-    delete process.env.HICODE_RUNTIME
+    delete process.env.HII_RUNTIME
   }
 })
 
 test('sem env, escolhe o que existe no PATH — e diz qual escolheu e por que', () => {
-  delete process.env.HICODE_RUNTIME
+  delete process.env.HII_RUNTIME
   const e = R.escolhaDeRuntime()
   expect([...R.RUNTIMES]).toContain(e.runtime)
   expect(e.motivo.length).toBeGreaterThan(10)

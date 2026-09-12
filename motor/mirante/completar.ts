@@ -50,6 +50,7 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (principal === '/mode') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.modos ?? []), 'padrao'], arg), arg]
   if (principal === '/ref') return [byPrefix([...PALAVRAS_DE_CLIPBOARD, 'ambiente'], arg), arg]
   if (principal === '/repo') return [byPrefix(ctx.repos, arg), arg]
+  if (principal === '/serve') return [byPrefix(['projeto', 'stop', 'status', ...ctx.cards], arg), arg]
   if (['/stop', '/rm'].includes(principal)) return [byPrefix(ctx.cards, arg), arg]
   return [[], arg]
 }

@@ -81,7 +81,7 @@ function attemptNumber(id: string): number {
 
 function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutcome {
   if (input.failureClass === 'quota') {
-    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor); configure HICODE_QUOTA_FALLBACK para permitir troca explicita`)
+    patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor); configure HII_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
   }
 

@@ -35,7 +35,7 @@ import type { RodadaCara } from './e2e.ts'
 
 export type ModoDaFita = 'reproduzir' | 'gravar-se-faltar' | 'regravar'
 
-export const ENV_MODO_DA_FITA = 'HICODE_FITA_MODO'
+export const ENV_MODO_DA_FITA = 'HII_FITA_MODO'
 
 export const FORMATO_DA_FITA = 2
 

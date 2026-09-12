@@ -6,8 +6,8 @@ import type { Run } from '../../motor/cordel/index.ts'
 import type { AgentRequest } from '../../motor/tomada/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-medido-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const binDir = join(BASE, 'bin')
 mkdirSync(binDir, { recursive: true })
@@ -56,22 +56,22 @@ test('ollama: custo zero e uma MEDICAO (roda local) e os tokens vem da resposta'
 })
 
 test('REGRESSAO: ollama atras de endpoint remoto NAO afirma custo medido (o zero deixa de ser garantia)', async () => {
-  process.env.HICODE_OLLAMA_URL = 'https://gateway-pago.exemplo.com'
+  process.env.HII_OLLAMA_URL = 'https://gateway-pago.exemplo.com'
   try {
     const res = await new OllamaProvider().run(pedido())
     expect(res.cost).toBe(0)
     expect(res.costMeasured).toBe(false)
   } finally {
-    delete process.env.HICODE_OLLAMA_URL
+    delete process.env.HII_OLLAMA_URL
   }
 })
 
 test('ollama servido na rede privada continua sendo zero MEDIDO', async () => {
-  process.env.HICODE_OLLAMA_URL = 'http://192.168.1.50:11434'
+  process.env.HII_OLLAMA_URL = 'http://192.168.1.50:11434'
   try {
     expect((await new OllamaProvider().run(pedido())).costMeasured).toBe(true)
   } finally {
-    delete process.env.HICODE_OLLAMA_URL
+    delete process.env.HII_OLLAMA_URL
   }
 })
 
@@ -96,7 +96,7 @@ test('o zero do codex e o zero do ollama sao numericamente iguais e semanticamen
 })
 
 function runGravado(id: string): Run {
-  const dir = join(process.env.HICODE_CARDS_DIR ?? '', 'runs')
+  const dir = join(process.env.HII_CARDS_DIR ?? '', 'runs')
   const nome = readdirSync(dir).filter(f => f.startsWith(`${id}-`)).sort().pop() ?? ''
   return JSON.parse(readFileSync(join(dir, nome), 'utf8')) as Run
 }

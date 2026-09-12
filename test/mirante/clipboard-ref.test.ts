@@ -11,7 +11,7 @@ const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0])
 
 beforeEach(() => {
   estado = mkdtempSync(join(tmpdir(), 'hii-clip-'))
-  process.env.HICODE_CARDS_DIR = estado
+  process.env.HII_CARDS_DIR = estado
 })
 
 function rodada(over: Partial<Rodada> = {}): Rodada {

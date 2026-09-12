@@ -11,8 +11,8 @@ import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 import type { FinishDeps } from '../../motor/quilombo/cartorio/fechar.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishcost-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -37,8 +37,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 let implementCalls = 0
 
@@ -170,8 +170,8 @@ test('REGRESSAO o teto de orcamento e conferido DENTRO do laco de passos, e o cu
   // Teto acima do gasto de entrada (0.2500) e abaixo do gasto DEPOIS do primeiro
   // passo (0.3500). Assim a guarda da entrada do handler passa, e so a guarda de
   // dentro do laco pode barrar — que e exatamente o que este teste existe para provar.
-  const tetoAnterior = process.env.HICODE_CARD_BUDGET_USD
-  process.env.HICODE_CARD_BUDGET_USD = '0.30'
+  const tetoAnterior = process.env.HII_CARD_BUDGET_USD
+  process.env.HII_CARD_BUDGET_USD = '0.30'
   try {
     patchCard(id, { status: 'URL_OK' }, 'aprovado pelo humano (teste)')
     await handleFinish(id, agenteDeDoisPassos)
@@ -180,8 +180,8 @@ test('REGRESSAO o teto de orcamento e conferido DENTRO do laco de passos, e o cu
       await handleFinish(id, agenteDeDoisPassos)
     }
   } finally {
-    if (tetoAnterior === undefined) delete process.env.HICODE_CARD_BUDGET_USD
-    else process.env.HICODE_CARD_BUDGET_USD = tetoAnterior
+    if (tetoAnterior === undefined) delete process.env.HII_CARD_BUDGET_USD
+    else process.env.HII_CARD_BUDGET_USD = tetoAnterior
   }
 
   const fim = readCard(id)

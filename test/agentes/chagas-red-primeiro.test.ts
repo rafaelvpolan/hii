@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-chg-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { exigirRedAntesDoGreen, registrarRed, evidenciaDeRed, FASE_RED, lerRelatoDeRed, instrucaoDeRed, origemDoDetalhe, ABRE_RED, FECHA_RED } = await import('../../motor/agentes/chagas/red-primeiro.ts')
@@ -75,7 +75,7 @@ test('a exigencia e registrada no card mesmo quando nao barra — quem passou se
 })
 
 // LIMITE CONHECIDO, documentado aqui para nao virar surpresa quando
-// HICODE_RIGOR_ESTRITO=1 for ligado. O unico produtor de evidencia de RED e
+// HII_RIGOR_ESTRITO=1 for ligado. O unico produtor de evidencia de RED e
 // `registrarRed`, chamado quando a PRIMEIRA rodada do comando de teste REPROVA no
 // fecho. Consequencia: card `completo` que chega com a suite VERDE nunca tem RED,
 // e card que chega quebrado e e reparado passa — o incentivo fica invertido.

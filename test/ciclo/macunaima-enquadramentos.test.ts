@@ -37,7 +37,7 @@ test('os enquadramentos sao DADO versionado, nao array dentro de um .ts', () => 
 
 test('a variavel do arquivo esta no contrato — env resolvida fora do contrato ninguem acha', () => {
   const v = CONTRATO_MOTOR_PAINEL.find(x => x.nome === ENV_ENQUADRAMENTOS_FILE)
-  expect(v, 'HICODE_ENQUADRAMENTOS_FILE precisa estar em CONTRATO_MOTOR_PAINEL').toBeDefined()
+  expect(v, 'HII_ENQUADRAMENTOS_FILE precisa estar em CONTRATO_MOTOR_PAINEL').toBeDefined()
   expect(v?.resolvidoPor).toContain('motor/ciclo/macunaima/enquadramentos.ts')
 })
 

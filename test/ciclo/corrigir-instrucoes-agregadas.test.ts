@@ -9,9 +9,9 @@ import type { CorrectDeps } from '../../motor/ciclo/corrigir.ts'
 import type { Conferencia, InstrucaoNumerada } from '../../motor/ciclo/crivo/conferencia-de-instrucoes.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-instrucoes-'))
-delete process.env.HICODE_RIGOR_ESTRITO
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+delete process.env.HII_RIGOR_ESTRITO
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -36,8 +36,8 @@ execFileSync('git', ['clone', '-q', origem, wt])
 git(wt, ['config', 'user.email', 't@t'])
 git(wt, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: wt, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: wt, branch: 'main' }]))
 
 const { runStep } = await import('../../motor/ciclo/agente.ts')
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')

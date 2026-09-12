@@ -10,7 +10,7 @@ const OSC_SPLIT = /(\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)[^\x1b]*\x1b\][^\x07\x1b]*(
 const RE_URL = /https?:\/\/[^\s<>"')\]\x1b]+/g
 
 export function suportaLink(env: Record<string, string | undefined> = process.env): boolean {
-  const forcado = env.HICODE_HYPERLINKS
+  const forcado = env.HII_HYPERLINKS
   if (forcado === 'on') return true
   if (forcado === 'off') return false
   if (env.WT_SESSION) return true

@@ -364,7 +364,7 @@ bun test ./test/bussola-setup-ferramental.test.ts # projeto novo sem config de t
 
 ### Ajustes de escopo feitos ao executar
 
-**Um interruptor, não dois.** Os itens 5 (RED antes do GREEN) e 22 (setup ferramental) *barram* o pipeline. Nenhum card existente satisfaz nenhum dos dois, então ligá-los hoje pararia todo trabalho em voo. Os dois ficam atrás de `HICODE_RIGOR_ESTRITO=1`, **desligado por padrão** — e enquanto desligado o motor **registra** a exigência no card (`red_antes_do_green`, `setup_ferramental`), o que já torna visível quem passou sem provar. A ativação é decisão de operação, registrada em `PENDENCIAS.md`.
+**Um interruptor, não dois.** Os itens 5 (RED antes do GREEN) e 22 (setup ferramental) *barram* o pipeline. Nenhum card existente satisfaz nenhum dos dois, então ligá-los hoje pararia todo trabalho em voo. Os dois ficam atrás de `HII_RIGOR_ESTRITO=1`, **desligado por padrão** — e enquanto desligado o motor **registra** a exigência no card (`red_antes_do_green`, `setup_ferramental`), o que já torna visível quem passou sem provar. A ativação é decisão de operação, registrada em `PENDENCIAS.md`.
 
 **O item 22 barra só pelo que é objetivo.** A primeira versão bloqueava por falta de teste *ou* de documento de debug, e derrubou dois testes de fechamento na hora: a heurística "todo arquivo do diff é novo" dispara em qualquer card que só adiciona arquivos, não só em área nova de verdade. Falta de comando de teste é checável no contrato; falta de `DEBUG.md` é julgamento. Só a primeira barra; a segunda vira nota no card.
 
@@ -450,7 +450,7 @@ não julga semântica, porque isso exigiria um modelo dentro do gate.
 `test/quilombo/aprovar-plano.test.ts`. `approvePlan` (`motor/mirante/acoes.ts:101`) passa
 a consultar a parede **antes** de transicionar, grava
 `matriz_entendimento: ok|incompleta` no card sempre, e só **recusa** com
-`HICODE_RIGOR_ESTRITO=1` — mesma política dos itens 5 e 22. Recusar deixa o card
+`HII_RIGOR_ESTRITO=1` — mesma política dos itens 5 e 22. Recusar deixa o card
 em `READY`, não o move.
 
 Porta pelo humano: `hii matriz <id>` cria o template (idempotente, nunca
@@ -696,7 +696,7 @@ foi fechado.
 
 O **registro de efeitos externos** (Onda 9) reprovou até o `aprendiz` ser
 declarado como terceiro chamador de `executarComIdempotencia`. O **contrato de
-ambiente** (`test/cordel/alicerce-contrato.test.ts`) reprovou quando `HICODE_SKILLS_DIR`
+ambiente** (`test/cordel/alicerce-contrato.test.ts`) reprovou quando `HII_SKILLS_DIR`
 passou a ser resolvido em `config.ts` e a declaração ainda apontava para
 `acervo.ts`.
 
@@ -742,7 +742,7 @@ correções, todas com motivo:
 
 **Node 24, e o motor deixou de exigir Bun.** O esboço ignorava que o motor
 *spawnava* `bun` em seis lugares e usava `Bun.serve` no `/health`. Agora
-`motor/cordel/alicerce/runtime.ts` decide o runtime por `HICODE_RUNTIME` (bun ou node) e
+`motor/cordel/alicerce/runtime.ts` decide o runtime por `HII_RUNTIME` (bun ou node) e
 o servidor de saúde usa `node:http`, que roda nos dois. Sem isso, "a mesma imagem
 em qualquer lugar" era promessa que a primeira imagem sem Bun desmentia.
 
@@ -889,7 +889,7 @@ bun test ./test/mirante/largura.test.ts            # redimensionamento extremo
 
 ### O teto que aperta de verdade não é o de milissegundos
 
-O teto absoluto existe (`HICODE_TETO_QUADRO_MS`, folga larga porque runner de CI
+O teto absoluto existe (`HII_TETO_QUADRO_MS`, folga larga porque runner de CI
 é lento e irregular — teste de tempo que pisca ensina a ignorar vermelho). Mas
 quem protege contra travamento é a asserção **algorítmica**: o custo do quadro
 não pode crescer com o tamanho do log, só com a área visível. Medido: corpo 500×

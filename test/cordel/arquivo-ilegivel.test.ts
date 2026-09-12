@@ -94,16 +94,16 @@ test('ia.json CORROMPIDO avisa, dizendo que as preferencias NAO foram aplicadas'
   const { preferencias } = await import('../../motor/tomada/preferencias.ts')
   const f = join(dir, 'ia.json')
   writeFileSync(f, '{"gate": {"provider": "cod')
-  const anterior = process.env.HICODE_IA_FILE
-  process.env.HICODE_IA_FILE = f
+  const anterior = process.env.HII_IA_FILE
+  process.env.HII_IA_FILE = f
   try {
     const r = capturarStderr(() => preferencias())
     expect(r.valor).toEqual({})
     expect(r.saida).toContain('ILEGIVEL')
     expect(r.saida, 'o operador precisa saber que a escolha dele nao valeu').toContain('NAO foram aplicadas')
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_IA_FILE
-    else process.env.HICODE_IA_FILE = anterior
+    if (anterior === undefined) delete process.env.HII_IA_FILE
+    else process.env.HII_IA_FILE = anterior
   }
 })
 

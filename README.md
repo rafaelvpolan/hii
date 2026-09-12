@@ -243,7 +243,7 @@ Na TUI essas portas são as teclas `1` / `2` / `3` na pergunta que aparece sobre
 
 | Comando | O que faz |
 |---|---|
-| `hii sync` | sincroniza tarefas externas (`HICODE_TASK_SYNC`) |
+| `hii sync` | sincroniza tarefas externas (`HII_TASK_SYNC`) |
 | `hii init [caminho]` | provisiona `.hii/` num repo-alvo (default: diretório atual) |
 | `hii hooks install\|uninstall [caminho]` | gate de pre-push determinístico |
 
@@ -374,7 +374,7 @@ Quase todo bug de execução é confusão entre estas três raízes:
 
 | Raiz | O que é | De onde vem |
 |---|---|---|
-| **`ROOT`** | onde o motor está instalado | `HICODE_ROOT`, ou o primeiro diretório acima com `runner.ts`, `cards/` ou `config/repos.json` |
+| **`ROOT`** | onde o motor está instalado | `HII_ROOT`, ou o primeiro diretório acima com `runner.ts`, `cards/` ou `config/repos.json` |
 | **alvo** | o repo que a tarefa modifica | `repoPath(nome)`, do registro; **nunca** versionado |
 | **`workdir`** | o worktree daquele card, criado de `origin/main` | `prepareBranch` / `ensureWorktree` |
 
@@ -418,7 +418,7 @@ Ambíguo assume `visual`: mostrar de graça custa menos que esconder o resultado
 
 **Se a URL não responde, o motor não desiste nem finge que subiu.** A IA recebe uma instrução
 estreita — ajustar só o que impede o arranque (comando de dev, porta, host, env, dependência) sem
-mexer no comportamento entregue — e o motor retenta. O teto é `HICODE_URL_AJUSTES` (default 2).
+mexer no comportamento entregue — e o motor retenta. O teto é `HII_URL_AJUSTES` (default 2).
 Esgotado, o card chega a você com o relato do que foi tentado; não vira HALT silencioso.
 
 A confirmação técnica é da máquina, não sua: o motor sobe o app, confirma com `curl` (timeout, com
@@ -511,9 +511,9 @@ vez de mandar e tratar o lixo que volta como resultado.
 **Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo
 e qualidade sem ninguém autorizar. Travado por teste.
 
-Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HICODE_OLLAMA_URL/api/tags`,
+Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HII_OLLAMA_URL/api/tags`,
 `claude`, `codex` e `kimi` por alcançabilidade das respectivas APIs, timeout de 5 s
-(`HICODE_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** harness NÃO registrado em
+(`HII_HEALTH_PROBE_TIMEOUT_MS`). **Limite conhecido:** harness NÃO registrado em
 `motor/tomada/registro.ts` cai no `return true` de `probeProviderHealth` — não saber sondar
 não pode impedir um card de acordar; os quatro registrados hoje sondam de verdade.
 
@@ -527,15 +527,15 @@ da verdade de quais existem, quem as resolve e de que **lado** vivem:
 
 | Variável | Lado | Precisa ser a mesma nos dois clones |
 |---|---|---|
-| `HICODE_ROOT` | ambos | não (cada clone tem a sua) |
-| `HICODE_CARDS_DIR` | ambos | **sim** |
-| `HICODE_REPOS_FILE` | ambos | **sim** |
-| `HICODE_RUNNER_PIDFILE` | ambos | **sim** |
-| `HICODE_RUNNER_LOCK` | ambos | **sim** |
-| `HICODE_IA_FILE` | ambos | **sim** |
-| `HICODE_AGENTS_DIR` | motor | não |
-| `HICODE_RUNNER_LOG` | motor | não |
-| `HICODE_MODELOS_FILE` | motor | não |
+| `HII_ROOT` | ambos | não (cada clone tem a sua) |
+| `HII_CARDS_DIR` | ambos | **sim** |
+| `HII_REPOS_FILE` | ambos | **sim** |
+| `HII_RUNNER_PIDFILE` | ambos | **sim** |
+| `HII_RUNNER_LOCK` | ambos | **sim** |
+| `HII_IA_FILE` | ambos | **sim** |
+| `HII_AGENTS_DIR` | motor | não |
+| `HII_RUNNER_LOG` | motor | não |
+| `HII_MODELOS_FILE` | motor | não |
 
 "Precisa ser a mesma" significa: se divergir, o painel escreve um card que o motor nunca vê, ou os
 dois sobem daemon ao mesmo tempo porque cada um tem seu próprio lock. Duas guardas de teste protegem
@@ -547,14 +547,14 @@ set -a; . /caminho/do/.hii-env.sh; set +a
 hii status
 ```
 
-Outras variáveis úteis: `HICODE_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
-(orçamento do diff no gate), `HICODE_OLLAMA_URL`, `HICODE_TASK_SYNC`.
+Outras variáveis úteis: `HII_URL_AJUSTES` (tentativas de ajuste da URL), `GATE_DIFF_LIMIT`
+(orçamento do diff no gate), `HII_OLLAMA_URL`, `HII_TASK_SYNC`.
 
 **Ritmo da URL de preview.** Quanto o motor espera o dev-server responder e a que ritmo sonda:
-`HICODE_URL_WAIT_S` (orçamento total, default 30), `HICODE_URL_PROBE_INTERVAL_MS` (intervalo entre
-sondas, default 1000), `HICODE_URL_PROBE_TIMEOUT_MS` (teto de cada sonda curl, default 5000),
-`HICODE_URL_INSPECT_TIMEOUT_MS` (teto da inspeção playwright, default 60000) e
-`HICODE_URL_FREEPORT_SETTLE_MS` (pausa após matar a porta, default 400). Reduzir intervalo/teto
+`HII_URL_WAIT_S` (orçamento total, default 30), `HII_URL_PROBE_INTERVAL_MS` (intervalo entre
+sondas, default 1000), `HII_URL_PROBE_TIMEOUT_MS` (teto de cada sonda curl, default 5000),
+`HII_URL_INSPECT_TIMEOUT_MS` (teto da inspeção playwright, default 60000) e
+`HII_URL_FREEPORT_SETTLE_MS` (pausa após matar a porta, default 400). Reduzir intervalo/teto
 acelera a detecção de "URL no ar"; aumentar ajuda em máquina lenta ou dev-server pesado.
 
 **Pipeline manual (padrão).** Depois da URL aprovada, o card **pausa** (`PAUSED`) em vez de disparar
@@ -564,15 +564,15 @@ os passos de polimento em sequência — cada passo roda por pedido: `/arquitetu
 rodam o restante de uma vez e seguem para o fecho (build, gates, PR). Passos já rodados ficam em
 `pipeline_feitos` no frontmatter e **não são pagos de novo**. O motor respeita as dependências do
 `pipeline.json` (`/seguranca` antes de `/arquitetura` é recusado com o motivo). Para o comportamento
-antigo (tudo em sequência): campo `pipeline: auto` no card (vence o env) ou `HICODE_PIPELINE=auto`.
+antigo (tudo em sequência): campo `pipeline: auto` no card (vence o env) ou `HII_PIPELINE=auto`.
 
-**Janelas de limite por IA.** Cada IA tem sua janela: `HICODE_JANELAS_CLAUDE` (default `5h,7d`),
-`HICODE_JANELAS_CODEX`, `HICODE_JANELAS_KIMI`. Aceita `4h`, `30m`, `7d`. IA local não tem janela.
+**Janelas de limite por IA.** Cada IA tem sua janela: `HII_JANELAS_CLAUDE` (default `5h,7d`),
+`HII_JANELAS_CODEX`, `HII_JANELAS_KIMI`. Aceita `4h`, `30m`, `7d`. IA local não tem janela.
 
 **Disco.** O estado cresce por referência de imagem, print de URL e registro de run. O motor mede as
 quatro áreas (`refs`, `tmp`, `urls`, `runs`) e mostra o total no rodapé da TUI, na frota e em
-`hii disco`. `HICODE_DISCO_ALERTA_MB` (default 200) acende o aviso; `HICODE_DISCO_TETO_MB` (default
-1024) **recusa** nova referência em vez de encher o disco; `HICODE_TMP_TTL_H` (default 24) é a idade
+`hii disco`. `HII_DISCO_ALERTA_MB` (default 200) acende o aviso; `HII_DISCO_TETO_MB` (default
+1024) **recusa** nova referência em vez de encher o disco; `HII_TMP_TTL_H` (default 24) é a idade
 com que o daemon poda o transitório de `tmp/` a cada tick.
 
 ---

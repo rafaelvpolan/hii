@@ -19,9 +19,9 @@ import type { Enquadramento } from './enquadramentos.ts'
 //    qualquer um. Nenhuma saida pode entrar no prompt de outro ramo, porque no
 //    instante em que os prompts existem ainda nao ha saida nenhuma.
 
-// `Number(env)` sem validacao fazia HICODE_MCN_IDEIAS invalido virar NaN e o prompt
+// `Number(env)` sem validacao fazia HII_MCN_IDEIAS invalido virar NaN e o prompt
 // sair "Gere NaN propostas DISTINTAS" — token pago por pedido corrompido. E
-// HICODE_MCN_RAMOS invalido fazia escolherEnquadramentos devolver [], com a falha
+// HII_MCN_RAMOS invalido fazia escolherEnquadramentos devolver [], com a falha
 // reaparecendo longe da causa como "0 ramo(s) nao e divergencia".
 function inteiroDeEnv(nome: string, padrao: number): number {
   const cru = String(process.env[nome] ?? '').trim()
@@ -34,8 +34,8 @@ function inteiroDeEnv(nome: string, padrao: number): number {
   return n
 }
 
-export const RAMOS_PADRAO = inteiroDeEnv('HICODE_MCN_RAMOS', 4)
-export const IDEIAS_POR_RAMO = inteiroDeEnv('HICODE_MCN_IDEIAS', 4)
+export const RAMOS_PADRAO = inteiroDeEnv('HII_MCN_RAMOS', 4)
+export const IDEIAS_POR_RAMO = inteiroDeEnv('HII_MCN_IDEIAS', 4)
 
 export interface Ramo {
   readonly enquadramento: string

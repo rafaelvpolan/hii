@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-actions-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const A = await import('../../motor/mirante/acoes.ts')
 const { readCard } = await import('../../motor/cordel/store.ts')

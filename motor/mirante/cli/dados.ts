@@ -28,7 +28,7 @@ export const atividadeDe = memoArquivo(
 // memoChave por cima do memoTempo, como mapaDeReposPorDiretorio e
 // lotePorDiretorio ja fazem. Sem a chave de diretorio, um cache de 250ms
 // puramente temporal devolve a lista de cards de OUTRO diretorio quando o
-// HICODE_CARDS_DIR muda dentro da mesma janela — foi assim que o rodape
+// HII_CARDS_DIR muda dentro da mesma janela — foi assim que o rodape
 // respondeu com um card que nao existia no diretorio pedido.
 const cardsPorDiretorio = memoChave(cardsDir, (): (() => ReturnType<typeof allCards>) => memoTempo(() => allCards(), 250))
 const reposPorArquivo = memoChave(reposFile, (): (() => ReturnType<typeof listRepos>) => memoTempo(() => listRepos(), 2000))

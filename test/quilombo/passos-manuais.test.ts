@@ -13,10 +13,10 @@ import type { FinishDeps } from '../../motor/quilombo/cartorio/fechar.ts'
 // infra do fechar-wait-attempts: repo git de verdade, gh falso, agentes injetados.
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-pipeline-manual-'))
-delete process.env.HICODE_RIGOR_ESTRITO
-delete process.env.HICODE_PIPELINE
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+delete process.env.HII_RIGOR_ESTRITO
+delete process.env.HII_PIPELINE
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -41,8 +41,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
 const GATE_APROVADO: GateResult = { ok: true, verdict: 'APPROVED', reason: 'sem defeito real encontrado', criterio: '', questions: [], cost: 0.01, costMeasured: true, tokens: 100 }
 

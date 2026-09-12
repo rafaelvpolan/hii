@@ -14,7 +14,7 @@ import { linhaPropriedades } from '../../motor/mirante/render/rodape.ts'
 let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-gauntlet-'))
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
 })
 
 const props = {

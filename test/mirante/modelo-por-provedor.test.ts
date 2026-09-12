@@ -8,14 +8,14 @@ const criados: string[] = []
 beforeEach(() => {
   const dir = mkdtempSync(join(tmpdir(), 'hicode-modelo-prov-'))
   criados.push(dir)
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
-  delete process.env.HICODE_IMPLEMENT_PROVIDER
-  delete process.env.HICODE_AI_PROVIDER
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  delete process.env.HII_IMPLEMENT_PROVIDER
+  delete process.env.HII_AI_PROVIDER
 })
 
 afterAll(() => {
   for (const d of criados) rmSync(d, { recursive: true, force: true })
-  delete process.env.HICODE_IA_FILE
+  delete process.env.HII_IA_FILE
 })
 
 test('o modelo escolhido vale para o provedor em que foi escolhido', async () => {

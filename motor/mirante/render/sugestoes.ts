@@ -18,6 +18,7 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/new-ask': 'pergunta sobre o projeto, sem criar card',
   '/new-session': 'limpa a area e recomeca a sessao',
   '/ref': 'anexa imagem de referencia (url, caminho ou clipboard)',
+  '/serve': 'sobe o modo dev da tarefa aberta ou do projeto e mostra a url (/start, /dev, /preview)',
   '/ia': 'escolhe a ia que roda cada papel',
   '/model': 'escolhe o modelo da ia atual',
   '/effort': 'escolhe o esforco da ia atual',

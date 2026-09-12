@@ -7,8 +7,8 @@ import type { Card } from '../../motor/cordel/index.ts'
 import type { AgentRequest, AgentResult, AgentRole } from '../../motor/tomada/tipos.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-custo-cego-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 const RESPOSTA = join(BASE, 'resposta.jsonl')
 const binDir = join(BASE, 'bin')
@@ -56,16 +56,16 @@ function responder(texto: string): void {
 }
 
 async function comProvedorQueNaoReportaGasto<T>(texto: string, fn: () => Promise<T>): Promise<T> {
-  const provedorAntes = process.env.HICODE_AI_PROVIDER
+  const provedorAntes = process.env.HII_AI_PROVIDER
   const pathAntes = process.env.PATH ?? ''
   responder(texto)
-  process.env.HICODE_AI_PROVIDER = 'codex'
+  process.env.HII_AI_PROVIDER = 'codex'
   process.env.PATH = `${binDir}:${pathAntes}`
   try {
     return await fn()
   } finally {
-    if (provedorAntes === undefined) delete process.env.HICODE_AI_PROVIDER
-    else process.env.HICODE_AI_PROVIDER = provedorAntes
+    if (provedorAntes === undefined) delete process.env.HII_AI_PROVIDER
+    else process.env.HII_AI_PROVIDER = provedorAntes
     process.env.PATH = pathAntes
   }
 }

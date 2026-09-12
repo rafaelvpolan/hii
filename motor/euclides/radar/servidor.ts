@@ -12,7 +12,7 @@ import { ENV_HEALTH_BIND, ENV_HEALTH_PORT } from '../../cordel/alicerce/contrato
 //
 // Desligado por padrao: abrir porta na maquina de alguem sem pedir nao e
 // comportamento aceitavel para uma ferramenta local. Em container, defina
-// HICODE_HEALTH_PORT.
+// HII_HEALTH_PORT.
 
 export interface Saude {
   readonly ok: boolean
@@ -37,7 +37,7 @@ export function categoriaDoErro(mensagem: string): string {
   return contexto.trim() ? `falha em ${contexto.trim()}` : 'erro interno'
 }
 
-const TICKS_SEM_PROGRESSO_MAX = Number(process.env.HICODE_TICKS_SEM_PROGRESSO_MAX || 0) || 6
+const TICKS_SEM_PROGRESSO_MAX = Number(process.env.HII_TICKS_SEM_PROGRESSO_MAX || 0) || 6
 
 export function lerSaude(): Saude {
   const h = readDaemonHealth()
@@ -100,7 +100,7 @@ export interface ServidorDeSaude {
   parar(): void
 }
 
-// porta === null: le HICODE_HEALTH_PORT e, se nao houver, NAO sobe nada.
+// porta === null: le HII_HEALTH_PORT e, se nao houver, NAO sobe nada.
 // porta explicita (inclusive 0, que pede uma porta livre ao SO): sobe sempre.
 // Os dois significados de 0 precisavam ficar separados.
 export function subirServidorDeSaude(porta: number | null = null): ServidorDeSaude | null {

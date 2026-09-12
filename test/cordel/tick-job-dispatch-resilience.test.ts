@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-tickdispatch-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
-process.env.HICODE_REPOS_FILE = join(CARDS, 'repos-vazio.json')
+process.env.HII_REPOS_FILE = join(CARDS, 'repos-vazio.json')
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { archiveDir } = await import('../../motor/cordel/arquivar.ts')

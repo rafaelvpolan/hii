@@ -66,9 +66,9 @@ test('ANSI nao entra na medida: com escape mede igual a sem escape', () => {
   const cru = `中 ok 😀 ${FAMILIA}`
   expect(larguraDeTexto(`\x1b[32m${cru}\x1b[0m`)).toBe(larguraDeTexto(cru))
   expect(larguraDeTexto(`\x1b[2m\x1b[31m${cru}\x1b[0m`)).toBe(larguraDeTexto(cru))
-  process.env.HICODE_HYPERLINKS = 'on'
+  process.env.HII_HYPERLINKS = 'on'
   expect(larguraDeTexto(link('https://exemplo.com/x', cru))).toBe(larguraDeTexto(cru))
-  delete process.env.HICODE_HYPERLINKS
+  delete process.env.HII_HYPERLINKS
 })
 
 test('REGRESSAO visibleLen conta colunas, nao code units UTF-16', () => {

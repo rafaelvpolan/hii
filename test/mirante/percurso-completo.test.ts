@@ -28,10 +28,10 @@ let BASE_CARDS = ''
 beforeAll(() => {
   BASE_CARDS = mkdtempSync(join(tmpdir(), 'hicode-percurso-'))
   mkdirSync(join(BASE_CARDS, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = BASE_CARDS
+  process.env.HII_CARDS_DIR = BASE_CARDS
 })
 afterAll(() => {
-  delete process.env.HICODE_CARDS_DIR
+  delete process.env.HII_CARDS_DIR
   rmSync(BASE_CARDS, { recursive: true, force: true })
 })
 

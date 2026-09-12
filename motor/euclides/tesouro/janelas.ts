@@ -23,7 +23,7 @@ export function duracaoDaJanela(rotulo: string): number {
 }
 
 function daEnv(nome: string): string[] {
-  const bruto = process.env[`HICODE_JANELAS_${nome.toUpperCase()}`] ?? ''
+  const bruto = process.env[`HII_JANELAS_${nome.toUpperCase()}`] ?? ''
   return bruto.split(',').map(s => s.trim()).filter(s => duracaoDaJanela(s) > 0)
 }
 

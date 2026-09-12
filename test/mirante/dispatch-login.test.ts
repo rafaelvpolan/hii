@@ -21,19 +21,19 @@ function binarioFalso(nome: string): void {
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-dispatch-login-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
   binDir = mkdtempSync(join(tmpdir(), 'hii-bin-login-'))
   pathAntigo = process.env.PATH ?? ''
   process.env.PATH = binDir
-  process.env.HICODE_CLAUDE_CONFIG = join(binDir, 'claude.json')
+  process.env.HII_CLAUDE_CONFIG = join(binDir, 'claude.json')
   saida = []
 })
 
 afterEach(() => {
   process.env.PATH = pathAntigo
-  delete process.env.HICODE_CLAUDE_CONFIG
-  delete process.env.HICODE_IA_FILE
+  delete process.env.HII_CLAUDE_CONFIG
+  delete process.env.HII_IA_FILE
 })
 
 const io = dispatchIOFalso({ log: (l: string) => { saida.push(l) } })

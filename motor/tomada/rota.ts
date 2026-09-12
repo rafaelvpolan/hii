@@ -9,7 +9,7 @@
 //
 // Este modulo e um decisor ADITIVO: nunca piora o comportamento atual, so acrescenta
 // uma saida antes do HALT. Quem chama continua decidindo O QUE fazer com a decisao —
-// e a troca automatica continua atras de HICODE_QUOTA_FALLBACK, que e interruptor do
+// e a troca automatica continua atras de HII_QUOTA_FALLBACK, que e interruptor do
 // operador, nao deste modulo.
 //
 // Regras, todas com dado que o motor ja tem:

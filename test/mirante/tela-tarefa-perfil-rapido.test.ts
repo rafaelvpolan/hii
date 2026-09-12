@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-telarapida-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const { createCard } = await import('../../motor/cordel/store.ts')

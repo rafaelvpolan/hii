@@ -66,7 +66,7 @@ export function linhasDoDisco(uso: UsoDeDisco, opts: Partial<OpcoesDeDisco> = {}
     linhas.push(`    ${area.area.padEnd(6)} ${mb(area.bytes).padStart(9)}  ${area.arquivos} arquivo(s)  ${area.caminho}`)
   }
   if (uso.nivel !== 'ok') {
-    linhas.push('    limpe o transitorio com `hii disco --limpar` ou suba HICODE_DISCO_TETO_MB')
+    linhas.push('    limpe o transitorio com `hii disco --limpar` ou suba HII_DISCO_TETO_MB')
   }
   return linhas
 }

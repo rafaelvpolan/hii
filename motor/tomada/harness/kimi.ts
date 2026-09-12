@@ -48,7 +48,7 @@ const OUTPUT_FORMAT = 'stream-json'
 // Endpoint sondado pelo healthCheck. Sobrescrevivel porque o Kimi Code tem host
 // diferente por regiao — o motor nao adivinha qual e o seu.
 export function urlDoKimi(): string {
-  return process.env.HICODE_KIMI_URL || 'https://api.moonshot.ai'
+  return process.env.HII_KIMI_URL || 'https://api.moonshot.ai'
 }
 
 export const KIMI_CAPACIDADES: HarnessCapabilities = {
@@ -134,7 +134,7 @@ export class KimiProvider implements Harness {
   readonly rodaLocal = false
   readonly temLeitorDePlano = true
 
-  modeloPadraoPara(): string | undefined { return process.env.HICODE_KIMI_MODEL || undefined }
+  modeloPadraoPara(): string | undefined { return process.env.HII_KIMI_MODEL || undefined }
   prontoParaUso(): boolean { return true }
   comoObterQuandoAusente(): string { return 'instale o CLI do Kimi Code' }
   autenticado(): boolean { return kimiAutenticado() }

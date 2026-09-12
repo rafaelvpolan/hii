@@ -34,15 +34,15 @@ export function garantirDir(caminho: string): string {
 }
 
 function alertaBytes(): number {
-  return numeroDeEnv('HICODE_DISCO_ALERTA_MB', 200) * 1024 * 1024
+  return numeroDeEnv('HII_DISCO_ALERTA_MB', 200) * 1024 * 1024
 }
 
 export function tetoBytes(): number {
-  return numeroDeEnv('HICODE_DISCO_TETO_MB', 1024) * 1024 * 1024
+  return numeroDeEnv('HII_DISCO_TETO_MB', 1024) * 1024 * 1024
 }
 
 function ttlDoTmpMs(): number {
-  return numeroDeEnv('HICODE_TMP_TTL_H', 24) * 3600_000
+  return numeroDeEnv('HII_TMP_TTL_H', 24) * 3600_000
 }
 
 export interface Medida {
@@ -140,7 +140,7 @@ export function cabeNoDisco(bytesNovos = 0, uso: UsoDeDisco = usoDeDisco()): Ver
   if (total < uso.teto) return { ok: true, motivo: '' }
   return {
     ok: false,
-    motivo: `estado do motor em ${mb(uso.bytes)}, no teto de ${mb(uso.teto)} — limpe com \`hii disco --limpar\` ou suba HICODE_DISCO_TETO_MB`,
+    motivo: `estado do motor em ${mb(uso.bytes)}, no teto de ${mb(uso.teto)} — limpe com \`hii disco --limpar\` ou suba HII_DISCO_TETO_MB`,
   }
 }
 

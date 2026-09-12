@@ -14,12 +14,12 @@ const LOCK = join(BASE, 'runner.lock')
 function ambiente(): Record<string, string> {
   return {
     ...process.env as Record<string, string>,
-    HICODE_CARDS_DIR: join(BASE, 'cards'),
-    HICODE_REPOS_FILE: join(BASE, 'repos.json'),
-    HICODE_RUNNER_PIDFILE: join(BASE, 'runner.pid'),
-    HICODE_RUNNER_LOCK: LOCK,
-    HICODE_CONCURRENCY: '0',
-    HICODE_POLL_MS: '1000',
+    HII_CARDS_DIR: join(BASE, 'cards'),
+    HII_REPOS_FILE: join(BASE, 'repos.json'),
+    HII_RUNNER_PIDFILE: join(BASE, 'runner.pid'),
+    HII_RUNNER_LOCK: LOCK,
+    HII_CONCURRENCY: '0',
+    HII_POLL_MS: '1000',
   }
 }
 

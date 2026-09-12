@@ -35,7 +35,7 @@ interface ClaudeConfig {
 }
 
 function arquivoDoClaude(): string {
-  return process.env.HICODE_CLAUDE_CONFIG || join(homedir(), '.claude.json')
+  return process.env.HII_CLAUDE_CONFIG || join(homedir(), '.claude.json')
 }
 
 export function claudeAutenticado(): boolean {
@@ -99,7 +99,7 @@ export function planoDoClaude(agoraMs: number = Date.now()): PlanoDoProvedor {
 }
 
 function arquivoDoKimi(): string {
-  return process.env.HICODE_KIMI_CONFIG || join(homedir(), '.kimi-code', 'config.toml')
+  return process.env.HII_KIMI_CONFIG || join(homedir(), '.kimi-code', 'config.toml')
 }
 
 export function modelosDoKimi(toml: string): string[] {

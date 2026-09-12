@@ -12,7 +12,7 @@ import { aplicar as aplicarIa, ciclarModo } from '../../motor/mirante/escolher-i
 import { newSession } from '../../motor/mirante/sessao.ts'
 
 beforeEach(() => {
-  process.env.HICODE_IA_FILE = join(mkdtempSync(join(tmpdir(), 'hii-tela-cfg-')), 'ia.json')
+  process.env.HII_IA_FILE = join(mkdtempSync(join(tmpdir(), 'hii-tela-cfg-')), 'ia.json')
 })
 
 interface Fake extends Terminal {

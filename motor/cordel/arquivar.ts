@@ -4,7 +4,7 @@ import type { Fields } from './/index.ts'
 import { cardsDir } from './alicerce/config.ts'
 import { allCards, cardFiles, findCardFile, normalizeId } from './store.ts'
 
-export const MAX_CARDS = Number(process.env.HICODE_MAX_CARDS || 10)
+export const MAX_CARDS = Number(process.env.HII_MAX_CARDS || 10)
 
 const TERMINAIS = ['MERGED', 'DEPLOYED']
 

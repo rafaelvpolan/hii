@@ -36,11 +36,11 @@ function cardEmPipelineManual(id: string): { erro: string } | { status: string }
   // o estado de repouso do modo manual (o HALTED e a falha de um passo pedido,
   // que se repete com o mesmo comando).
   if (status === 'URL_OK') {
-    if (!pipelineManual(card.fm)) return { erro: `#${id} esta em pipeline automatico (pipeline: auto ou HICODE_PIPELINE=auto) — os passos ja rodam em sequencia` }
+    if (!pipelineManual(card.fm)) return { erro: `#${id} esta em pipeline automatico (pipeline: auto ou HII_PIPELINE=auto) — os passos ja rodam em sequencia` }
     return { status }
   }
   if (card.fm.pipeline_pausa !== 'manual') {
-    return { erro: `#${id} esta em ${status} e nao e pipeline manual — para o modo antigo (tudo em sequencia) declare pipeline: auto no card ou HICODE_PIPELINE=auto` }
+    return { erro: `#${id} esta em ${status} e nao e pipeline manual — para o modo antigo (tudo em sequencia) declare pipeline: auto no card ou HII_PIPELINE=auto` }
   }
   if (status !== 'PAUSED' && status !== 'HALTED') {
     return { erro: `#${id} esta em ${status} — passo manual so de card pausado` }

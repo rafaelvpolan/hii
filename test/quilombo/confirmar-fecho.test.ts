@@ -17,8 +17,8 @@ import { tmpdir } from 'node:os'
 import { precisaConfirmarFecho, perguntaDeFecho, CONFIRMADO } from '../../motor/quilombo/cartorio/confirmar-fecho.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-confirma-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
 
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 

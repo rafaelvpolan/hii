@@ -320,7 +320,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       // A consulta roda DEPOIS de testGate, e nao antes, porque o unico produtor da
       // evidencia e registrarRed — que vive DENTRO de testGate
       // (motor/ciclo/crivo/portoes-de-fecho.ts:97). Enquanto a ordem era a inversa,
-      // red.satisfeito era constante false: com HICODE_RIGOR_ESTRITO=1 todo card
+      // red.satisfeito era constante false: com HII_RIGOR_ESTRITO=1 todo card
       // 'completo' fazia HALT mesmo com TDD real, e desligado o campo gravava 'nao'
       // sempre — o campo que PENDENCIAS.md chama de "insumo para decidir quando
       // apertar" era uma constante.

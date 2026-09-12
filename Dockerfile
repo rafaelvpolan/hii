@@ -52,13 +52,13 @@ COPY . .
 
 # 12-factor: TODA configuracao vem do ambiente. O estado vive em volume externo
 # ao container — perder o container nao pode perder card nem diario.
-ENV HICODE_RUNTIME=bun \
-    HICODE_CARDS_DIR=/estado/cards \
-    HICODE_REPOS_FILE=/estado/repos.json \
-    HICODE_RUNNER_PIDFILE=/estado/runner.pid \
-    HICODE_RUNNER_LOCK=/estado/runner.lock \
-    HICODE_HEALTH_PORT=8080 \
-    HICODE_HEALTH_BIND=0.0.0.0
+ENV HII_RUNTIME=bun \
+    HII_CARDS_DIR=/estado/cards \
+    HII_REPOS_FILE=/estado/repos.json \
+    HII_RUNNER_PIDFILE=/estado/runner.pid \
+    HII_RUNNER_LOCK=/estado/runner.lock \
+    HII_HEALTH_PORT=8080 \
+    HII_HEALTH_BIND=0.0.0.0
 VOLUME ["/estado"]
 EXPOSE 8080
 

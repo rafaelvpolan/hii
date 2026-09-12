@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-tickhealth-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 
 const { tick } = await import('../../motor/oswaldo/mutirao/fila.ts')

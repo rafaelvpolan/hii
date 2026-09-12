@@ -14,17 +14,17 @@ const BASE = mkdtempSync(join(tmpdir(), 'hii-tarefa-ouro-'))
 const BIN = join(BASE, 'bin')
 mkdirSync(BIN, { recursive: true })
 
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(process.env.HICODE_CARDS_DIR, { recursive: true })
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-process.env.HICODE_IA_FILE = join(BASE, 'ia.json')
-process.env.HICODE_AGENTS_DIR = join(REPO, '.claude', 'agents')
-process.env.HICODE_PROJECT_MEMORY = 'off'
-delete process.env.HICODE_EFFORT
-delete process.env.HICODE_AI_PROVIDER
-delete process.env.HICODE_IMPLEMENT_PROVIDER
-delete process.env.HICODE_STEP_PROVIDER
-delete process.env.HICODE_VERIFY_PROVIDER
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+process.env.HII_IA_FILE = join(BASE, 'ia.json')
+process.env.HII_AGENTS_DIR = join(REPO, '.claude', 'agents')
+process.env.HII_PROJECT_MEMORY = 'off'
+delete process.env.HII_EFFORT
+delete process.env.HII_AI_PROVIDER
+delete process.env.HII_IMPLEMENT_PROVIDER
+delete process.env.HII_STEP_PROVIDER
+delete process.env.HII_VERIFY_PROVIDER
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -58,8 +58,8 @@ execFileSync('git', ['clone', '-q', origem, clone])
 git(clone, ['config', 'user.email', 't@t'])
 git(clone, ['config', 'user.name', 't'])
 
-process.env.HICODE_REPOS_FILE = join(BASE, 'repos.json')
-writeFileSync(process.env.HICODE_REPOS_FILE, JSON.stringify([{ name: 'org/tarefa-ouro', path: clone, branch: 'main' }]))
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/tarefa-ouro', path: clone, branch: 'main' }]))
 
 const COMPORTAMENTO_FILE = join(BASE, 'comportamento-implement.txt')
 const MARCADOR_AVALIACAO = 'avaliador de qualidade de codigo'
@@ -246,7 +246,7 @@ test('CONSERTADO no raio-x 1-B: o avaliador identifica que a tarefa NAO foi cump
   expect(card?.fm.correction, 'a instrucao de refacao carrega o que o avaliador viu').toContain('nao foi criado')
 }, TEMPO_TAREFA_OURO_MS)
 
-test('TAREFA-OURO (trilha paga): a MESMA tarefa contra o modelo real, atras de HICODE_E2E_MODELO_REAL + teto de gasto — e quem detecta o fake/fita envelhecido', async () => {
+test('TAREFA-OURO (trilha paga): a MESMA tarefa contra o modelo real, atras de HII_E2E_MODELO_REAL + teto de gasto — e quem detecta o fake/fita envelhecido', async () => {
   if (!gastaModelo('tarefa-ouro contra modelo real')) return
   const rodada = abrirRodadaCara()
   const pathComFake = process.env.PATH

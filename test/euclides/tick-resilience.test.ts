@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-tick-'))
 const CARDS_QUEBRADO = join(BASE, 'cards-e-um-arquivo')
 writeFileSync(CARDS_QUEBRADO, 'isto e um arquivo, nao um diretorio de cards\n')
-process.env.HICODE_CARDS_DIR = CARDS_QUEBRADO
+process.env.HII_CARDS_DIR = CARDS_QUEBRADO
 
 const { tick } = await import('../../motor/oswaldo/mutirao/fila.ts')
 

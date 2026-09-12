@@ -14,7 +14,7 @@ const SEMENTE: CatalogoDeModelos = {
 }
 
 export function arquivoDoCatalogo(): string {
-  return process.env.HICODE_MODELOS_FILE || join(ROOT, 'config', 'modelos.json')
+  return process.env.HII_MODELOS_FILE || join(ROOT, 'config', 'modelos.json')
 }
 
 function lerDoDisco(caminho: string): CatalogoDeModelos {

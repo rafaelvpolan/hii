@@ -22,25 +22,25 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PIDFILE="${HICODE_RUNNER_PIDFILE:-$ROOT/.runner.pid}"
+PIDFILE="${HII_RUNNER_PIDFILE:-$ROOT/.runner.pid}"
 ROOTFILE="$PIDFILE.root"
-LOG="${HICODE_RUNNER_LOG:-$ROOT/.runner.log}"
-LOCKFILE="${HICODE_RUNNER_LOCK:-$ROOT/.runner.lock}"
+LOG="${HII_RUNNER_LOG:-$ROOT/.runner.log}"
+LOCKFILE="${HII_RUNNER_LOCK:-$ROOT/.runner.lock}"
 ARRANQUE_ESPERAS=60
 ARRANQUE_INTERVALO=0.05
 
-# Mesma politica de motor/cordel/alicerce/runtime.ts, e pelo mesmo motivo: HICODE_RUNTIME manda;
+# Mesma politica de motor/cordel/alicerce/runtime.ts, e pelo mesmo motivo: HII_RUNTIME manda;
 # sem ele, bun se estiver no PATH, senao node. Este script prendia `bun` em tres pontos
 # (a cmdline aceita, o pgrep e o nohup do start) enquanto a imagem de producao e
 # node:24-slim sem bun (na epoca) — ou seja, no container o daemon nao subia. Hoje a
-# imagem instala o bun pinado e HICODE_RUNTIME=bun; o node fica para os repos-alvo.
+# imagem instala o bun pinado e HII_RUNTIME=bun; o node fica para os repos-alvo.
 # Runtime desconhecido PARA o script em vez de cair no padrao: escolher outro binario em
 # silencio seria rodar algo que o operador nao pediu.
 runtime_do_daemon() {
-  case "${HICODE_RUNTIME:-}" in
-    bun|node) echo "${HICODE_RUNTIME}"; return 0 ;;
+  case "${HII_RUNTIME:-}" in
+    bun|node) echo "${HII_RUNTIME}"; return 0 ;;
     "") ;;
-    *) echo "HICODE_RUNTIME=\"${HICODE_RUNTIME}\" nao e um runtime suportado (bun | node)" >&2; return 1 ;;
+    *) echo "HII_RUNTIME=\"${HII_RUNTIME}\" nao e um runtime suportado (bun | node)" >&2; return 1 ;;
   esac
   if command -v bun >/dev/null 2>&1; then echo bun; else echo node; fi
 }
@@ -63,7 +63,7 @@ e_o_motor() {
   cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
   # Aceita os DOIS runtimes de proposito, e nao apenas o $RUNTIME desta invocacao: o
   # daemon pode ter subido sob bun e o `stop` rodar de um shell sem bun no PATH (ou o
-  # operador ter trocado HICODE_RUNTIME no meio). Provar "este pid E o motor" nao pode
+  # operador ter trocado HII_RUNTIME no meio). Provar "este pid E o motor" nao pode
   # depender de qual binario QUEM PERGUNTA escolheria — a prova forte continua sendo
   # cmdline exata + cwd igual a raiz esperada.
   case "$cmd" in

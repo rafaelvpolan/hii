@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-process.env.HICODE_COTA_TTL_MS = '0'
+process.env.HII_COTA_TTL_MS = '0'
 
 const { lerCota, JANELA_COTA_MS, PROVEDOR_DESCONHECIDO } = await import('../../motor/euclides/tesouro/cota.ts')
 
@@ -22,7 +22,7 @@ function iso(ms: number): string {
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-cota-'))
   criados.push(dir)
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   mkdirSync(join(dir, 'runs'), { recursive: true })
 })
 

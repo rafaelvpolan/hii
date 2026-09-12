@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os'
 // 31 escritas de `status: 'HALTED'` do motor gravavam status e nada mais, e `porHalts`
 // (euclides/radar/saude.ts) descarta card sem classe. Motor parado respondia "ocioso".
 
-process.env.HICODE_COTA_TTL_MS = '0'
+process.env.HII_COTA_TTL_MS = '0'
 
 const { createCard, readCard, patchCard, updateCard } = await import('../../motor/cordel/store.ts')
 const { PARADA_SEM_CLASSE } = await import('../../motor/cordel/index.ts')
@@ -26,7 +26,7 @@ const criados: string[] = []
 beforeEach(() => {
   const dir = mkdtempSync(join(tmpdir(), 'hicode-parada-'))
   criados.push(dir)
-  process.env.HICODE_CARDS_DIR = dir
+  process.env.HII_CARDS_DIR = dir
   mkdirSync(join(dir, 'runs'), { recursive: true })
 })
 

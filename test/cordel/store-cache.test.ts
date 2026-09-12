@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-cardcache-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, allCards, cardsByStatus } = await import('../../motor/cordel/store.ts')
 const { pending } = await import('../../motor/oswaldo/mutirao/estado-da-fila.ts')

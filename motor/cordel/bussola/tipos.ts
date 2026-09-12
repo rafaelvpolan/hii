@@ -1,4 +1,12 @@
-export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun'
+export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun' | 'composer'
+
+export type LinguagemDeRuntime = 'node' | 'php'
+
+export interface RuntimeDeclarado {
+  linguagem: LinguagemDeRuntime
+  versao: string
+  fonte: string
+}
 
 export type RepoShape = 'single' | 'workspaces' | 'poly'
 
@@ -11,6 +19,9 @@ export interface PackageInfo {
   scripts: string[]
   devPort: number
   commands: Commands
+  // Versoes de runtime que o pacote declara (.nvmrc, engines.node, .tool-versions,
+  // composer.json#require.php, .php-version). Ausente em contrato antigo = nenhuma.
+  runtimes?: RuntimeDeclarado[]
 }
 
 export interface Commands {

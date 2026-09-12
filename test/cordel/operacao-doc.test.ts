@@ -38,13 +38,13 @@ test('todo comando de TUI citado em OPERACAO.md existe', () => {
   expect(inexistentes, 'comando de TUI citado no manual e ausente do motor').toEqual([])
 })
 
-test('toda variavel HICODE_ citada em OPERACAO.md existe no codigo', () => {
+test('toda variavel HII_ citada em OPERACAO.md existe no codigo', () => {
   const noCodigo = new Set<string>()
   const scripts = readdirSync('scripts').filter(f => f.endsWith('.mjs') || f.endsWith('.sh')).map(f => join('scripts', f))
   for (const f of [...arquivosTs('motor'), ...arquivosTs('bin'), 'runner.ts', ...scripts]) {
-    for (const m of readFileSync(f, 'utf8').matchAll(/HICODE_[A-Z_]+/g)) noCodigo.add(m[0])
+    for (const m of readFileSync(f, 'utf8').matchAll(/HII_[A-Z_]+/g)) noCodigo.add(m[0])
   }
-  const citadas = [...new Set([...DOC.matchAll(/HICODE_[A-Z_]+/g)].map(m => m[0]))]
+  const citadas = [...new Set([...DOC.matchAll(/HII_[A-Z_]+/g)].map(m => m[0]))]
   expect(citadas.length).toBeGreaterThan(15)
   expect(citadas.filter(v => !noCodigo.has(v)), 'variavel citada no manual e ausente do codigo').toEqual([])
 })

@@ -16,7 +16,7 @@ import { numeroDeEnv } from '../cordel/alicerce/config.ts'
 // "Faz" e afirmacao com endereco: `tetoDeParalelismo` (fim deste arquivo) e
 // aplicado pelo escalonador em motor/oswaldo/mutirao/fila.ts. Enquanto esse elo nao
 // existia, este comentario dizia "faz aqui" e o modulo nao tinha UM importador de
-// producao: o escalonador usava so HICODE_CONCURRENCY e abria 3 worktrees de
+// producao: o escalonador usava so HII_CONCURRENCY e abria 3 worktrees de
 // 2048MB contra um limite de 4096MB.
 //
 // Nunca devolve zero: um card por vez sempre cabe. Devolver zero pararia a fila
@@ -34,10 +34,10 @@ export const CPU_POR_WORKTREE = 1
 
 export function orcamentoDeRecurso(): OrcamentoDeRecurso {
   return {
-    totalMemoriaMb: numeroDeEnv('HICODE_MEM_TOTAL_MB', Math.floor(totalmem() / (1024 * 1024))),
-    memoriaPorWorktreeMb: numeroDeEnv('HICODE_MEM_POR_WORKTREE_MB', MEMORIA_POR_WORKTREE_MB),
-    totalCpus: numeroDeEnv('HICODE_CPUS_TOTAL', cpus().length),
-    cpuPorWorktree: numeroDeEnv('HICODE_CPU_POR_WORKTREE', CPU_POR_WORKTREE),
+    totalMemoriaMb: numeroDeEnv('HII_MEM_TOTAL_MB', Math.floor(totalmem() / (1024 * 1024))),
+    memoriaPorWorktreeMb: numeroDeEnv('HII_MEM_POR_WORKTREE_MB', MEMORIA_POR_WORKTREE_MB),
+    totalCpus: numeroDeEnv('HII_CPUS_TOTAL', cpus().length),
+    cpuPorWorktree: numeroDeEnv('HII_CPU_POR_WORKTREE', CPU_POR_WORKTREE),
   }
 }
 
@@ -65,7 +65,7 @@ export function quantosWorktreesCabem(o: OrcamentoDeRecurso): CabemQuantos {
 }
 
 // `podeAbrirMaisUm` vivia aqui e nao tinha consumidor de producao. Pior: ela
-// ignorava HICODE_CONCURRENCY, ou seja era uma SEGUNDA regra de paralelismo, mais
+// ignorava HII_CONCURRENCY, ou seja era uma SEGUNDA regra de paralelismo, mais
 // fraca que a do escalonador — duas fontes de verdade para a mesma decisao, e a
 // morta permitia mais do que a viva. Quem decide e `tetoDeParalelismo` (abaixo),
 // aplicado em motor/oswaldo/mutirao/fila.ts.
@@ -74,16 +74,16 @@ export function relatoDeLimites(o: OrcamentoDeRecurso = orcamentoDeRecurso()): s
   const c = quantosWorktreesCabem(o)
   return [
     `recurso: ${c.cabem} worktree(s) em paralelo — ${c.motivo}`,
-    `orcamento por worktree: ${o.memoriaPorWorktreeMb}MB e ${o.cpuPorWorktree} cpu (HICODE_MEM_POR_WORKTREE_MB, HICODE_CPU_POR_WORKTREE)`,
+    `orcamento por worktree: ${o.memoriaPorWorktreeMb}MB e ${o.cpuPorWorktree} cpu (HII_MEM_POR_WORKTREE_MB, HII_CPU_POR_WORKTREE)`,
     'o teto de fato e do container: declare em docker-stack.yml (deploy.resources.limits, honrado pelo docker swarm) — o processo so limita concorrencia',
   ].join('\n')
 }
 
 // O ponto onde o teto de recurso deixa de ser numero calculado e vira decisao de
 // escalonamento. Enquanto este modulo nao tinha consumidor, `quantosWorktreesCabem`
-// era um relatorio bonito que ninguem lia: o escalonador usava so HICODE_CONCURRENCY.
+// era um relatorio bonito que ninguem lia: o escalonador usava so HII_CONCURRENCY.
 //
-// O menor dos dois manda. O operador ainda pode BAIXAR por HICODE_CONCURRENCY, mas
+// O menor dos dois manda. O operador ainda pode BAIXAR por HII_CONCURRENCY, mas
 // nao pode subir acima do que o container comporta — que era como 3 worktrees de
 // 2048MB acabavam pedindo 6GB contra um limite de 4GB.
 //

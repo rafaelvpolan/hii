@@ -92,6 +92,7 @@ const SECOES: Secao[] = [
       { chave: '/gauntlet', arg: 'on|off', texto: 'crivo julga telas por comparacao cega em vez de ler o diff' },
       { chave: '/login', arg: '[ia]', texto: 'mostra como autenticar a ia que ainda nao logou' },
       { chave: '/repo', arg: '[owner/nome]', texto: 'troca de projeto, ou lista os registrados' },
+      { chave: '/serve', arg: '[id|projeto] [stop|status]', texto: 'sobe o modo dev da tarefa aberta ou do projeto (/start, /dev, /preview)' },
       { chave: '/exit', arg: '', texto: 'sai do hii — as tarefas seguem rodando' },
     ],
   },

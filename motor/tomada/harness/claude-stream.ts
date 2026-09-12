@@ -30,6 +30,9 @@ interface StreamPart {
 
 const FERRAMENTAS_DE_IA = ['Task']
 const LIMITE_DA_RESPOSTA_DE_IA = 4000
+// O corte para caber na tela e do render, na largura do terminal; aqui so se
+// impede que um resultado gigante vire uma linha de megabytes no log.
+const LIMITE_DA_LINHA_DE_FERRAMENTA = 600
 
 export { cabecalhoDaChamada }
 
@@ -73,7 +76,7 @@ function usageFrom(u: StreamEvent['usage']): Usage {
 function short(v: object | string | undefined): string {
   try {
     const s = typeof v === 'string' ? v : JSON.stringify(v)
-    return s.length > 100 ? s.slice(0, 100) + '…' : s
+    return s.length > LIMITE_DA_LINHA_DE_FERRAMENTA ? s.slice(0, LIMITE_DA_LINHA_DE_FERRAMENTA) + '…' : s
   } catch {
     return ''
   }
@@ -109,8 +112,8 @@ function argvStream(req: AgentRequest): string[] {
   return claudeArgv(req, FORMATO_STREAM)
 }
 
-const LOG_MAX = Number(process.env.HICODE_LIVELOG_MAX_BYTES || 1_000_000)
-const LOG_KEEP = Number(process.env.HICODE_LIVELOG_KEEP_BYTES || 200_000)
+const LOG_MAX = Number(process.env.HII_LIVELOG_MAX_BYTES || 1_000_000)
+const LOG_KEEP = Number(process.env.HII_LIVELOG_KEEP_BYTES || 200_000)
 
 function podarLog(caminho: string): void {
   try {
@@ -165,6 +168,9 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       if (!line.trim()) return
       try {
         const ev = JSON.parse(line) as StreamEvent
+        // O CLI pode emitir `result` mais de uma vez na mesma chamada (visto no card
+        // 007: duas linhas de conclusao identicas). So a primeira fecha o bloco.
+        if (ev.type === 'result' && gotResult) return
         const human = renderEvent(ev, ferramentasEmVoo)
         if (human) write(semControle(human) + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {

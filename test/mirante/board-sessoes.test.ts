@@ -30,8 +30,8 @@ function cardEmDisco(id: string, status: string): void {
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hii-board-'))
   mkdirSync(join(dir, 'runs'), { recursive: true })
-  process.env.HICODE_CARDS_DIR = dir
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
 })
 
 test('o modo board tem ordem propria, vinda das sessoes, e nao a lista de cards do rodape', async () => {

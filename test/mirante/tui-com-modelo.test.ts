@@ -23,7 +23,7 @@ import {
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 
-if (!process.env.HICODE_CARDS_DIR) throw new Error('HICODE_CARDS_DIR nao foi isolado pela fixture — abortando para nao escrever em cards/ de verdade')
+if (!process.env.HII_CARDS_DIR) throw new Error('HII_CARDS_DIR nao foi isolado pela fixture — abortando para nao escrever em cards/ de verdade')
 
 afterAll(() => limparAmbiente())
 

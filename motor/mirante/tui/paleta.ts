@@ -40,7 +40,7 @@ export type Profundidade = 'truecolor' | '256' | 'basico' | 'nenhuma'
 
 export function profundidadeDeCor(env: Record<string, string | undefined> = process.env): Profundidade {
   if (env.NO_COLOR) return 'nenhuma'
-  const forcado = env.HICODE_COLOR_DEPTH
+  const forcado = env.HII_COLOR_DEPTH
   if (forcado === 'truecolor' || forcado === '256' || forcado === 'basico' || forcado === 'nenhuma') return forcado
   const colorterm = (env.COLORTERM ?? '').toLowerCase()
   if (colorterm.includes('truecolor') || colorterm.includes('24bit')) return 'truecolor'

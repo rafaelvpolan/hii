@@ -28,7 +28,7 @@ export interface PreferenciaDePapel {
 export type PreferenciasDeIa = Partial<Record<AgentRole, PreferenciaDePapel>>
 
 export function arquivoDePreferencias(): string {
-  return process.env.HICODE_IA_FILE || join(ROOT, 'config', 'ia.json')
+  return process.env.HII_IA_FILE || join(ROOT, 'config', 'ia.json')
 }
 
 export function ehEsforco(valor: string | undefined): valor is Esforco {
@@ -79,7 +79,7 @@ export function gauntletLigado(): boolean {
 }
 
 export function esforcoPara(role: AgentRole, doCard?: string): Esforco | undefined {
-  const candidatos = [doCard, preferenciaDoPapel(role).effort, process.env.HICODE_EFFORT]
+  const candidatos = [doCard, preferenciaDoPapel(role).effort, process.env.HII_EFFORT]
   for (const c of candidatos) if (ehEsforco(c)) return c
   return undefined
 }

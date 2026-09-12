@@ -5,7 +5,7 @@ import { cardsDir } from '../../cordel/alicerce/config.ts'
 import { memoArquivo, memoChave, memoTempo } from '../../tomada/eco/memo.ts'
 
 function ttlListagemMs(): number {
-  return Number(process.env.HICODE_COTA_TTL_MS ?? '2000')
+  return Number(process.env.HII_COTA_TTL_MS ?? '2000')
 }
 
 export const PROVEDOR_DESCONHECIDO = 'desconhecido'

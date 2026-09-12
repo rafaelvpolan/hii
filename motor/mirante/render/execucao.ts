@@ -31,7 +31,6 @@ const TIER = '◇'
 const CHECKPOINT = '⏸'
 const TROCA = '⇄'
 const FASE = '▸'
-const LIMITE_RESULTADO = 160
 
 function paint(s: string, cor: string, o: OpcoesExecucao): string {
   return o.color && s ? `${cor}${s}${RESET}` : s
@@ -58,9 +57,15 @@ function falhou(resultado: string): boolean {
   return /\b(erro|error|failed|falhou|denied|permission|nao consegui|exit=[1-9])/i.test(resultado)
 }
 
+// A linha usa a largura que o terminal tem, nao um teto fixo: cortar em 160 num
+// terminal de 220 colunas deixava a tela pela metade e escondia o fim do caminho.
+function ateAMargem(texto: string, o: OpcoesExecucao, usado: number): string {
+  return encurtar(texto, Math.max(16, o.largura - usado))
+}
+
 function linhaDoResultado(a: Atividade, o: OpcoesExecucao): string[] {
   if (!a.resultado) return []
-  const texto = encurtar(a.resultado, LIMITE_RESULTADO)
+  const texto = ateAMargem(a.resultado, o, 4)
   const cor = falhou(texto) ? VERMELHO : DIM
   return [`  ${paint(RAMO, DIM, o)} ${paint(texto, cor, o)}`]
 }
@@ -154,12 +159,12 @@ export function linhasDoMarco(m: Marco, opts: Partial<OpcoesExecucao> = {}): str
     case 'fase': return [separador(FASE, m.inicio ? `fase ${m.fase}${m.detalhe ? ` · ${m.detalhe}` : ''}` : `fim da fase ${m.fase}${m.detalhe ? ` · ${m.detalhe}` : ''}`, o.largura, m.inicio ? MAGENTA : DIM, o)]
     case 'gate': return m.inicio
       ? [`  ${paint(GATE, MAGENTA, o)} ${paint(`gate ${m.fase}`, BOLD, o)} ${paint(`revisando (${m.motivo || 'crivo'})`, DIM, o)}`]
-      : [`  ${paint(GATE, corDoVeredito(m.veredito), o)} ${paint(`gate ${m.fase}`, BOLD, o)} ${paint(m.veredito, corDoVeredito(m.veredito), o)}${m.motivo ? ` ${paint(`— ${encurtar(m.motivo, LIMITE_RESULTADO)}`, DIM, o)}` : ''}`]
-    case 'reparo': return [`  ${paint(REPARO, AMARELO, o)} ${paint(`reparo ${m.fase}`, BOLD, o)} ${paint(encurtar(m.detalhe, LIMITE_RESULTADO), DIM, o)}`]
-    case 'tier': return [`  ${paint(TIER, DIM, o)} ${paint(`tier ${encurtar(m.detalhe, LIMITE_RESULTADO)}`, DIM, o)}`]
+      : [`  ${paint(GATE, corDoVeredito(m.veredito), o)} ${paint(`gate ${m.fase}`, BOLD, o)} ${paint(m.veredito, corDoVeredito(m.veredito), o)}${m.motivo ? ` ${paint(`— ${ateAMargem(m.motivo, o, 10 + m.fase.length + m.veredito.length)}`, DIM, o)}` : ''}`]
+    case 'reparo': return [`  ${paint(REPARO, AMARELO, o)} ${paint(`reparo ${m.fase}`, BOLD, o)} ${paint(ateAMargem(m.detalhe, o, 12 + m.fase.length), DIM, o)}`]
+    case 'tier': return [`  ${paint(TIER, DIM, o)} ${paint(`tier ${ateAMargem(m.detalhe, o, 9)}`, DIM, o)}`]
     case 'troca': return [`  ${paint(TROCA, AMARELO, o)} ${paint(`${m.papel}: ${m.de} → ${m.para}`, BOLD, o)} ${paint('troca de harness', DIM, o)}`]
     case 'checkpoint': return [separador(CHECKPOINT, m.aberto ? `esperando voce · ${m.estado}${m.detalhe ? ` (${m.detalhe})` : ''}` : `voce respondeu · ${m.estado}${m.detalhe ? ` (${m.detalhe})` : ''}`, o.largura, m.aberto ? AMARELO : VERDE, o)]
-    default: return [`  ${paint('·', DIM, o)} ${paint(`${m.evento}${m.detalhe ? `: ${encurtar(m.detalhe, LIMITE_RESULTADO)}` : ''}`, DIM, o)}`]
+    default: return [`  ${paint('·', DIM, o)} ${paint(`${m.evento}${m.detalhe ? `: ${ateAMargem(m.detalhe, o, 6 + m.evento.length)}` : ''}`, DIM, o)}`]
   }
 }
 

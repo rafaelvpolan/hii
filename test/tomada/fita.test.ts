@@ -189,16 +189,16 @@ test('modo reproduzir FALHA quando falta fita, em vez de passar em silencio, e n
   expect(chamouOReal).toBe(false)
 })
 
-test('o modo vem do ambiente (HICODE_FITA_MODO) quando opcoes.modo nao e informado', async () => {
+test('o modo vem do ambiente (HII_FITA_MODO) quando opcoes.modo nao e informado', async () => {
   const dir = diretorioTemporario()
   const real = harnessFalso('falso', () => resultadoOk({ text: 'via-ambiente' }))
   const envolvido = envolverComFita(real, { nome: 'modo-por-ambiente', dir, rodada: rodadaDeTeste() })
 
-  process.env.HICODE_FITA_MODO = 'gravar-se-faltar' satisfies ModoDaFita
+  process.env.HII_FITA_MODO = 'gravar-se-faltar' satisfies ModoDaFita
   try {
     await envolvido.run(pedidoBase())
   } finally {
-    delete process.env.HICODE_FITA_MODO
+    delete process.env.HII_FITA_MODO
   }
 
   const reproduzindo = envolverComFita(real, { nome: 'modo-por-ambiente', dir, modo: 'reproduzir' })

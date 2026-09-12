@@ -9,7 +9,7 @@ const RUNNER = join(ROOT, 'runner.ts')
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-once-'))
 const REPOS = mkdtempSync(join(tmpdir(), 'hicode-once-repos-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 
@@ -27,10 +27,10 @@ function rodarOnce(): void {
     cwd: ROOT,
     env: {
       ...process.env,
-      HICODE_CARDS_DIR: CARDS,
-      HICODE_REPOS_FILE: join(REPOS, 'repos.json'),
-      HICODE_RUNNER_PIDFILE: join(REPOS, 'runner.pid'),
-      HICODE_RUNNER_LOCK: join(REPOS, 'runner.lock'),
+      HII_CARDS_DIR: CARDS,
+      HII_REPOS_FILE: join(REPOS, 'repos.json'),
+      HII_RUNNER_PIDFILE: join(REPOS, 'runner.pid'),
+      HII_RUNNER_LOCK: join(REPOS, 'runner.lock'),
     },
     encoding: 'utf8',
     timeout: 15000,

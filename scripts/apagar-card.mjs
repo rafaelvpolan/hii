@@ -4,8 +4,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
-const RAIZ = process.env.HICODE_ROOT || dirname(dirname(fileURLToPath(import.meta.url)))
-const CARDS = process.env.HICODE_CARDS_DIR || join(RAIZ, 'cards')
+const RAIZ = process.env.HII_ROOT || dirname(dirname(fileURLToPath(import.meta.url)))
+const CARDS = process.env.HII_CARDS_DIR || join(RAIZ, 'cards')
 const RUNS = join(CARDS, 'runs')
 const PREVIEWS = join(CARDS, 'urls')
 

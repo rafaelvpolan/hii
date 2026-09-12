@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir, networkInterfaces } from 'node:os'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-saude-'))
-process.env.HICODE_CARDS_DIR = join(BASE, 'cards')
-mkdirSync(join(process.env.HICODE_CARDS_DIR, 'runs'), { recursive: true })
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(join(process.env.HII_CARDS_DIR, 'runs'), { recursive: true })
 afterAll(() => rmSync(BASE, { recursive: true, force: true }))
 
 const S = await import('../../motor/euclides/radar/servidor.ts')
@@ -44,46 +44,46 @@ test('erro ao montar a resposta vira 503, nao excecao que derruba o daemon', asy
   // e nao um diretorio: `readdirSync` lanca ENOTDIR dentro do callback HTTP.
   const arquivo = join(BASE, 'cards-e-um-arquivo')
   writeFileSync(arquivo, 'nao sou diretorio')
-  const anterior = process.env.HICODE_CARDS_DIR
+  const anterior = process.env.HII_CARDS_DIR
   const srv = S.subirServidorDeSaude(0)
   try {
     const porta = await (srv as { pronto: Promise<number> }).pronto
-    process.env.HICODE_CARDS_DIR = arquivo
+    process.env.HII_CARDS_DIR = arquivo
     const r = await fetch(`http://127.0.0.1:${porta}/health`)
     expect([200, 503], 'o processo tem de continuar de pe e responder algo').toContain(r.status)
     // E o servidor continua atendendo depois do erro:
-    process.env.HICODE_CARDS_DIR = anterior
+    process.env.HII_CARDS_DIR = anterior
     expect([200, 503]).toContain((await fetch(`http://127.0.0.1:${porta}/health`)).status)
   } finally {
-    process.env.HICODE_CARDS_DIR = anterior
+    process.env.HII_CARDS_DIR = anterior
     srv?.parar()
   }
 })
 
-test('sem HICODE_HEALTH_PORT o servidor NAO sobe — e isso nao e falha', () => {
-  const anterior = process.env.HICODE_HEALTH_PORT
-  delete process.env.HICODE_HEALTH_PORT
+test('sem HII_HEALTH_PORT o servidor NAO sobe — e isso nao e falha', () => {
+  const anterior = process.env.HII_HEALTH_PORT
+  delete process.env.HII_HEALTH_PORT
   try {
     expect(S.subirServidorDeSaude()).toBeNull()
   } finally {
-    if (anterior === undefined) delete process.env.HICODE_HEALTH_PORT
-    else process.env.HICODE_HEALTH_PORT = anterior
+    if (anterior === undefined) delete process.env.HII_HEALTH_PORT
+    else process.env.HII_HEALTH_PORT = anterior
   }
 })
 
 test('porta ILEGIVEL avisa e nao sobe — nao pode virar "nao configurado" em silencio', () => {
-  const anterior = process.env.HICODE_HEALTH_PORT
+  const anterior = process.env.HII_HEALTH_PORT
   const original = process.stderr.write.bind(process.stderr)
   let saida = ''
   process.stderr.write = ((c: string | Uint8Array): boolean => { saida += String(c); return true }) as typeof process.stderr.write
-  process.env.HICODE_HEALTH_PORT = '8O80'
+  process.env.HII_HEALTH_PORT = '8O80'
   try {
     expect(S.subirServidorDeSaude()).toBeNull()
     expect(saida, 'container unhealthy sem explicacao e o pior dos dois mundos').toContain('nao e uma porta valida')
   } finally {
     process.stderr.write = original
-    if (anterior === undefined) delete process.env.HICODE_HEALTH_PORT
-    else process.env.HICODE_HEALTH_PORT = anterior
+    if (anterior === undefined) delete process.env.HII_HEALTH_PORT
+    else process.env.HII_HEALTH_PORT = anterior
   }
 })
 
@@ -99,8 +99,8 @@ function ipNaoLoopback(): string {
 test('bind PADRAO e loopback — inalcancavel de fora, e isso e intencional', async () => {
   const ip = ipNaoLoopback()
   if (!ip) return
-  const anterior = process.env.HICODE_HEALTH_BIND
-  delete process.env.HICODE_HEALTH_BIND
+  const anterior = process.env.HII_HEALTH_BIND
+  delete process.env.HII_HEALTH_BIND
   const srv = S.subirServidorDeSaude(0)
   try {
     const porta = await (srv as { pronto: Promise<number> }).pronto
@@ -109,16 +109,16 @@ test('bind PADRAO e loopback — inalcancavel de fora, e isso e intencional', as
     expect(deFora, 'com bind de loopback o consumidor externo tem de ser recusado').toBe('recusado')
   } finally {
     srv?.parar()
-    if (anterior === undefined) delete process.env.HICODE_HEALTH_BIND
-    else process.env.HICODE_HEALTH_BIND = anterior
+    if (anterior === undefined) delete process.env.HII_HEALTH_BIND
+    else process.env.HII_HEALTH_BIND = anterior
   }
 })
 
-test('com HICODE_HEALTH_BIND=0.0.0.0 (o que o Dockerfile define) o /health responde DE FORA', async () => {
+test('com HII_HEALTH_BIND=0.0.0.0 (o que o Dockerfile define) o /health responde DE FORA', async () => {
   const ip = ipNaoLoopback()
   if (!ip) return
-  const anterior = process.env.HICODE_HEALTH_BIND
-  process.env.HICODE_HEALTH_BIND = '0.0.0.0'
+  const anterior = process.env.HII_HEALTH_BIND
+  process.env.HII_HEALTH_BIND = '0.0.0.0'
   const srv = S.subirServidorDeSaude(0)
   try {
     const porta = await (srv as { pronto: Promise<number> }).pronto
@@ -126,8 +126,8 @@ test('com HICODE_HEALTH_BIND=0.0.0.0 (o que o Dockerfile define) o /health respo
     expect([200, 503] as (number | string)[], `sonda de ${ip} — o EXPOSE do container promete alcance externo`).toContain(deFora)
   } finally {
     srv?.parar()
-    if (anterior === undefined) delete process.env.HICODE_HEALTH_BIND
-    else process.env.HICODE_HEALTH_BIND = anterior
+    if (anterior === undefined) delete process.env.HII_HEALTH_BIND
+    else process.env.HII_HEALTH_BIND = anterior
   }
 })
 

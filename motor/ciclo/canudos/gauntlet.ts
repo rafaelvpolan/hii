@@ -43,7 +43,7 @@ export interface PermissaoDeInicio {
 export function podeIniciar(): PermissaoDeInicio {
   try {
     // `tetoDoCard(g)`, nao `g.orcamentoPorCard.tetoUsd`: o teto EFETIVO honra
-    // HICODE_CARD_BUDGET_USD, e e ele que executar.ts, corrigir.ts e fechar.ts
+    // HII_CARD_BUDGET_USD, e e ele que executar.ts, corrigir.ts e fechar.ts
     // usam para barrar. Enquanto este numero era so texto do motivo, ler o
     // arquivo direto era inocuo; desde que ele passou a BARRAR (modoDoCrivo
     // abaixo), ler outra fonte faria o teto valer num ponto e nao no outro — com

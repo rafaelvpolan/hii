@@ -4,12 +4,12 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const CARDS = mkdtempSync(join(tmpdir(), 'hicode-failpolicy-'))
-process.env.HICODE_CARDS_DIR = CARDS
+process.env.HII_CARDS_DIR = CARDS
 
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
 const { applyFailurePolicy, backoffMsFor } = await import('../../motor/ciclo/reprise/politica.ts')
 
-beforeEach(() => { process.env.HICODE_WAITING_MAX_ATTEMPTS = '3' })
+beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '3' })
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
@@ -159,7 +159,7 @@ function quotaEm(id: string, provider: string, extra: Record<string, unknown> = 
 }
 
 test('REGRESSAO: quota com fallback ligado e rota apta vira WAITING com o provedor NOVO — antes a correcao ia direto a HALTED', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueTroca('codex') })
@@ -170,11 +170,11 @@ test('REGRESSAO: quota com fallback ligado e rota apta vira WAITING com o proved
   expect(c?.fm.provider_override_implement, 'o retry tem de acordar no provedor novo').toBe('codex')
   expect(c?.fm.wait_provider, 'a sonda de espera tem de sondar o provedor NOVO, nao o esgotado').toBe('codex')
   expect(c?.fm.rota_tentados, 'quem falhou nesta rodada fica registrado para nao ser repetido').toBe('claude')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('quota com fallback ligado mas SEM candidato apto continua HALTED — a rota nunca inventa provedor', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueMantem })
@@ -184,11 +184,11 @@ test('quota com fallback ligado mas SEM candidato apto continua HALTED — a rot
   expect(c?.fm.status).toBe('HALTED')
   expect(c?.fm.halt_class).toBe('quota')
   expect(c?.fm.rota_tentados, 'haltFields limpa a rodada — o proximo ciclo humano comeca do zero').toBe('')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('quota com fallback DESLIGADO (off explicito — o padrao e on desde 09/09) nem consulta a rota', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'off'
+  process.env.HII_QUOTA_FALLBACK = 'off'
   const id = card()
   let consultada = false
 
@@ -197,22 +197,22 @@ test('quota com fallback DESLIGADO (off explicito — o padrao e on desde 09/09)
   expect(outcome).toBe('halt')
   expect(consultada, 'com o interruptor desligado a rota nao pode nem ser perguntada').toBe(false)
   expect(readCard(id)?.fm.status).toBe('HALTED')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('quota SEM papel informado continua HALTED — so papel com leitor de override pode ser roteado', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { rota: rotaQueTroca('codex') })
 
   expect(outcome).toBe('halt')
   expect(readCard(id)?.fm.provider_override_implement ?? '').toBe('')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('papel step grava provider_override_step — cada papel acorda no proprio override', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'step', rota: rotaQueTroca('kimi') })
@@ -221,22 +221,22 @@ test('papel step grava provider_override_step — cada papel acorda no proprio o
   expect(outcome).toBe('waiting')
   expect(c?.fm.provider_override_step).toBe('kimi')
   expect(c?.fm.provider_override_implement ?? '', 'o override do implement nao pode ser tocado por falha de step').toBe('')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('papel gate grava provider_override_gate', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'gate', rota: rotaQueTroca('codex') })
 
   expect(outcome).toBe('waiting')
   expect(readCard(id)?.fm.provider_override_gate).toBe('codex')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('HALT por quota limpa os TRES overrides — a cota de quem falhou ontem pode ter voltado quando o humano retomar', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
   patchCard(id, { provider_override_implement: 'codex', provider_override_step: 'kimi', provider_override_gate: 'codex' })
 
@@ -247,16 +247,16 @@ test('HALT por quota limpa os TRES overrides — a cota de quem falhou ontem pod
   expect(c?.fm.provider_override_implement).toBe('')
   expect(c?.fm.provider_override_step).toBe('')
   expect(c?.fm.provider_override_gate).toBe('')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })
 
 test('papel verify grava provider_override_verify — a serie implement/step/gate/verify fecha', () => {
-  process.env.HICODE_QUOTA_FALLBACK = 'on'
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'verify', rota: rotaQueTroca('codex') })
 
   expect(outcome).toBe('waiting')
   expect(readCard(id)?.fm.provider_override_verify).toBe('codex')
-  delete process.env.HICODE_QUOTA_FALLBACK
+  delete process.env.HII_QUOTA_FALLBACK
 })

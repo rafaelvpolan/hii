@@ -15,7 +15,7 @@ import { ENV_SECRETS_DIR } from '../../cordel/alicerce/contrato.ts'
 // Em docker swarm o segredo chega como ARQUIVO em /run/secrets/<nome>, e o nome
 // e minusculo por convencao do swarm. Isso e o "cofre opcional e plugavel" do
 // item 29: o ambiente continua sendo o caminho que sempre funciona, e o arquivo
-// entra quando HICODE_SECRETS_DIR aponta para ele.
+// entra quando HII_SECRETS_DIR aponta para ele.
 
 export interface ProvedorDeSegredo {
   readonly id: string

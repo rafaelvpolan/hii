@@ -7,8 +7,8 @@ import { join } from 'node:path'
 let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hii-modo-'))
-  process.env.HICODE_IA_FILE = join(dir, 'ia.json')
-  for (const v of ['HICODE_EFFORT', 'HICODE_IMPLEMENT_PROVIDER', 'HICODE_GATE_PROVIDER', 'HICODE_AI_PROVIDER']) {
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  for (const v of ['HII_EFFORT', 'HII_IMPLEMENT_PROVIDER', 'HII_GATE_PROVIDER', 'HII_AI_PROVIDER']) {
     delete process.env[v]
   }
 })
