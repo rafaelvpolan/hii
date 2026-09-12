@@ -80,15 +80,16 @@ test('COMPORTAMENTO recusar sem dizer o que falta e recusado — repetir o mesmo
   expect(readCard(id)?.fm.status, 'card fica onde estava').toBe('CONFIRM')
 })
 
-test('COMPORTAMENTO recusar sem worktree refaz do zero, e o motivo fica gravado', () => {
+test('COMPORTAMENTO recusar sem worktree reexecuta RETOMANDO a branch da tarefa (nao refaz do zero), e o motivo fica gravado', () => {
   const id = cardEmConfirmacao()
   const r = core.recusarFecho(id, 'o conflito voltou no index.html')
 
   expect(r.ok, r.reason).toBe(true)
-  const fm = readCard(id)?.fm
-  expect(fm?.status).toBe('EXECUTING')
-  expect(fm?.refazer).toBe('true')
-  expect(fm?.correction).toBe('o conflito voltou no index.html')
+  const card = readCard(id)
+  expect(card?.fm.status).toBe('EXECUTING')
+  expect(card?.fm.refazer, 'refazer=true mandaria o ensureWorktree recomecar da main e descartar o trabalho ja feito na branch').toBe('')
+  expect(card?.fm.correction).toBe('o conflito voltou no index.html')
+  expect(card?.body).toContain('reexecutando com a branch retomada')
 })
 
 test('so card em CONFIRM aceita as duas acoes — nao da para encerrar o que nao perguntou', () => {

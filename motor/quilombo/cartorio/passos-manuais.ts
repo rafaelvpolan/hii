@@ -2,7 +2,7 @@ import { isoNow } from '../../cordel/index.ts'
 import { pipelineManual } from '../../cordel/alicerce/config.ts'
 import { readCard, updateCardPorAcaoHumana } from '../../cordel/store.ts'
 import { activeSteps } from '../../niemeyer/config.ts'
-import { feitosDoCard } from './plano-de-passos.ts'
+import { feitosDoCard, passosRestantes } from './plano-de-passos.ts'
 
 // Cartorio — os pedidos humanos do pipeline manual (default; ver pipelineManual
 // em cordel/alicerce/config.ts). A TUI (/polimento, /testes, /seguranca,
@@ -62,11 +62,13 @@ export function pedirPassoManual(id: string, passo: string): PedidoPipeline {
   if (!ids.includes(alvo)) {
     return { ok: false, mensagem: `passo desconhecido: "${passo}" — o pipeline tem ${ids.map(i => `/${i}`).join(' ')} (e /polimento como apelido de /arquitetura)` }
   }
+  const jaRodou = !passosRestantes(activeSteps(card?.fm.worktree || undefined), feitosDoCard(card?.fm.pipeline_feitos)).some(s => s.id === alvo)
+  const aviso = jaRodou ? ' — ja rodou nesta rodada; vai rodar DE NOVO a pedido' : ''
   updateCardPorAcaoHumana(id, {
-    fields: { status: 'URL_OK', retomar_em: '', resume_from: '', pipeline_pausa: 'manual', pipeline_passo: alvo },
-    log: `${isoNow()} ${r.status}->URL_OK pedido humano: rodar so o passo "${alvo}" e pausar de novo`,
+    fields: { status: 'URL_OK', retomar_em: '', resume_from: '', pipeline_pausa: 'manual', pipeline_liberado: '', pipeline_passo: alvo },
+    log: `${isoNow()} ${r.status}->URL_OK pedido humano: rodar so o passo "${alvo}" e pausar de novo${aviso}`,
   })
-  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar — /hii roda o restante de uma vez` }
+  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar${aviso} — /hii roda o restante de uma vez` }
 }
 
 // A suite: roda o que falta do pipeline (menos o que pipeline_feitos ja pagou)
@@ -77,7 +79,7 @@ export function pedirSuiteManual(id: string): PedidoPipeline {
   if ('erro' in r) return { ok: false, mensagem: r.erro }
   const card = readCard(id)
   const feitos = feitosDoCard(card?.fm.pipeline_feitos)
-  const restam = activeSteps(card?.fm.worktree || undefined).filter(s => !feitos.includes(s.id) && !feitos.includes(s.label)).map(s => s.id)
+  const restam = passosRestantes(activeSteps(card?.fm.worktree || undefined), feitos).map(s => s.id)
   updateCardPorAcaoHumana(id, {
     fields: { status: 'URL_OK', retomar_em: '', resume_from: '', pipeline_liberado: 'true', pipeline_passo: '' },
     log: `${isoNow()} ${r.status}->URL_OK pedido humano: rodar o pipeline restante de uma vez e fechar`,

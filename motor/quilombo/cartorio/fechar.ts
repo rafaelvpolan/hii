@@ -29,8 +29,8 @@ import { addMetric, accumulatedTotals, haltForInspection, pauseForConfirmation, 
 import { buildWithReajuste, testGate } from '../../ciclo/crivo/portoes-de-fecho.ts'
 import type { RunCtx } from '../../ciclo/crivo/portoes-de-fecho.ts'
 import { syncWithBase, revalidate } from './sync.ts'
-import { resumeStart, RESUME_POST_STEPS } from './retomar.ts'
-import { quaisPassosRodar } from './plano-de-passos.ts'
+import { avisoDeRetomadaForaDoPerfil, RESUME_POST_STEPS } from './retomar.ts'
+import { anotarPago, passosRestantes, quaisPassosRodar } from './plano-de-passos.ts'
 import { precisaConfirmarFecho, perguntaDeFecho } from './confirmar-fecho.ts'
 import { runStep } from '../../ciclo/agente.ts'
 import { avaliarDiff } from '../../cascudo/lei/guarda.ts'
@@ -191,7 +191,6 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     process.stdout.write(`[runner] #${id}: LEI elevou o rigor (${lei.motivos.length} motivo(s))\n`)
   }
   patchCard(id, { steps_profile: plan.profile }, `${isoNow()} analise de passos: perfil "${plan.profile}" — roda [${steps.map(s => s.label).join(', ') || 'nenhum'}]${plan.skipped.length ? ` · pula [${plan.skipped.join(', ')}]` : ''} (${plan.reason})`)
-  const startIdx = resumeStart(steps, all, resumeFrom, id, plan.profile)
   // O estado de onde o card sai daqui e o do ULTIMO step que VAI DE FATO RODAR.
   // Nao e `steps.at(-1)`: numa retomada com `resume_from` os passos ja feitos sao
   // pulados, e com RESUME_POST_STEPS nenhum roda — o card fica onde estava, e a
@@ -201,10 +200,11 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     passoUnico: String(card.fm.pipeline_passo ?? '').trim(),
     liberado: card.fm.pipeline_liberado === 'true',
     feitosCru: String(card.fm.pipeline_feitos ?? ''),
-    aposRetomada: steps.slice(startIdx),
+    resumeFrom,
+    plano: { steps, profile: plan.profile },
     all,
-    profile: plan.profile,
   })
+  if (decisao.retomada.foraDoPerfil) patchCard(id, {}, avisoDeRetomadaForaDoPerfil(resumeFrom, plan.profile, decisao.retomada, steps.length))
   if (decisao.tipo === 'pausar') {
     const comandos = decisao.restantes.map(s => s.id)
     const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (/hii ou ENTER no card)`
@@ -216,8 +216,12 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   if (decisao.liberacaoCaducada) {
     patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo /hii`)
   }
+  if (decisao.repetido) {
+    patchCard(id, {}, `${isoNow()} passo "${decisao.passoUnicoAtivo}" ja rodou nesta rodada — rodando de novo a pedido do humano`)
+  }
   const vaoRodar = decisao.vaoRodar
   const feitos = decisao.feitos
+  let pagos = [...feitos]
   const passoUnicoAtivo = decisao.passoUnicoAtivo
   const statusAtual = vaoRodar.at(-1)?.state ?? String(card.fm.status ?? 'URL_OK')
   process.stdout.write(`[runner] #${id}: finalizando (perfil ${plan.profile}: ${vaoRodar.length} passo(s)${plan.skipped.length ? `, pulou ${plan.skipped.length}` : ''})${resumeFrom ? ` a partir de ${resumeFrom}` : ''}${passoUnicoAtivo ? ` — so o passo ${passoUnicoAtivo}` : ''}\n`)
@@ -338,15 +342,16 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     // fechar.ts, fase-spec.ts, gate.ts), entao todos decidiam sobre numero velho.
     // `accumulatedTotals` usa a foto `card.fm` como base e soma `fsteps`, entao
     // chamar a cada passo NAO acumula em dobro — sempre recalcula do mesmo ponto.
-    patchCard(id, { status: step.state, wait_attempts: '', ...accumulatedTotals(card, fsteps) }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (agente $${r.cost.toFixed(4)}${detalheDoGate} · ${r.tokens + (gateDoPasso?.tokens ?? 0)} tokens)`)
+    pagos = anotarPago(pagos, step)
+    patchCard(id, { status: step.state, wait_attempts: '', pipeline_feitos: pagos.join(','), ...accumulatedTotals(card, fsteps) }, `${isoNow()} ${step.label} (${step.agent})${step.gated ? ' [crivo ok]' : ''}: ${r.text || 'ok'} (agente $${r.cost.toFixed(4)}${detalheDoGate} · ${r.tokens + (gateDoPasso?.tokens ?? 0)} tokens)`)
     process.stdout.write(`[runner] #${id}: ${step.label} (${step.agent}) $${r.cost.toFixed(4)}\n`)
   }
   // Passo unico pedido pelo humano: roda ele, registra em pipeline_feitos e
   // volta a PAUSED — o fecho (build, gates, PR) so acontece quando nao resta
   // passo nenhum ou quando a suite e liberada (/hii, ENTER).
   if (passoUnicoAtivo) {
-    const agora = [...feitos, ...vaoRodar.map(s => s.id)]
-    const restam = steps.filter(s => !agora.includes(s.id) && !agora.includes(s.label)).map(s => s.id)
+    const agora = pagos
+    const restam = passosRestantes(steps, agora).map(s => s.id)
     patchCard(id, {
       status: 'PAUSED',
       retomar_em: 'URL_OK',
@@ -429,7 +434,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const push = await pushOwnedBranch(wt, branch, String(card.fm.pushed_sha ?? '').trim(), donoComprovado)
   if (!push.ok) {
     const diagnostico = pushFailureDiagnostico(push)
-    patchCard(id, { status: 'HALTED', halt_class: 'terminal', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED ${diagnostico} (worktree mantido p/ inspecao)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', pipeline_liberado: '', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED ${diagnostico} (worktree mantido p/ inspecao)`)
     return
   }
   patchCard(id, { pushed_sha: push.pushedSha }, push.forced
@@ -455,7 +460,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     patchCard(id, {}, `${isoNow()} PR ja constava no diario de execucao (${url}) — nao foi aberto de novo`)
   }
   if (!url) {
-    patchCard(id, { status: 'HALTED', halt_class: 'terminal', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', pipeline_liberado: '', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
     return
   }
   stopUrl(card.fm.url_pid)

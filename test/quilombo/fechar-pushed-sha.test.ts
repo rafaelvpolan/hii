@@ -107,7 +107,7 @@ test('REGRESSAO: pushed_sha gravado pelo push anterior DESTE card ancora o push 
   expect(primeiroPushedSha).toHaveLength(40)
   expect(existsSync(wt)).toBe(false)
 
-  await realGit.ensureWorktree(clone, wt, branch, 'main')
+  await realGit.ensureWorktree(clone, wt, branch, 'main', { refazerDoZero: true })
   commitar(wt, 'mudanca2.txt', 'segunda tentativa (worktree recriado do zero em cima da base)\n', 'feat: segunda tentativa')
   patchCard(id, { status: 'URL_OK' }, 'retomado pelo humano (teste) — worktree foi recriado do zero pela reexecucao')
 
