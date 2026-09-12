@@ -52,7 +52,7 @@ function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponive
     habilitado: habilitadoDe(nome, estado),
     motivo: estado && estado.situacao !== 'disponivel' ? estado.comoObter : '',
     plano: plano.plano,
-    planoLido: harness.temLeitorDePlano,
+    planoLido: harness.temLeitorDePlano && plano.leituraDePlano !== false,
     rodaLocal: harness.rodaLocal,
     detalheDoPlano: plano.detalhe,
     janelas: janelasDoPainel(nome, agoraMs),
@@ -64,6 +64,7 @@ function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponive
     restringeFerramenta: limites ? limites.restrictsTools : true,
     isolaLeitura: limites ? limites.isolatesReadonly : true,
     reportaCusto: limites ? limites.reportsCostUsd : true,
+    contexto: plano.contexto,
   }
 }
 
@@ -154,4 +155,3 @@ function ledgerDaSessao(): LedgerDaSessao {
 export function ordemDaConfig(): string[] {
   return providerNames()
 }
-

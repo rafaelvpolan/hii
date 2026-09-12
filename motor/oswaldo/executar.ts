@@ -24,6 +24,7 @@ import { abrirSessao } from '../euclides/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
 import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
+import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
 
@@ -325,7 +326,10 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       const tentados = rotaTentadas(card.fm.rota_tentados)
       const rota = (deps.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: tentados })
       if (rota.acao === 'trocar') {
-        patchCard(id, { provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${rota.para} (${rota.motivo}; HII_QUOTA_FALLBACK=on) e tentando de novo`)
+        const technicalDetail = res.timedOut ? `${res.reason ?? ''} apos ${elapsed}s` : (res.reason ?? '')
+        const troca = { id, papel: 'implement' as const, de: res.provider, para: rota.para, falha: failureReason, detalhe: technicalDetail, motivo: rota.motivo }
+        registrarTrocaDeIaNoLiveLog(troca)
+        patchCard(id, { provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), rota_contexto: contextoDaTrocaDeIa(troca), ...totals }, `${isoNow()} EXECUTING: cota de ${res.provider ?? 'provedor'} esgotada — trocando para ${rota.para} (${rota.motivo}; HII_QUOTA_FALLBACK=on) e tentando de novo`)
         return
       }
     }
@@ -391,7 +395,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
-  patchCard(id, { wait_attempts: '', provider_override_implement: '', rota_tentados: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
+  patchCard(id, { wait_attempts: '', provider_override_implement: '', rota_tentados: '', rota_contexto: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {

@@ -15,6 +15,7 @@ beforeEach(() => {
   process.env.HII_COTA_TTL_MS = '0'
   claudeJson = join(estado, 'claude.json')
   process.env.HII_CLAUDE_CONFIG = claudeJson
+  process.env.CODEX_HOME = join(estado, 'codex-sem-historico')
 })
 
 afterEach(() => {
@@ -22,6 +23,7 @@ afterEach(() => {
   delete process.env.HII_JANELAS_CODEX
   delete process.env.HII_CLAUDE_CONFIG
   delete process.env.HII_COTA_TTL_MS
+  delete process.env.CODEX_HOME
 })
 
 function claudeReporta(utilization: Record<string, { utilization: number; resets_at?: string }>, medidoEmMs = AGORA): void {
@@ -151,4 +153,3 @@ test('REGRESSAO classificacao saiu dos papeis configuraveis junto com a leitura 
   expect(agentRoles()).not.toContain('classificacao')
   expect(agentRoles()).toEqual(['implement', 'verify', 'gate', 'step'])
 })
-

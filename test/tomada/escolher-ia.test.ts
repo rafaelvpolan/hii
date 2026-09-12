@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, lerArquivo } from '../apoio/runner.ts'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -7,6 +7,7 @@ let dir = ''
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'hicode-ia-'))
   process.env.HII_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_MODELOS_FILE = join(dir, 'modelos.json')
   for (const v of ['HII_EFFORT', 'HII_IMPLEMENT_PROVIDER', 'HII_GATE_PROVIDER', 'HII_AI_PROVIDER']) {
     delete process.env[v]
   }
@@ -176,6 +177,16 @@ test('/model sem argumento lista os modelos da ia atual', async () => {
   const r = definirModelo([])
   expect(r.ok).toBe(false)
   expect(r.mensagem).toContain('opus')
+  expect(r.mensagem).toContain('selecao: /model <numero|nome>')
+})
+
+test('/model aceita numero da lista de modelos da ia atual', async () => {
+  const { definirModelo } = await import('../../motor/mirante/escolher-ia.ts')
+  const { modelFor } = await import('../../motor/tomada/registro.ts')
+  writeFileSync(String(process.env.HII_MODELOS_FILE), JSON.stringify({ claude: ['sonnet', 'opus'] }))
+  const r = definirModelo(['2'])
+  expect(r.ok).toBe(true)
+  expect(modelFor('implement')).toBe('opus')
 })
 
 test('/model define o modelo do papel atual', async () => {
@@ -237,6 +248,7 @@ test('/effort padrao limpa so o esforco, preservando a ia escolhida', async () =
 
 test('o catalogo de modelos vem de arquivo quando existe', async () => {
   const { modelosDe, origemDoCatalogo } = await import('../../motor/tomada/catalogo.ts')
+  delete process.env.HII_MODELOS_FILE
   expect(origemDoCatalogo('claude')).toBe('semente')
   expect(modelosDe('claude')).toContain('opus')
 })

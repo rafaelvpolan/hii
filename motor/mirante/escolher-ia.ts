@@ -1,5 +1,5 @@
 import { ehEsforco, ESFORCOS, gauntletLigado } from '../tomada/preferencias.ts'
-import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor } from '../tomada/registro.ts'
+import { agentRoles, isProviderName, providerNames, providerNameFor, effortFor, modelFor } from '../tomada/registro.ts'
 import { aplicar, comoMensagem, ler, limparEsforco } from '../tomada/escolha-de-ia.ts'
 import type { Ajuste, ResultadoEscolha } from '../tomada/escolha-de-ia.ts'
 export { aplicar, ciclarModo, limpar, limparEsforco } from '../tomada/escolha-de-ia.ts'
@@ -39,6 +39,30 @@ export function interpretar(argumentos: string[]): { ajuste?: Ajuste; erro?: str
     return { erro: 'diga ao menos um: provedor, modelo= ou esforco' }
   }
   return { ajuste: { papeis: papeis.length ? papeis : agentRoles(), provider, model, effort } }
+}
+
+function indicadorDaSituacao(situacao: string): string {
+  if (situacao === 'disponivel') return '[ok]'
+  if (situacao === 'nao-autenticado') return '[login]'
+  if (situacao === 'cota-esgotada') return '[cota]'
+  if (situacao === 'ausente') return '[sem-cli]'
+  if (situacao === 'precisa-servidor') return '[servidor]'
+  return '[?]'
+}
+
+function situacaoEmPortugues(situacao: string): string {
+  if (situacao === 'disponivel') return 'disponivel'
+  if (situacao === 'nao-autenticado') return 'sem login'
+  if (situacao === 'cota-esgotada') return 'cota expirada'
+  if (situacao === 'ausente') return 'CLI ausente'
+  if (situacao === 'precisa-servidor') return 'precisa servidor'
+  return situacao
+}
+
+export function indiceNumerico(token: string | undefined, total: number): number | null {
+  if (!token || !/^\d+$/.test(token)) return null
+  const indice = Number(token) - 1
+  return indice >= 0 && indice < total ? indice : null
 }
 
 export const GAUNTLET_LIGADOS = ['on', 'ligado', 'sim', '1'] as const
@@ -99,14 +123,17 @@ function estadoDaIaInterno(): string[] {
     'nao-autenticado': 'instalado, SEM login',
     'cota-esgotada': 'instalado, cota estourada',
   }
-  for (const p of provedores) {
+  provedores.forEach((p, i) => {
     const uso = p.papeis.length ? `em uso: ${p.papeis.join(', ')}` : 'nenhum papel'
     const modelo = p.modelo ? p.modelo : 'modelo padrao do CLI'
-    linhas.push(`    ${p.nome.padEnd(largura)}  ${(rotulo[p.situacao] ?? '').padEnd(26)}  ${modelo} · ${uso}`)
+    const modelos = modelosDe(p.nome)
+    const listaDeModelos = modelos.length ? `modelos: ${modelos.join(', ')}` : `modelos: ${modelo}`
+    linhas.push(`    ${String(i + 1).padStart(2)}  ${indicadorDaSituacao(p.situacao)} ${p.nome.padEnd(largura)}  ${(rotulo[p.situacao] ?? '').padEnd(26)}  ${listaDeModelos} · ${uso}`)
     if (['ausente', 'nao-autenticado', 'cota-esgotada'].includes(p.situacao)) {
-      linhas.push(`    ${' '.repeat(largura)}  ${p.comoObter}`)
+      linhas.push(`        ${' '.repeat(largura)}  ${p.comoObter}`)
     }
-  }
+  })
+  linhas.push('', '  selecao: /ia <numero|provedor> [modelo] ou /login <numero|provedor> quando aparecer [login]')
   linhas.push('', '  papeis')
   for (const item of itensPorPapel()) linhas.push(`    ${item}`)
   return linhas
@@ -136,30 +163,47 @@ export function definirModelo(partes: string[]): ResultadoEscolha {
   return comoMensagem(() => definirModeloInterno(partes))
 }
 
+function listarModelos(provedor: string, papel: AgentRole): string {
+  const opcoes = modelosDe(provedor)
+  const estado = provedoresDisponiveis().find(p => p.nome === provedor)
+  const cabecalho = [
+    `modelos de ${provedor} (${papel})`,
+    estado ? `${indicadorDaSituacao(estado.situacao)} ${situacaoEmPortugues(estado.situacao)}` : '',
+  ].filter(Boolean).join(' · ')
+  const linhas = ['', `  ${cabecalho}`]
+  if (opcoes.length) {
+    opcoes.forEach((m, i) => linhas.push(`    ${String(i + 1).padStart(2)}  ${m}`))
+    linhas.push('', '  selecao: /model <numero|nome> · /model padrao volta ao CLI')
+  } else {
+    const atual = modelFor(papel) || 'modelo padrao do CLI'
+    linhas.push(`    modelos conhecidos: ${atual}`)
+    linhas.push(`    ${provedor} ainda nao expõe catalogo aqui — cadastre em ${arquivoDoCatalogo()} ou use /model <nome> direto`)
+  }
+  if (estado && estado.situacao !== 'disponivel') linhas.push(`    aviso: ${estado.comoObter}`)
+  return linhas.join('\n')
+}
+
 function definirModeloInterno(partes: string[]): ResultadoEscolha {
   const { papel, resto } = papelAlvo(partes)
   const provedor = providerNameFor(papel)
   const escolhido = (resto[0] ?? '').trim()
   if (!escolhido) {
-    const opcoes = modelosDe(provedor)
-    return {
-      ok: false,
-      mensagem: opcoes.length
-        ? `modelos de ${provedor}: ${opcoes.join(' · ')} — use /model <nome>`
-        : `nao conheco modelos de ${provedor} — liste em ${arquivoDoCatalogo()} ou use /model <nome> direto`,
-    }
+    return { ok: false, mensagem: listarModelos(provedor, papel) }
   }
   if (escolhido === 'padrao' || escolhido === 'reset') {
     const escrita = aplicar({ papeis: [papel], model: '' })
     if (!escrita.ok) return escrita
     return { ok: true, mensagem: `${papel}: modelo padrao de ${provedor}` }
   }
-  const conhecido = modelosDe(provedor).includes(escolhido)
-  const escrita = aplicar({ papeis: [papel], model: escolhido })
+  const opcoes = modelosDe(provedor)
+  const porNumero = indiceNumerico(escolhido, opcoes.length)
+  const modelo = porNumero === null ? escolhido : opcoes[porNumero] ?? escolhido
+  const conhecido = opcoes.includes(modelo)
+  const escrita = aplicar({ papeis: [papel], model: modelo })
   if (!escrita.ok) return escrita
   return {
     ok: true,
-    mensagem: `${papel}: ${provedor}/${escolhido}${conhecido ? '' : ' (fora do catalogo — se funcionar, adicione ao arquivo)'}`,
+    mensagem: `${papel}: ${provedor}/${modelo}${conhecido ? '' : ' (fora do catalogo — se funcionar, adicione ao arquivo)'}`,
   }
 }
 

@@ -40,6 +40,7 @@ export async function responderPergunta(
   pergunta: string,
   alvo: string,
   trocas: TrocaDeConversa[] = [],
+  sessionId = '',
 ): Promise<RespostaDePergunta> {
   const provider = providerFor('verify')
   const prompt = [
@@ -57,7 +58,9 @@ export async function responderPergunta(
     `PERGUNTA: ${pergunta}`,
   ].filter(Boolean).join('\n')
 
-  const res = await runProvider('', provider, {
+  // /ask continua sem session; uma pergunta dentro de /new usa o mesmo ledger
+  // da session HII, e cada chamada de IA vira uma entrada separada nele.
+  const res = await runProvider(sessionId, provider, {
     prompt,
     cwd: ROOT,
     dirs: existsSync(alvo) ? [alvo] : [],

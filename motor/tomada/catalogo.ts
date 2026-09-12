@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from '../cordel/alicerce/config.ts'
 import { memoArquivo } from './eco/memo.ts'
-import { modelFor, providerNameFor, agentRoles } from './registro.ts'
+import { harnessSeExistir, modelFor, providerNameFor, agentRoles } from './registro.ts'
 import type { HarnessId } from './tipos.ts'
 
 export type CatalogoDeModelos = Partial<Record<HarnessId, string[]>>
@@ -46,8 +46,9 @@ function emUso(provedor: HarnessId): string[] {
 export function modelosDe(provedor: HarnessId): string[] {
   const doArquivo = catalogo()[provedor] ?? []
   const daSemente = SEMENTE[provedor] ?? []
+  const doHarness = harnessSeExistir(provedor)?.modelosDisponiveis() ?? []
   const conhecidos = doArquivo.length ? doArquivo : daSemente
-  return [...new Set([...conhecidos, ...emUso(provedor)])]
+  return [...new Set([...conhecidos, ...doHarness, ...emUso(provedor)])]
 }
 
 export function origemDoCatalogo(provedor: HarnessId): 'arquivo' | 'semente' | 'vazio' {

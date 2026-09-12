@@ -168,6 +168,21 @@ test('provedor de nuvem cujo plano o hii sabe ler, sem tier pago, mostra (free)'
   expect(t).toContain('(free)')
 })
 
+test('o /config mostra contexto usado do Codex junto com tokens e limite', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    selecionado: 'codex',
+    provedores: [ia('codex', {
+      plano: 'plus',
+      contexto: { usadoTokens: 25840, limiteTokens: 258400, percentual: 10, medidoEm: '2026-09-12T17:59:00.000Z' },
+    })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('contexto')
+  expect(t).toContain('10.0%')
+  expect(t).toContain('25.840/258.400 tok')
+})
+
 test('REGRESSAO provedor sem leitor de plano NAO vira (free) — quem paga nao pode ser chamado de free', () => {
   const e: EstadoDaConfig = {
     ...base,
