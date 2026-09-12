@@ -52,7 +52,7 @@ interface RawVerdict {
   questions?: string[]
 }
 
-interface DiffParts {
+export interface DiffParts {
   names: string
   patch: string
   falhou?: string
@@ -78,7 +78,7 @@ function normalizeVerdict(v: string): GateVerdict {
   return 'CONDITIONAL'
 }
 
-export function extractVerdictJson(text: string): RawVerdict | null {
+export function objetosJson(text: string): string[] {
   const objs: string[] = []
   let depth = 0
   let start = -1
@@ -99,6 +99,11 @@ export function extractVerdictJson(text: string): RawVerdict | null {
       if (depth === 0 && start >= 0) { objs.push(text.slice(start, i + 1)); start = -1 }
     }
   }
+  return objs
+}
+
+export function extractVerdictJson(text: string): RawVerdict | null {
+  const objs = objetosJson(text)
   for (let k = objs.length - 1; k >= 0; k--) {
     try {
       const o = JSON.parse(objs[k] ?? '') as RawVerdict
@@ -117,7 +122,7 @@ export function timeoutForDiff(diff: DiffParts): number {
   return Math.round(clamp(GATE_TIMEOUT_MIN_MS + kb * GATE_TIMEOUT_MS_PER_KB, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MAX_MS))
 }
 
-async function accumulatedDiff(wt: string, base: string, working: boolean): Promise<DiffParts> {
+export async function accumulatedDiff(wt: string, base: string, working: boolean): Promise<DiffParts> {
   if (working) {
     const st = await stageAll(wt)
     if (st.err) return { names: '', patch: '', falhou: `git add falhou: ${primeiraLinha(st.stderr)}` }

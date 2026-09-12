@@ -64,7 +64,7 @@ test('REGRESSAO sem worktree, instrucao REFAZ em vez de virar correcao morta', a
   const c = readCard('022')
   expect(c?.fm.status).toBe('EXECUTING')
   expect(c?.fm.correction ?? '').toBe('')
-  expect(c?.body).toContain('sem worktree — refazendo do zero')
+  expect(c?.body).toContain('sem worktree — a tarefa reexecuta retomando a branch')
 })
 
 test('card sem campo de worktree tambem refaz', async () => {

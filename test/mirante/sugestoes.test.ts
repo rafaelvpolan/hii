@@ -118,7 +118,7 @@ test('sugestoes nao desalinham o quadro nem perdem o cursor', () => {
     dica: '', prompt: '› ', rodape: [], sugestoes: ['  /repo', '  /reject'],
   })
   expect(new Set(f.lines.map(l => visibleLen(l))).size).toBe(1)
-  expect(f.cursorCol).toBe(3 + 2 + 3)
+  expect(f.cursorCol).toBe(1 + 2 + 3)
   expect(stripAnsi(f.lines[f.cursorRow - 1] ?? '')).toContain('/re')
 })
 

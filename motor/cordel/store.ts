@@ -45,6 +45,22 @@ export interface CardPatch {
   apesarDaParada?: boolean
 }
 
+export interface EscritaRecusada {
+  recusada: true
+  motivo: string
+  card: Fields
+}
+
+export type ResultadoDaEscrita = Fields | EscritaRecusada | null
+
+export function foiRecusada(r: ResultadoDaEscrita): r is EscritaRecusada {
+  return r !== null && r.recusada === true
+}
+
+function motivoDaRecusa(parada: string | undefined, pedido: string | undefined): string {
+  return `card em ${parada}: mudanca de status para ${pedido} recusada — parada humana so sai por decisao humana (updateCardPorAcaoHumana)`
+}
+
 function tiraCardDaParada(antes: string | undefined, depois: string | undefined): boolean {
   return PARADAS_HUMANAS.includes(antes ?? '') && depois !== undefined && depois !== antes
 }
@@ -66,7 +82,7 @@ function motivoDaParada(linha: string | undefined): string {
   return String(linha ?? '').split('->HALTED ')[1]?.trim() ?? ''
 }
 
-export function updateCard(id: string, patch: CardPatch): Fields | null {
+export function updateCard(id: string, patch: CardPatch): ResultadoDaEscrita {
   const name = findCardFile(id)
   if (!name) return null
   const file = join(cardsDir(), name)
@@ -128,7 +144,9 @@ export function updateCard(id: string, patch: CardPatch): Fields | null {
     if (desfariaParada) nb = appendLog(nb, `${isoNow()} escrita descartada: o card esta em ${before.status} e um job em voo tentou leva-lo para ${resolvedStatus(pedidos)} — parada humana so sai por decisao humana`)
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
     if (mudouStatus) emitirEventoDeCheckpoint(id, before.status, String(resolvedFields.status))
-    return { ...fm, file: name }
+    const escrito: Fields = { ...fm, file: name }
+    if (desfariaParada) return { recusada: true, motivo: motivoDaRecusa(before.status, resolvedStatus(pedidos)), card: escrito }
+    return escrito
   })
 }
 
@@ -159,14 +177,16 @@ function semStatus(f: Fields): Fields {
 }
 
 export function updateCardPorAcaoHumana(id: string, patch: Omit<CardPatch, 'apesarDaParada'>): Fields | null {
-  return updateCard(id, { ...patch, apesarDaParada: true })
+  const r = updateCard(id, { ...patch, apesarDaParada: true })
+  if (foiRecusada(r)) throw new Error(`updateCardPorAcaoHumana recusado para #${id}: ${r.motivo}`)
+  return r
 }
 
-export function patchCard(id: string, fields: Fields, logLine?: string): void {
-  updateCard(id, { fields, log: logLine })
+export function patchCard(id: string, fields: Fields, logLine?: string): ResultadoDaEscrita {
+  return updateCard(id, { fields, log: logLine })
 }
 
-export function patchCardWith(id: string, compute: (fm: Fields) => Fields, logLine?: string | ((fm: Fields) => string)): Fields | null {
+export function patchCardWith(id: string, compute: (fm: Fields) => Fields, logLine?: string | ((fm: Fields) => string)): ResultadoDaEscrita {
   return updateCard(id, { fields: compute, log: logLine })
 }
 

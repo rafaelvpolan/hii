@@ -3,7 +3,7 @@ import { objetivoComInstrucoes } from '../../mirante/instruir.ts'
 import { isoNow } from '../../cordel/index.ts'
 import { maxReajuste } from '../../cordel/alicerce/config.ts'
 import { readCard, patchCard, repoPath, repoBase } from '../../cordel/store.ts'
-import { ensureWorktree, runGit, stageAll, worktreePath } from '../../quilombo/git.ts'
+import { ensureWorktree, runGit, stageAll, worktreePath, descreverOrigem } from '../../quilombo/git.ts'
 import { runStep } from '../../ciclo/agente.ts'
 import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { openspecAvailable, initOpenspec, validateChange } from './openspec.ts'
@@ -51,7 +51,7 @@ export async function handleSpec(id: string, deps: SpecDeps = DEPS_PADRAO): Prom
   patchCard(id, { branch, worktree: wt }, `${isoNow()} SPECCED: preparando worktree para o spec`)
   try {
     const info = await deps.ensureWorktree(target, wt, branch, base)
-    patchCard(id, { base_commit: info.baseCommit }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}`)
+    patchCard(id, { base_commit: info.baseCommit }, `${isoNow()} base: ${descreverOrigem(info, base, branch)}`)
   } catch (e) {
     patchCard(id, { status: 'HALTED', halt_class: 'excecao' }, `${isoNow()} SPECCED->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
     return

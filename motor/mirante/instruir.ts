@@ -4,7 +4,7 @@ import { isoNow } from '../cordel/util.ts'
 import { existsSync } from 'node:fs'
 import type { Fields } from '../cordel/tipos.ts'
 
-const TERMINAIS = ['MERGED', 'DEPLOYED']
+export const TERMINAIS = ['MERGED', 'DEPLOYED']
 const ANTES_DE_EXECUTAR = ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED']
 const TITULO = '## Instrucoes'
 
@@ -89,7 +89,7 @@ export function instruir(id: string, texto: string): ResultadoInstrucao {
     fields: destino,
     body: body => anexarSubPrompt(body, limpo),
     log: refaz
-      ? `${isoNow()} instrucao ${numero} (sem worktree — refazendo do zero): ${limpo.slice(0, 100)}`
+      ? `${isoNow()} instrucao ${numero} (sem worktree — a tarefa reexecuta retomando a branch): ${limpo.slice(0, 100)}`
       : `${isoNow()} instrucao ${numero}: ${limpo.slice(0, 120)}`,
   })
   if (!r) return { ...vazio, reason: `nao consegui escrever em #${id}` }
