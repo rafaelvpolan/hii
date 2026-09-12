@@ -120,7 +120,7 @@ export async function runGatedStep(id: string, wt: string, base: string, alvo: s
     const tGate = Date.now()
     anexarEvento({ card: id, evento: 'gate_start', fase: label, detalhe: 'crivo' })
     const gate = await review(id, wt, base, `${desc} — etapa "${label}" (${agent})`, label, deps.runGatedReview)
-    anexarEvento({ card: id, evento: 'gate_verdict', fase: label, detalhe: gate.ok ? gate.verdict : `NAO EXECUTOU: ${gate.reason}` })
+    anexarEvento({ card: id, evento: 'gate_verdict', fase: label, detalhe: gate.ok ? gate.verdict : `NAO EXECUTOU: ${gate.reason}`, resultado: gate.reason.slice(0, 200) })
     tempoNoGate += Math.round((Date.now() - tGate) / 1000)
     custoDoGate += gate.cost
     medidoNoGate = medidoNoGate && gate.costMeasured

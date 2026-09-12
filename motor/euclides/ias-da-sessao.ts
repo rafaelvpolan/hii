@@ -127,6 +127,17 @@ function normalizar(cru: LinhaCrua): ChamadaDeIa {
   }
 }
 
+export function sessoesDoCard(card: string): string[] {
+  const dir = join(cardsDir(), 'runs')
+  if (!card || !existsSync(dir)) return []
+  const sufixo = '.ias.jsonl'
+  return readdirSync(dir).filter(f => f.startsWith(`${card}-`) && f.endsWith(sufixo)).sort().map(f => f.slice(0, -sufixo.length))
+}
+
+export function chamadasDoCard(card: string): ChamadaDeIa[] {
+  return sessoesDoCard(card).flatMap(chamadasDaSessao)
+}
+
 export function chamadasDaSessao(sessao: string): ChamadaDeIa[] {
   const arquivo = arquivoDoLedger(sessao)
   if (!sessao || !existsSync(arquivo)) return []
