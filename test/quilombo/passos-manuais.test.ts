@@ -130,15 +130,26 @@ test('pedido de passo roda SO ele e volta a pausar, com o ID em pipeline_feitos 
   expect(c?.body).toContain('pipeline completo')
 }, TEMPO_COM_GIT_MS)
 
-test('pedido de passo fora do plano volta a PAUSED com o motivo, sem gastar nada', async () => {
+test('pedido explicito de passo JA PAGO roda de novo, avisa na resposta e no diario, e nao duplica o ledger', async () => {
   const { id } = await cardPronto({ pipeline_feitos: 'Arquitetura,Testes,Seguranca,Limpeza' })
   const pedido = pedirPassoManual(id, 'limpeza')
-  expect(pedido.ok, 'o id existe no pipeline — quem recusa e o plano do card').toBe(true)
-  await handleFinish(id, agenteQueNaoDeveRodar)
+  expect(pedido.ok).toBe(true)
+  expect(pedido.mensagem).toContain('ja rodou nesta rodada')
+  const agentes: string[] = []
+  const deps: FinishDeps = {
+    runStep: (_wt: string, agent: string) => {
+      agentes.push(agent)
+      return Promise.resolve({ ok: true, time: 1, cost: 0.001, tokens: 10, costMeasured: true, text: 'ok' })
+    },
+    runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_APROVADO),
+  }
+  await handleFinish(id, deps)
   const c = readCard(id)
+  expect(agentes, 'o pedido explicito do humano vence o ledger').toEqual(['pura'])
   expect(c?.fm.status).toBe('PAUSED')
   expect(c?.fm.pipeline_passo).toBe('')
-  expect(c?.body).toContain('nao esta no plano deste card')
+  expect(c?.body).toContain('ja rodou nesta rodada — rodando de novo a pedido do humano')
+  expect(c?.fm.pipeline_feitos).toBe('Arquitetura,Testes,Seguranca,Limpeza')
 }, TEMPO_COM_GIT_MS)
 
 test('suite liberada com todos os passos feitos vai ao fecho (PR_OPEN) e limpa os marcadores', async () => {
@@ -163,15 +174,28 @@ test('suite liberada com todos os passos feitos vai ao fecho (PR_OPEN) e limpa o
   expect(c?.fm.pipeline_passo).toBe('')
 }, TEMPO_COM_GIT_MS)
 
-test('passo unico VENCE a liberacao que ficou gravada: roda so ele, limpa pipeline_liberado e pausa', async () => {
+test('pedido de passo unico LIMPA a liberacao grudada no proprio pedido — o cartorio nao deixa o campo para o fecho decidir', async () => {
   const { id } = await cardPronto({
-    status: 'PAUSED',
+    status: 'HALTED',
     pipeline_pausa: 'manual',
     pipeline_liberado: 'true',
-    pipeline_feitos: 'arquitetura,testes,Seguranca',
+    pipeline_feitos: 'arquitetura,testes,seguranca',
   })
   const pedido = pedirPassoManual(id, 'limpeza')
   expect(pedido.ok).toBe(true)
+  const c = readCard(id)
+  expect(c?.fm.status).toBe('URL_OK')
+  expect(c?.fm.pipeline_passo).toBe('limpeza')
+  expect(c?.fm.pipeline_liberado, 'a suite HALTou no build e deixou a liberacao gravada; o /limpeza seguinte tem de apaga-la').toBe('')
+}, TEMPO_COM_GIT_MS)
+
+test('passo unico VENCE a liberacao que ficou gravada sem passar pelo cartorio: roda so ele, limpa pipeline_liberado e pausa', async () => {
+  const { id } = await cardPronto({
+    pipeline_pausa: 'manual',
+    pipeline_liberado: 'true',
+    pipeline_passo: 'limpeza',
+    pipeline_feitos: 'arquitetura,testes,Seguranca',
+  })
 
   const agentes: string[] = []
   const deps: FinishDeps = {
@@ -189,15 +213,44 @@ test('passo unico VENCE a liberacao que ficou gravada: roda so ele, limpa pipeli
   expect(c?.body).toContain('vence a liberacao')
 }, TEMPO_COM_GIT_MS)
 
-test('pedido manual limpa resume_from — replay velho nao recusa o passo pedido', async () => {
+test('pedido manual limpa resume_from — o replay velho de um HALT pos-passos nao faz o fecho recusar o passo pedido', async () => {
   const { id } = await cardPronto({
-    status: 'PAUSED',
+    status: 'HALTED',
     pipeline_pausa: 'manual',
+    pipeline_feitos: 'arquitetura,testes,seguranca',
     resume_from: '__apos_passos__',
   })
-  const pedido = pedirPassoManual(id, 'arquitetura')
+  const pedido = pedirPassoManual(id, 'limpeza')
   expect(pedido.ok).toBe(true)
   expect(String(readCard(id)?.fm.resume_from ?? ''), 'com o resume_from velho, o fecho fatiava os passos e respondia "nao esta no plano"').toBe('')
+
+  const agentes: string[] = []
+  const deps: FinishDeps = {
+    runStep: (_wt: string, agent: string) => {
+      agentes.push(agent)
+      return Promise.resolve({ ok: true, time: 1, cost: 0.001, tokens: 10, costMeasured: true, text: 'limpo' })
+    },
+    runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_APROVADO),
+  }
+  await handleFinish(id, deps)
+  const c = readCard(id)
+  expect(agentes).toEqual(['pura'])
+  expect(c?.fm.status).toBe('PAUSED')
+  expect(c?.body).not.toContain('nao esta no plano')
+  expect(c?.fm.pipeline_feitos).toBe('arquitetura,testes,seguranca,limpeza')
+}, TEMPO_COM_GIT_MS)
+
+test('suite pedida com resume_from velho tambem parte limpa e roda o que falta', async () => {
+  const { id } = await cardPronto({
+    status: 'HALTED',
+    pipeline_pausa: 'manual',
+    pipeline_feitos: 'arquitetura,testes,seguranca',
+    resume_from: 'Testes',
+  })
+  const suite = pedirSuiteManual(id)
+  expect(suite.ok).toBe(true)
+  expect(suite.mensagem).toContain('[limpeza]')
+  expect(String(readCard(id)?.fm.resume_from ?? '')).toBe('')
 }, TEMPO_COM_GIT_MS)
 
 test('modo automatico (pipeline: auto no card) NAO pausa — vai direto ao fecho como antes', async () => {

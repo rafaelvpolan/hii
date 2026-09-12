@@ -110,3 +110,10 @@ export const CANTO = {
   horizontal: '─',
   vertical: '│',
 } as const
+
+const DIM = '\x1b[2m'
+
+export function esmaecer(texto: string, o: OpcoesTinta): string {
+  if (!o.color || !texto) return texto
+  return `${DIM}${texto.split(RESET).join(RESET + DIM)}${RESET}`
+}

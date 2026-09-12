@@ -23,6 +23,8 @@ export interface AgentRequest {
   liveLog?: string
   extraTools?: string[]
   agentsJson?: string
+  aoIniciar?: (pid: number) => void
+  rotulo?: string
 }
 
 export interface AgentResult {

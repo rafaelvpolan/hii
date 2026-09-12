@@ -10,7 +10,7 @@ import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
 import { decisaoDoEval, evaluate } from '../ciclo/crivo/avaliar.ts'
 import { readCard, patchCard, repoPath, repoBase } from '../cordel/store.ts'
-import { ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
+import { descreverOrigem, ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
 import type { WorktreeFate } from '../quilombo/git.ts'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../ciclo/crivo/url-viva.ts'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './rota/superficie.ts'
@@ -24,6 +24,7 @@ import { abrirSessao } from '../euclides/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
 import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
+import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 
 export interface ExecuteDeps {
   implement: typeof implement
@@ -31,6 +32,7 @@ export interface ExecuteDeps {
   inspecionar?: typeof inspectUrl
   avaliar?: typeof evaluate
   rota?: typeof decidirRota
+  conferir?: typeof conferirInstrucoes
 }
 
 interface ExecuteSteps {
@@ -157,9 +159,12 @@ export async function tocadosNoWorktree(wt: string): Promise<string[]> {
 async function commitAndRecord(id: string, wt: string, card: Card, steps: ExecuteSteps, res: ImplementResult, t0: number): Promise<{ costSum: number; tokensTotal: number }> {
   const tf = Date.now()
   await stageAll(wt)
-  const cm = await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', `feat: ${card.fm.title ?? ''} (#${id})`])
-  if (cm.err && !/nothing to commit|nada a submeter/i.test(String(cm.stdout || cm.stderr || ''))) {
-    throw new Error(`commit da implementacao falhou: ${String(cm.stderr || cm.stdout || '').split('\n')[0] ?? ''}`)
+  const staged = (await runGit(wt, ['diff', '--cached', '--name-only'])).stdout.trim()
+  if (staged) {
+    const cm = await runGit(wt, ['-c', 'commit.gpgsign=false', 'commit', '-m', `feat: ${card.fm.title ?? ''} (#${id})`])
+    if (cm.err) throw new Error(`commit da implementacao falhou: ${String(cm.stderr || cm.stdout || '').split('\n')[0] ?? ''}`)
+  } else {
+    patchCard(id, {}, `${isoNow()} nada a commitar: o agente nao alterou arquivo rastreado`)
   }
   steps.Feito.time = toSeconds(Date.now() - tf)
   const costSum = steps.Executando.cost + steps.Url.cost
@@ -173,7 +178,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   abrirSessao(id)
   const gastoLido = gastoDoCard(card.fm.cost_usd)
   if (gastoLido === null) {
-    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} EXECUTING->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a (re)execucao paga sem saber o que o card ja custou`)
+    const motivo = `cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — "gastou 0" liberaria a (re)execucao paga sem saber o que o card ja custou`
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
   const baseCost = gastoLido
@@ -182,7 +188,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const tempoAcumulado = (): string => String(baseTempo + sumStepTime(asStepMap(steps)))
   const teto = tetoDoCard()
   if (teto > 0 && baseCost > teto) {
-    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} EXECUTING->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`)
+    const motivo = `orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes de (re)executar — decida se continua`
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -192,7 +199,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const slug = card.fm.slug ?? ''
   const target = repoPath(repoName)
   if (!existsSync(target)) {
-    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} EXECUTING->HALTED repo nao encontrado: ${target}`)
+    const motivo = `repo nao encontrado: ${target}`
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
   const surface = resolveSurface(card, target)
@@ -264,16 +272,18 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       await runGit(wt, ['clean', '-fd', '-e', 'node_modules'])
       const up = await refreshFromBase(wt, base)
       if (!up.ok) {
-        patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} EXECUTING->HALTED nao consegui partir de ${base} atualizado: ${up.detail}`)
+        const motivo = `nao consegui partir de ${base} atualizado: ${up.detail}`
+        patchCard(id, { status: 'HALTED', halt_class: 'terminal', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
         return
       }
       patchCard(id, {}, `${isoNow()} base: ${up.detail} (worktree reaproveitado — o trabalho ja commitado foi mantido)`)
     } else {
-      const info = await ensureWorktree(target, wt, branch, base)
-      patchCard(id, { base_commit: info.baseCommit, refazer: '' }, `${isoNow()} base: branch criada de origin/${base}@${info.baseCommit}${refazerDoZero ? ' (refazendo do zero, a pedido)' : ''}`)
+      const info = await ensureWorktree(target, wt, branch, base, { refazerDoZero })
+      patchCard(id, { base_commit: info.baseCommit, refazer: '' }, `${isoNow()} base: ${descreverOrigem(info, base, branch)}${refazerDoZero ? ' (refazendo do zero, a pedido)' : ''}`)
     }
   } catch (e) {
-    patchCard(id, { status: 'HALTED', halt_class: 'excecao' }, `${isoNow()} EXECUTING->HALTED ${String((e as Error)?.message ?? e).slice(0, 140)}`)
+    const motivo = String((e as Error)?.message ?? e).slice(0, 140)
+    patchCard(id, { status: 'HALTED', halt_class: 'excecao', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
   process.stdout.write(`[runner] #${id}: implementando em worktree ${wt}\n`)
@@ -364,9 +374,11 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       failureClass: 'terminal',
       failureReason: `escreveu fora do escopo: ${violou.slice(0, 10).join(', ')}`,
     }, toSeconds(Date.now() - t0), asStepMap(steps))
+    const motivo = `o agente escreveu FORA do escopo: ${violou.join(', ')} — o pedido marcou esses caminhos como referencia (${escopo.motivo}). O worktree fica para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`
     patchCard(id, {
       status: 'HALTED',
       halt_class: 'escopo',
+      halt_reason: motivo,
       // Teto: `escopo_violado` vai para o frontmatter numa linha so. Sem limite, uma
       // violacao em massa (diretorio inteiro) tornaria o card ilegivel.
       escopo_violado: violou.slice(0, 20).join(',') + (violou.length > 20 ? ` +${violou.length - 20}` : ''),
@@ -374,7 +386,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       tokens_total: String(baseTokens + auxTokens + rec.tokens_total),
       tempo_s: tempoAcumulado(),
     },
-      `${isoNow()} EXECUTING->HALTED o agente escreveu FORA do escopo: ${violou.join(', ')} — o pedido marcou esses caminhos como referencia (${escopo.motivo}). O worktree fica para inspecao; se a escrita ali era legitima, diga no pedido que o caminho tambem e alvo`)
+      `${isoNow()} EXECUTING->HALTED ${motivo}`)
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
@@ -390,6 +402,11 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       tempo_s: tempoAcumulado(),
     }, `${isoNow()} EXECUTING->URL sem url — tarefa nao-visual (${surface.reason}); aprovacao de funcionalidade e sua`)
     process.stdout.write(`[runner] #${id}: aguardando aprovacao de funcionalidade (nao-visual)\n`)
+    const pendencias = await encaminharInstrucoesPendentes(id, wt, base, deps.conferir ?? conferirInstrucoes)
+    if (pendencias.cost || pendencias.tokens) {
+      const total = baseCost + costSum + auxCost + pendencias.cost
+      patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens + pendencias.tokens) }, `${isoNow()} custo atualizado (conferencia das instrucoes): $${total.toFixed(4)}`)
+    }
     return
   }
   const tpv = Date.now()
@@ -476,8 +493,25 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     }
     process.stdout.write(`[runner] #${id}: eval ${e.score}/5\n`)
   }
+  const pendencias = await encaminharInstrucoesPendentes(id, wt, base, deps.conferir ?? conferirInstrucoes)
+  auxCost += pendencias.cost
+  auxTokens += pendencias.tokens
   if (auxCost !== auxAtUrl) {
     const total = baseCost + costSum + auxCost
     patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens), tempo_s: tempoAcumulado() }, `${isoNow()} custo atualizado (verificacao/eval): $${total.toFixed(4)}`)
   }
+}
+
+async function encaminharInstrucoesPendentes(id: string, wt: string, base: string, conferir: typeof conferirInstrucoes): Promise<{ cost: number; tokens: number }> {
+  const card = readCard(id)
+  if (!card || card.fm.status !== 'URL') return { cost: 0, tokens: 0 }
+  const pendentes = pendentesDoCard(card)
+  if (!pendentes.length) return { cost: 0, tokens: 0 }
+  const conferencia = await conferir(id, wt, base, pendentes)
+  const registro = registrarConferencia(id, conferencia)
+  if (registro.conclusiva && registro.faltam.length) {
+    patchCard(id, { status: 'CORRECTING', correction: '' }, `${isoNow()} URL->CORRECTING instrução(ões) ${registro.faltam.map(f => `#${f.numero}`).join(', ')} ainda não atendida(s) — seguindo com elas antes de te chamar`)
+    process.stdout.write(`[runner] #${id}: instrucoes pendentes ${registro.faltam.map(f => `#${f.numero}`).join(', ')} — voltando a CORRECTING\n`)
+  }
+  return { cost: conferencia.cost, tokens: conferencia.tokens }
 }

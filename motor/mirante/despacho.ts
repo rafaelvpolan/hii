@@ -15,7 +15,7 @@ import { comandosDaIaAtiva } from '../tomada/mapa/comandos.ts'
 import type { AgentRole, HarnessId } from '../tomada/tipos.ts'
 import { pendencia, responder } from './responder.ts'
 import { renderPergunta } from './render/clarify.ts'
-import { instruir } from './instruir.ts'
+import { instruir, TERMINAIS } from './instruir.ts'
 import { renderHelp } from './render/help.ts'
 import { esperandoVoce } from './render/rodape.ts'
 import { newSession, seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './sessao.ts'
@@ -197,7 +197,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const r = instruir(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
       const nota = r.refaz
-        ? ' — o worktree tinha sumido, entao a tarefa vai refazer do zero com ela'
+        ? ' — o worktree tinha sumido; a tarefa reexecuta retomando a branch com ela'
         : r.reexecuta ? ' — a tarefa vai reexecutar com ela' : ''
       io.log(`instrucao ${r.numero} anotada em #${id}${nota}`)
       return state
@@ -327,6 +327,24 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       const c = comandoManual(effect.raw ?? '')
       if (!c) { io.log(`atalho desconhecido: ${String(effect.raw)}`); return state }
       const extras = camposDoIntake({ comando: c.nome, packs: c.packs, texto, layout: c.ligaLayout === true, steps: c.steps ?? '' })
+      // Com tarefa ABERTA o atalho e um perfil para ELA, nao um pedido de card novo:
+      // o card 006 nasceu de um `/hii-design ...` digitado dentro do #005, quando a
+      // pessoa queria o gate de design naquele mesmo card. Perfil e texto seguem
+      // pelo mesmo caminho que qualquer instrucao humana; so o card ja entregue
+      // (MERGED/DEPLOYED) cai no caminho de sempre e vira tarefa nova.
+      const aberto = state.seguindo ? readCard(state.seguindo) : null
+      if (aberto && !TERMINAIS.includes(aberto.fm.status ?? '')) {
+        const alvo = state.seguindo
+        const perfil = [`passos=${c.steps || 'padrao'}`, c.ligaLayout ? 'layout=on' : '', `packs=${c.packs.join(',')}`].filter(Boolean).join(' · ')
+        patchCard(alvo, extras, `${isoNow()} perfil ${c.nome} aplicado pelo humano na tarefa aberta: ${perfil}`)
+        const r = instruir(alvo, texto)
+        if (!r.ok) { io.log(r.reason); return state }
+        const nota = r.refaz
+          ? ' — o worktree tinha sumido; a tarefa reexecuta retomando a branch com ela'
+          : r.reexecuta ? ' — a tarefa vai reexecutar com ela' : ''
+        io.log(`perfil ${c.nome} aplicado em #${alvo} (${perfil}) — instrucao ${r.numero} anotada${nota}`)
+        return state
+      }
       const novo = await criarCardEEnfileirar(texto, state, io, extras)
       if (novo !== state) io.log(`  conhecimento pre-carregado: ${c.packs.join(', ')}`)
       return novo

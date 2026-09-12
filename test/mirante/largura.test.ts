@@ -189,8 +189,8 @@ test('REGRESSAO renderFrame com moldura e legenda em CJK segue alinhado', () => 
 })
 
 const CAMPO = { rows: 12, cols: 40, header: 'hii', corpo: [], dica: '', prompt: '› ', rodape: [] }
-const RECUO_SEM_MOLDURA = 3
-const RECUO_COM_MOLDURA = 5
+const RECUO_SEM_MOLDURA = 1
+const RECUO_COM_MOLDURA = 3
 const PROMPT_EM_COLUNAS = 2
 
 test('REGRESSAO cursorCol e coluna de terminal, nao indice de code unit UTF-16', () => {

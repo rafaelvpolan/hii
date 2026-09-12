@@ -20,8 +20,34 @@ interface StreamPart {
   type: string
   text?: string
   name?: string
+  id?: string
+  tool_use_id?: string
   input?: object
   content?: string | object
+}
+
+const FERRAMENTAS_DE_IA = ['Task']
+const LIMITE_DA_RESPOSTA_DE_IA = 4000
+
+export function cabecalhoDaChamada(ts: string, rotulo = ''): string {
+  return `— chamada em ${ts}${rotulo ? ` · ${rotulo}` : ''} —`
+}
+
+function textoDoResultado(content: string | object | undefined): string {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) {
+    return content
+      .map(parte => (parte && typeof parte === 'object' && 'text' in parte && typeof (parte as { text?: string }).text === 'string' ? (parte as { text: string }).text : ''))
+      .filter(Boolean)
+      .join('\n')
+  }
+  try { return JSON.stringify(content ?? '') } catch { return '' }
+}
+
+export function respostaDeIa(content: string | object | undefined, ferramenta: string): string[] {
+  const texto = textoDoResultado(content).trim()
+  const cortado = texto.length > LIMITE_DA_RESPOSTA_DE_IA ? texto.slice(0, LIMITE_DA_RESPOSTA_DE_IA) + '…' : texto
+  return [`  ← ${ferramenta} respondeu:`, ...cortado.split('\n')]
 }
 
 interface StreamEvent {
@@ -53,19 +79,26 @@ function short(v: object | string | undefined): string {
   }
 }
 
-function renderEvent(ev: StreamEvent): string {
+export function renderEvent(ev: StreamEvent, ferramentasEmVoo: Map<string, string> = new Map()): string {
   if (ev.type === 'system' && ev.subtype === 'init') return `— sessao iniciada${ev.model ? ' (' + ev.model + ')' : ''} —`
   if (ev.type === 'assistant' && ev.message?.content) {
     const parts: string[] = []
     for (const c of ev.message.content) {
       if (c.type === 'text' && c.text) parts.push(c.text.trim())
-      else if (c.type === 'tool_use') parts.push(`  → ${c.name || 'tool'}(${short(c.input)})`)
+      else if (c.type === 'tool_use') {
+        if (c.id) ferramentasEmVoo.set(c.id, c.name || 'tool')
+        parts.push(`  → ${c.name || 'tool'}(${short(c.input)})`)
+      }
     }
     return parts.filter(Boolean).join('\n')
   }
   if (ev.type === 'user' && ev.message?.content) {
     for (const c of ev.message.content) {
-      if (c.type === 'tool_result') return `  ← ${short(c.content).replace(/\s+/g, ' ')}`
+      if (c.type !== 'tool_result') continue
+      const ferramenta = c.tool_use_id ? ferramentasEmVoo.get(c.tool_use_id) ?? '' : ''
+      if (c.tool_use_id) ferramentasEmVoo.delete(c.tool_use_id)
+      if (FERRAMENTAS_DE_IA.includes(ferramenta)) return respostaDeIa(c.content, ferramenta).join('\n')
+      return `  ← ${short(c.content).replace(/\s+/g, ' ')}`
     }
   }
   if (ev.type === 'result') return `— concluido (custo $${(Number(ev.total_cost_usd) || 0).toFixed(4)}) —`
@@ -94,7 +127,8 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
   const write = (s: string): void => { try { appendFileSync(liveLog, s) } catch { void 0 } }
-  write(`\n— chamada em ${new Date().toISOString().replace(/\.\d+Z$/, 'Z')} —\n`)
+  write(`\n${cabecalhoDaChamada(new Date().toISOString().replace(/\.\d+Z$/, 'Z'), req.rotulo)}\n`)
+  const ferramentasEmVoo = new Map<string, string>()
 
   return new Promise<AgentResult>((resolve) => {
     let text = ''
@@ -109,6 +143,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
     let hard: ReturnType<typeof setTimeout> | null = null
 
     const child = spawn('claude', argvStream(req), { cwd: req.cwd, env: { ...process.env, ...NONINTERACTIVE_ENV }, stdio: ['ignore', 'pipe', 'pipe'] })
+    if (child.pid) req.aoIniciar?.(child.pid)
 
     const soft = setTimeout(() => {
       timedOut = true
@@ -129,7 +164,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       if (!line.trim()) return
       try {
         const ev = JSON.parse(line) as StreamEvent
-        const human = renderEvent(ev)
+        const human = renderEvent(ev, ferramentasEmVoo)
         if (human) write(human + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {
           for (const c of ev.message.content) if (c.type === 'text' && c.text) assistantText = c.text

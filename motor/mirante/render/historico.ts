@@ -14,6 +14,17 @@ export interface OpcoesDoHistorico {
 }
 
 const CABECALHO = 'historico de sessoes'
+const LARGURA_PADRAO = 78
+const MARGEM_DIREITA = 2
+const MODELO_MINIMO = 22
+const FIXO_DA_SESSAO = 54
+const MODELO_DA_IA_MINIMO = 24
+const FIXO_DA_IA = 31
+const MOTIVO_MAXIMO = 40
+
+function larguraDaLinha(o: OpcoesDoHistorico): number {
+  return Math.max(MODELO_MINIMO + FIXO_DA_SESSAO, (o.width ?? LARGURA_PADRAO) - MARGEM_DIREITA)
+}
 
 function tinta(texto: string, nome: Tom, o: OpcoesDoHistorico): string {
   return pintar(texto, nome, { color: o.color !== false })
@@ -77,29 +88,33 @@ function modeloCurto(s: Sessao): string {
 function linhaDaSessao(s: Sessao, o: OpcoesDoHistorico, agoraMs: number): string {
   const marca = o.selecionado === chaveDaSessao(s) ? tinta('▸', 'destaque', o) : ' '
   const sinal = s.ok ? tinta('✓', 'sucesso', o) : tinta('✗', 'falha', o)
+  const motivo = s.ok || !s.motivoDaFalha ? '' : s.motivoDaFalha.slice(0, MOTIVO_MAXIMO)
+  const descontoDoMotivo = motivo ? 2 + larguraDeTexto(motivo) : 0
+  const larguraDoModelo = Math.max(MODELO_MINIMO, larguraDaLinha(o) - FIXO_DA_SESSAO - descontoDoMotivo)
   const partes = [
     marca,
     pad(tinta(idCurto(idDaSessao(s)), 'destaque', o), 4),
     pad(tinta(quando(s.concluidoEmMs, agoraMs), 'apagado', o), 12),
     pad(tinta(s.tipo === 'conversa' ? 'chat' : `#${s.card}`, 'texto', o), 5),
     sinal,
-    pad(tinta(modeloCurto(s), 'apagado', o), 22),
+    pad(tinta(modeloCurto(s), 'apagado', o), larguraDoModelo),
     padEsq(tinta(duracao(s.duracaoS), 'texto', o), 7),
     padEsq(tinta(custo(s.custoUsd), 'custo', o), 9),
     padEsq(tinta(tokens(s.tokens), 'apagado', o), 6),
   ]
   const base = ' ' + partes.join(' ')
-  if (s.ok || !s.motivoDaFalha) return base
-  return `${base}  ${tinta(s.motivoDaFalha.slice(0, 40), 'falha', o)}`
+  if (!motivo) return base
+  return `${base}  ${tinta(motivo, 'falha', o)}`
 }
 
 function iaDaSessao(ia: IaDaSessao, o: OpcoesDoHistorico): string {
   const modelo = ia.modelo ? `${ia.provedor}/${ia.modelo}` : ia.provedor
   const repetida = ia.chamadas > 1 ? ` ×${ia.chamadas}` : ''
   const piso = ia.custoMedido ? '' : tinta(' piso', 'atencao', o)
+  const larguraDoModelo = Math.max(MODELO_DA_IA_MINIMO, larguraDaLinha(o) - FIXO_DA_IA)
   return '      '
     + pad(tinta(ia.rotulo, 'texto', o), 9)
-    + pad(tinta(modelo + repetida, 'apagado', o), 24)
+    + pad(tinta(modelo + repetida, 'apagado', o), larguraDoModelo)
     + padEsq(tinta(tokens(ia.tokens), 'apagado', o), 6)
     + padEsq(tinta(custo(ia.custoUsd), 'custo', o), 10)
     + piso

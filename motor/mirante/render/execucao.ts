@@ -9,13 +9,18 @@ const CIANO = '\x1b[36m'
 
 export interface OpcoesExecucao {
   color: boolean
+  largura: number
 }
 
-const PADRAO: OpcoesExecucao = { color: false }
+const PADRAO: OpcoesExecucao = { color: false, largura: 78 }
 
 const BULLET = '●'
 const RAMO = '⎿'
-const MARCO = '◇'
+const CALHA = '┃'
+const INICIO_DE_BLOCO = '▶'
+const FIM_DE_BLOCO = '■'
+const FALHA_DE_BLOCO = '✕'
+const TRACO = '─'
 const LIMITE_RESULTADO = 160
 
 function paint(s: string, cor: string, o: OpcoesExecucao): string {
@@ -51,19 +56,27 @@ function linhaDoResultado(a: Atividade, o: OpcoesExecucao): string[] {
 }
 
 function prosa(a: Atividade, o: OpcoesExecucao): string[] {
-  const linhas = a.alvo.split('\n')
-  const primeira = `${paint(BULLET, CIANO, o)} ${linhas[0] ?? ''}`
-  return [primeira, ...linhas.slice(1).map(l => `  ${l}`)]
+  const calha = paint(CALHA, CIANO, o)
+  return a.alvo.split('\n').map(l => `${calha} ${l}`)
+}
+
+export function separador(marca: string, texto: string, largura: number, cor: string, o: OpcoesExecucao): string {
+  const miolo = ` ${marca} ${texto} `
+  const sobra = Math.max(2, largura - 2 - miolo.length)
+  return paint(`${TRACO}${TRACO}${miolo}${TRACO.repeat(sobra)}`, cor, o)
+}
+
+function horaDe(ts: string): string {
+  return ts.includes('T') ? (ts.split('T')[1] ?? '').replace('Z', '') : ''
 }
 
 function marco(a: Atividade, o: OpcoesExecucao): string[] {
-  if (a.nome === 'timeout') return [`${paint(MARCO, VERMELHO, o)} ${paint('TIMEOUT — a IA foi encerrada', VERMELHO, o)}`]
+  if (a.nome === 'timeout') return [separador(FALHA_DE_BLOCO, 'TIMEOUT — a IA foi encerrada', o.largura, VERMELHO, o)]
   if (a.tipo === 'sessao') {
-    const hora = a.ts.includes('T') ? (a.ts.split('T')[1] ?? '').replace('Z', '') : ''
-    const rotulo = [a.alvo || 'sessao iniciada', hora].filter(Boolean).join(' · ')
-    return [`${paint(MARCO, DIM, o)} ${paint(rotulo, DIM, o)}`]
+    const partes = ['IA', a.args || '', a.alvo || 'sessao iniciada', horaDe(a.ts)].filter(Boolean)
+    return ['', separador(INICIO_DE_BLOCO, partes.join(' · '), o.largura, CIANO, o)]
   }
-  return [`${paint(MARCO, VERDE, o)} ${paint(`concluido ${a.alvo}`, DIM, o)}`]
+  return [separador(FIM_DE_BLOCO, `concluido · ${a.alvo}`, o.largura, VERDE, o)]
 }
 
 export function linhasDaAtividade(a: Atividade, opts: Partial<OpcoesExecucao> = {}): string[] {

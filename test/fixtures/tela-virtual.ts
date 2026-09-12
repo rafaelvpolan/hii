@@ -8,7 +8,7 @@ function fimDoOsc(bruto: string, i: number): number {
   return bruto.length
 }
 
-export function telaVirtual(saida: string[]): string {
+export function telaVirtual(saida: string[], cols = Infinity): string {
   const bruto = saida.join('')
   const linhas: string[] = []
   let linha = 0
@@ -18,7 +18,7 @@ export function telaVirtual(saida: string[]): string {
     const atual = linhas[linha] ?? ''
     const preenchida = atual.length < coluna ? atual.padEnd(coluna, ' ') : atual
     linhas[linha] = preenchida.slice(0, coluna) + c + preenchida.slice(coluna + 1)
-    coluna += 1
+    coluna = Math.min(coluna + 1, cols - 1)
   }
 
   let i = 0

@@ -1,5 +1,5 @@
 import { test, expect } from '../apoio/runner.ts'
-import { etiquetaDoProjeto, corDoProjeto, nomeCurto, CORES_DE_PROJETO } from '../../motor/mirante/render/projeto.ts'
+import { etiquetaDoProjeto, corDoProjeto, nomeCurto, tintaDoProjeto, CORES_DE_PROJETO, TONS_SUAVES_DE_PROJETO } from '../../motor/mirante/render/projeto.ts'
 import { renderFrame, stripAnsi, visibleLen } from '../../motor/mirante/tui/layout.ts'
 import { CANTO } from '../../motor/mirante/tui/paleta.ts'
 
@@ -91,4 +91,24 @@ test('input multilinha cabe dentro do quadro', () => {
   const texto = f.lines.map(stripAnsi)
   expect(texto.filter(l => l.includes('um') || l.includes('dois')).every(l => l.trimStart().startsWith('│'))).toBe(true)
   expect(new Set(f.lines.map(l => visibleLen(l))).size).toBe(1)
+})
+
+test('a tinta suave do projeto e um tom acinzentado em truecolor e cai para a cor basica sem profundidade', () => {
+  const suave = tintaDoProjeto('org/site', 2, { color: true, profundidade: 'truecolor' })
+  const tom = TONS_SUAVES_DE_PROJETO[2]
+  expect(suave).toBe(`\x1b[38;2;${tom?.r};${tom?.g};${tom?.b}m`)
+  expect(tintaDoProjeto('org/site', 2, { color: true, profundidade: 'truecolor' })).toBe(suave)
+  expect(tintaDoProjeto('org/site', 2, { color: true, profundidade: 'basico' })).toBe(corDoProjeto('org/site', 2))
+  expect(tintaDoProjeto('org/site', 2, { color: true, profundidade: 'nenhuma' })).toBe('')
+  expect(tintaDoProjeto('org/site', 2, { color: false })).toBe('')
+  for (const t of TONS_SUAVES_DE_PROJETO) {
+    const maximo = Math.max(t.r, t.g, t.b)
+    const minimo = Math.min(t.r, t.g, t.b)
+    expect([t, maximo - minimo <= 70]).toEqual([t, true])
+  }
+})
+
+test('a etiqueta usa a tinta suave do projeto quando ha cor', () => {
+  const t = etiquetaDoProjeto('org/site', { color: true, indice: 1 })
+  expect(t).toContain(tintaDoProjeto('org/site', 1, { color: true }))
 })

@@ -11,14 +11,26 @@
 //   decisao daqui e faz apenas os patches.
 import type { PipelineStep } from '../../niemeyer/tipos.ts'
 
+export const RESUME_POST_STEPS = '__apos_passos__'
+
+export interface PlanoDePassos {
+  steps: PipelineStep[]
+  profile: string
+}
+
 export interface EntradaDoPlanoManual {
   manual: boolean
   passoUnico: string
   liberado: boolean
   feitosCru: string
-  aposRetomada: PipelineStep[]
+  resumeFrom: string
+  plano: PlanoDePassos
   all: PipelineStep[]
-  profile: string
+}
+
+export interface Retomada {
+  indice: number
+  foraDoPerfil: boolean
 }
 
 export interface PlanoRodar {
@@ -27,6 +39,8 @@ export interface PlanoRodar {
   feitos: string[]
   passoUnicoAtivo: string
   liberacaoCaducada: boolean
+  repetido: boolean
+  retomada: Retomada
 }
 
 export interface PlanoPausar {
@@ -34,6 +48,7 @@ export interface PlanoPausar {
   motivo: string
   restantes: PipelineStep[]
   feitos: string[]
+  retomada: Retomada
 }
 
 export type PlanoManual = PlanoRodar | PlanoPausar
@@ -46,17 +61,42 @@ function jaPago(step: PipelineStep, feitos: string[]): boolean {
   return feitos.includes(step.id) || feitos.includes(step.label)
 }
 
+export function passosRestantes(steps: PipelineStep[], feitos: string[]): PipelineStep[] {
+  return steps.filter(s => !jaPago(s, feitos))
+}
+
+export function anotarPago(feitos: string[], step: PipelineStep): string[] {
+  return jaPago(step, feitos) ? feitos : [...feitos, step.id]
+}
+
+function mesmoPasso(step: PipelineStep, nome: string): boolean {
+  return step.label === nome || step.id === nome
+}
+
+export function indiceDeRetomada(steps: PipelineStep[], all: PipelineStep[], resumeFrom: string): Retomada {
+  if (!resumeFrom) return { indice: 0, foraDoPerfil: false }
+  if (resumeFrom === RESUME_POST_STEPS) return { indice: steps.length, foraDoPerfil: false }
+  const exato = steps.findIndex(s => mesmoPasso(s, resumeFrom))
+  if (exato >= 0) return { indice: exato, foraDoPerfil: false }
+  const posicaoPedida = all.findIndex(s => mesmoPasso(s, resumeFrom))
+  const seguinte = posicaoPedida < 0 ? -1 : steps.findIndex(s => all.findIndex(a => a.id === s.id) >= posicaoPedida)
+  return { indice: seguinte >= 0 ? seguinte : steps.length, foraDoPerfil: true }
+}
+
 export function quaisPassosRodar(e: EntradaDoPlanoManual): PlanoManual {
+  const retomada = indiceDeRetomada(e.plano.steps, e.all, e.resumeFrom)
+  const aposRetomada = e.plano.steps.slice(retomada.indice)
   if (!e.manual) {
-    return { tipo: 'rodar', vaoRodar: e.aposRetomada, feitos: [], passoUnicoAtivo: '', liberacaoCaducada: false }
+    return { tipo: 'rodar', vaoRodar: aposRetomada, feitos: [], passoUnicoAtivo: '', liberacaoCaducada: false, repetido: false, retomada }
   }
   const feitos = feitosDoCard(e.feitosCru)
-  const restantes = e.aposRetomada.filter(s => !jaPago(s, feitos))
+  const restantes = passosRestantes(aposRetomada, feitos)
   if (e.passoUnico) {
-    const alvo = restantes.find(s => s.id === e.passoUnico)
+    const alvo = aposRetomada.find(s => s.id === e.passoUnico)
     if (!alvo) {
-      return { tipo: 'pausar', motivo: `passo manual "${e.passoUnico}" nao esta no plano deste card (ja rodou ou nao se aplica ao perfil ${e.profile})`, restantes, feitos }
+      return { tipo: 'pausar', motivo: `passo manual "${e.passoUnico}" nao esta no plano deste card (nao se aplica ao perfil ${e.plano.profile} ou fica antes do ponto de retomada)`, restantes, feitos, retomada }
     }
+    const repetido = jaPago(alvo, feitos)
     const dependenciasEmFalta = (alvo.needs ?? [])
       .filter(n => {
         const dep = e.all.find(a => a.id === n)
@@ -64,12 +104,12 @@ export function quaisPassosRodar(e: EntradaDoPlanoManual): PlanoManual {
       })
       .map(n => e.all.find(a => a.id === n)?.label ?? n)
     if (dependenciasEmFalta.length) {
-      return { tipo: 'pausar', motivo: `passo manual "${e.passoUnico}" depende de [${dependenciasEmFalta.join(', ')}] — rode antes`, restantes, feitos }
+      return { tipo: 'pausar', motivo: `passo manual "${e.passoUnico}" depende de [${dependenciasEmFalta.join(', ')}] — rode antes`, restantes, feitos, retomada }
     }
-    return { tipo: 'rodar', vaoRodar: [alvo], feitos, passoUnicoAtivo: e.passoUnico, liberacaoCaducada: e.liberado }
+    return { tipo: 'rodar', vaoRodar: [alvo], feitos, passoUnicoAtivo: e.passoUnico, liberacaoCaducada: e.liberado, repetido, retomada }
   }
   if (e.liberado || !restantes.length) {
-    return { tipo: 'rodar', vaoRodar: restantes, feitos, passoUnicoAtivo: '', liberacaoCaducada: false }
+    return { tipo: 'rodar', vaoRodar: restantes, feitos, passoUnicoAtivo: '', liberacaoCaducada: false, repetido: false, retomada }
   }
-  return { tipo: 'pausar', motivo: '', restantes, feitos }
+  return { tipo: 'pausar', motivo: '', restantes, feitos, retomada }
 }

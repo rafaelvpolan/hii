@@ -1,4 +1,5 @@
 import { quantosEmVoo } from './estado-da-fila.ts'
+import { encerrarHarnessesRegistrados } from '../../tomada/harness-em-voo.ts'
 
 // Mutirao — encerramento gracioso. Ao receber SIGTERM o motor para de ACEITAR card
 // novo, espera o job em andamento terminar e so entao sai.
@@ -55,10 +56,19 @@ export interface OpcoesDeEncerramento {
   readonly tetoMs?: number
 }
 
+function encerrarHarnessesAntesDeSair(log: (linha: string) => void): void {
+  for (const h of encerrarHarnessesRegistrados('encerramento do motor')) {
+    if (h.acao === 'encerrado') log(`[runner] #${h.id}: harness pid ${h.pid} encerrado (${h.sinal}) antes de sair\n`)
+    else if (h.acao === 'sobreviveu') log(`[runner] #${h.id}: harness pid ${h.pid} NAO morreu nem com SIGKILL — mate a mao\n`)
+    else if (h.acao === 'recusado') log(`[runner] #${h.id}: registro de harness apontava para processo que nao e harness — descartado sem matar\n`)
+  }
+}
+
 export async function encerrarComGraca(op: OpcoesDeEncerramento): Promise<void> {
   pedirEncerramento()
   op.log('[runner] SIGTERM recebido — parando de aceitar card novo e esperando o que esta em voo\n')
   const r = await esperarFilaEsvaziar(op.tetoMs)
+  encerrarHarnessesAntesDeSair(op.log)
   if (r.limpo) {
     op.log('[runner] fila drenada, encerrando limpo\n')
     op.sair(0)

@@ -17,15 +17,20 @@ const NONINTERACTIVE_ENV: Record<string, string> = {
   PAGER: 'cat',
 }
 
-export function run(cmd: string, args: string[], opts?: ExecFileOptions): Promise<RunResult> {
+export interface OpcoesDeRun extends ExecFileOptions {
+  aoIniciar?: (pid: number) => void
+}
+
+export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<RunResult> {
   const timeoutMs = Number(opts?.timeout) || 0
+  const { aoIniciar, ...opcoesDoExec } = opts ?? {}
   return new Promise((resolve) => {
     let settled = false
     let timedOut = false
     let hard: ReturnType<typeof setTimeout> | null = null
     const child = execFile(cmd, args, {
       maxBuffer: 1 << 24,
-      ...opts,
+      ...opcoesDoExec,
       timeout: 0,
       env: { ...process.env, ...NONINTERACTIVE_ENV, ...(opts?.env ?? {}) },
     }, (err, stdout, stderr) => {
@@ -43,6 +48,7 @@ export function run(cmd: string, args: string[], opts?: ExecFileOptions): Promis
       hard = setTimeout(() => { try { child.kill('SIGKILL') } catch { void 0 } }, 5000)
       hard.unref?.()
     }, timeoutMs) : null
+    if (child.pid) aoIniciar?.(child.pid)
   })
 }
 
@@ -86,9 +92,23 @@ async function worktreesHoldingBranch(target: string, branch: string): Promise<s
   return worktreePathsForBranch(String(r.stdout || ''), branch)
 }
 
+export type OrigemDoWorktree = 'base' | 'branch-local' | 'branch-remota'
+
 export interface WorktreeInfo {
   path: string
   baseCommit: string
+  origem: OrigemDoWorktree
+  head: string
+}
+
+export interface OpcoesDeWorktree {
+  refazerDoZero?: boolean
+}
+
+export function descreverOrigem(info: WorktreeInfo, base: string, branch: string): string {
+  if (info.origem === 'branch-local') return `worktree recriado a partir da branch ${branch} ja existente @${info.head} — o trabalho ja commitado foi mantido`
+  if (info.origem === 'branch-remota') return `worktree recriado a partir de origin/${branch} @${info.head} — o trabalho ja enviado foi mantido`
+  return `branch criada de origin/${base}@${info.baseCommit}`
 }
 
 export interface RefreshResult {
@@ -188,7 +208,26 @@ export async function refreshFromBase(wt: string, base: string): Promise<Refresh
   return { ok: true, changed: true, detail: `integrou ${atras} commit(s) de origin/${base}` }
 }
 
-export async function ensureWorktree(target: string, wt: string, branch: string, base: string): Promise<WorktreeInfo> {
+async function refExiste(target: string, ref: string): Promise<boolean> {
+  const r = await runGit(target, ['rev-parse', '--verify', '--quiet', ref])
+  return !r.err && r.stdout.trim().length > 0
+}
+
+async function origemDaBranch(target: string, branch: string): Promise<OrigemDoWorktree> {
+  await runGit(target, ['fetch', 'origin', branch])
+  const local = await refExiste(target, `refs/heads/${branch}`)
+  const remota = await refExiste(target, `refs/remotes/origin/${branch}`)
+  if (local && remota) {
+    const atras = await runGit(target, ['merge-base', '--is-ancestor', `refs/heads/${branch}`, `refs/remotes/origin/${branch}`])
+    if (!atras.err) await runGit(target, ['branch', '-f', branch, `refs/remotes/origin/${branch}`])
+    return 'branch-local'
+  }
+  if (local) return 'branch-local'
+  if (remota) return 'branch-remota'
+  return 'base'
+}
+
+export async function ensureWorktree(target: string, wt: string, branch: string, base: string, opcoes: OpcoesDeWorktree = {}): Promise<WorktreeInfo> {
   return withGitLock(async () => {
     const f = await runGit(target, ['fetch', 'origin', base])
     if (f.err) {
@@ -207,13 +246,20 @@ export async function ensureWorktree(target: string, wt: string, branch: string,
       if (other !== wt) await runGit(target, ['worktree', 'remove', '--force', other])
     }
     if (!existsSync(WT_BASE)) mkdirSync(WT_BASE, { recursive: true })
-    const r = await runGit(target, ['worktree', 'add', '-B', branch, wt, `origin/${base}`])
+    const origem = opcoes.refazerDoZero ? 'base' : await origemDaBranch(target, branch)
+    const add = origem === 'branch-local'
+      ? ['worktree', 'add', wt, branch]
+      : origem === 'branch-remota'
+        ? ['worktree', 'add', '-b', branch, wt, `origin/${branch}`]
+        : ['worktree', 'add', '-B', branch, wt, `origin/${base}`]
+    const r = await runGit(target, add)
     if (r.err) throw new Error('worktree add: ' + String(r.stderr || '').slice(0, 160))
     const nm = join(wt, 'node_modules')
     if (!existsSync(nm) && existsSync(join(target, 'node_modules'))) {
       try { symlinkSync(join(target, 'node_modules'), nm, 'dir') } catch { void 0 }
     }
-    return { path: wt, baseCommit: ref.stdout.trim().slice(0, 7) }
+    const head = await runGit(wt, ['rev-parse', '--short=7', 'HEAD'])
+    return { path: wt, baseCommit: ref.stdout.trim().slice(0, 7), origem, head: head.stdout.trim() }
   })
 }
 

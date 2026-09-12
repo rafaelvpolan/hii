@@ -1,5 +1,5 @@
 import { test, expect } from '../apoio/runner.ts'
-import { profundidadeDeCor, pintar, tom, rampa, interpolar, corDoCubo, rgbDoTom, CANTO } from '../../motor/mirante/tui/paleta.ts'
+import { profundidadeDeCor, pintar, esmaecer, tom, rampa, interpolar, corDoCubo, rgbDoTom, CANTO } from '../../motor/mirante/tui/paleta.ts'
 import { barraGradiente, ondaDeEspera, pulso, quadroDoPulso } from '../../motor/mirante/tui/carregando.ts'
 import { visibleLen, stripAnsi } from '../../motor/mirante/tui/layout.ts'
 
@@ -113,4 +113,13 @@ test('os cantos sao arredondados e cada um e um caractere de uma coluna', () => 
   }
   expect(CANTO.supEsq).toBe('╭')
   expect(CANTO.infDir).toBe('╯')
+})
+
+test('esmaecer reaplica o dim depois de cada reset interno', () => {
+  const o = { color: true }
+  expect(esmaecer('a', o)).toBe('\x1b[2ma\x1b[0m')
+  const misto = esmaecer('a \x1b[33mb\x1b[0m c', o)
+  expect(misto).toBe('\x1b[2ma \x1b[33mb\x1b[0m\x1b[2m c\x1b[0m')
+  expect(esmaecer('a', { color: false })).toBe('a')
+  expect(esmaecer('', o)).toBe('')
 })

@@ -95,7 +95,7 @@ export class CodexProvider implements Harness {
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const workdir = req.dirs[0] ?? req.cwd
-    const { err, stdout, stderr } = await run('codex', argv(req, workdir), { cwd: workdir, timeout: req.timeoutMs })
+    const { err, stdout, stderr } = await run('codex', argv(req, workdir), { cwd: workdir, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const parsed = parse(stdout)
     const failed = !!err
     return {

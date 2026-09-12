@@ -12,10 +12,11 @@ import { idadeDe } from '../render/board.ts'
 import { readRunSteps } from '../../euclides/registros.ts'
 import { extractObjetivo } from '../../cordel/index.ts'
 import { subPrompts } from '../instruir.ts'
-import { formatar, ultimaAcao, ultimoAgente } from '../atividade.ts'
+import { ultimaAcao, ultimoAgente } from '../atividade.ts'
+import { linhasDaAtividade } from '../render/execucao.ts'
 import type { SessionState } from '../sessao.ts'
 import { color } from './saida.ts'
-import { atividadeDe, passosDe } from './dados.ts'
+import { atividadeDe, larguraUtil, passosDe } from './dados.ts'
 import { renderSituacao } from '../render/situacao.ts'
 import { eventosDoCard } from '../../euclides/eventos.ts'
 
@@ -47,7 +48,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   if (!card) return [`card #${state.seguindo} nao encontrado`]
   const cab = renderCabecalhoTarefa(card, {
     color,
-    width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+    width: larguraUtil(),
     objetivo: extractObjetivo(card.body) || String(card.fm.title ?? ''),
     subs: subPrompts(card.body),
   })
@@ -55,7 +56,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   const pend = renderPendencia(status, state.seguindo, {
     temPerguntaDoCrivo: temPerguntaAberta(card.fm, state.seguindo),
     color,
-    width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+    width: larguraUtil(),
     detalhe: status === 'PR_OPEN' ? String(card.fm.pr_url ?? '') : '',
   })
   const passos = passosDe(card.fm)
@@ -67,7 +68,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   // ninguem mais os mostra.
   const processos = !passos.length ? [] : renderProcessos(passos, {
     color,
-    width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+    width: larguraUtil(),
     metricas: readRunSteps(state.seguindo) ?? {},
     agente: ultimoAgente(at),
     ferramenta: ultimaAcao(at),
@@ -84,7 +85,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
     tocados: [],
   }, {
     color,
-    width: Math.max(40, (Number(process.stdout.columns) || 78) - 6),
+    width: larguraUtil(),
     // `agentes` e `ultima acao` ja estao no renderProcessos acima.
     omitir: passos.length ? ['agentes', 'ultima acao'] : [],
     cabecalho: false,
@@ -98,7 +99,7 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
 export function seguimento(state: SessionState): string[] {
   const card = readCard(state.seguindo)
   const at = atividadeDe(state.seguindo)
-  if (at.length) return at.slice(-200).map(formatar)
+  if (at.length) return at.slice(-200).flatMap(a => linhasDaAtividade(a, { color, largura: larguraUtil() }))
   const status = String(card?.fm.status ?? '')
   if (['EXECUTING', 'CORRECTING'].includes(status)) return ['  aguardando a IA…']
   if (status === 'HALTED') return ['  tarefa parada — escreva uma instrucao ou aperte enter para retomar']

@@ -8,6 +8,7 @@ import { readClarify, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { conferirParedeDoPlano } from '../quilombo/cartorio/aprovar-plano.ts'
 import { CONFIRMADO } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { RESUME_POST_STEPS } from '../quilombo/cartorio/retomar.ts'
+import { encerrarHarnessDoCard } from '../tomada/harness-em-voo.ts'
 
 export interface NewCardInput {
   title: string
@@ -137,8 +138,8 @@ export function recusarFecho(id: string, motivo: string): GuardedResult {
   }
   if (!temWorktree) {
     const r = updateCardPorAcaoHumana(id, {
-      fields: { correction: razao, status: 'EXECUTING', refazer: 'true', resume_from: '' },
-      log: () => `${isoNow()} CONFIRM->EXECUTING nao resolveu (${razao}) — worktree ja nao existe, refazendo do zero`,
+      fields: { correction: razao, status: 'EXECUTING', refazer: '', resume_from: '' },
+      log: () => `${isoNow()} CONFIRM->EXECUTING nao resolveu (${razao}) — worktree ja nao existe, reexecutando com a branch retomada`,
     })
     return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
   }
@@ -173,10 +174,12 @@ export function approvePlan(id: string): GuardedResult {
 // grava so o status: parada pedida por pessoa era indistinguivel de parada por cota
 // no frontmatter.
 export function halt(id: string, reason: string): ActionResult {
-  return updateCardPorAcaoHumana(id, {
+  const r = updateCardPorAcaoHumana(id, {
     fields: { status: 'HALTED', halt_class: 'humano', halt_reason: reason, halt_at: isoNow() },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED${reason ? ' ' + reason : ''}`,
   })
+  if (r) encerrarHarnessDoCard(id, 'parada pedida pelo humano')
+  return r
 }
 
 export function requestCorrection(id: string, file: string, instruction: string, line = '', lineText = ''): ActionResult {

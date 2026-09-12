@@ -11,6 +11,7 @@ import type { PapelDeChamada } from '../ias-da-sessao.ts'
 import { sessaoAtual } from '../sessao.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { atualizarRegistroDeConversa } from '../registros.ts'
+import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -156,7 +157,17 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     }
   }
   const t0 = Date.now()
-  const res = await provider.run(req)
+  let pidRegistrado = 0
+  const res = await provider.run({
+    ...req,
+    rotulo: req.rotulo ?? papel,
+    aoIniciar: (pid) => {
+      pidRegistrado = pid
+      registrarHarness(id, pid, papel)
+      req.aoIniciar?.(pid)
+    },
+  })
+  if (pidRegistrado) esquecerHarness(id, pidRegistrado)
   recordCostTrust(id, provider.name, res)
   anotarChamada(id, provider, req, papel, res, t0)
   return res

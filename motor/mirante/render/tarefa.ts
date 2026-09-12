@@ -32,7 +32,7 @@ export function renderCabecalhoTarefa(card: Card, opts: Partial<TarefaOptions> =
   const status = String(fm.status ?? 'INBOX')
   const out: string[] = []
   out.push(`  ${paint(`#${id}`, BOLD, o)} ${paint(status.toLowerCase(), CYAN, o)}  ${truncVisible(String(fm.title ?? ''), o.width - 20)}`)
-  out.push(paint(`  ${'─'.repeat(Math.max(10, o.width - 4))}`, DIM, o))
+  out.push(paint(`  ${'─'.repeat(Math.max(10, o.width - 2))}`, DIM, o))
   if (o.objetivo) out.push(campo('prompt', o.objetivo, o))
   const total = o.subs.length
   const mostrar = total > 3 ? o.subs.slice(-3) : o.subs

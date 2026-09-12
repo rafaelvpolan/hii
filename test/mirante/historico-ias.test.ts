@@ -156,3 +156,27 @@ test('a linha de conversa mostra quais IAs entraram, em vez de "?"', () => {
   expect(linha).toContain('claude+ollama')
   expect(linha).not.toContain(' ? ')
 })
+
+test('a tabela estica ate a largura do terminal, com dois de folga a direita', () => {
+  const s = sessao({ ias: [ia()] })
+  for (const width of [78, 100, 160]) {
+    const linhas = renderHistorico(historico([s]), { color: false, now: AGORA, width, selecionado: chaveDaSessao(s) }).map(stripAnsi)
+    const daSessao = linhas.find(l => l.includes('#011')) ?? ''
+    const daIa = linhas.find(l => l.includes('executa')) ?? ''
+    expect([width, daSessao.length]).toEqual([width, width - 2])
+    expect([width, daIa.length]).toEqual([width, width - 2])
+    expect(daSessao.trimEnd().endsWith('52k')).toBe(true)
+  }
+})
+
+test('o motivo da falha cabe dentro da largura, sem empurrar a linha para fora', () => {
+  const s = sessao({ ok: false, motivoDaFalha: 'gate reprovou: testes vermelhos no ciclo 2' })
+  const linha = renderHistorico(historico([s]), { color: false, now: AGORA, width: 120 }).map(stripAnsi).find(l => l.includes('#011')) ?? ''
+  expect(linha.length).toBe(118)
+  expect(linha).toContain('gate reprovou')
+})
+
+test('sem largura informada a tabela mantem as 76 colunas de sempre', () => {
+  const linha = renderHistorico(historico([sessao()]), { color: false, now: AGORA }).map(stripAnsi).find(l => l.includes('#011')) ?? ''
+  expect(linha.length).toBe(76)
+})

@@ -177,7 +177,7 @@ test('REGRESSAO pushOwnedBranch: com a ancora do push anterior DESTE card, force
   const shaAnterior = pushTentativaAnterior(c, branch, 'orfa.txt', 'tentativa anterior\n')
 
   const wt = join(BASE, 'wt-push-2')
-  await ensureWorktree(c.clone, wt, branch, 'main')
+  await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
   writeFileSync(join(wt, 'novo.txt'), 'trabalho atual, aprovado no url\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: trabalho atual'])
@@ -200,7 +200,7 @@ test('REGRESSAO pushOwnedBranch: SEM ancora conhecida, nao-fast-forward NAO forc
   pushTentativaAnterior(c, branch, 'orfa.txt', 'conteudo de outro processo/card\n')
 
   const wt = join(BASE, 'wt-push-sem-ancora')
-  await ensureWorktree(c.clone, wt, branch, 'main')
+  await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
   writeFileSync(join(wt, 'novo.txt'), 'trabalho atual\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: trabalho atual'])
@@ -224,7 +224,7 @@ test('REGRESSAO pushOwnedBranch: ancora DESATUALIZADA (branch mudou depois do ul
   pushTentativaAnterior(c, branch, 'v2-humano.txt', 'fixup humano depois do ultimo push do motor\n')
 
   const wt = join(BASE, 'wt-push-divergiu')
-  await ensureWorktree(c.clone, wt, branch, 'main')
+  await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
   writeFileSync(join(wt, 'novo.txt'), 'trabalho atual\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: trabalho atual'])
@@ -278,7 +278,7 @@ test('REGRESSAO card 022: PR aberto prova posse da branch e o push resolve sozin
   pushTentativaAnterior(c, branch, 'tentativa-anterior.txt', 'commit da propria tarefa, de um ciclo antes\n')
 
   const wt = join(BASE, 'wt-push-dono-comprovado')
-  await ensureWorktree(c.clone, wt, branch, 'main')
+  await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
   writeFileSync(join(wt, 'agora.txt'), 'trabalho desta reexecucao\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: reexecucao'])
@@ -300,7 +300,7 @@ test('sem posse comprovada, o comportamento seguro continua valendo: nao forca',
   pushTentativaAnterior(c, branch, 'de-outro.txt', 'conteudo de outro processo\n')
 
   const wt = join(BASE, 'wt-push-sem-posse')
-  await ensureWorktree(c.clone, wt, branch, 'main')
+  await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
   writeFileSync(join(wt, 'meu.txt'), 'meu trabalho\n')
   git(wt, ['add', '-A'])
   git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: meu'])
@@ -349,5 +349,67 @@ test('refreshFromBase recusado por mudanca local NAO e relatado como conflito', 
   expect(r.ok).toBe(false)
   expect(r.detail, `detalhe veio: ${r.detail}`).not.toContain('conflito ao integrar')
   expect(r.detail).toContain('mudanca local')
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree RETOMA a branch local existente em vez de recomecar da base (card 005: worktree descartado no fecho, instrucao nova)', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-retomar-local'
+  const wt = join(BASE, 'wt-retomar-local')
+  await ensureWorktree(c.clone, wt, branch, 'main')
+  writeFileSync(join(wt, 'menu-mobile.txt'), 'trabalho aprovado no url\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: menu mobile'])
+  const shaDoTrabalho = git(wt, ['rev-parse', '--short=7', 'HEAD'])
+  await removeWorktree(c.clone, wt)
+  expect(existsSync(wt)).toBe(false)
+
+  const info = await ensureWorktree(c.clone, wt, branch, 'main')
+  expect(info.origem).toBe('branch-local')
+  expect(info.head).toBe(shaDoTrabalho)
+  expect(existsSync(join(wt, 'menu-mobile.txt')), 'recomecar da base apagava o trabalho ja feito').toBe(true)
+  expect(git(wt, ['rev-parse', '--abbrev-ref', 'HEAD'])).toBe(branch)
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree RETOMA a branch que so existe no remoto (PR aberto, clone sem a ref local)', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-retomar-remota'
+  const shaRemoto = pushTentativaAnterior(c, branch, 'pr-aberto.txt', 'commit que esta no PR\n')
+  const wt = join(BASE, 'wt-retomar-remota')
+  const info = await ensureWorktree(c.clone, wt, branch, 'main')
+  expect(info.origem).toBe('branch-remota')
+  expect(shaRemoto.startsWith(info.head)).toBe(true)
+  expect(existsSync(join(wt, 'pr-aberto.txt'))).toBe(true)
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree com refazerDoZero IGNORA a branch existente e parte de origin/base, como o humano pediu', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-do-zero'
+  pushTentativaAnterior(c, branch, 'descartavel.txt', 'vai ser refeito\n')
+  const wt = join(BASE, 'wt-do-zero')
+  const info = await ensureWorktree(c.clone, wt, branch, 'main', { refazerDoZero: true })
+  expect(info.origem).toBe('base')
+  expect(existsSync(join(wt, 'descartavel.txt'))).toBe(false)
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree: branch local ATRAS da remota avanca para a remota antes de retomar', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-local-atras'
+  const wt = join(BASE, 'wt-local-atras')
+  await ensureWorktree(c.clone, wt, branch, 'main')
+  writeFileSync(join(wt, 'v1.txt'), 'primeiro\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: v1'])
+  git(wt, ['push', '-q', 'origin', branch])
+  await removeWorktree(c.clone, wt)
+  const shaRemoto = pushTentativaAnterior(c, branch, 'v2.txt', 'segundo, direto no remoto\n')
+
+  const info = await ensureWorktree(c.clone, wt, branch, 'main')
+  expect(info.origem).toBe('branch-local')
+  expect(shaRemoto.startsWith(info.head)).toBe(true)
+  expect(existsSync(join(wt, 'v2.txt'))).toBe(true)
   await removeWorktree(c.clone, wt)
 })

@@ -76,7 +76,7 @@ export function classificar(ev: EventoBruto, ts = ''): Atividade {
 
 const RE_TOOL = /^\s*→\s*([A-Za-z_][\w.-]*)\((.*)$/
 const RE_SESSAO = /^—\s*sessao iniciada(?:\s*\(([^)]+)\))?/
-const RE_CHAMADA = /^—\s*chamada em (\S+)/
+const RE_CHAMADA = /^—\s*chamada em (\S+)(?:\s*·\s*([^—]+?))?\s*—?\s*$/
 const RE_FIM = /^—\s*concluido \(custo \$([0-9.]+)\)/
 const RE_TIMEOUT = /^—\s*TIMEOUT/
 
@@ -106,7 +106,7 @@ function desescapar(s: string): string {
 
 export function parseLinha(linha: string, ts = ''): Atividade | null {
   const chamada = linha.match(RE_CHAMADA)
-  if (chamada) return { tipo: 'sessao', nome: 'chamada', alvo: '', ts: chamada[1] ?? ts }
+  if (chamada) return { tipo: 'sessao', nome: 'chamada', alvo: '', ts: chamada[1] ?? ts, args: (chamada[2] ?? '').trim() }
   const sessao = linha.match(RE_SESSAO)
   if (sessao) return { tipo: 'sessao', nome: 'sessao', alvo: sessao[1] ?? '', ts }
   const fim = linha.match(RE_FIM)
