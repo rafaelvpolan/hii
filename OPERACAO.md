@@ -753,6 +753,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HICODE_TMP_TTL_H` | — | — | `motor/euclides/estado-em-disco.ts` |
 | `HICODE_TOPOLOGIA_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HICODE_URL_AJUSTES` | — | — | `motor/ciclo/reprise/url-ajuste.ts` |
+| `HICODE_URL_AUTO_OK` | `'on'` | — | `motor/ciclo/crivo/aprovacao-automatica.ts`, `motor/cordel/alicerce/config.ts` |
 | `HICODE_URL_FREEPORT_SETTLE_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HICODE_URL_INSPECT_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HICODE_URL_PROBE_INTERVAL_MS` | — | — | `motor/cordel/alicerce/config.ts` |

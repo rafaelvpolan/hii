@@ -25,6 +25,7 @@ import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
 import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
+import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
 
 export interface ExecuteDeps {
   implement: typeof implement
@@ -452,9 +453,10 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     tempo_s: tempoAcumulado(),
   }, `${isoNow()} EXECUTING->URL ${url || (temDevServer ? '(dev server NAO subiu)' : '(sem dev server)')} (${initReason})`)
   process.stdout.write(`[runner] #${id}: URL ${url} (${initReason})\n`)
+  let vstate = initState
   if (up) {
     const health = await (deps.inspecionar ?? inspectUrl)(id, url, true)
-    let vstate = 'inconclusivo'
+    vstate = 'inconclusivo'
     let vreason = `url no ar — confira pelo link (inspecao automatica indisponivel${health.detail ? ': ' + health.detail : ''})`
     if (VISUAL_AI && health.ok) {
       const v = await deps.verifyVisual(card, shotPath)
@@ -496,6 +498,15 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   const pendencias = await encaminharInstrucoesPendentes(id, wt, base, deps.conferir ?? conferirInstrucoes)
   auxCost += pendencias.cost
   auxTokens += pendencias.tokens
+  if (readCard(id)?.fm.status === 'URL') {
+    const decisao = decisaoDeAprovacaoDeUrl({ temUrl: !!url, respondeu: up, verify: vstate })
+    if (decisao.aprova) {
+      aprovarUrlPeloMotor(id, decisao.motivo)
+      process.stdout.write(`[runner] #${id}: URL_OK sem pergunta — ${decisao.motivo}\n`)
+    } else {
+      patchCard(id, {}, `${isoNow()} url fica com voce: ${decisao.motivo}`)
+    }
+  }
   if (auxCost !== auxAtUrl) {
     const total = baseCost + costSum + auxCost
     patchCard(id, { cost_usd: total.toFixed(4), tokens_total: String(baseTokens + tokensTotal + auxTokens), tempo_s: tempoAcumulado() }, `${isoNow()} custo atualizado (verificacao/eval): $${total.toFixed(4)}`)
