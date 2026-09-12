@@ -114,6 +114,17 @@ test('ciclarModo passa pelos modos do provedor ativo e da a volta', async () => 
   expect(modoFor('implement')).toBe(inicial)
 })
 
+test('shift+tab no codex alterna apenas entre os modos aceitos pelo CLI atual', async () => {
+  const { aplicar, ciclarModo } = await import('../../motor/mirante/escolher-ia.ts')
+  const { modoFor } = await import('../../motor/tomada/registro.ts')
+  aplicar({ papeis: ['implement'], provider: 'codex', modo: '' })
+  expect(modoFor('implement')).toBe('never')
+  ciclarModo('implement', 1)
+  expect(modoFor('implement')).toBe('on-request')
+  ciclarModo('implement', 1)
+  expect(modoFor('implement')).toBe('never')
+})
+
 test('ciclarModo do ollama avisa que o provedor nao tem modo, sem quebrar', async () => {
   const { ciclarModo, aplicar } = await import('../../motor/mirante/escolher-ia.ts')
   aplicar({ papeis: ['implement'], provider: 'ollama' })
@@ -171,7 +182,7 @@ test('REGRESSAO kimiArgv nao carrega flag de modo, escolhido ou padrao', async (
   }
 })
 
-test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita o modo, com "never" como padrao de hoje', async () => {
+test('REGRESSAO codex: nao envia a policy aposentada e respeita o modo atual', async () => {
   // Antes isto olhava o texto-fonte atras de `modoResolvido('codex'`, e por isso
   // reprovou num refactor que preservou o comportamento. Agora exercita o argv:
   // mais forte que grep, e nao amarra o teste a como o modo e resolvido.
@@ -182,7 +193,7 @@ test('REGRESSAO codex: approval_policy troca de lugar do -a quebrado e respeita 
   const semModo = argv(pedido(), '/tmp')
   expect(semModo).toContain('approval_policy="never"')
   expect(semModo.some((a, i) => a === '-a' && semModo[i + 1] === 'never')).toBe(false)
-  expect(argv(pedido('untrusted'), '/tmp')).toContain('approval_policy="untrusted"')
+  expect(argv(pedido('untrusted'), '/tmp')).not.toContain('approval_policy="untrusted"')
   expect(argv(pedido('modo-que-nao-existe'), '/tmp')).toContain('approval_policy="never"')
 })
 

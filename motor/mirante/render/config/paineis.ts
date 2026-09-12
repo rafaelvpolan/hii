@@ -98,6 +98,13 @@ export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o
   }
   const linhas = [campo('plano', p.plano, largura, o)]
   if (p.detalheDoPlano) linhas.push(campo('conta', p.detalheDoPlano, largura, o))
+  if (p.contexto) {
+    const usado = p.contexto.usadoTokens.toLocaleString('pt-BR')
+    const limite = p.contexto.limiteTokens.toLocaleString('pt-BR')
+    linhas.push(campo('contexto', `${p.contexto.percentual.toFixed(1)}% · ${usado}/${limite} tok`, largura, o))
+  } else if (!p.rodaLocal && !p.planoLido) {
+    linhas.push(campo('contexto', 'nao reportado pelo historico local', largura, o))
+  }
   if (!p.janelas.length) linhas.push(campo('uso', 'sem janela reportada', largura, o))
   const medidor = Math.max(8, largura - 30)
   for (const j of p.janelas) {

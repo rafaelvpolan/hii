@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   claudeAutenticado, codexAutenticado, janelasDe, kimiAutenticado,
-  modelosDoKimi, nomeDoTier, planoDoClaude, planoDoKimi, provedorDoKimi,
+  modelosDoKimi, nomeDoTier, planoDoClaude, planoDoCodex, planoDoKimi, provedorDoKimi,
 } from '../../motor/euclides/tesouro/planos.ts'
 import { sondarOllama } from '../../motor/tomada/harness/ollama-estado.ts'
 
@@ -134,6 +134,33 @@ test('codex: com auth.json em CODEX_HOME, conta como autenticado', () => {
   writeFileSync(join(home, 'auth.json'), '{}')
   process.env.CODEX_HOME = home
   expect(codexAutenticado()).toBe(true)
+})
+
+test('codex: uso, reset das janelas e contexto saem do ultimo evento local', () => {
+  const home = join(dir, 'codex-com-uso')
+  const sessoes = join(home, 'sessions', '2026', '09', '12')
+  mkdirSync(sessoes, { recursive: true })
+  const agora = Date.parse('2026-09-12T18:00:00.000Z')
+  writeFileSync(join(sessoes, 'sessao.jsonl'), JSON.stringify({
+    timestamp: '2026-09-12T17:59:00.000Z',
+    type: 'event_msg',
+    payload: {
+      type: 'token_count',
+      info: { last_token_usage: { total_tokens: 25840 }, model_context_window: 258400 },
+      rate_limits: {
+        plan_type: 'plus',
+        primary: { used_percent: 42, window_minutes: 300, resets_at: Math.floor((agora + 2 * 3600000) / 1000) },
+        secondary: { used_percent: 18, window_minutes: 10080, resets_at: Math.floor((agora + 5 * 86400000) / 1000) },
+      },
+    },
+  }))
+  process.env.CODEX_HOME = home
+  const p = planoDoCodex(agora)
+  expect(p.plano).toBe('plus')
+  expect(p.janelas.map(j => [j.rotulo, j.percentual])).toEqual([['5h', 42], ['7d', 18]])
+  expect(p.janelas[0]?.resetaEm).toBe('2026-09-12T20:00:00.000Z')
+  expect(p.contexto).toEqual({ usadoTokens: 25840, limiteTokens: 258400, percentual: 10, medidoEm: '2026-09-12T17:59:00.000Z' })
+  expect(p.idadeHoras).toBeCloseTo(1 / 60, 5)
 })
 
 test('ollama nao tem conceito de login, sempre passa — quem declara isso e o proprio harness', () => {

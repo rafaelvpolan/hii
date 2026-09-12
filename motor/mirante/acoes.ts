@@ -21,6 +21,7 @@ export interface NewCardInput {
   effort?: string
   packs?: string
   steps?: string
+  tipo?: string
 }
 
 export interface ClarifyAnswer {
@@ -46,8 +47,18 @@ export function submit(input: NewCardInput): string {
     risk: input.risk === 'high' ? 'high' : 'low',
     repo: input.repo ?? '',
     created: isoNow(),
-    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs, steps: input.steps }),
+    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs, steps: input.steps, tipo: input.tipo }),
   }, body)
+}
+
+export function submitSession(input: { title: string; repo: string; desc?: string }): string {
+  return submit({
+    title: input.title,
+    repo: input.repo,
+    desc: input.desc ?? input.title,
+    tipo: 'session',
+    steps: 'nada',
+  })
 }
 
 function recusadoPorHarnessEmVoo(id: string): boolean {

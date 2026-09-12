@@ -5,6 +5,7 @@ import { patchCard, readCard } from '../../cordel/store.ts'
 import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
 import type { AgentRole } from '../../tomada/tipos.ts'
+import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../../tomada/rota-log.ts'
 import { appendFailureAttempt } from './tentativas.ts'
 import type { FailureOutcome } from './tentativas.ts'
 import { stampRunFailure } from '../../euclides/registros.ts'
@@ -62,6 +63,7 @@ function haltFields(input: FailurePolicyInput): Fields {
     wait_until: '',
     wait_resume_status: '',
     wait_provider: '',
+    rota_contexto: '',
     rota_tentados: '',
     provider_override_implement: '',
     provider_override_step: '',
@@ -71,28 +73,46 @@ function haltFields(input: FailurePolicyInput): Fields {
   }
 }
 
-function trocaDeProvedorPorQuota(input: FailurePolicyInput, attempts: number): PolicyOutcome | null {
+function trocaDeProvedorPorQuota(input: FailurePolicyInput, _attempts: number): PolicyOutcome | null {
   if (!quotaFallbackLigado()) return null
   if (!input.papel || !PAPEIS_COM_OVERRIDE_DE_PROVEDOR.includes(input.papel)) return null
   const tentadosNoCard = readCard(input.id)?.fm.rota_tentados
   const tentados = rotaTentadas(tentadosNoCard)
   const rota = (input.rota ?? decidirRota)({ papel: input.papel, classeDeFalha: input.failureClass, provedorAtual: input.provider, tentadosNestaRodada: tentados })
   if (rota.acao !== 'trocar') return null
-  const until = isoAt(Date.now() + backoffMsFor(attempts, 'rede'))
+  registrarTrocaDeIaNoLiveLog({
+    id: input.id,
+    papel: input.papel,
+    de: input.provider,
+    para: rota.para,
+    falha: input.failureReason,
+    detalhe: input.technicalDetail,
+    motivo: rota.motivo,
+  })
+  const rotaContexto = contextoDaTrocaDeIa({
+    id: input.id,
+    papel: input.papel,
+    de: input.provider,
+    para: rota.para,
+    falha: input.failureReason,
+    detalhe: input.technicalDetail,
+    motivo: rota.motivo,
+  })
   patchCard(input.id, {
-    status: 'WAITING',
+    status: input.resumeStatus,
     [campoDeOverrideDoPapel(input.papel)]: rota.para,
     rota_tentados: comTentativaDeRota(tentadosNoCard, input.provider),
-    wait_reason: input.failureReason,
-    wait_attempts: String(attempts),
-    wait_class: 'rede',
-    wait_until: until,
-    wait_resume_status: input.resumeStatus,
+    wait_reason: '',
+    wait_attempts: '',
+    wait_class: '',
+    wait_until: '',
+    wait_resume_status: '',
     wait_provider: rota.para,
+    rota_contexto: rotaContexto,
     ...(input.resumeStep ? { resume_from: input.resumeStep } : {}),
     ...input.extraFields,
-  }, `${isoNow()} ${input.fromStatus}->WAITING (tentativa ${attempts}/${maxWaitingAttempts()}) cota de ${input.provider || 'provedor'} esgotada — proxima tentativa em ${rota.para} as ${until} (${rota.motivo}; HII_QUOTA_FALLBACK=on; a espera e curta porque o retry NAO volta ao provedor esgotado)`)
-  return 'waiting'
+  }, `${isoNow()} ${input.fromStatus}: IA ${input.provider || 'provedor'} falhou por cota (${input.failureReason}) — mudando automaticamente para ${rota.para} agora (${rota.motivo}; HII_QUOTA_FALLBACK=on)`)
+  return 'rerouted'
 }
 
 function recordFailure(input: FailurePolicyInput, attempt: number, outcome: PolicyOutcome): void {

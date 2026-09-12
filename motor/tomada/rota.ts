@@ -48,11 +48,28 @@ export interface CandidatoDeRota {
   rodaLocal: boolean
   autenticado: boolean
   cotaEsgotada: boolean
+  supportsAgents?: boolean
+  supportsVision?: boolean
+  emitsStructuredJson?: boolean
+  reportsCostUsd?: boolean
+  reportsTokens?: boolean
+  preservaContexto?: boolean
+  qualidade?: number
+  custoRelativo?: number
+  latenciaRelativa?: number
+  prioridade?: number
 }
 
 export interface ConsultaDeRota {
   candidatosDoPapel(papel: AgentRole): HarnessId[]
   candidato(nome: HarnessId): CandidatoDeRota | undefined
+}
+
+export interface CandidatoPontuado {
+  candidato: CandidatoDeRota
+  indice: number
+  score: number
+  motivos: string[]
 }
 
 function semRepetir(nomes: readonly HarnessId[]): HarnessId[] {
@@ -81,13 +98,19 @@ export function consultaReal(): ConsultaDeRota {
     candidato(nome: HarnessId): CandidatoDeRota | undefined {
       const h = harnessSeExistir(nome)
       if (!h) return undefined
+      const caps = h.capabilities()
       return {
         nome: h.name,
         agentic: h.agentic,
-        isolaLeitura: h.capabilities().isolatesReadonly,
+        isolaLeitura: caps.isolatesReadonly,
         rodaLocal: h.rodaLocal,
         autenticado: h.autenticado(),
         cotaEsgotada: cotaEsgotadaEm(h.name),
+        supportsAgents: h.supportsAgents,
+        supportsVision: h.supportsVision,
+        emitsStructuredJson: caps.emitsStructuredJson,
+        reportsCostUsd: caps.reportsCostUsd,
+        reportsTokens: caps.reportsTokens,
       }
     },
   }
@@ -103,6 +126,39 @@ function papelMecanico(papel: AgentRole): boolean {
   return papel === 'step' || papel === 'verify'
 }
 
+function numeroFinito(n: number | undefined): number {
+  return typeof n === 'number' && Number.isFinite(n) ? n : 0
+}
+
+function pontoSe(motivos: string[], condicao: boolean | undefined, pontos: number, motivo: string): number {
+  if (!condicao) return 0
+  motivos.push(motivo)
+  return pontos
+}
+
+export function pontuarCandidatoDeRota(papel: AgentRole, c: CandidatoDeRota, indice: number): CandidatoPontuado {
+  const motivos: string[] = []
+  let score = 100
+  score += pontoSe(motivos, c.preservaContexto, 45, 'preserva contexto desta tarefa')
+  score += pontoSe(motivos, papelMecanico(papel) && c.rodaLocal, 70, 'roda local para papel mecanico')
+  score += pontoSe(motivos, (papel === 'implement' || papel === 'gate') && c.supportsAgents, 25, 'suporta agentes')
+  score += pontoSe(motivos, (papel === 'gate' || papel === 'verify' || papel === 'step') && c.emitsStructuredJson, 25, 'emite JSON estruturado')
+  score += pontoSe(motivos, c.reportsCostUsd, 15, 'reporta custo medido')
+  score += pontoSe(motivos, c.reportsTokens, 10, 'reporta tokens')
+  score += numeroFinito(c.qualidade)
+  score += numeroFinito(c.prioridade)
+  score -= Math.max(0, numeroFinito(c.custoRelativo))
+  score -= Math.max(0, numeroFinito(c.latenciaRelativa))
+  if (!motivos.length) motivos.push('candidato apto')
+  return { candidato: c, indice, score, motivos }
+}
+
+export function ranquearCandidatosDeRota(papel: AgentRole, candidatos: readonly CandidatoDeRota[]): CandidatoPontuado[] {
+  return candidatos
+    .map((c, indice) => pontuarCandidatoDeRota(papel, c, indice))
+    .sort((a, b) => (b.score - a.score) || (a.indice - b.indice))
+}
+
 export function decidirRota(e: EntradaDeRota, consulta: ConsultaDeRota = consultaReal()): DecisaoDeRota {
   if (e.classeDeFalha === 'terminal') {
     return { acao: 'manter_politica_atual', motivo: 'falha terminal nao melhora trocando de provedor' }
@@ -116,12 +172,11 @@ export function decidirRota(e: EntradaDeRota, consulta: ConsultaDeRota = consult
     .filter(c => cumpreExigenciaDoPapel(e.papel, c))
     .filter(c => c.autenticado)
     .filter(c => !c.cotaEsgotada)
-  const ordenados = papelMecanico(e.papel)
-    ? [...aptos.filter(c => c.rodaLocal), ...aptos.filter(c => !c.rodaLocal)]
-    : aptos
+  const ordenados = ranquearCandidatosDeRota(e.papel, aptos)
   const escolhido = ordenados[0]
   if (!escolhido) {
     return { acao: 'manter_politica_atual', motivo: `nenhum candidato apto para ${e.papel} fora de {${[...foraDaRodada].filter(Boolean).join(', ')}}` }
   }
-  return { acao: 'trocar', para: escolhido.nome, motivo: `${escolhido.nome} esta apto para ${e.papel} (autenticado, cota ok${escolhido.rodaLocal ? ', roda local' : ''}) e ainda nao falhou nesta rodada` }
+  const c = escolhido.candidato
+  return { acao: 'trocar', para: c.nome, motivo: `${c.nome} venceu o roteador para ${e.papel} (score ${Math.round(escolhido.score)}; ${escolhido.motivos.join(', ')}; autenticado, cota ok${c.rodaLocal ? ', roda local' : ''}) e ainda nao falhou nesta rodada` }
 }

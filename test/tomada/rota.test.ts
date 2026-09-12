@@ -35,6 +35,22 @@ test('quota troca para o primeiro candidato apto que nao e o provedor atual', ()
   expect(r.acao === 'trocar' && r.para).toBe('codex')
 })
 
+test('roteador inteligente preserva a ordem configurada quando os scores empatam', () => {
+  const r = decidirRota(quota(), consultaDe([candidato('claude'), candidato('codex'), candidato('kimi')]))
+  expect(r.acao === 'trocar' && r.para).toBe('codex')
+})
+
+test('roteador inteligente escolhe candidato com score melhor mesmo quando nao e o primeiro', () => {
+  const r = decidirRota(quota(), consultaDe([
+    candidato('claude'),
+    candidato('codex'),
+    candidato('kimi', { supportsAgents: true, reportsCostUsd: true, reportsTokens: true, preservaContexto: true }),
+  ]))
+  expect(r.acao === 'trocar' && r.para).toBe('kimi')
+  expect(r.motivo).toContain('score')
+  expect(r.motivo).toContain('preserva contexto')
+})
+
 test('quem ja falhou NESTA rodada nao e tentado de novo — era isto que fazia "primeiro retry: fallback; segundo: parede"', () => {
   const r = decidirRota(quota({ provedorAtual: 'codex', tentadosNestaRodada: ['claude'] }),
     consultaDe([candidato('claude'), candidato('codex'), candidato('kimi')]))

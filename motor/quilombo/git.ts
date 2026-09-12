@@ -19,21 +19,38 @@ const NONINTERACTIVE_ENV: Record<string, string> = {
 
 export interface OpcoesDeRun extends ExecFileOptions {
   aoIniciar?: (pid: number) => void
+  aoLerStdout?: (pedaco: string) => void
+  aoLerStderr?: (pedaco: string) => void
+  aoEstourarTempo?: () => void
 }
 
 export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<RunResult> {
   const timeoutMs = Number(opts?.timeout) || 0
-  const { aoIniciar, ...opcoesDoExec } = opts ?? {}
+  const { aoIniciar, aoLerStdout, aoLerStderr, aoEstourarTempo, ...opcoesDoExec } = opts ?? {}
   return new Promise((resolve) => {
     let settled = false
     let timedOut = false
     let hard: ReturnType<typeof setTimeout> | null = null
-    const child = execFile(cmd, args, {
+    // Bun (runtime do runner) aceita `detached`, mas nao transforma o filho em
+    // lider de um novo grupo. `setsid` faz isso no Linux, que e onde o daemon
+    // roda, e mantem o mesmo PID depois do exec do comando real.
+    const comando = process.platform === 'linux' ? 'setsid' : cmd
+    const argumentos = process.platform === 'linux' ? [cmd, ...args] : args
+    const opcoesDoProcesso = {
       maxBuffer: 1 << 24,
       ...opcoesDoExec,
       timeout: 0,
+      // Prompt e argumentos sao sempre entregues pelo motor. Um pipe fechado
+      // ainda e detectado pelo Codex como "entrada adicional"; ignore faz o
+      // CLI enxergar stdin como inexistente, sem afetar stdout/stderr.
+      stdio: ['ignore', 'pipe', 'pipe'],
+      // O processo registrado pode ser um wrapper Node que cria um segundo
+      // processo (como o Codex). Um grupo proprio permite encerrar a arvore
+      // inteira quando o timeout vence, em vez de deixar o filho segurando os
+      // pipes e impedir o callback do execFile de terminar.
       env: { ...process.env, ...NONINTERACTIVE_ENV, ...(opts?.env ?? {}) },
-    }, (err, stdout, stderr) => {
+    } as ExecFileOptions & { stdio: readonly ['ignore', 'pipe', 'pipe'] }
+    const child = execFile(comando, argumentos, opcoesDoProcesso, (err, stdout, stderr) => {
       if (settled) return
       settled = true
       if (soft) clearTimeout(soft)
@@ -42,14 +59,30 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
       if (timedOut) e = Object.assign(e ?? new Error(`timeout apos ${timeoutMs}ms`), { killed: true })
       resolve({ err: e, stdout: String(stdout ?? ''), stderr: String(stderr ?? '') })
     })
+    child.stdout?.on('data', (pedaco: Buffer | string) => {
+      try { aoLerStdout?.(String(pedaco)) } catch { void 0 }
+    })
+    child.stderr?.on('data', (pedaco: Buffer | string) => {
+      try { aoLerStderr?.(String(pedaco)) } catch { void 0 }
+    })
     const soft = timeoutMs > 0 ? setTimeout(() => {
       timedOut = true
-      try { child.kill('SIGTERM') } catch { void 0 }
-      hard = setTimeout(() => { try { child.kill('SIGKILL') } catch { void 0 } }, 5000)
+      try { aoEstourarTempo?.() } catch { void 0 }
+      sinalizarGrupo(child.pid, 'SIGTERM', child)
+      hard = setTimeout(() => { sinalizarGrupo(child.pid, 'SIGKILL', child) }, 5000)
       hard.unref?.()
     }, timeoutMs) : null
     if (child.pid) aoIniciar?.(child.pid)
   })
+}
+
+function sinalizarGrupo(pid: number | undefined, sinal: NodeJS.Signals, child: { kill: (sinal?: NodeJS.Signals) => boolean }): void {
+  if (!pid) return
+  try {
+    process.kill(-pid, sinal)
+  } catch {
+    try { child.kill(sinal) } catch { void 0 }
+  }
 }
 
 export function runGit(dir: string, args: string[]): Promise<RunResult> {

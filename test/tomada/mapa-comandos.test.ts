@@ -67,6 +67,17 @@ test('codex: descobre as skills do CODEX_HOME e do projeto', async () => {
   expect(r.comandos.map(c => c.comando).sort()).toEqual(['/imagegen', '/openai-docs'])
 })
 
+test('codex: descobre comandos de plugins instalados, incluindo o ECC', async () => {
+  const comandos = join(home, '.codex', 'plugins', 'cache', 'ecc', 'ecc', '2.2.1', 'commands')
+  comando(comandos, 'model-route', 'escolhe o melhor modelo')
+  process.env.CODEX_HOME = join(home, '.codex')
+  process.env.HII_IMPLEMENT_PROVIDER = 'codex'
+  const { comandosDaIaAtiva } = await import('../../motor/tomada/mapa/comandos.ts')
+  const r = comandosDaIaAtiva(repoDir)
+  expect(r.comandos.map(c => c.comando)).toContain('/model-route')
+  expect(r.comandos.find(c => c.comando === '/model-route')?.descricao).toBe('escolhe o melhor modelo')
+})
+
 test('kimi: descobre as skills do usuario e do projeto', async () => {
   skill(join(home, '.kimi-code', 'skills'), 'planeja', 'planeja tarefas')
   skill(join(repoDir, '.kimi-code', 'skills'), 'revisa', 'revisa PR')

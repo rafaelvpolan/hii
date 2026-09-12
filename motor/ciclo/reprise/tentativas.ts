@@ -6,7 +6,7 @@ import { cardsDir } from '../../cordel/alicerce/config.ts'
 
 export type AttemptKind = 'reprovacao' | 'correcao'
 
-export type FailureOutcome = 'waiting' | 'halt'
+export type FailureOutcome = 'waiting' | 'rerouted' | 'halt'
 
 export interface Attempt {
   ts: string

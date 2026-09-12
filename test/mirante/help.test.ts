@@ -108,10 +108,11 @@ test('a varredura do /help NAO casa por substring — senao apagar /mode passari
   const anunciado = (cmd: string): boolean =>
     new RegExp(`(^|[^a-z0-9./-])${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9./-])`, 'im').test(t)
   expect(anunciado('/mode'), '/mode tem de estar anunciado por si').toBe(true)
-  expect(anunciado('/new-session')).toBe(true)
+  expect(anunciado('/new')).toBe(true)
+  expect(anunciado('/new-session')).toBe(false)
   // E o casador nao pode dar positivo por prefixo de outro texto:
   const so = (texto: string) => (cmd: string): boolean =>
     new RegExp(`(^|[^a-z0-9./-])${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9./-])`, 'im').test(texto)
   expect(so('/model opus')('/mode'), '/model nao anuncia /mode').toBe(false)
-  expect(so('atalho de /new-session')('/new'), 'a descricao de /new-session nao anuncia /new').toBe(false)
+  expect(so('/new-task')('/new'), '/new-task nao anuncia /new').toBe(false)
 })
