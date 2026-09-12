@@ -2,6 +2,9 @@ import { relatoDeTempo } from './tempo-do-card.ts'
 import type { Fields } from '../../cordel/index.ts'
 import type { EventoDoCard } from '../../euclides/eventos.ts'
 import type { Atividade } from '../atividade.ts'
+import type { ChamadaDeIa } from '../../cordel/tipos.ts'
+import { harnessAtual } from '../../euclides/linha-do-tempo.ts'
+import { WAITING_HUMAN } from './phases.ts'
 import { truncVisible } from '../tui/layout.ts'
 
 // Mirante — "o que esta acontecendo AGORA", numa tela.
@@ -41,6 +44,13 @@ export interface Situacao {
   readonly atividades: readonly Atividade[]
   // Arquivos que o diff do worktree mostra. Quem chama le do git; este modulo e puro.
   readonly tocados: readonly string[]
+  // Ledger de chamadas do card: de onde saem provedor/modelo atuais e as trocas.
+  readonly chamadas?: readonly ChamadaDeIa[]
+  // Rotulos (ou raias) das chamadas de IA ainda sem conclusao no live log.
+  readonly emVoo?: readonly string[]
+  // Candidatos da comparacao cega quando o crivo esta em gauntlet (tela + referencias).
+  readonly candidatos?: number
+  readonly agoraMs?: number
 }
 
 function paint(s: string, code: string, o: OpcoesDaSituacao): string {
@@ -82,6 +92,43 @@ function agentes(atividades: readonly Atividade[]): string {
   return nomes.join(' → ')
 }
 
+function harness(chamadas: readonly ChamadaDeIa[] | undefined): string {
+  if (!chamadas?.length) return ''
+  const h = harnessAtual(chamadas)
+  const trocas = h.trocas ? ` · ${h.trocas} troca${h.trocas > 1 ? 's' : ''} de provedor` : ''
+  return `${[h.provedor, h.modelo].filter(Boolean).join(' ')}${trocas}`
+}
+
+function emVoo(rotulos: readonly string[] | undefined): string {
+  if (!rotulos?.length) return ''
+  return rotulos.length === 1 ? String(rotulos[0]) : `${rotulos.length} chamadas: ${rotulos.join(', ')}`
+}
+
+function crivo(fm: Fields, candidatos: number | undefined): string {
+  const modo = String(fm.crivo_modo ?? '')
+  return modo === 'gauntlet' && candidatos ? `gauntlet · ${candidatos} candidatos cegos` : modo
+}
+
+const PARADO = new Set([...WAITING_HUMAN, 'PAUSED', 'WAITING'])
+
+function duracaoCurta(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.floor(s / 60)}min`
+  if (s < 86400) return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`
+  return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`
+}
+
+// A pendencia registrada: o dado (status_since) existia e ninguem o desenhava.
+// Card esperando gente ha dias e card que parou agora sao coisas diferentes.
+function paradoHa(fm: Fields, agoraMs: number): string {
+  const status = String(fm.status ?? '')
+  if (!PARADO.has(status)) return ''
+  const desde = Date.parse(String(fm.status_since ?? ''))
+  if (Number.isNaN(desde)) return ''
+  return `${duracaoCurta(agoraMs - desde)} em ${status}`
+}
+
 function ultimaFerramenta(atividades: readonly Atividade[]): string {
   const util = atividades.filter(a => ['arquivo', 'shell', 'busca', 'mcp'].includes(a.tipo))
   const u = util[util.length - 1]
@@ -109,9 +156,12 @@ export function renderSituacao(s: Situacao, opts: Partial<OpcoesDaSituacao> = {}
     ['ultima acao', ultimaFerramenta(s.atividades)],
     ['reparo', tentativas(s.eventos)],
     ['gate', gate(s.eventos)],
-    ['crivo', String(fm.crivo_modo ?? '')],
+    ['crivo', crivo(fm, s.candidatos)],
+    ['harness', harness(s.chamadas)],
+    ['em voo', emVoo(s.emVoo)],
     ['gasto', fm.cost_usd ? `US$${fm.cost_usd} · ${fm.tokens_total ?? '0'} tokens` : ''],
-    ['tempo', relatoDeTempo(fm, Date.now())],
+    ['tempo', relatoDeTempo(fm, s.agoraMs ?? Date.now())],
+    ['parado ha', paradoHa(fm, s.agoraMs ?? Date.now())],
     ['espera', fm.wait_reason ? `${fm.wait_reason} (tentativa ${fm.wait_attempts ?? '?'})` : ''],
   ]
   for (const [nome, valor] of pares) {
