@@ -1,5 +1,7 @@
 import { join } from 'node:path'
-import { packageForPath } from '../cordel/bussola/sondar.ts'
+import { packageForPath, SERVIDOR_ESTATICO } from '../cordel/bussola/sondar.ts'
+import { ROOT } from '../cordel/alicerce/config.ts'
+import { runtimeDeScript } from '../cordel/alicerce/runtime.ts'
 import type { Contract, PackageInfo } from '../cordel/bussola/tipos.ts'
 import { envolverComRuntime } from '../quilombo/gerente-de-versao.ts'
 import type { GerentesDoHost } from '../quilombo/gerente-de-versao.ts'
@@ -46,6 +48,9 @@ export function resolveCommand(contract: Contract, kind: CommandKind, worktree: 
   const parsed = splitCommand(raw)
   if (!parsed) return null
   const scoped = contract.shape === 'poly' && alvo?.path ? join(worktree, alvo.path) : worktree
+  if (parsed.cmd === SERVIDOR_ESTATICO) {
+    return { cmd: runtimeDeScript(), args: [join(ROOT, 'scripts', 'servidor-estatico.mjs'), ...parsed.args], cwd: scoped, label: raw, env: {}, runtime: 'live server do motor', avisosDeRuntime: [] }
+  }
   const envolvido = envolverComRuntime(parsed.cmd, parsed.args, alvo?.runtimes, gerentes)
   return { cmd: envolvido.cmd, args: envolvido.args, cwd: scoped, label: raw, env: envolvido.env, runtime: envolvido.rotulo, avisosDeRuntime: envolvido.avisos }
 }

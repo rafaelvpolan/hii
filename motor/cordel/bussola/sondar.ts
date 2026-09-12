@@ -29,7 +29,30 @@ function pick(scripts: string[], names: string[]): string {
   return names.find(n => scripts.includes(n)) ?? ''
 }
 
-export function commandsFor(pm: PackageManager, scripts: string[], workspaceName = ''): Commands {
+// Marcador que devCommand troca pelo runtime do motor + scripts/servidor-estatico.mjs
+// na hora de rodar. O contrato fica portatil (nao grava caminho absoluto desta
+// maquina) e o live server nao passa pelo gerente de versao do alvo — e nosso.
+export const SERVIDOR_ESTATICO = '{servidor-estatico}'
+
+const SCRIPTS_DE_DEV = ['dev', 'start:dev', 'dev:start', 'serve', 'serve:dev', 'start', 'preview', 'watch']
+const PASTAS_ESTATICAS = ['public', 'dist', 'build', 'www', 'site', 'docs', 'static', '.']
+
+export function pastaEstatica(dir: string): string {
+  for (const p of PASTAS_ESTATICAS) {
+    if (existsSync(join(dir, p, 'index.html'))) return p
+  }
+  return ''
+}
+
+// Sem script de dev, o preview NAO some: quem tem um `index.html` ganha o live
+// server do motor; Django ganha o runserver; PHP ja tem o `php -S` em commandsForPhp.
+export function devPadrao(dir: string): string {
+  if (existsSync(join(dir, 'manage.py'))) return 'python3 manage.py runserver 127.0.0.1:{port}'
+  const pasta = pastaEstatica(dir)
+  return pasta ? `${SERVIDOR_ESTATICO} --dir ${pasta} --port {port}` : ''
+}
+
+export function commandsFor(pm: PackageManager, scripts: string[], workspaceName = '', dir = ''): Commands {
   const prefix = filterFlag(pm, workspaceName)
   const cmd = (script: string): string => {
     if (!script) return ''
@@ -41,7 +64,7 @@ export function commandsFor(pm: PackageManager, scripts: string[], workspaceName
     test: cmd(pick(scripts, ['test', 'test:unit'])),
     lint: cmd(pick(scripts, ['lint'])),
     typecheck: cmd(pick(scripts, ['typecheck', 'type-check'])),
-    dev: cmd(pick(scripts, ['dev', 'start', 'serve'])),
+    dev: cmd(pick(scripts, SCRIPTS_DE_DEV)) || (dir ? devPadrao(dir) : ''),
   }
 }
 
@@ -56,7 +79,7 @@ export function commandsForPhp(dir: string, framework: string, scripts: readonly
     ? 'php artisan serve --host 127.0.0.1 --port {port}'
     : existsSync(join(dir, 'public', 'index.php'))
       ? 'php -S 127.0.0.1:{port} -t public'
-      : existsSync(join(dir, 'index.php')) ? 'php -S 127.0.0.1:{port}' : ''
+      : existsSync(join(dir, 'index.php')) ? 'php -S 127.0.0.1:{port}' : devPadrao(dir)
   return {
     install: 'composer install',
     build: script('build'),
@@ -69,11 +92,30 @@ export function commandsForPhp(dir: string, framework: string, scripts: readonly
 
 export function stackPhrase(main: PackageInfo | undefined, shape: RepoShape, total: number, bundler: string): string {
   if (!main) return 'stack nao detectado (sem package.json nem composer.json)'
+  if (main.language === 'HTML') return 'site estatico (HTML) · preview pelo live server do motor'
   const parts = [bundler, main.framework, main.language].filter(Boolean)
   const base = parts.length ? parts.join(' + ') : 'stack nao detectado'
   if (shape === 'single') return `${base} (${main.packageManager})`
   const rotulo = shape === 'poly' ? 'poli-repo' : 'monorepo'
   return `${base} · ${rotulo} com ${total} projetos`
+}
+
+// Site em HTML puro: nao tem manifesto nenhum, mas tem o que servir. Vira um
+// pacote com so o `dev`, para o card ganhar preview e o /serve funcionar.
+function siteEstatico(root: string): PackageInfo | null {
+  const pasta = pastaEstatica(root)
+  if (!pasta) return null
+  return {
+    name: basename(root),
+    path: '',
+    framework: '',
+    language: 'HTML',
+    packageManager: 'npm',
+    scripts: [],
+    devPort: 0,
+    commands: { install: '', build: '', test: '', lint: '', typecheck: '', dev: devPadrao(root) },
+    runtimes: runtimesDoPacote(root, ''),
+  }
 }
 
 function inspectPhpPackage(root: string, rel: string): PackageInfo | null {
@@ -109,7 +151,7 @@ function inspectPackage(root: string, rel: string, workspacePm?: PackageManager,
     packageManager: pm,
     scripts,
     devPort: detectDevPort(dir),
-    commands: commandsFor(pm, scripts, workspaceName),
+    commands: commandsFor(pm, scripts, workspaceName, dir),
     runtimes: runtimesDoPacote(root, rel),
   }
 }
@@ -145,6 +187,8 @@ function collect(root: string): { shape: RepoShape; packages: PackageInfo[] } {
     const p = inspectPackage(root, '')
     return { shape: 'single', packages: p ? [p] : [] }
   }
+  const estatico = siteEstatico(root)
+  if (estatico) return { shape: 'single', packages: [estatico] }
   const packages = polyDirs(root)
     .map(d => inspectPackage(root, d))
     .filter((p): p is PackageInfo => p !== null)

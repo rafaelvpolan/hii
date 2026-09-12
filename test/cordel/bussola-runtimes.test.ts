@@ -92,3 +92,35 @@ test('PHP puro na raiz (sem package.json) tambem vira contrato: php -S com {port
   const dev = devCommand(c, 5200, undefined, SEM_GERENTE)
   expect(dev?.args).toEqual(['-S', '127.0.0.1:5200', '-t', 'public'])
 })
+
+test('sem script de dev o preview NAO some: start:dev conta como dev; sem script nenhum, index.html em public/ vira o live server do motor; manage.py vira runserver', () => {
+  const a = repo()
+  escrever(a, 'package.json', JSON.stringify({ name: 'a', scripts: { 'start:dev': 'nodemon server.js' } }))
+  expect(probeContract(a, 'x').commands.dev).toBe('npm run start:dev')
+
+  const b = repo()
+  escrever(b, 'package.json', JSON.stringify({ name: 'b', scripts: { build: 'esbuild' } }))
+  escrever(join(b, 'public'), 'index.html', '<html></html>')
+  const cb = probeContract(b, 'x')
+  expect(cb.commands.dev).toBe('{servidor-estatico} --dir public --port {port}')
+  const dev = devCommand(cb, 5210, undefined, SEM_GERENTE)
+  expect(dev?.cmd === 'bun' || dev?.cmd === 'node', 'roda no runtime do MOTOR, nao no do alvo').toBe(true)
+  expect(dev?.args.slice(1)).toEqual(['--dir', 'public', '--port', '5210'])
+  expect(dev?.args[0]?.endsWith('scripts/servidor-estatico.mjs')).toBe(true)
+  expect(dev?.runtime).toBe('live server do motor')
+
+  const c = repo()
+  escrever(c, 'manage.py', '')
+  escrever(c, 'package.json', JSON.stringify({ name: 'c' }))
+  expect(probeContract(c, 'x').commands.dev).toBe('python3 manage.py runserver 127.0.0.1:{port}')
+})
+
+test('site em HTML puro, sem manifesto nenhum, vira contrato com preview pelo live server', () => {
+  const r = repo()
+  escrever(r, 'index.html', '<html><body>oi</body></html>')
+  const c = probeContract(r, 'x')
+  expect(c.packages.length).toBe(1)
+  expect(c.packages[0]?.language).toBe('HTML')
+  expect(c.commands.dev).toBe('{servidor-estatico} --dir . --port {port}')
+  expect(c.stack).toContain('site estatico')
+})
