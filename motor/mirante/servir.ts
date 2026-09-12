@@ -116,9 +116,11 @@ async function subir(alvo: AlvoDoServe): Promise<string[]> {
   if (h.reused) return [`${nomeDo(alvo)}: o modo dev ja esta de pe (pid ${h.pid})`, `  ${urlDe(alvo.port)}`]
   lembrarPid(alvo, h.pid)
   const respondeu = await waitHttp(urlDe(alvo.port), TENTATIVAS_DE_ESPERA)
-  const linha = `${nomeDo(alvo)}: modo dev subiu (pid ${h.pid}) — ${cmd?.label ?? 'dev'} em ${alvo.dir}`
+  const runtime = cmd?.runtime ? ` · ${cmd.runtime}` : ''
+  const linha = `${nomeDo(alvo)}: modo dev subiu (pid ${h.pid}) — ${cmd?.label ?? 'dev'} em ${alvo.dir}${runtime}`
+  const avisos = (cmd?.avisosDeRuntime ?? []).map(a => `  ${a}`)
   const url = `  ${urlDe(alvo.port)}`
-  return respondeu ? [linha, url] : [linha, url, `  ainda nao responde — de mais alguns segundos; se nao subir, rode o comando a mao nesse diretorio para ver o erro`]
+  return respondeu ? [linha, url, ...avisos] : [linha, url, ...avisos, `  ainda nao responde — de mais alguns segundos; se nao subir, rode o comando a mao nesse diretorio para ver o erro`]
 }
 
 async function parar(alvo: AlvoDoServe): Promise<string[]> {

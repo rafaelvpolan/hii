@@ -78,8 +78,22 @@ export function detectBundler(pkg: PackageJson | null): string {
 }
 
 export function detectLanguage(dir: string, pkg: PackageJson | null): string {
+  if (!pkg && existsSync(join(dir, 'composer.json'))) return 'PHP'
   if (existsSync(join(dir, 'tsconfig.json')) || allDeps(pkg).typescript) return 'TypeScript'
   return 'JavaScript'
+}
+
+const FRAMEWORKS_PHP: Array<[string, string]> = [
+  ['laravel/framework', 'Laravel'],
+  ['symfony/framework-bundle', 'Symfony'],
+  ['slim/slim', 'Slim'],
+  ['cakephp/cakephp', 'CakePHP'],
+  ['codeigniter4/framework', 'CodeIgniter'],
+]
+
+export function detectFrameworkPhp(require: Record<string, string> | undefined): string {
+  for (const [dep, label] of FRAMEWORKS_PHP) if (require?.[dep]) return label
+  return ''
 }
 
 const CONFIG_FILES = ['vite.config.ts', 'vite.config.js', 'nuxt.config.ts', 'next.config.js', 'next.config.mjs', 'svelte.config.js', 'astro.config.mjs']

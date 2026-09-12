@@ -76,6 +76,9 @@ async function portaoComReparo(portao: Portao, o: OpcoesDoPortao): Promise<boole
   // e especialista em teste. O ganho aqui e concreto — a instrucao generica de
   // build manda "nao use any nem unknown", vocabulario de TypeScript que nao
   // significa nada num projeto PHP, Go ou Godot.
+  if (cmd.runtime || cmd.avisosDeRuntime.length) {
+    patchCard(o.id, {}, `${isoNow()} ${o.rotuloNoCard}: runtime ${cmd.runtime || 'do PATH'}${cmd.avisosDeRuntime.length ? ` — ${cmd.avisosDeRuntime.join('; ')}` : ''}`)
+  }
   const dominio = portao.comando === 'build' ? escolherReparador(o.ctx.arquivos) : null
   const agente = dominio?.agente ?? portao.agente
   const instrucaoDe = (saida: string): string => dominio ? dominio.instrucao(saida) : portao.instrucao(saida, cmd.label)
@@ -88,7 +91,7 @@ async function portaoComReparo(portao: Portao, o: OpcoesDoPortao): Promise<boole
     nome: portao.id,
     rodar: async (): Promise<VeredictoDeGate> => {
       const t0 = Date.now()
-      const r = await run(cmd.cmd, cmd.args, { cwd: cmd.cwd, timeout: TIMEOUT_MS })
+      const r = await run(cmd.cmd, cmd.args, { cwd: cmd.cwd, timeout: TIMEOUT_MS, env: cmd.env })
       if (primeira) {
         addMetric(o.fsteps, o.chaveDeTempo, { time: Math.round((Date.now() - t0) / 1000), cost: 0, tokens: 0 })
         primeira = false

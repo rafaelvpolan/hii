@@ -11,6 +11,9 @@ import { repoBase } from '../../cordel/store.ts'
 import { taskSyncName } from '../../tomada/ponte/tarefas/registro.ts'
 import { daemonStatus } from '../../oswaldo/mutirao/daemon.ts'
 import { harnessPorNome, providerNameFor } from '../../tomada/registro.ts'
+import { envolverComRuntime, sondarGerentes } from '../../quilombo/gerente-de-versao.ts'
+import type { Gerente, GerentesDoHost } from '../../quilombo/gerente-de-versao.ts'
+import type { RuntimeDeclarado } from '../../cordel/bussola/tipos.ts'
 
 export type Severity = 'ok' | 'aviso' | 'erro'
 
@@ -112,6 +115,50 @@ export function checkContract(repoPath: string): Check {
   return check('contrato', 'ok', c.stack)
 }
 
+const INSTALAR: Record<Gerente, (r: RuntimeDeclarado) => string> = {
+  mise: r => `mise install ${r.linguagem}@${r.versao}`,
+  asdf: r => `asdf install ${r.linguagem === 'node' ? 'nodejs' : 'php'} ${r.versao}`,
+  fnm: r => `fnm install ${r.versao}`,
+  volta: r => `volta install node@${r.versao}`,
+  nvm: r => `nvm install ${r.versao}`,
+  phpenv: r => `phpenv install ${r.versao}`,
+}
+
+function versaoNoPath(linguagem: RuntimeDeclarado['linguagem']): string {
+  const r = linguagem === 'node' ? exec('node', ['--version']) : exec('php', ['-r', 'echo PHP_VERSION;'])
+  return r.ok ? r.out.replace(/^v/, '').trim() : ''
+}
+
+function mesmaMaior(declarada: string, instalada: string): boolean {
+  const a = declarada.split('.')[0]
+  const b = instalada.split('.')[0]
+  return !!a && !!b && a === b
+}
+
+// Monolito modular: cada pacote declara seu node/php, e o que roda tem de ser
+// aquele — nao o do PATH. Sem gerente de versao o motor roda com o PATH e avisa;
+// com gerente, o proprio `exec` resolve na hora e o doctor so confere que ele
+// existe. Nao instala nada: dizer o comando e trabalho do doctor, rodar e seu.
+export function checkRuntimes(repoPath: string, gerentes: GerentesDoHost = sondarGerentes()): Check {
+  const c = readContract(repoPath)
+  const declarados = (c?.packages ?? []).flatMap(p => (p.runtimes ?? []).map(r => ({ ...r, pacote: p.path || p.name })))
+  if (!declarados.length) return check('runtimes', 'ok', 'nenhuma versao de node/php declarada — comandos do alvo rodam com o PATH')
+  const oks: string[] = []
+  const avisos: string[] = []
+  const consertos: string[] = []
+  for (const r of declarados) {
+    const envolvido = envolverComRuntime('true', [], [r], gerentes)
+    const via = envolvido.rotulo.match(/ via (\w+)$/)?.[1] as Gerente | undefined
+    if (via) { oks.push(`${r.pacote}: ${r.linguagem} ${r.versao} via ${via}`); consertos.push(`se faltar: ${INSTALAR[via](r)}`); continue }
+    const noPath = versaoNoPath(r.linguagem)
+    if (noPath && mesmaMaior(r.versao, noPath)) { oks.push(`${r.pacote}: ${r.linguagem} ${r.versao} (PATH tem ${noPath}, sem gerente)`); continue }
+    avisos.push(`${r.pacote}: ${r.linguagem} ${r.versao} declarado em ${r.fonte}, PATH tem ${noPath || 'nenhum'} e nao ha gerente de versao`)
+    consertos.push(`instale mise (https://mise.jdx.dev) ou ${r.linguagem === 'node' ? 'nvm/fnm' : 'phpenv'} e rode \`mise install ${r.linguagem}@${r.versao}\``)
+  }
+  if (avisos.length) return check('runtimes', 'aviso', avisos.join(' · '), [...new Set(consertos)].join(' · '))
+  return check('runtimes', 'ok', oks.join(' · '), [...new Set(consertos)].join(' · '))
+}
+
 // `.hii/config.json` era escrito por `hii init` e lido por `readProjectConfig`,
 // que nao tinha nenhum consumidor de producao: o operador escrevia provider, base
 // e taskSource ali e NADA acontecia. Aqui o arquivo passa a ser conferido contra
@@ -197,7 +244,7 @@ export function runDoctor(): Report {
   const gerais = [checkGh(), checkProvider(), checkRecurso(), checkDaemon()]
   const repos = repoStatus().map(r => ({
     repo: r.name,
-    checks: [checkGitPush(r.path, r.name), checkContract(r.path), checkProjectConfig(r.path, r.name)],
+    checks: [checkGitPush(r.path, r.name), checkContract(r.path), checkRuntimes(r.path), checkProjectConfig(r.path, r.name)],
   }))
   return { gerais, repos, pior: pior([...gerais, ...repos.flatMap(r => r.checks)]) }
 }

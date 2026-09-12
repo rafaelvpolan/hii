@@ -1,6 +1,8 @@
 import { join } from 'node:path'
 import { packageForPath } from '../cordel/bussola/sondar.ts'
 import type { Contract, PackageInfo } from '../cordel/bussola/tipos.ts'
+import { envolverComRuntime } from '../quilombo/gerente-de-versao.ts'
+import type { GerentesDoHost } from '../quilombo/gerente-de-versao.ts'
 
 export type CommandKind = 'build' | 'test' | 'lint' | 'typecheck' | 'dev'
 
@@ -9,6 +11,11 @@ export interface ResolvedCommand {
   args: string[]
   cwd: string
   label: string
+  // Variaveis que o gerente de versao pede (ASDF_NODEJS_VERSION, PHPENV_VERSION…).
+  env: Record<string, string>
+  // "node 18 via mise · php 8.2 via mise", ou '' quando o pacote nao declara versao.
+  runtime: string
+  avisosDeRuntime: string[]
 }
 
 export function splitCommand(command: string): { cmd: string; args: string[] } | null {
@@ -33,13 +40,14 @@ function pickPackage(contract: Contract, pkg: PackageInfo | undefined): PackageI
   return contract.packages.find(p => p.path === contract.main) ?? contract.packages[0]
 }
 
-export function resolveCommand(contract: Contract, kind: CommandKind, worktree: string, pkg?: PackageInfo): ResolvedCommand | null {
+export function resolveCommand(contract: Contract, kind: CommandKind, worktree: string, pkg?: PackageInfo, gerentes?: GerentesDoHost): ResolvedCommand | null {
   const alvo = pickPackage(contract, pkg)
   const raw = pkg ? pkg.commands[kind] : (alvo?.commands[kind] ?? contract.commands[kind])
   const parsed = splitCommand(raw)
   if (!parsed) return null
   const scoped = contract.shape === 'poly' && alvo?.path ? join(worktree, alvo.path) : worktree
-  return { ...parsed, cwd: scoped, label: raw }
+  const envolvido = envolverComRuntime(parsed.cmd, parsed.args, alvo?.runtimes, gerentes)
+  return { cmd: envolvido.cmd, args: envolvido.args, cwd: scoped, label: raw, env: envolvido.env, runtime: envolvido.rotulo, avisosDeRuntime: envolvido.avisos }
 }
 
 const PORT_FLAG: Record<string, string> = {
@@ -49,9 +57,15 @@ const PORT_FLAG: Record<string, string> = {
   Remix: '--port',
 }
 
-export function devCommand(contract: Contract, port: number, pkg?: PackageInfo): ResolvedCommand | null {
-  const base = resolveCommand(contract, 'dev', '', pkg)
+export function devCommand(contract: Contract, port: number, pkg?: PackageInfo, gerentes?: GerentesDoHost): ResolvedCommand | null {
+  const base = resolveCommand(contract, 'dev', '', pkg, gerentes)
   if (!base) return null
+  // `{port}` no comando (php artisan serve --port {port}, php -S host:{port}) e
+  // substituido onde esta; sem o marcador, a porta vai como flag no fim.
+  if (base.label.includes('{port}')) {
+    const troca = (s: string): string => s.replaceAll('{port}', String(port))
+    return { ...base, cmd: troca(base.cmd), args: base.args.map(troca), label: troca(base.label) }
+  }
   const alvo = pickPackage(contract, pkg)
   const flag = PORT_FLAG[alvo?.framework ?? ''] ?? '--port'
   const separador = base.cmd === 'npm' ? ['--'] : []

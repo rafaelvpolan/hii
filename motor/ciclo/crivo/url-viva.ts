@@ -34,7 +34,7 @@ export function startUrl(wt: string, port: number, target: string): number {
   if (!contract) return 0
   const cmd = devCommand(contract, port)
   if (!cmd) return 0
-  const child = spawn(cmd.cmd, cmd.args, { cwd: devCwd(contract, wt), detached: true, stdio: 'ignore' })
+  const child = spawn(cmd.cmd, cmd.args, { cwd: devCwd(contract, wt), detached: true, stdio: 'ignore', env: { ...process.env, ...cmd.env } })
   child.unref()
   return child.pid || 0
 }
