@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { ensureWorktree, pushOwnedBranch, refreshFromBase, removeWorktree, runGit, settleWorktree } from '../../motor/quilombo/git.ts'
+import { descreverOrigem, ensureWorktree, pushOwnedBranch, refreshFromBase, removeWorktree, runGit, settleWorktree } from '../../motor/quilombo/git.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-git-'))
 let seq = 0
@@ -411,5 +411,54 @@ test('ensureWorktree: branch local ATRAS da remota avanca para a remota antes de
   expect(info.origem).toBe('branch-local')
   expect(shaRemoto.startsWith(info.head)).toBe(true)
   expect(existsSync(join(wt, 'v2.txt'))).toBe(true)
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree: branch local A FRENTE da remota e retomada como esta, sem aviso de divergencia', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-local-a-frente'
+  const wt = join(BASE, 'wt-local-a-frente')
+  await ensureWorktree(c.clone, wt, branch, 'main')
+  writeFileSync(join(wt, 'v1.txt'), 'primeiro\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: v1'])
+  git(wt, ['push', '-q', 'origin', branch])
+  writeFileSync(join(wt, 'v2.txt'), 'segundo, so local\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: v2'])
+  const shaLocal = git(wt, ['rev-parse', '--short=7', 'HEAD'])
+  await removeWorktree(c.clone, wt)
+
+  const info = await ensureWorktree(c.clone, wt, branch, 'main')
+  expect(info.origem).toBe('branch-local')
+  expect(info.divergida).toBe(false)
+  expect(info.head).toBe(shaLocal)
+  expect(descreverOrigem(info, 'main', branch)).not.toContain('divergiram')
+  await removeWorktree(c.clone, wt)
+})
+
+test('ensureWorktree: branch local e remota DIVERGIDAS — retoma a local (decisao aceita) mas o diario avisa que a remota tem commits proprios', async () => {
+  const c = cenario()
+  const branch = 'hicode/005-divergida'
+  const wt = join(BASE, 'wt-divergida')
+  await ensureWorktree(c.clone, wt, branch, 'main')
+  writeFileSync(join(wt, 'v1.txt'), 'primeiro\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: v1'])
+  git(wt, ['push', '-q', 'origin', branch])
+  writeFileSync(join(wt, 'local.txt'), 'so na local\n')
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', 'feat: local'])
+  const shaLocal = git(wt, ['rev-parse', '--short=7', 'HEAD'])
+  await removeWorktree(c.clone, wt)
+  pushTentativaAnterior(c, branch, 'remoto.txt', 'so na remota\n')
+
+  const info = await ensureWorktree(c.clone, wt, branch, 'main')
+  expect(info.origem).toBe('branch-local')
+  expect(info.divergida).toBe(true)
+  expect(info.head, 'a local e mantida como esta').toBe(shaLocal)
+  expect(existsSync(join(wt, 'local.txt'))).toBe(true)
+  expect(existsSync(join(wt, 'remoto.txt'))).toBe(false)
+  expect(descreverOrigem(info, 'main', branch)).toContain(`origin/${branch} tem commits que a local nao tem — divergiram`)
   await removeWorktree(c.clone, wt)
 })
