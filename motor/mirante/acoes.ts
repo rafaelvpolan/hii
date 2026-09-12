@@ -8,7 +8,7 @@ import { readClarify, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { conferirParedeDoPlano } from '../quilombo/cartorio/aprovar-plano.ts'
 import { CONFIRMADO } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { RESUME_POST_STEPS } from '../quilombo/cartorio/retomar.ts'
-import { encerrarHarnessDoCard } from '../tomada/harness-em-voo.ts'
+import { encerrarHarnessDoCardAsync } from '../tomada/harness-em-voo.ts'
 
 export interface NewCardInput {
   title: string
@@ -178,7 +178,7 @@ export function halt(id: string, reason: string): ActionResult {
     fields: { status: 'HALTED', halt_class: 'humano', halt_reason: reason, halt_at: isoNow() },
     log: fm => `${isoNow()} ${fm.status || 'INBOX'}->HALTED${reason ? ' ' + reason : ''}`,
   })
-  if (r) encerrarHarnessDoCard(id, 'parada pedida pelo humano')
+  if (r) void encerrarHarnessDoCardAsync(id, 'parada pedida pelo humano')
   return r
 }
 
