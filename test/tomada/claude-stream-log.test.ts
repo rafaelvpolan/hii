@@ -32,7 +32,7 @@ test('resultado de Task (subagente) sai INTEIRO, linha a linha, como fala de IA;
   expect(task.split('\n')).toEqual(['  ← Task respondeu:', ...RESPOSTA_DO_LIMPIO.split('\n')])
   const read = renderEvent({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'b', content: 'y'.repeat(500) }] } }, emVoo)
   expect(read.startsWith('  ← ')).toBe(true)
-  expect(read.length).toBeLessThan(120)
+  expect(read.length, 'curta = UMA linha com teto no log; quem corta para caber na tela e o render, na largura do terminal').toBeLessThan(620)
   expect(emVoo.size).toBe(0)
 })
 

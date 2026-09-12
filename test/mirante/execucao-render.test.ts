@@ -289,3 +289,13 @@ test('log antigo sem cabecalho (so ferramentas) ainda vira um bloco, sem rotulo 
   expect(tela.some(l => l.startsWith('── ▶ IA ──'))).toBe(true)
   expect(tela).toContain('● Read(a.md)')
 })
+
+test('REGRESSAO o resultado da ferramenta preenche a LARGURA do terminal — nao para em 160 nem em 100 caracteres', () => {
+  const longo = 'The file /home/rpolan/projects/.hicode-worktrees/hicode-site/007-os-icones-do-site-esta-muito-fora-do-padrao/src/components/Header.vue has been updated successfully with the new icon set and spacing rules that the design asked for'
+  const at = parseLog(`  → Edit({"file_path":"Header.vue"})\n  ← ${longo}`)
+  const estreita = renderExecucao(at, { color: false, largura: 100 })
+  expect(estreita[1]?.length).toBe(100)
+  expect(estreita[1]?.endsWith('…')).toBe(true)
+  const larga = renderExecucao(at, { color: false, largura: 260 })
+  expect(larga[1]).toBe(`  ⎿ ${longo}`)
+})

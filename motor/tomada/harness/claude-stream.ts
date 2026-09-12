@@ -30,6 +30,9 @@ interface StreamPart {
 
 const FERRAMENTAS_DE_IA = ['Task']
 const LIMITE_DA_RESPOSTA_DE_IA = 4000
+// O corte para caber na tela e do render, na largura do terminal; aqui so se
+// impede que um resultado gigante vire uma linha de megabytes no log.
+const LIMITE_DA_LINHA_DE_FERRAMENTA = 600
 
 export { cabecalhoDaChamada }
 
@@ -73,7 +76,7 @@ function usageFrom(u: StreamEvent['usage']): Usage {
 function short(v: object | string | undefined): string {
   try {
     const s = typeof v === 'string' ? v : JSON.stringify(v)
-    return s.length > 100 ? s.slice(0, 100) + '…' : s
+    return s.length > LIMITE_DA_LINHA_DE_FERRAMENTA ? s.slice(0, LIMITE_DA_LINHA_DE_FERRAMENTA) + '…' : s
   } catch {
     return ''
   }
