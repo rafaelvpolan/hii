@@ -71,15 +71,12 @@ if (process.argv.includes('--init')) {
   } catch (e) {
     reportTickFailure('varredura de previews', e as Error)
   }
-  try {
-    const harnesses = varrerHarnessesOrfaos()
+  void varrerHarnessesOrfaos().then((harnesses) => {
     for (const id of harnesses.mortosLimpos) process.stdout.write(`[runner] #${id}: registro de harness morto limpo no arranque\n`)
     for (const h of harnesses.encerrados) process.stdout.write(`[runner] #${h.id}: harness orfao (pid ${h.pid}) encerrado no arranque (${h.sinal})\n`)
     for (const id of harnesses.recusados) process.stdout.write(`[runner] #${id}: registro de harness apontava para processo que nao e harness — descartado sem matar\n`)
     for (const id of harnesses.deixados) process.stdout.write(`[runner] #${id}: harness registrado ainda vivo e o card segue ativo — nao tocado\n`)
-  } catch (e) {
-    reportTickFailure('varredura de harnesses', e as Error)
-  }
+  }).catch((e) => { reportTickFailure('varredura de harnesses', e as Error) })
   retomarAoIniciar(linha => process.stdout.write(linha))
   if (process.argv.includes('--once')) {
     void wakeDueWaiting()

@@ -179,20 +179,7 @@ export function identidadeProvada(registro: HarnessRegistrado, worktree: string)
   return mesmoProcesso(registro) && (rodaDentroDoWorktree(registro.pid, worktree) || ehProcessoDeHarness(registro.pid))
 }
 
-function esperarSync(ms: number): void {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
-}
-
-function esperarMorteSync(pid: number, tetoMs: number): boolean {
-  const limite = Date.now() + tetoMs
-  while (Date.now() < limite) {
-    if (!pidVivo(pid)) return true
-    esperarSync(PASSO_MS)
-  }
-  return !pidVivo(pid)
-}
-
-async function esperarMorteAsync(pid: number, tetoMs: number): Promise<boolean> {
+async function esperarMorte(pid: number, tetoMs: number): Promise<boolean> {
   const limite = Date.now() + tetoMs
   while (Date.now() < limite) {
     if (!pidVivo(pid)) return true
@@ -205,18 +192,11 @@ function sinalizar(pid: number, sinal: SinalDeEncerramento): void {
   try { process.kill(pid, sinal) } catch { void 0 }
 }
 
-export function matarComEscalada(registro: HarnessRegistrado): SinalDeEncerramento | 'sobreviveu' {
+export async function matarComEscalada(registro: HarnessRegistrado): Promise<SinalDeEncerramento | 'sobreviveu'> {
   sinalizar(registro.pid, 'SIGTERM')
-  if (esperarMorteSync(registro.pid, ESPERA_SIGTERM_MS) || !mesmoProcesso(registro)) return 'SIGTERM'
+  if (await esperarMorte(registro.pid, ESPERA_SIGTERM_MS) || !mesmoProcesso(registro)) return 'SIGTERM'
   sinalizar(registro.pid, 'SIGKILL')
-  return esperarMorteSync(registro.pid, ESPERA_SIGKILL_MS) ? 'SIGKILL' : 'sobreviveu'
-}
-
-export async function matarComEscaladaAsync(registro: HarnessRegistrado): Promise<SinalDeEncerramento | 'sobreviveu'> {
-  sinalizar(registro.pid, 'SIGTERM')
-  if (await esperarMorteAsync(registro.pid, ESPERA_SIGTERM_MS) || !mesmoProcesso(registro)) return 'SIGTERM'
-  sinalizar(registro.pid, 'SIGKILL')
-  return (await esperarMorteAsync(registro.pid, ESPERA_SIGKILL_MS)) ? 'SIGKILL' : 'sobreviveu'
+  return (await esperarMorte(registro.pid, ESPERA_SIGKILL_MS)) ? 'SIGKILL' : 'sobreviveu'
 }
 
 function anotar(id: string, linha: string): void {
@@ -249,16 +229,22 @@ function depoisDeMatar(id: string, registro: HarnessRegistrado, sinal: SinalDeEn
   return { acao: 'encerrado', pid, sinal }
 }
 
-function encerrar(id: string, registro: HarnessRegistrado, contexto: string): ResultadoDeEncerramento {
-  return antesDeMatar(id, registro) ?? depoisDeMatar(id, registro, matarComEscalada(registro), contexto)
+async function encerrar(id: string, registro: HarnessRegistrado, contexto: string): Promise<ResultadoDeEncerramento> {
+  return antesDeMatar(id, registro) ?? depoisDeMatar(id, registro, await matarComEscalada(registro), contexto)
 }
 
-export function encerrarHarnessDoCard(id: string, contexto: string): ResultadoDeEncerramento[] {
-  return harnessesDoCard(id).map(registro => encerrar(id, registro, contexto))
+export function encerrarHarnessDoCard(id: string, contexto: string): Promise<ResultadoDeEncerramento[]> {
+  return Promise.all(harnessesDoCard(id).map(registro => encerrar(id, registro, contexto)))
 }
 
-export function encerrarHarnessDoCardAsync(id: string, contexto: string): Promise<ResultadoDeEncerramento[]> {
-  return Promise.all(harnessesDoCard(id).map(async registro => antesDeMatar(id, registro) ?? depoisDeMatar(id, registro, await matarComEscaladaAsync(registro), contexto)))
+export function harnessVivoDoCard(id: string): HarnessRegistrado | null {
+  return harnessesDoCard(id).find(r => pidVivo(r.pid) && mesmoProcesso(r)) ?? null
+}
+
+export function motivoParaEsperarHarness(id: string): string {
+  const vivo = harnessVivoDoCard(id)
+  if (!vivo) return ''
+  return `#${id}: o harness anterior (pid ${vivo.pid}, ${vivo.papel}) ainda esta encerrando — aguarde uns segundos e tente de novo, senao dois processos escrevem no mesmo worktree`
 }
 
 function cardSemUsoDeHarness(id: string): boolean {
@@ -267,7 +253,7 @@ function cardSemUsoDeHarness(id: string): boolean {
   return ESTADOS_SEM_HARNESS.includes(String(card.fm.status ?? ''))
 }
 
-export function varrerHarnessesOrfaos(): VarreduraDeHarnesses {
+export async function varrerHarnessesOrfaos(): Promise<VarreduraDeHarnesses> {
   const v: VarreduraDeHarnesses = { mortosLimpos: [], encerrados: [], deixados: [], recusados: [] }
   for (const { id, registro } of harnessesRegistrados()) {
     if (!pidVivo(registro.pid)) {
@@ -279,13 +265,13 @@ export function varrerHarnessesOrfaos(): VarreduraDeHarnesses {
       v.deixados.push(id)
       continue
     }
-    const r = encerrar(id, registro, 'orfao encontrado no arranque do motor, card ja nao roda')
+    const r = await encerrar(id, registro, 'orfao encontrado no arranque do motor, card ja nao roda')
     if (r.acao === 'encerrado') v.encerrados.push({ id, pid: r.pid, sinal: r.sinal })
     else if (r.acao === 'recusado') v.recusados.push(id)
   }
   return v
 }
 
-export function encerrarHarnessesRegistrados(contexto: string): Array<{ id: string } & ResultadoDeEncerramento> {
-  return harnessesRegistrados().map(({ id, registro }) => ({ id, ...encerrar(id, registro, contexto) }))
+export function encerrarHarnessesRegistrados(contexto: string): Promise<Array<{ id: string } & ResultadoDeEncerramento>> {
+  return Promise.all(harnessesRegistrados().map(async ({ id, registro }) => ({ id, ...(await encerrar(id, registro, contexto)) })))
 }
