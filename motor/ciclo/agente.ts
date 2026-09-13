@@ -139,12 +139,12 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
     : ''
   const head = agentesInjetados.length
     ? [
-        'Use os AGENTES NEXUS deste projeto para implementar a tarefa abaixo (auto-construcao do hicode).',
+        'O HII orquestra esta execucao; use os AGENTES NEXUS para implementar a tarefa abaixo no projeto-alvo indicado.',
         `O codigo a alterar fica em: ${workdir} — ${stack}. Edite os arquivos DESSE diretorio.`,
         `Use via Task exatamente estes: ${roteamentoDeterministico(agentesInjetados)}. A escolha ja foi feita pelo motor — nao substitua por outro agente. NAO rode crivo/review nesta etapa (nao chame o crivo): a revisao adversarial e os gates rodam DEPOIS, na fase de polimento do motor. Apenas implemente.`,
       ]
     : [
-        'Implemente a tarefa abaixo (auto-construcao do hicode).',
+        'O HII orquestra esta execucao. Implemente a tarefa abaixo somente no projeto-alvo indicado.',
         `O codigo a alterar fica em: ${workdir} — ${stack}. Edite os arquivos DESSE diretorio.`,
       ]
   return [
