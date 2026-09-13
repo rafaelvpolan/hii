@@ -19,7 +19,7 @@ export const CODEX_MODOS: CatalogoDeModo = { modos: ['never', 'on-request'], pad
 interface CodexEvent {
   type?: string
   message?: string
-  item?: { type?: string; text?: string; command?: string; path?: string }
+  item?: { type?: string; text?: string; message?: string; command?: string; path?: string }
   usage?: { input_tokens?: number; output_tokens?: number; cached_input_tokens?: number }
 }
 
@@ -71,6 +71,10 @@ export function linhasDoLiveLog(stdout: string): string[] {
     if (ev.item.type === 'agent_message') { if (ev.item.text) linhas.push(ev.item.text) }
     else if (ev.item.type === 'command_execution') linhas.push(`  → Bash(${JSON.stringify({ command: ev.item.command ?? '' })})`)
     else if (ev.item.type === 'file_change') linhas.push(`  → Edit(${JSON.stringify({ file_path: ev.item.path ?? '' })})`)
+    else if (ev.item.type === 'error') {
+      const mensagem = ev.item.message || ev.item.text
+      if (mensagem) linhas.push(`— falha do Codex: ${mensagem}`)
+    }
     else linhas.push(`  → ${ev.item.type}(${JSON.stringify({ description: ev.item.text ?? '' })})`)
   }
   return linhas

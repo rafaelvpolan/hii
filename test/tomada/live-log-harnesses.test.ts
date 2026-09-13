@@ -32,6 +32,14 @@ test('codex: o stdout em JSON vira fala da IA e chamadas de ferramenta no mesmo 
   ])
 })
 
+test('codex: evento error vazio nao vira ferramenta falsa, mas falha com mensagem continua visivel', () => {
+  const stdout = [
+    JSON.stringify({ type: 'item.completed', item: { type: 'error' } }),
+    JSON.stringify({ type: 'item.completed', item: { type: 'error', message: 'limite do provedor' } }),
+  ].join('\n')
+  expect(linhasDoLiveLog(stdout)).toEqual(['— falha do Codex: limite do provedor'])
+})
+
 test('PONTA A PONTA: harness sem stream (codex/kimi/ollama) grava cabecalho rotulado, corpo e conclusao, e a tela mostra o bloco como mostra o do claude', () => {
   const caminho = join(BASE, '007.live.log')
   gravarChamadaNoLiveLog({ caminho, rotulo: 'step · rufus', linhas: linhasDoLiveLog(STDOUT_DO_CODEX) })

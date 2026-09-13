@@ -72,7 +72,9 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
       if (soft) clearTimeout(soft)
       if (hard) clearTimeout(hard)
       let e = bufferError ?? erroDoProcesso
-      if (!e && (codigo !== 0 || sinal)) e = Object.assign(new Error(`Command failed: ${cmd}`), { code: codigo, signal: sinal })
+      if (!e && (codigo !== 0 || sinal)) {
+        e = Object.assign(new Error(`Command failed: ${cmd}`), { code: codigo ?? undefined, signal: sinal ?? undefined }) as ExecFileException
+      }
       if (timedOut) e = Object.assign(e ?? new Error(`timeout apos ${timeoutMs}ms`), { killed: true })
       resolve({ err: e, stdout: stdout.join(''), stderr: stderr.join('') })
     })
