@@ -31,6 +31,7 @@ import { packsDoCard } from '../mirante/comandos-manuais.ts'
 import { decidirEspecs } from '../oswaldo/despacho-de-agentes.ts'
 import { checklistParaStack, renderizarChecklist } from '../agentes/vital/checklist.ts'
 import type { ContextoDeGatilho, PapelDeSkill } from '../cascudo/acervo.ts'
+import { instrucoesDosComandos } from '../tomada/mapa/comandos.ts'
 
 export interface StepResult {
   time: number
@@ -77,6 +78,21 @@ function roteamentoDeterministico(escolhidos: readonly string[]): string {
 
 function agentesInjetaveis(provider: Harness, nomes: readonly string[], ferramentasExtra: readonly string[]): Record<string, AgenteInjetado> {
   return provider.supportsAgents ? agentesNexusPor(nomes, ferramentasExtra) : {}
+}
+
+export function instrucoesDeAgentesNexus(provider: Harness, nomes: readonly string[], ferramentasExtra: readonly string[]): string {
+  // O harness estruturado que restringe ferramentas, mas nao aceita o contrato
+  // `--agents`, precisa desta ponte. Kimi continua no modo direto declarado pelo
+  // seu adaptador, sem prometer uma capacidade que nao possui.
+  if (provider.supportsAgents || !provider.capabilities().restrictsTools) return ''
+  const agentes = agentesNexusPor(nomes, ferramentasExtra)
+  const entradas = Object.entries(agentes)
+  if (!entradas.length) return ''
+  return [
+    'AGENTES NEXUS ADAPTADOS PELO HII (este harness nao possui subagentes nativos):',
+    ...entradas.map(([nome, agente]) => `### agente: ${nome}\n${agente.description}\n${agente.prompt}`),
+    'Aplique esses papeis no mesmo processo, em ordem, sem iniciar outro orquestrador.',
+  ].join('\n\n')
 }
 
 // Contexto do gatilho de skill: DETERMINISTICO, lido do disco. Arquivos que o
@@ -133,7 +149,7 @@ function blocoDeEscopo(e: EscopoDeEscrita): string {
   return `${linhas.join('\n')}\n`
 }
 
-function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita, rotaContexto = ''): string {
+function implementPrompt(agentesInjetados: readonly string[], agentesAdaptados: string, recursosSolicitados: string, workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita, rotaContexto = ''): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
     : ''
@@ -151,6 +167,8 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
     blocoDeEscopo(escopo),
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
     skills ? `${skills}\n` : '',
+    agentesAdaptados ? `${agentesAdaptados}\n` : '',
+    recursosSolicitados ? `${recursosSolicitados}\n` : '',
     memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : '',
     rotaContexto ? `CONTEXTO PRESERVADO NA TROCA DE IA:\n${rotaContexto}\n` : '',
     clarifications ? clarifications : '',
@@ -236,9 +254,11 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   // esconde a regra de verdade, que e "acao externa nao injeta agente".
   const agentesInjetados = acaoExterna.externo ? {} : agentesInjetaveis(provider, escolhidos, navegacao)
   const nomesInjetados = Object.keys(agentesInjetados)
+  const agentesAdaptados = acaoExterna.externo ? '' : instrucoesDeAgentesNexus(provider, escolhidos, navegacao)
+  const recursosSolicitados = acaoExterna.externo ? '' : instrucoesDosComandos(desc, target)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir), card.fm.rota_contexto || '')
+    : implementPrompt(nomesInjetados, agentesAdaptados, recursosSolicitados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir), card.fm.rota_contexto || '')
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,
@@ -250,7 +270,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     modo: modoFor('implement', override),
     timeoutMs: RUN_TIMEOUT_MS,
     liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
-    rotulo: ['implement', ...nomesInjetados].join(' · '),
+    rotulo: ['implement', ...escolhidos].join(' · '),
     extraTools,
     agentsJson: nomesInjetados.length ? JSON.stringify(agentesInjetados) : '',
   }, 'implement')

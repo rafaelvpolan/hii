@@ -10,6 +10,7 @@ export interface CompleteContext {
   modos?: string[]
   papeis?: string[]
   comandosDaIa?: string[]
+  comandosDoOrquestrador?: string[]
 }
 
 export type Completion = [string[], string]
@@ -26,7 +27,8 @@ export function complete(line: string, ctx: CompleteContext): Completion {
 
   if (partes.length === 1) {
     const hii = byPrefix([...COMMANDS], head)
-    const daIa = byPrefix(ctx.comandosDaIa ?? [], head).filter(c => !hii.includes(c))
+    const doOrquestrador = byPrefix(ctx.comandosDoOrquestrador ?? [], head).filter(c => !hii.includes(c))
+    const daIa = byPrefix(ctx.comandosDaIa ?? [], head).filter(c => !hii.includes(c) && !doOrquestrador.includes(c))
     // MAIORIA ESTRITA do hii continua valendo: `hii.length - 1` comandos da ia,
     // para o que o harness expoe nao afogar os comandos do proprio motor. Essa
     // parte e politica, e fica.
@@ -37,7 +39,9 @@ export function complete(line: string, ctx: CompleteContext): Completion {
     // truncado no renderizador. Quem decide quantos CABEM na tela e quem desenha,
     // com janela em volta da selecao.
     const teto = hii.length ? Math.max(0, hii.length - 1) : daIa.length
-    return [[...hii, ...daIa.slice(0, teto)], head]
+    // Nexus e Codefox sao recursos do proprio HII: precisam continuar navegaveis
+    // mesmo quando /n e /c tem muitos comandos nativos concorrendo no prefixo.
+    return [[...hii, ...doOrquestrador, ...daIa.slice(0, teto)], head]
   }
 
   const arg = partes[partes.length - 1] ?? ''

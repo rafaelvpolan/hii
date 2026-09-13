@@ -91,6 +91,24 @@ test('comando da ia que colide com um comando do hii nao aparece duplicado', () 
   expect(complete('/c', comIa)[0]).toEqual(['/config'])
 })
 
+test('Nexus e Codefox continuam navegaveis mesmo com maioria de comandos do hii', () => {
+  const r = complete('/n', {
+    ...ctx,
+    comandosDaIa: ['/new-tool', '/next-tool'],
+    comandosDoOrquestrador: ['/nexus'],
+  })[0]
+  expect(r).toContain('/nexus')
+})
+
+test('comando do orquestrador nao duplica quando tambem esta no catalogo da ia', () => {
+  const r = complete('/c', {
+    ...ctx,
+    comandosDaIa: ['/codefox'],
+    comandosDoOrquestrador: ['/codefox'],
+  })[0]
+  expect(r.filter(c => c === '/codefox')).toHaveLength(1)
+})
+
 test('sem comandosDaIa no contexto, o comportamento e identico ao de antes', () => {
   expect(complete('/re', ctx)[0]).toEqual(['/ref', '/repo'])
 })

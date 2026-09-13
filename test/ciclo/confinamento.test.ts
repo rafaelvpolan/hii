@@ -85,10 +85,11 @@ afterAll(() => {
   rmSync(BASE, { recursive: true, force: true })
 })
 
-const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO } = await import('../../motor/ciclo/agente.ts')
+const { implement, runStep, AGENTES_IMPLEMENT, AGENTE_PADRAO, instrucoesDeAgentesNexus } = await import('../../motor/ciclo/agente.ts')
 const { agentesNexus, agentesNexusJson, agentesNexusJsonPor, agentesNexusPor } = await import('../../motor/agentes/registro.ts')
 const { ferramentasDeNavegacao, TOOLS_NAVEGACAO } = await import('../../motor/tomada/ponte/mcp.ts')
 const { ClaudeProvider, agentsArgv, claudeArgv } = await import('../../motor/tomada/harness/claude.ts')
+const { CodexProvider } = await import('../../motor/tomada/harness/codex.ts')
 const { verifyVisual } = await import('../../motor/ciclo/crivo/verificar-visual.ts')
 const { ROOT } = await import('../../motor/cordel/alicerce/config.ts')
 const CARTAO = { file: '', fm: { title: 'ajustar o rodape da pagina' }, order: [], body: '' }
@@ -221,6 +222,12 @@ test('kimi nao promete agentes Nexus que nao consegue injetar: implement cai no 
   expect(prompt).not.toContain('AGENTES NEXUS')
   expect(prompt).not.toContain('Roteie via Task')
   expect(prompt).toContain('Implemente a tarefa abaixo')
+})
+
+test('Codex recebe os agentes Nexus como instrucoes quando o CLI nao suporta subagentes', () => {
+  const texto = instrucoesDeAgentesNexus(new CodexProvider(), ['limpio'], [])
+  expect(texto).toContain('### agente: limpio')
+  expect(texto).toContain('Aplique esses papeis no mesmo processo')
 })
 
 test('agentsArgv omite a flag com JSON vazio, ausente ou so espaco', () => {
