@@ -183,6 +183,22 @@ test('o /config mostra contexto usado do Codex junto com tokens e limite', () =>
   expect(t).toContain('25.840/258.400 tok')
 })
 
+test('o /config mostra o modo efetivo e o esforço aceito pelo Codex', () => {
+  const e: EstadoDaConfig = {
+    ...base,
+    selecionado: 'codex',
+    provedores: [ia('codex', {
+      plano: 'plus', aceitaEsforco: true, modo: 'never', modosDisponiveis: ['never', 'on-request'],
+    })],
+  }
+  const t = renderConfig(e, { color: false, largura: 104, altura: 34 }).join('\n')
+  expect(t).toContain('esforco')
+  expect(t).toContain('(padrao da ia)')
+  expect(t).toContain('modo')
+  expect(t).toContain('never')
+  expect(t).toContain('on-request')
+})
+
 test('REGRESSAO provedor sem leitor de plano NAO vira (free) — quem paga nao pode ser chamado de free', () => {
   const e: EstadoDaConfig = {
     ...base,

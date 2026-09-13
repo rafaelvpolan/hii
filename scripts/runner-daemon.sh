@@ -47,6 +47,17 @@ runtime_do_daemon() {
 
 RUNTIME="$(runtime_do_daemon)"
 
+setsid_do_sistema() {
+  if command -v setsid >/dev/null 2>&1; then
+    command -v setsid
+    return 0
+  fi
+  for candidato in /usr/bin/setsid /bin/setsid; do
+    if [ -x "$candidato" ]; then echo "$candidato"; return 0; fi
+  done
+  return 1
+}
+
 caminho_real() {
   readlink -f "$1" 2>/dev/null || echo "$1"
 }
@@ -127,7 +138,13 @@ start() {
   # `nohup` ignora SIGHUP, mas o daemon ainda herdava a sessao/grupo do shell.
   # `setsid` tambem o desanexa do terminal que iniciou o comando, evitando que um
   # encerramento normal da sessao mate o runner enquanto um harness esta em voo.
-  nohup setsid "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
+  # Em imagens enxutas o nome pode nao estar no PATH; os caminhos usuais cobrem
+  # esse caso sem retirar o fallback suportado de maquina somente com Node.
+  if SETSID="$(setsid_do_sistema)"; then
+    nohup "$SETSID" "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
+  else
+    nohup "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
+  fi
   pid=$!
   if ! arrancou "$pid"; then
     echo "runner NAO subiu: o processo $pid morreu no arranque - motivo em $LOG" >&2

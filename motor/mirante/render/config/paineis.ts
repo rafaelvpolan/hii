@@ -125,9 +125,14 @@ export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o
 
 export function painelDoProvedor(p: LinhaDeProvedor | undefined, largura: number, o: OpcoesConfig): string[] {
   if (!p) return [' escolha uma ia com ↑↓']
+  const esforco = p.esforco || (p.aceitaEsforco ? '(padrao da ia)' : '(nao aceita)')
   const linhas = [
     campo('modelo', p.modelo || '(padrao do cli)', largura, o),
-    campo('esforco', p.esforco || '(nao aceita)', largura, o),
+    campo('esforco', esforco, largura, o),
+    campo('modo', p.modo || '(nao se aplica)', largura, o),
+    ...(p.modosDisponiveis && p.modosDisponiveis.length > 1
+      ? [campo('modos aceitos', p.modosDisponiveis.join(' | '), largura, o)]
+      : []),
     campo('papeis', p.papeis.length ? p.papeis.join(', ') : 'nenhum', largura, o),
     campo('restringe tool', sim(p.restringeFerramenta, o), largura, o),
     campo('isola leitura', sim(p.isolaLeitura, o), largura, o),

@@ -27,6 +27,9 @@ export interface LinhaDeProvedor {
   papeis: string[]
   modelo: string
   esforco: string
+  aceitaEsforco?: boolean
+  modo?: string
+  modosDisponiveis?: string[]
   restringeFerramenta: boolean
   isolaLeitura: boolean
   reportaCusto: boolean
