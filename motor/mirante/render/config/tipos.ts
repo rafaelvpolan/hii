@@ -1,5 +1,6 @@
 import type { ConsumoDoProvedor } from '../../../euclides/tesouro/consumo.ts'
 import type { Situacao } from '../../../tomada/disponibilidade.ts'
+import type { ContextoDeUso } from '../../../tomada/tipos.ts'
 
 
 export interface JanelaDoPainel {
@@ -29,6 +30,7 @@ export interface LinhaDeProvedor {
   restringeFerramenta: boolean
   isolaLeitura: boolean
   reportaCusto: boolean
+  contexto?: ContextoDeUso
 }
 
 export interface PapelDaSessao {

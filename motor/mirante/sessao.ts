@@ -49,7 +49,7 @@ export const ALIASES: Record<string, string[]> = {
   '/gauntlet': ['/crivo'],
   '/new-task': ['/nova-tarefa'],
   '/new-ask': ['/nova-pergunta'],
-  '/new-session': ['/nova-sessao', '/new'],
+  '/new': ['/nova-sessao'],
   '/help': ['/h', '/?'],
   '/historico': ['/history'],
   '/config': ['/configuracao'],
@@ -64,7 +64,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/new-session', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
+export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/ask', '/new', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
   // Pipeline manual: um comando por passo + a suite. Mesma implementacao do CLI
   // (`hii passo`, `hii pipeline`) — cartorio/passos-manuais.ts.
   '/arquitetura', '/polimento', '/testes', '/seguranca', '/limpeza', '/hii',
@@ -235,9 +235,10 @@ function command(line: string, state: SessionState): Reply {
         : reply({ kind: 'error', text: 'uso: /new-task <o que mudar> — cria a tarefa e enfileira direto' }, state)
     case 'new-ask':
     case 'nova-pergunta':
+    case 'ask':
       return arg
         ? reply({ kind: 'consultar', text: arg }, cleared)
-        : reply({ kind: 'error', text: 'uso: /new-ask <pergunta> — responde sem criar card' }, state)
+        : reply({ kind: 'error', text: 'uso: /ask <pergunta> — responde sem criar session/card nem executar tarefa' }, state)
     case 'ref':
     case 'referencia':
     case 'imagem':
@@ -247,10 +248,9 @@ function command(line: string, state: SessionState): Reply {
     case 'dev':
     case 'preview':
       return reply({ kind: 'servir', text: arg }, state)
-    case 'new-session':
     case 'nova-sessao':
     case 'new':
-      return reply({ kind: 'nova-sessao' }, state)
+      return reply({ kind: 'nova-sessao', text: arg }, { ...foraDaTarefa(state), tela: '' })
     case 'ia':
     case 'provedor':
       return reply({ kind: 'ia', text: arg }, state)

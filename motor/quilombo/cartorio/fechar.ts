@@ -479,6 +479,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     provider_override_gate: '',
     provider_override_verify: '',
     rota_tentados: '',
+    rota_contexto: '',
     ...totalsFields,
   }, `${isoNow()} ${statusAtual}->PR_OPEN ${url} (merge e do humano)`)
   if (PROJECT_MEMORY) appendProjectMemory(target, `#${id} "${(desc ?? '').slice(0, 80)}" -> PR aberto (${url})`)

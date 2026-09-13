@@ -83,6 +83,27 @@ function comandosDeSkills(dir: string): ComandoDaIa[] {
     })
 }
 
+function subdiretorios(dir: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter(entrada => entrada.isDirectory())
+      .map(entrada => join(dir, entrada.name))
+  } catch {
+    return []
+  }
+}
+
+// Plugins Codex instalados ficam no cache em marketplace/plugin/versao/commands.
+// As skills ja eram lidas de CODEX_HOME/skills, mas os comandos do ECC moram
+// nesta arvore e por isso ficavam invisiveis para autocomplete e para o despacho.
+function comandosDePluginsDoCodex(): ComandoDaIa[] {
+  const cache = join(raizDoCodex(), 'plugins', 'cache')
+  return subdiretorios(cache)
+    .flatMap(marketplace => subdiretorios(marketplace))
+    .flatMap(plugin => subdiretorios(plugin))
+    .flatMap(versao => comandosDeArquivos(join(versao, 'commands')))
+}
+
 function raizDoClaude(): string {
   return process.env[ENV_CLAUDE_HOME_DIR] || join(homedir(), '.claude')
 }
@@ -100,6 +121,7 @@ const FONTES: Partial<Record<HarnessId, Fonte[]>> = {
     repoPath => repoPath ? comandosDeSkills(join(repoPath, '.claude', 'skills')) : [],
   ],
   codex: [
+    () => comandosDePluginsDoCodex(),
     () => comandosDeSkills(join(raizDoCodex(), 'skills')),
     repoPath => repoPath ? comandosDeSkills(join(repoPath, '.codex', 'skills')) : [],
   ],

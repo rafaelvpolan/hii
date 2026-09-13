@@ -21,9 +21,9 @@ test('nenhuma descricao sobra para comando que nao existe mais', async () => {
 })
 
 test('descricoes alinham numa coluna so', () => {
-  const linhas = renderSugestoes(['/rm', '/new-session'], { width: 78 })
+  const linhas = renderSugestoes(['/rm', '/new'], { width: 78 })
   const col = linhas.map(l => l.indexOf(AJUDA_DO_COMANDO['/rm'] ?? 'x'))
-  const outra = linhas.map(l => l.indexOf(AJUDA_DO_COMANDO['/new-session'] ?? 'y'))
+  const outra = linhas.map(l => l.indexOf(AJUDA_DO_COMANDO['/new'] ?? 'y'))
   expect(Math.max(...col, ...outra)).toBeGreaterThan(0)
   expect(visibleLen(linhas[0] ?? '')).toBeLessThanOrEqual(78)
 })
@@ -82,7 +82,7 @@ test('lista vazia nao ocupa espaco', () => {
 
 test('cabe na largura, mesmo em terminal estreito', () => {
   for (const width of [30, 50, 78]) {
-    for (const l of renderSugestoes(['/new-session', '/rm'], { width })) {
+    for (const l of renderSugestoes(['/new', '/rm'], { width })) {
       expect(visibleLen(l)).toBeLessThanOrEqual(width)
     }
   }

@@ -156,16 +156,51 @@ test('FLUXO REAL: numero de card que nao esta em URL continua abrindo o plano', 
   expect(saida.join(' ')).toContain('plano do #34')
 })
 
-test('FLUXO REAL: /new-session limpa a sessao de verdade, nao so o texto da tela', async () => {
-  const { seguir, comConversa } = await import('../../motor/mirante/sessao.ts')
-  card('035', { status: 'URL' })
-  const sujo = comConversa(seguir(newSession('org/app'), '035'), 'p', 'r')
-  const limpo = await digitar(['/new-session'], sujo)
-  expect(limpo.seguindo).toBe('')
-  expect(limpo.aprovando).toBe('')
-  expect(limpo.conversa).toEqual([])
-  expect(limpo.repo).toBe('org/app')
-  expect(saida.join(' ')).toContain('sessao nova')
+test('FLUXO REAL: /new cria uma session persistida no projeto e passa a segui-la', async () => {
+  const { allCards, readCard } = await import('../../motor/cordel/store.ts')
+  const antes = allCards().length
+  const depois = await digitar(['/new conversa sobre roteador'])
+  expect(allCards().length).toBe(antes + 1)
+  expect(depois.seguindo).toBeTruthy()
+  expect(depois.repo).toBe('org/app')
+  const criada = readCard(depois.seguindo)
+  expect(criada?.fm.tipo).toBe('session')
+  expect(criada?.fm.repo).toBe('org/app')
+  expect(criada?.body).toContain('conversa sobre roteador')
+  expect(saida.join(' ')).toContain('session #')
+})
+
+test('FLUXO REAL: texto dentro da session aparece na TUI como pergunta sem execucao', async () => {
+  const { readCard } = await import('../../motor/cordel/store.ts')
+  let state = await digitar(['/new diagnostico do roteador'])
+  const id = state.seguindo
+  saida = []
+
+  state = await digitar(['por que nao trocou de IA?'], state)
+
+  const textoDaTela = saida.join('\n')
+  expect(state.seguindo).toBe(id)
+  expect(textoDaTela).toContain(`session #${id}: pergunta de leitura, sem executar tarefa`)
+  expect(textoDaTela).toContain('resposta para: por que nao trocou de IA?')
+  const session = readCard(id)
+  expect(session?.fm.status).toBe('READY')
+  expect(session?.body).toContain('pergunta na session: por que nao trocou de IA?')
+})
+
+test('FLUXO REAL: pergunta dentro da session encaminha o ID para o ledger da IA', async () => {
+  const { dispatch } = await import('../../motor/mirante/despacho.ts')
+  const { submitSession } = await import('../../motor/mirante/acoes.ts')
+  let sessionId = ''
+  const ioDaSession = dispatchIOFalso({
+    log: () => undefined,
+    responder: async (_pergunta: string, _conversa: { pergunta: string; resposta: string }[], id?: string) => {
+      sessionId = id ?? ''
+      return ['resposta']
+    },
+  })
+  const id = submitSession({ title: 'session ledger', repo: 'org/app', desc: 'perguntas' })
+  await dispatch({ kind: 'instruct', id, text: 'qual o estado?' }, { ...newSession('org/app'), seguindo: id }, ioDaSession)
+  expect(sessionId).toBe(id)
 })
 
 test('FLUXO REAL: trocar de projeto fecha a ask de aprovacao do projeto anterior', async () => {

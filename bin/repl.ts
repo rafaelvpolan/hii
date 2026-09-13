@@ -48,9 +48,9 @@ function ioDo(app: { log: (s: string) => void }, diga: (s: string) => void, repo
     dim,
     color,
     largura: larguraUtil,
-    responder: async (pergunta, conversa) => {
+    responder: async (pergunta, conversa, sessionId) => {
       const alvo = repoPath(repo)
-      const r = await responderPergunta(pergunta, alvo, conversa)
+      const r = await responderPergunta(pergunta, alvo, conversa, sessionId)
       if (!r.ok && !r.texto) return ['  nao consegui responder — a consulta falhou']
       const emAnsi = markdownParaAnsi(r.texto, { color, largura: larguraUtil() - 2 }).join('\n')
       const corpo = quebrarEmLargura(emAnsi, larguraUtil() - 2).map(l => `  ${l}`)
@@ -84,7 +84,6 @@ async function tui(state0: SessionState): Promise<void> {
     const r = await dispatch(effect, state, ioDo(app, diga, state.repo))
     state = r.state
     if (state.repo !== repoAntes) selecionar('')
-    if (effect.kind === 'nova-sessao') { selecionar(''); app.limparLog() }
     if (!r.tratado && effect.kind === 'historico') state = { ...state, seguindo: '' }
   }
 

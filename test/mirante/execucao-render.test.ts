@@ -200,7 +200,7 @@ test('a regiao pinada nunca passa de 40% da caixa', () => {
 })
 
 // ---- linha do tempo da orquestracao ----
-import { linhaDoTempo } from '../../motor/euclides/linha-do-tempo.ts'
+import { linhaDoTempo, marcoDoEvento } from '../../motor/euclides/linha-do-tempo.ts'
 import { renderLinhaDoTempo } from '../../motor/mirante/render/execucao.ts'
 import type { EventoDoCard } from '../../motor/euclides/eventos.ts'
 import type { ChamadaDeIa } from '../../motor/cordel/tipos.ts'
@@ -246,7 +246,7 @@ test('PONTA A PONTA: a tela intercala decisao do motor (fase, gate, reparo, tier
   expect(tela[0]?.startsWith('── ▸ fase implement · vitro ──')).toBe(true)
   expect(tela.some(l => l.startsWith('── ▶ IA · implement · vitro · claude-fable-5-1 · 10:00:00 ──'))).toBe(true)
   expect(tela).toContain('┃ Vou mexer no menu.')
-  expect(tela.some(l => l.startsWith('── ■ concluido · US$0.4000 · 1234 tokens · 1m35s · claude-fable-5-1 ──'))).toBe(true)
+  expect(tela.some(l => l.startsWith('── ■ concluido · US$0.4000 · 1.234 tokens · 1m35s'))).toBe(true)
   expect(tela.some(l => l.startsWith('── ▸ fim da fase implement · aprovada ──'))).toBe(true)
   expect(txt).toContain('◇ tier gate: tier2_medio (diff pequeno)')
   expect(tela.some(l => l.startsWith('[lente 1/2] ── ▶ IA · ideacao · lente 1/2 · k2 · 10:05:00 ──')), 'o modelo vem do ledger quando o log nao o traz').toBe(true)
@@ -259,8 +259,13 @@ test('PONTA A PONTA: a tela intercala decisao do motor (fase, gate, reparo, tier
   expect(tela.some(l => l.startsWith('── ▶ IA · gate · crivo · 10:10:00 ──'))).toBe(true)
   expect(txt).toContain('◆ gate Testes CONDITIONAL — falta teste do menu')
   expect(txt).toContain('↻ reparo Testes tentativa 1/2: falta teste do menu')
-  expect(tela[tela.length - 1]?.startsWith('── ⏸ esperando voce · URL (veio de EXECUTING) ──')).toBe(true)
+  expect(tela[tela.length - 1]).toBe('  ⏸ aguardando voce · URL (veio de EXECUTING)')
   expect(txt).not.toContain('\x1b')
+})
+
+test('card fechado aparece como um marco curto com o identificador', () => {
+  const marco = marcoDoEvento({ ts: '2026-09-12T10:14:00Z', card: '077', evento: 'card_fechado', detalhe: 'PR mergeada' })
+  expect(renderLinhaDoTempo([marco], { color: false, largura: 40 })).toEqual(['── ✓ #077 CLOSED ───────────────────────'])
 })
 
 test('troca de harness por cota aparece como marco, e a chamada que falhou fecha em vermelho com a classe', () => {

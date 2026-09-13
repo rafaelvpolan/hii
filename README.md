@@ -289,9 +289,10 @@ Troca **por papel** é o desenho e não vira evento. Troca **dentro do mesmo pap
 marcada — é o fallback de cota ou uma substituição de provedor acontecendo. Custo sem reporte do
 provedor sai marcado como `piso`, nunca como total.
 
-A **conversa da TUI** (pergunta respondida, leitura de intenção) também é sessão: aparece no
-histórico como `chat`, com as IAs que entraram. Antes esse gasto era mostrado na hora e depois
-desaparecia — não entrava em nenhum total.
+A **conversa da TUI** (pergunta respondida, leitura de intenção) também é sessão: `/ask` fica sem
+session/card, enquanto perguntas dentro de `/new` entram no ledger daquela session HII como chamadas
+individuais. Assim, trocar a IA entre perguntas mantém o histórico da conversa e mostra cada IA que
+entrou como uma subsessão no histórico.
 
 No `/config`, **limite e gasto são coisas diferentes e aparecem separados**. O limite vem do próprio
 provedor (o Claude reporta `5h` e `7d` com o instante de reset); o motor só sabe o que **ele** gastou,
@@ -324,8 +325,8 @@ Comandos de barra dentro da TUI:
 | `/historico` | volta ao histórico de sessões — **sai** da tarefa aberta |
 | `/config` | **página própria** das IAs: instaladas, habilitadas, plano, limite por janela e gasto do motor |
 | `/new-task` | cria a tarefa explicitamente — mesmo efeito de escrever o texto solto |
-| `/new-ask` | pergunta sobre o projeto **sem** criar card — texto solto sempre vira tarefa, então pergunta pede este comando |
-| `/new-session`, `/new` | limpa a conversa e começa de novo (e descarta refs ainda soltas na sessão) |
+| `/ask`, `/new-ask` | pergunta sobre o projeto **sem** criar session/card e sem executar tarefa |
+| `/new [assunto]` | cria uma session do hii no projeto; perguntas e execuções de IA ficam encadeadas dentro dela |
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
@@ -508,8 +509,9 @@ tools, isola leitura, reporta custo e aceita nível de esforço; `recusaPorLimit
 (`motor/euclides/tesouro/confianca.ts`) barra a chamada quando o pedido exige o que o provedor não entrega — em
 vez de mandar e tratar o lixo que volta como resultado.
 
-**Cota estourada PARA.** O motor nunca troca de provedor sozinho para continuar — isso mudaria custo
-e qualidade sem ninguém autorizar. Travado por teste.
+**Cota estourada troca automaticamente.** Com `HII_QUOTA_FALLBACK=on` (padrão), o roteador filtra
+aptidão, autenticação, cota e capacidade do papel, registra a falha no live log e continua a mesma
+tarefa no mesmo worktree com outro provedor. `HII_QUOTA_FALLBACK=off` mantém a parada imediata.
 
 Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HII_OLLAMA_URL/api/tags`,
 `claude`, `codex` e `kimi` por alcançabilidade das respectivas APIs, timeout de 5 s

@@ -94,7 +94,7 @@ test('codex: --sandbox reflete o modo (workspace-write no edit, read-only no rea
   }
 })
 
-test('codex: approval_policy vem do modo resolvido (nunca do papel) e e "never" por padrao; --add-dir pula dirs[0]', () => {
+test('codex: approval_policy vem do modo resolvido e e "never" por padrao; --add-dir pula dirs[0]', () => {
   const dirs = ['/wt/base', '/wt/extra', '/wt/mais-um']
   for (const papel of PAPEIS) {
     const a = codexArgv(pedidoReal('codex', papel, 'edit', dirs), dirs[0] ?? '')
@@ -236,16 +236,16 @@ test('codex: transiente proprio (rate_limit_exceeded) so alcancavel via stderr+e
   expect(cls.reason).toBe('limite de taxa da API OpenAI')
 })
 
-test('REGRESSAO codex: agent_message parcial ANTES de type:"error" faz a mensagem do erro (insufficient_quota) nunca chegar em text/detail — classifyFailure cai no generico', async () => {
+test('REGRESSAO codex: agent_message parcial ANTES de type:"error" preserva a mensagem do erro para classificar quota', async () => {
   fakeBin('codex', `#!/usr/bin/env bash\ncat <<'FIM'\n{"type":"item.completed","item":{"type":"agent_message","text":"iniciando a tarefa"}}\n{"type":"error","message":"insufficient_quota: exceeded_quota for this account"}\nFIM\n`)
   const res = await harnessPorNome('codex').run(pedidoSimples())
   expect(res.ok).toBe(false)
-  expect(res.text).toBe('iniciando a tarefa')
-  expect(res.text, 'a mensagem do evento de erro nunca chega em text nem em detail').not.toContain('insufficient_quota')
+  expect(res.text).toContain('iniciando a tarefa')
+  expect(res.text, 'a mensagem do evento de erro tem de chegar ao classificador').toContain('insufficient_quota')
   expect(res.detail).toBe('')
   const cls = classifyFailure(harnessPorNome('codex'), { timedOut: res.timedOut, detail: res.detail, text: res.text })
-  expect(cls.failureClass, 'deveria ser quota; cai em terminal generico porque parse() descarta o campo message do evento de erro quando ja havia texto de agent_message').toBe('terminal')
-  expect(cls.reason).toBe('falha nao reconhecida — tratada como terminal (mais barato parar que repetir para sempre)')
+  expect(cls.failureClass).toBe('quota')
+  expect(cls.reason).toBe('cota da API OpenAI esgotada')
 })
 
 test('kimi: terminal (KIMI_SINAIS, "not authenticated") classificado a partir de saida real — nenhum teste chamava classifyFailure com o kimi antes', async () => {

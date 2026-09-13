@@ -20,16 +20,17 @@ test('codex: sem modo escolhido o argv mantem o padrao de hoje', () => {
   expect(a).toContain('approval_policy="never"')
 })
 
-test('codex: o modo escolhido chega ao approval_policy, e nao a outra flag', () => {
+test('codex: cada modo aceito chega ao approval_policy, e o aposentado nao chega', () => {
   for (const modo of modosDoProvedor('codex')) {
     const a = argv(pedido('edit', { modo }), '/tmp/wt')
     expect(a).toContain(`approval_policy="${modo}"`)
     expect(a.filter(x => x.startsWith('approval_policy='))).toHaveLength(1)
   }
+  expect(argv(pedido('edit', { modo: 'untrusted' }), '/tmp/wt')).not.toContain('approval_policy="untrusted"')
 })
 
 test('codex: o modo nao contamina o sandbox, que segue vindo do mode', () => {
-  expect(valorDepoisDe(argv(pedido('edit', { modo: 'untrusted' }), '/tmp/wt'), '--sandbox')).toBe('workspace-write')
+  expect(valorDepoisDe(argv(pedido('edit', { modo: 'on-request' }), '/tmp/wt'), '--sandbox')).toBe('workspace-write')
   expect(valorDepoisDe(argv(pedido('readonly', { modo: 'never' }), '/tmp/wt'), '--sandbox')).toBe('read-only')
 })
 

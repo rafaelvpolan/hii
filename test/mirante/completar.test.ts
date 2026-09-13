@@ -48,17 +48,17 @@ test('REGRESSAO apelido completa os mesmos argumentos que o principal', () => {
   }
 })
 
-test('/new-task, /new-ask e /new-session estao no catalogo e no autocompletar', () => {
+test('/new-task, /new-ask, /ask e /new estao no catalogo e no autocompletar', () => {
   const lista: string[] = [...COMMANDS]
-  for (const c of ['/new-task', '/new-ask', '/new-session']) {
+  for (const c of ['/new-task', '/new-ask', '/ask', '/new']) {
     expect(lista, c).toContain(c)
     expect(AJUDA_DO_COMANDO[c], c).toBeTruthy()
   }
 })
 
-test('/new e forma curta de /new-session: match exato aprova, TAB ainda mostra os tres longos', () => {
-  expect(ALIASES['/new-session']).toContain('/new')
-  expect(complete('/new', ctx)[0]).toEqual(['/new-task', '/new-ask', '/new-session'])
+test('/new e comando proprio de session: match exato existe, TAB mostra os tres comandos new', () => {
+  expect(COMMANDS).toContain('/new')
+  expect(complete('/new', ctx)[0]).toEqual(['/new-task', '/new-ask', '/new'])
 })
 
 test('comandos da ia ativa entram como complemento, depois dos do hii', () => {

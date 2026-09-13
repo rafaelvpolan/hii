@@ -29,6 +29,7 @@ const GATE = '◆'
 const REPARO = '↻'
 const TIER = '◇'
 const CHECKPOINT = '⏸'
+const RESPONDIDO = '✓'
 const TROCA = '⇄'
 const FASE = '▸'
 
@@ -135,7 +136,7 @@ function rodapeDaChamada(c: ChamadaNaLinha, o: OpcoesExecucao): string[] {
   const falhou = c.ledger ? !c.ledger.ok : false
   const partes = [falhou ? `falhou${c.ledger?.classeDeFalha ? ` (${c.ledger.classeDeFalha})` : ''}` : 'concluido']
   if (c.ledger) {
-    partes.push(`US$${c.ledger.custoUsd.toFixed(4)}`, `${c.ledger.tokens} tokens`, duracao(c.ledger.duracaoS))
+    partes.push(`US$${c.ledger.custoUsd.toFixed(4)}`, `${c.ledger.tokens.toLocaleString('pt-BR')} tokens`, duracao(c.ledger.duracaoS))
     if (c.ledger.modelo || c.ledger.provedor) partes.push(c.ledger.modelo || c.ledger.provedor)
   } else if (c.custoAnunciado) {
     partes.push(c.custoAnunciado)
@@ -163,8 +164,11 @@ export function linhasDoMarco(m: Marco, opts: Partial<OpcoesExecucao> = {}): str
     case 'reparo': return [`  ${paint(REPARO, AMARELO, o)} ${paint(`reparo ${m.fase}`, BOLD, o)} ${paint(ateAMargem(m.detalhe, o, 12 + m.fase.length), DIM, o)}`]
     case 'tier': return [`  ${paint(TIER, DIM, o)} ${paint(`tier ${ateAMargem(m.detalhe, o, 9)}`, DIM, o)}`]
     case 'troca': return [`  ${paint(TROCA, AMARELO, o)} ${paint(`${m.papel}: ${m.de} → ${m.para}`, BOLD, o)} ${paint('troca de harness', DIM, o)}`]
-    case 'checkpoint': return [separador(CHECKPOINT, m.aberto ? `esperando voce · ${m.estado}${m.detalhe ? ` (${m.detalhe})` : ''}` : `voce respondeu · ${m.estado}${m.detalhe ? ` (${m.detalhe})` : ''}`, o.largura, m.aberto ? AMARELO : VERDE, o)]
-    default: return [`  ${paint('·', DIM, o)} ${paint(`${m.evento}${m.detalhe ? `: ${ateAMargem(m.detalhe, o, 6 + m.evento.length)}` : ''}`, DIM, o)}`]
+    case 'checkpoint': return [`  ${paint(m.aberto ? CHECKPOINT : RESPONDIDO, m.aberto ? AMARELO : VERDE, o)} ${paint(m.aberto ? `aguardando voce · ${m.estado}` : `voce respondeu · ${m.estado}`, m.aberto ? AMARELO : VERDE, o)}${m.detalhe ? paint(` (${m.detalhe})`, DIM, o) : ''}`]
+    case 'evento':
+      if (m.evento === 'card_fechado') return [separador(RESPONDIDO, `#${m.card} CLOSED`, o.largura, VERDE, o)]
+      return [`  ${paint('·', DIM, o)} ${paint(`${m.evento}${m.detalhe ? `: ${ateAMargem(m.detalhe, o, 6 + m.evento.length)}` : ''}`, DIM, o)}`]
+    default: return []
   }
 }
 

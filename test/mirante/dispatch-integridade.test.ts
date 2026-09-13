@@ -67,8 +67,8 @@ test('/new-ask e /new-task sao efeitos DISTINTOS — a colisao dessa classe ja q
   expect(perguntar.effect.kind).not.toBe(tarefa.effect.kind)
 })
 
-test('/board e /ask sairam da TUI — navegar cards e do painel web', () => {
-  for (const morto of ['/board', '/quadro', '/ask', '/responder']) {
+test('/board saiu da TUI — navegar cards e do painel web', () => {
+  for (const morto of ['/board', '/quadro', '/responder']) {
     expect(COMMANDS as readonly string[]).not.toContain(morto)
     expect(handle(`${morto} 022 x`, newSession('org/app')).effect.kind, `${morto} ainda parseia`).toBe('error')
   }

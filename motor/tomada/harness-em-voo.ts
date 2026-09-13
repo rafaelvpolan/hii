@@ -188,7 +188,23 @@ async function esperarMorte(pid: number, tetoMs: number): Promise<boolean> {
   return !pidVivo(pid)
 }
 
+function grupoDoProcesso(pid: number): number {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
+    const aposComm = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+    return Number(aposComm[3] ?? 0)
+  } catch {
+    return 0
+  }
+}
+
 function sinalizar(pid: number, sinal: SinalDeEncerramento): void {
+  // `run()` cria um grupo próprio porque um CLI pode gerar wrappers e filhos.
+  // Para registros antigos, só usamos o grupo quando o próprio harness é o
+  // líder; assim uma chamada legada nunca derruba o runner inteiro.
+  if (grupoDoProcesso(pid) === pid) {
+    try { process.kill(-pid, sinal); return } catch { void 0 }
+  }
   try { process.kill(pid, sinal) } catch { void 0 }
 }
 

@@ -37,7 +37,7 @@ export const CLAUDE_CAPACIDADES: HarnessCapabilities = {
 
 export const CLAUDE_SINAIS: SinaisDoHarness = {
   terminal: [],
-  quota: [{ pattern: /claude ai usage limit reached|5-hour limit reached|weekly limit reached/i, reason: 'limite de uso da assinatura Claude atingido' }],
+  quota: [{ pattern: /claude ai usage limit reached|you'?ve hit your session limit|5-hour limit reached|weekly limit reached/i, reason: 'limite de uso da assinatura Claude atingido' }],
   transient: [{ pattern: /overloaded_error|\bapi_error\b/i, reason: 'erro transitorio da API Anthropic' }],
 }
 

@@ -36,9 +36,16 @@ test('/help e /historico', () => {
 })
 
 test('comando cortado nao volta pela porta dos fundos', () => {
-  for (const morto of ['/cards HALTED', '/board', '/quadro', '/ask 22 sim', '/responder 22 sim', '/ls', '/plan 42', '/watch 42', '/seguir 42', '/agents 42', '/agentes 42', '/url', '/subir 42', '/ok 42', '/no 42 torto']) {
+  for (const morto of ['/cards HALTED', '/board', '/quadro', '/responder 22 sim', '/ls', '/plan 42', '/watch 42', '/seguir 42', '/agents 42', '/agentes 42', '/url', '/subir 42', '/ok 42', '/no 42 torto', '/new-session']) {
     expect(handle(morto, base).effect.kind, morto).toBe('error')
   }
+})
+
+test('/new cria efeito de session do hii, nao alias de limpar tela', () => {
+  const r = handle('/new conversa de arquitetura', base)
+  expect(r.effect.kind).toBe('nova-sessao')
+  expect(r.effect.text).toBe('conversa de arquitetura')
+  expect(r.state.seguindo).toBe('')
 })
 
 test('/board sai do modo seguir', () => {
@@ -102,7 +109,7 @@ import { perguntando, respondido } from '../../motor/mirante/sessao.ts'
 
 test('a pergunta da IA e respondida pelo prompt, sem comando dedicado', () => {
   expect(perguntando(base, '022').perguntando).toBe('022')
-  expect(handle('/ask', base).effect.kind).toBe('error')
+  expect(handle('/ask explique o projeto', base).effect.kind).toBe('consultar')
 })
 
 test('com pergunta aberta, numero RESPONDE e nao abre plano', () => {

@@ -85,7 +85,7 @@ test('cada tipo de evento vira o marco certo; gate_verdict separa veredito de mo
   expect(marcoDoEvento({ ts: 't', card: '1', evento: 'gate_verdict', fase: 'x', detalhe: 'NAO EXECUTOU: timeout' })).toMatchObject({ veredito: 'NAO', motivo: 'EXECUTOU: timeout' })
   expect(m[4]).toMatchObject({ tipo: 'reparo', fase: 'Testes' })
   expect(m[5]).toMatchObject({ tipo: 'checkpoint', estado: 'URL', aberto: true })
-  expect(marcoDoEvento({ ts: 't', card: '1', evento: 'orfao', chave: 'worktree', detalhe: 'x' })).toEqual({ tipo: 'evento', ts: 't', evento: 'orfao', detalhe: 'worktree: x' })
+  expect(marcoDoEvento({ ts: 't', card: '1', evento: 'orfao', chave: 'worktree', detalhe: 'x' })).toEqual({ tipo: 'evento', ts: 't', card: '1', evento: 'orfao', detalhe: 'worktree: x' })
 })
 
 test('PONTA A PONTA: a linha do tempo intercala decisao do motor e chamada de IA na ordem em que aconteceram', () => {

@@ -43,10 +43,10 @@ const SECOES: Secao[] = [
     itens: [
       { chave: 'escreva', arg: 'a tarefa', texto: 'vira tarefa e ja entra na fila, na ia escolhida' },
       { chave: '/new-task', arg: '<mudanca>', texto: 'igual escrever direto — cria a tarefa e enfileira' },
-      { chave: '/new-ask', arg: '<pergunta>', texto: 'pergunta sobre o projeto, sem criar card' },
+      { chave: '/ask', arg: '<pergunta>', texto: 'pergunta sobre o projeto, sem criar session/card nem executar tarefa' },
+      { chave: '/new-ask', arg: '<pergunta>', texto: 'mesmo que /ask' },
+      { chave: '/new', arg: '[assunto]', texto: 'cria uma session do hii no projeto; perguntas viram execucoes encadeadas dentro dela' },
       { chave: '/ref', arg: '<url|caminho|clipboard>', texto: 'anexa imagem de referencia para a IA copiar o design' },
-      { chave: '/new-session', arg: '', texto: 'limpa a area e recomeca a sessao' },
-      { chave: '/new', arg: '', texto: 'atalho de /new-session' },
       { chave: '20', arg: '', texto: 'so o numero abre o plano da tarefa (so leitura, ja esta na fila)' },
       { chave: 'enter', arg: '', texto: 'aprova o plano de uma tarefa que ainda esta esperando' },
     ],

@@ -78,6 +78,8 @@ test('/ia sem argumento explica o uso em vez de falhar calado', async () => {
   await dispatch(r.effect, r.state, io)
   expect(saida.length, '/ia sem argumento nao pode nao dizer nada').toBeGreaterThan(0)
   expect(saida.join('\n')).toContain('/ia')
+  expect(saida.join('\n')).toContain('selecao: /ia <numero|provedor>')
+  expect(saida.join('\n')).toContain('modelos:')
 })
 
 // Este teste declarava o oposto do que o codigo fazia. `not.toContain('aplicado

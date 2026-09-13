@@ -10,7 +10,7 @@ import * as core from './acoes.ts'
 import { planejarLote, removerLote } from '../cordel/remover.ts'
 import { renderRemocao, renderResultado } from './render/remocao.ts'
 import { projetosConhecidos } from '../cordel/projetos-conhecidos.ts'
-import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao, definirGauntlet } from './escolher-ia.ts'
+import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao, definirGauntlet, indiceNumerico } from './escolher-ia.ts'
 import { agentRoles, isProviderName, providerNameFor } from '../tomada/registro.ts'
 import { comandoDeLoginDoProvedor, provedoresDisponiveis } from '../tomada/disponibilidade.ts'
 import { comandosDaIaAtiva } from '../tomada/mapa/comandos.ts'
@@ -20,10 +20,10 @@ import { renderPergunta } from './render/clarify.ts'
 import { instruir, TERMINAIS } from './instruir.ts'
 import { renderHelp } from './render/help.ts'
 import { esperandoVoce } from './render/rodape.ts'
-import { newSession, seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './sessao.ts'
+import { seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './sessao.ts'
 import { alvoDeRef, comandoRef } from './refs-comando.ts'
-import { migrarRefsDaSessao, limparSessao } from '../quilombo/alfandega/anexo.ts'
-import { reiniciarSessao, sessaoAtual } from '../euclides/sessao.ts'
+import { migrarRefsDaSessao } from '../quilombo/alfandega/anexo.ts'
+import { sessaoAtual } from '../euclides/sessao.ts'
 import type { Effect, SessionState } from './sessao.ts'
 import { situacaoDoCard } from './cli/situacao-cli.ts'
 
@@ -37,7 +37,7 @@ export interface DispatchIO {
   dim: (texto: string) => string
   color: boolean
   largura: () => number
-  responder: (pergunta: string, conversa: { pergunta: string; resposta: string }[]) => Promise<string[]>
+  responder: (pergunta: string, conversa: { pergunta: string; resposta: string }[], sessionId?: string) => Promise<string[]>
   plano: (id: string) => Promise<string[]>
   daemonOnline: () => boolean
   iaProntaParaEnviar: () => SituacaoDeEnvio
@@ -65,6 +65,9 @@ export function rotuloDoBloqueio(situacao: string): string {
 
 function resolverProvedorParaLogin(arg: string): HarnessId | null {
   if (!arg) return providerNameFor('implement')
+  const provedores = provedoresDisponiveis()
+  const porNumero = indiceNumerico(arg, provedores.length)
+  if (porNumero !== null) return provedores[porNumero]?.nome ?? null
   if (isProviderName(arg)) return arg
   if ((agentRoles() as string[]).includes(arg)) return providerNameFor(arg as AgentRole)
   return null
@@ -199,9 +202,17 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return limpo
     }
     case 'instruct': {
-      if (!readCard(id)) {
+      const card = readCard(id)
+      if (!card) {
         io.log(`#${id} nao existe mais — o texto vira tarefa nova`)
         return aplicar({ kind: 'submit', text: texto }, { ...state, seguindo: '' }, io)
+      }
+      if (card.fm.tipo === 'session') {
+        io.log(io.dim(`  session #${id}: pergunta de leitura, sem executar tarefa`))
+        const linhas = await io.responder(texto, state.conversa, id)
+        for (const l of linhas) io.log(l)
+        patchCard(id, {}, `${isoNow()} pergunta na session: ${semTitulo(umaLinha(texto)).slice(0, 400)}`)
+        return comConversa(state, texto, linhas.join(' '))
       }
       const r = instruir(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
@@ -376,7 +387,9 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       // Card que sumiu nao tem situacao para relatar: o texto segue o mesmo caminho
       // da instrucao, que ja sabe virar tarefa nova. Responder "card nao encontrado"
       // aqui engoliria o que a pessoa escreveu.
-      if (!readCard(id)) return aplicar({ kind: 'instruct', id, text: texto }, state, io)
+      const card = readCard(id)
+      if (!card) return aplicar({ kind: 'instruct', id, text: texto }, state, io)
+      if (card.fm.tipo === 'session') return aplicar({ kind: 'instruct', id, text: texto }, state, io)
       // A resposta vem do ESTADO REAL do card: diario, eventos, atividade do harness
       // e o diff do worktree. Nao e o modelo respondendo sobre si — e o motor
       // dizendo o que ele mesmo esta fazendo.
@@ -421,10 +434,15 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       return state
     }
     case 'nova-sessao': {
-      limparSessao(sessaoAtual())
-      reiniciarSessao()
-      io.log('sessao nova — a area fica limpa e as tarefas seguem rodando')
-      return newSession(state.repo)
+      if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
+      const titulo = texto.trim() || `session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`
+      const idNovo = core.submitSession({
+        title: titulo,
+        repo: state.repo,
+        desc: texto.trim() || 'sessao de conversa do projeto',
+      })
+      io.log(`session #${idNovo} criada em ${state.repo} — use perguntas dentro dela; cada IA chamada vira subsessao no historico`)
+      return seguir({ ...state, tela: '', perguntando: '', aprovando: '', comentando: '', pendingPlan: '' }, idNovo)
     }
     case 'ref': {
       const r = await comandoRef(texto, alvoDeRef(state.seguindo || state.pendingPlan))
@@ -456,6 +474,18 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       if (partes[0] === 'padrao' || partes[0] === 'reset') {
         const alvos = partes.slice(1).filter(p => (agentRoles() as string[]).includes(p)) as AgentRole[]
         io.log(limparIa(alvos.length ? alvos : agentRoles()).mensagem)
+        return state
+      }
+      const provedores = provedoresDisponiveis()
+      const porNumero = indiceNumerico(partes[0], provedores.length)
+      if (porNumero !== null) {
+        const p = provedores[porNumero]
+        if (!p) { io.log(`numero fora da lista — use /ia para ver as opcoes`); return state }
+        if (p.situacao !== 'disponivel') {
+          io.log(`${p.nome} nao foi selecionada: ${rotuloDoBloqueio(p.situacao)} — ${p.comoObter}`)
+          return state
+        }
+        io.log(aplicarIa({ papeis: agentRoles(), provider: p.nome }).mensagem)
         return state
       }
       const { ajuste, erro } = interpretar(partes)

@@ -51,6 +51,11 @@ test('cota esgotada especifica da assinatura Claude', () => {
   expect(r.failureClass).toBe('quota')
 })
 
+test('limite de sessao do Claude e quota, nao terminal generico', () => {
+  const r = classifyFailure(harnessPorNome('claude'), ctx({ text: "You've hit your session limit · resets 9am (America/Sao_Paulo)" }))
+  expect(r.failureClass).toBe('quota')
+})
+
 test('ollama fora do ar (conexao recusada) e transiente', () => {
   const r = classifyFailure(harnessPorNome('ollama'), ctx({ detail: 'curl: (7) Failed to connect: Connection refused' }))
   expect(r.failureClass).toBe('transient')

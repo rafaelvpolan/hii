@@ -1,5 +1,5 @@
 import { beforeEach, test, expect, afterAll } from '../apoio/runner.ts'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -158,18 +158,25 @@ function quotaEm(id: string, provider: string, extra: Record<string, unknown> = 
   } as never))
 }
 
-test('REGRESSAO: quota com fallback ligado e rota apta vira WAITING com o provedor NOVO — antes a correcao ia direto a HALTED', () => {
+test('REGRESSAO: quota com fallback ligado e rota apta troca na hora com o provedor NOVO — antes a correcao ia direto a HALTED', () => {
   process.env.HII_QUOTA_FALLBACK = 'on'
   const id = card()
 
   const outcome = quotaEm(id, 'claude', { papel: 'implement', rota: rotaQueTroca('codex') })
+  const log = readFileSync(join(CARDS, 'runs', `${id}.live.log`), 'utf8')
 
   const c = readCard(id)
-  expect(outcome).toBe('waiting')
-  expect(c?.fm.status).toBe('WAITING')
+  expect(outcome).toBe('rerouted')
+  expect(c?.fm.status).toBe('CORRECTING')
   expect(c?.fm.provider_override_implement, 'o retry tem de acordar no provedor novo').toBe('codex')
-  expect(c?.fm.wait_provider, 'a sonda de espera tem de sondar o provedor NOVO, nao o esgotado').toBe('codex')
+  expect(c?.fm.wait_provider, 'fica registrado quem assumiu, mas sem abrir espera artificial').toBe('codex')
+  expect(c?.fm.wait_until ?? '').toBe('')
   expect(c?.fm.rota_tentados, 'quem falhou nesta rodada fica registrado para nao ser repetido').toBe('claude')
+  expect(c?.fm.rota_contexto, 'o proximo provedor recebe contexto explicito da troca').toContain('mesma tarefa e do mesmo worktree')
+  expect(c?.fm.rota_contexto).toContain('IA anterior (claude)')
+  expect(log).toContain('IA claude falhou: cota esgotada')
+  expect(log).toContain('detalhe: 429')
+  expect(log).toContain('mudando automaticamente para codex')
   delete process.env.HII_QUOTA_FALLBACK
 })
 
@@ -218,7 +225,7 @@ test('papel step grava provider_override_step — cada papel acorda no proprio o
   const outcome = quotaEm(id, 'claude', { papel: 'step', rota: rotaQueTroca('kimi') })
 
   const c = readCard(id)
-  expect(outcome).toBe('waiting')
+  expect(outcome).toBe('rerouted')
   expect(c?.fm.provider_override_step).toBe('kimi')
   expect(c?.fm.provider_override_implement ?? '', 'o override do implement nao pode ser tocado por falha de step').toBe('')
   delete process.env.HII_QUOTA_FALLBACK
@@ -230,7 +237,7 @@ test('papel gate grava provider_override_gate', () => {
 
   const outcome = quotaEm(id, 'claude', { papel: 'gate', rota: rotaQueTroca('codex') })
 
-  expect(outcome).toBe('waiting')
+  expect(outcome).toBe('rerouted')
   expect(readCard(id)?.fm.provider_override_gate).toBe('codex')
   delete process.env.HII_QUOTA_FALLBACK
 })
@@ -256,7 +263,7 @@ test('papel verify grava provider_override_verify — a serie implement/step/gat
 
   const outcome = quotaEm(id, 'claude', { papel: 'verify', rota: rotaQueTroca('codex') })
 
-  expect(outcome).toBe('waiting')
+  expect(outcome).toBe('rerouted')
   expect(readCard(id)?.fm.provider_override_verify).toBe('codex')
   delete process.env.HII_QUOTA_FALLBACK
 })

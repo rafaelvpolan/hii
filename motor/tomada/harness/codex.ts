@@ -1,18 +1,24 @@
 import { run } from '../../quilombo/git.ts'
+import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { emptyUsage } from '../uso.ts'
 import { COST_UNKNOWN } from '../../euclides/tesouro/custo.ts'
 import { resolverModo } from '../modo-puro.ts'
 import { codexAutenticado } from '../../euclides/tesouro/planos.ts'
 import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
-import { SEM_PLANO } from '../tipos.ts'
+import { planoDoCodex } from '../../euclides/tesouro/planos.ts'
 import { cliSaudavel } from '../sonda.ts'
-import { gravarChamadaNoLiveLog } from './live-log.ts'
+import { AcumuladorDeLinhas, cabecalhoDaChamada, carimboAgora, comRaia, linhaDeConclusao } from './live-log.ts'
 import type { Usage } from '../../cordel/index.ts'
 
-export const CODEX_MODOS: CatalogoDeModo = { modos: ['untrusted', 'on-request', 'never'], padrao: 'never' }
+// O Codex CLI 0.149+ aposentou `untrusted`; manter esse valor aqui faz o
+// processo abortar antes de executar a pergunta. Preferencias antigas caem
+// para `never` via resolverModo.
+export const CODEX_MODOS: CatalogoDeModo = { modos: ['never', 'on-request'], padrao: 'never' }
 
 interface CodexEvent {
   type?: string
+  message?: string
   item?: { type?: string; text?: string; command?: string; path?: string }
   usage?: { input_tokens?: number; output_tokens?: number; cached_input_tokens?: number }
 }
@@ -32,6 +38,7 @@ export function argv(req: AgentRequest, workdir: string): string[] {
 
 function parse(stdout: string): { text: string; usage: Usage; isError: boolean } {
   let text = ''
+  let errorText = ''
   let isError = false
   const usage = emptyUsage()
   for (const line of stdout.split('\n')) {
@@ -47,9 +54,10 @@ function parse(stdout: string): { text: string; usage: Usage; isError: boolean }
       usage.tokens_cache_read = ev.usage.cached_input_tokens || 0
     } else if (ev.type === 'error' || ev.type === 'turn.failed') {
       isError = true
+      if (ev.message) errorText = [errorText, ev.message].filter(Boolean).join('\n')
     }
   }
-  return { text, usage, isError }
+  return { text: [text, errorText].filter(Boolean).join('\n'), usage, isError }
 }
 
 export function linhasDoLiveLog(stdout: string): string[] {
@@ -66,6 +74,63 @@ export function linhasDoLiveLog(stdout: string): string[] {
     else linhas.push(`  → ${ev.item.type}(${JSON.stringify({ description: ev.item.text ?? '' })})`)
   }
   return linhas
+}
+
+function mensagemDeErroDaLinha(line: string): string {
+  try {
+    const ev = JSON.parse(line) as CodexEvent
+    if (ev.type === 'error' || ev.type === 'turn.failed') return ev.message || 'Codex informou uma falha'
+  } catch {
+    return ''
+  }
+  return ''
+}
+
+interface LiveCodexLog {
+  stdout: AcumuladorDeLinhas
+  stderr: AcumuladorDeLinhas
+  linha: (line: string) => void
+  finalizar: (err: { message?: string; killed?: boolean } | null) => void
+}
+
+function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
+  if (!req.liveLog) return null
+  const caminho = req.liveLog
+  try {
+    const dir = dirname(caminho)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    appendFileSync(caminho, `\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`)
+  } catch {
+    return null
+  }
+  const escrever = (texto: string): void => {
+    try { appendFileSync(caminho, comRaia(texto, req.raia)) } catch { void 0 }
+  }
+  const stdout = new AcumuladorDeLinhas()
+  const stderr = new AcumuladorDeLinhas()
+  const linha = (line: string): void => {
+    if (!line.trim()) return
+    const humanas = linhasDoLiveLog(line)
+    if (humanas.length) {
+      escrever(humanas.map(l => `${l}\n`).join(''))
+      return
+    }
+    const erro = mensagemDeErroDaLinha(line)
+    if (erro) escrever(`— falha do Codex: ${erro}\n`)
+    else if (line.trim()[0] !== '{') escrever(`${line}\n`)
+  }
+  return {
+    stdout,
+    stderr,
+    linha,
+    finalizar: (err) => {
+      for (const l of stdout.esvaziar()) linha(l)
+      for (const l of stderr.esvaziar()) escrever(`${l}\n`)
+      if (err?.killed) return
+      if (err) escrever(`— falha: ${String(err.message || 'execucao encerrada com erro').replace(/\s+/g, ' ').slice(0, 300)} —\n`)
+      else escrever(`${linhaDeConclusao()}\n`)
+    },
+  }
 }
 
 const URL_DA_API = 'https://api.openai.com'
@@ -98,13 +163,13 @@ export class CodexProvider implements Harness {
   readonly exigeCliNoPath = true
   readonly comandoDeLogin: readonly string[] = ['codex', 'login']
   readonly rodaLocal = false
-  readonly temLeitorDePlano = false
+  readonly temLeitorDePlano = true
 
   modeloPadraoPara(): string | undefined { return process.env.HII_CODEX_MODEL || undefined }
   prontoParaUso(): boolean { return true }
   comoObterQuandoAusente(): string { return 'instale o CLI do Codex' }
   autenticado(): boolean { return codexAutenticado() }
-  plano(): PlanoDoProvedor { return { ...SEM_PLANO, provedor: 'codex' } }
+  plano(agoraMs: number): PlanoDoProvedor { return planoDoCodex(agoraMs) }
   modelosDisponiveis(): string[] { return [] }
   capabilities(): HarnessCapabilities { return CODEX_CAPACIDADES }
   healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, URL_DA_API) }
@@ -112,9 +177,23 @@ export class CodexProvider implements Harness {
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const workdir = req.dirs[0] ?? req.cwd
-    const { err, stdout, stderr } = await run('codex', argv(req, workdir), { cwd: workdir, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
+    const live = liveCodexLog(req)
+    const { err, stdout, stderr } = await run('codex', argv(req, workdir), {
+      cwd: workdir,
+      timeout: req.timeoutMs,
+      aoIniciar: req.aoIniciar,
+      aoLerStdout: (pedaco) => {
+        for (const line of live?.stdout.empurrar(pedaco) ?? []) live?.linha(line)
+      },
+      aoLerStderr: (pedaco) => {
+        for (const line of live?.stderr.empurrar(pedaco) ?? []) live?.linha(line)
+      },
+      aoEstourarTempo: () => {
+        try { appendFileSync(req.liveLog ?? '', comRaia('— TIMEOUT: encerrando a IA —\n', req.raia)) } catch { void 0 }
+      },
+    })
     const parsed = parse(stdout)
-    if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: linhasDoLiveLog(stdout) })
+    live?.finalizar(err)
     const failed = !!err
     return {
       ok: !failed && !parsed.isError,

@@ -133,7 +133,7 @@ function blocoDeEscopo(e: EscopoDeEscrita): string {
   return `${linhas.join('\n')}\n`
 }
 
-function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita): string {
+function implementPrompt(agentesInjetados: readonly string[], workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita, rotaContexto = ''): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
     : ''
@@ -152,6 +152,7 @@ function implementPrompt(agentesInjetados: readonly string[], workdir: string, d
     rules ? `CONTEXTO DO PROJETO (.hii/rules.md — respeite):\n${rules}\n` : '',
     skills ? `${skills}\n` : '',
     memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : '',
+    rotaContexto ? `CONTEXTO PRESERVADO NA TROCA DE IA:\n${rotaContexto}\n` : '',
     clarifications ? clarifications : '',
     refs,
     visual ? `${DESIGN_SYSTEM_BRIEF}\n` : '',
@@ -237,7 +238,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const nomesInjetados = Object.keys(agentesInjetados)
   const prompt = acaoExterna.externo
     ? acaoExternaPrompt(acaoExterna.ferramenta, desc, feedback)
-    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir))
+    : implementPrompt(nomesInjetados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir), card.fm.rota_contexto || '')
   const res = await runProvider(id, provider, {
     prompt,
     cwd: workdir,

@@ -84,6 +84,13 @@ export interface JanelaDeUso {
   resetaEm: string
 }
 
+export interface ContextoDeUso {
+  usadoTokens: number
+  limiteTokens: number
+  percentual: number
+  medidoEm: string
+}
+
 export interface PlanoDoProvedor {
   provedor: string
   plano: string
@@ -92,6 +99,8 @@ export interface PlanoDoProvedor {
   medidoEm: string
   idadeHoras: number
   modelos: string[]
+  contexto?: ContextoDeUso
+  leituraDePlano?: boolean
 }
 
 export const SEM_PLANO: PlanoDoProvedor = {

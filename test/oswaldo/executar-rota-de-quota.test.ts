@@ -8,7 +8,7 @@
 
 import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
 import { test, expect, afterAll, beforeEach } from '../apoio/runner.ts'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -101,18 +101,26 @@ afterAll(() => {
 test('REGRESSAO: a escada inteira roda antes da parede — claude -> codex -> kimi -> so entao HALTED', async () => {
   const deps = depsQueEstouram()
   const id = cardExecutando()
+  const liveLog = join(String(process.env.HII_CARDS_DIR), 'runs', `${id}.live.log`)
 
   await handleExecute(id, deps)
   let c = readCard(id)
   expect(c?.fm.status, 'primeira falha troca sem sair de EXECUTING — redespacho no proximo tick').toBe('EXECUTING')
   expect(c?.fm.provider_override_implement).toBe('codex')
   expect(c?.fm.rota_tentados).toBe('claude')
+  let log = readFileSync(liveLog, 'utf8')
+  expect(log).toContain('IA claude falhou: cota de claude esgotada')
+  expect(log).toContain('mudando automaticamente para codex')
+  expect(log).toContain('motivo da rota: proximo degrau da escada de teste')
 
   await handleExecute(id, deps)
   c = readCard(id)
   expect(c?.fm.status, 'segunda falha era a parede: agora tenta o terceiro degrau').toBe('EXECUTING')
   expect(c?.fm.provider_override_implement).toBe('kimi')
   expect(c?.fm.rota_tentados).toBe('claude,codex')
+  log = readFileSync(liveLog, 'utf8')
+  expect(log).toContain('IA codex falhou: cota de codex esgotada')
+  expect(log).toContain('mudando automaticamente para kimi')
 
   await handleExecute(id, deps)
   c = readCard(id)

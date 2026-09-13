@@ -77,7 +77,7 @@ const ENTRADAS: readonly string[] = [
   'n', 'nao', 'cancelar', '/comando-que-nao-existe', '/', '//',
   '/stop', '/stop 12', '/stop 12 motivo escrito',
   '/rm', '/rm 12', '/rm 12 13 --force',
-  '/new-task', '/new-task mudar o botao', '/new-ask', '/new-ask por que isso',
+  '/new-task', '/new-task mudar o botao', '/new-ask', '/new-ask por que isso', '/new', '/new conversa longa',
   '/repo', '/repo org/outro', '/ref', '/ref caminho.png',
   '中文 emoji 😀 na entrada', 'a'.repeat(500),
 ]
