@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
 import { join, basename } from 'node:path'
-import { execFile, type ExecFileException, type ExecFileOptions } from 'node:child_process'
+import { spawn, type ChildProcess, type ExecFileException, type ExecFileOptions, type SpawnOptions } from 'node:child_process'
 import { WT_BASE } from '../cordel/alicerce/config.ts'
 
 export interface RunResult {
@@ -26,20 +26,20 @@ export interface OpcoesDeRun extends ExecFileOptions {
 
 export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<RunResult> {
   const timeoutMs = Number(opts?.timeout) || 0
+  const maxBuffer = Number(opts?.maxBuffer) || (1 << 24)
   const { aoIniciar, aoLerStdout, aoLerStderr, aoEstourarTempo, ...opcoesDoExec } = opts ?? {}
   return new Promise((resolve) => {
     let settled = false
     let timedOut = false
+    let bufferError: ExecFileException | null = null
     let hard: ReturnType<typeof setTimeout> | null = null
     // Bun (runtime do runner) aceita `detached`, mas nao transforma o filho em
     // lider de um novo grupo. `setsid` faz isso no Linux, que e onde o daemon
     // roda, e mantem o mesmo PID depois do exec do comando real.
     const comando = process.platform === 'linux' ? 'setsid' : cmd
     const argumentos = process.platform === 'linux' ? [cmd, ...args] : args
-    const opcoesDoProcesso = {
-      maxBuffer: 1 << 24,
-      ...opcoesDoExec,
-      timeout: 0,
+    const opcoesDoProcesso: SpawnOptions = {
+      cwd: opcoesDoExec.cwd,
       // Prompt e argumentos sao sempre entregues pelo motor. Um pipe fechado
       // ainda e detectado pelo Codex como "entrada adicional"; ignore faz o
       // CLI enxergar stdin como inexistente, sem afetar stdout/stderr.
@@ -49,21 +49,32 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
       // inteira quando o timeout vence, em vez de deixar o filho segurando os
       // pipes e impedir o callback do execFile de terminar.
       env: { ...process.env, ...NONINTERACTIVE_ENV, ...(opts?.env ?? {}) },
-    } as ExecFileOptions & { stdio: readonly ['ignore', 'pipe', 'pipe'] }
-    const child = execFile(comando, argumentos, opcoesDoProcesso, (err, stdout, stderr) => {
+    }
+    const stdout: string[] = []
+    const stderr: string[] = []
+    const acumular = (destino: string[], pedaco: Buffer | string, ler?: (texto: string) => void): void => {
+      const texto = String(pedaco)
+      destino.push(texto)
+      try { ler?.(texto) } catch { void 0 }
+      if (!bufferError && Buffer.byteLength(destino.join('')) > maxBuffer) {
+        bufferError = Object.assign(new Error(`stdout/stderr excedeu maxBuffer de ${maxBuffer} bytes`), { code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' })
+        sinalizarGrupo(child.pid, 'SIGTERM', child)
+      }
+    }
+    const child: ChildProcess = spawn(comando, argumentos, opcoesDoProcesso)
+    child.stdout?.on('data', (pedaco: Buffer | string) => acumular(stdout, pedaco, aoLerStdout))
+    child.stderr?.on('data', (pedaco: Buffer | string) => acumular(stderr, pedaco, aoLerStderr))
+    let erroDoProcesso: ExecFileException | null = null
+    child.on('error', (err: Error) => { erroDoProcesso = err as ExecFileException })
+    child.on('close', (codigo: number | null, sinal: NodeJS.Signals | null) => {
       if (settled) return
       settled = true
       if (soft) clearTimeout(soft)
       if (hard) clearTimeout(hard)
-      let e = err as ExecFileException | null
+      let e = bufferError ?? erroDoProcesso
+      if (!e && (codigo !== 0 || sinal)) e = Object.assign(new Error(`Command failed: ${cmd}`), { code: codigo, signal: sinal })
       if (timedOut) e = Object.assign(e ?? new Error(`timeout apos ${timeoutMs}ms`), { killed: true })
-      resolve({ err: e, stdout: String(stdout ?? ''), stderr: String(stderr ?? '') })
-    })
-    child.stdout?.on('data', (pedaco: Buffer | string) => {
-      try { aoLerStdout?.(String(pedaco)) } catch { void 0 }
-    })
-    child.stderr?.on('data', (pedaco: Buffer | string) => {
-      try { aoLerStderr?.(String(pedaco)) } catch { void 0 }
+      resolve({ err: e, stdout: stdout.join(''), stderr: stderr.join('') })
     })
     const soft = timeoutMs > 0 ? setTimeout(() => {
       timedOut = true
