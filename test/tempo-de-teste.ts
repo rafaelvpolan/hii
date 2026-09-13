@@ -9,6 +9,7 @@
 // rodando e batia num stub de guarda, virando "Unhandled error between tests"
 // num arquivo QUALQUER da suite. O sintoma escondia a causa.
 //
-// 30s nao e "desligar o teto" — e um teto compativel com o trabalho real. Um
-// hang de verdade continua sendo pego, so que em 30s em vez de 5s.
-export const TEMPO_COM_GIT_MS = 30_000
+// 60s nao e "desligar o teto" — e um teto compativel com o trabalho real. Clones,
+// commits e reajustes continuam com limite, mas nao competem com a latencia do
+// disco ou com a inicializacao do runtime para virar um falso timeout.
+export const TEMPO_COM_GIT_MS = 60_000

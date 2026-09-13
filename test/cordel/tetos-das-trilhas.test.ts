@@ -10,7 +10,8 @@ import { readFileSync } from 'node:fs'
 // 2 dos 248 arquivos (`test/cordel/import-com-extensao.test.ts` em 5.108 ms e
 // `test/mirante/percurso-completo.test.ts` em 7.330 ms), e os mesmos dois passavam
 // SOZINHOS em 1,2 s e 3,2 s — medido com load average 12,8 numa maquina de 8
-// nucleos. Os dois sobem subprocesso; a piscina fabrica a carga que os derruba.
+// nucleos. Os arquivos sensiveis sobem subprocessos; a piscina fabrica a carga que
+// os derruba.
 //
 // Verde que depende de quem esta rodando junto nao e criterio de verde: era o
 // gate local mentindo em relacao ao CI.
@@ -80,7 +81,7 @@ test('o teto por teste comporta subprocesso sob piscina cheia', () => {
 // observado aqui: `quadro 50x200 levou 14,3ms, teto 8ms` com load average 11, e seis
 // rodadas VERDES do mesmo codigo com load 5,6.
 //
-// `scripts/test-bun.mjs` ja resolvia isso desde 29/08, rodando os dois por ultimo e
+// `scripts/test-bun.mjs` ja resolve isso, rodando os sensiveis por ultimo e
 // sozinhos. A trilha node nao: `node --test` paraleliza por padrao e os jogava junto
 // com os outros 247 arquivos. Enquanto as duas trilhas nao isolarem o MESMO conjunto,
 // `bun run test` continua sendo um verde que depende de load average.
@@ -113,7 +114,7 @@ test('INVARIANTE a trilha node EXCLUI os sensiveis a carga da invocacao paralela
   const [piscina] = invocacoesDaTrilhaNode()
   for (const arquivo of isoladosNaTrilhaBun()) {
     const nome = arquivo.split('/').pop()?.replace('.test.ts', '') ?? ''
-    // `[^&]*` e nao `[^|]*`: a propria exclusao usa `|` para alternar os dois nomes, e
+    // `[^&]*` e nao `[^|]*`: a propria exclusao usa `|` para alternar os nomes, e
     // a primeira versao desta regex nao alcancava o segundo. Reprovou, o que era o
     // comportamento certo — a regex mentia sobre o que checava.
     expect(String(piscina), `${nome} continua na invocacao paralela da trilha node`).toMatch(new RegExp(`grep -vE?[^&]*${nome}`))
@@ -123,5 +124,5 @@ test('INVARIANTE a trilha node EXCLUI os sensiveis a carga da invocacao paralela
 
 test('INVARIANTE os sensiveis a carga rodam um por vez na trilha node', () => {
   const [, isolados] = invocacoesDaTrilhaNode()
-  expect(String(isolados), 'sem isto os dois medem tempo de parede um contra o outro').toContain('--test-concurrency=1')
+  expect(String(isolados), 'sem isto os sensiveis medem tempo de parede uns contra os outros').toContain('--test-concurrency=1')
 })

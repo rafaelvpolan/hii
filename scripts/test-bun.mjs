@@ -15,18 +15,17 @@
 // levava 1m22s contra os 32s da trilha node — a diferenca era o laco serial, nao o
 // runner. `node --test` paraleliza por padrao; aqui a piscina tem o mesmo tamanho.
 //
-// Por que dois arquivos ficam FORA da piscina: `tempo-de-pintura` e `tui-sob-carga`
-// medem tempo absoluto de parede e ficam vermelhos com a maquina carregada (observado
-// com load average 22, verde de novo com 12, mesmo codigo). Paraleliza-los seria
-// fabricar a carga que os derruba. Rodam por ultimo, sozinhos, com a piscina vazia.
+// Por que quatro arquivos ficam FORA da piscina: dois medem tempo absoluto de parede
+// (`tempo-de-pintura` e `tui-sob-carga`) e dois dirigem muitos clones, commits e
+// subprocessos Git (`fechar-custo` e `pipeline-manual-halt-no-build`). Com a maquina
+// carregada, paraleliza-los fabrica a carga que os derruba. Rodam por ultimo,
+// sozinhos, com a piscina vazia.
 
 // Por que o TETO POR TESTE vem daqui e nao do default: `bun test` corta cada teste
 // em 5.000 ms se ninguem disser outra coisa, enquanto a trilha node declara
-// `--test-timeout=60000` (package.json). Com a piscina cheia, os dois testes que
+// `--test-timeout=60000` (package.json). Com a piscina cheia, os testes que
 // SOBEM SUBPROCESSO estouravam os 5 s e a trilha bun ficava vermelha por saturacao,
-// nao por defeito — `bun run test` reprovava com 2727 pass / 2 fail, e os mesmos
-// dois arquivos passavam sozinhos em 1,2 s e 3,2 s (medido com load average 12,8
-// numa maquina de 8 nucleos). Teto que difere 12x entre as trilhas nao e um teto: e
+// nao por defeito. Teto que difere 12x entre as trilhas nao e um teto: e
 // um verde que depende de quem esta rodando junto. As duas trilhas passam a declarar
 // o MESMO numero, e test/cordel/tetos-das-trilhas.test.ts reprova se divergirem.
 import { readdirSync, statSync } from 'node:fs'
@@ -37,6 +36,8 @@ import { cpus } from 'node:os'
 const SENSIVEIS_A_CARGA = new Set([
   join('test', 'mirante', 'tempo-de-pintura.test.ts'),
   join('test', 'mirante', 'tui-sob-carga.test.ts'),
+  join('test', 'quilombo', 'fechar-custo.test.ts'),
+  join('test', 'quilombo', 'pipeline-manual-halt-no-build.test.ts'),
 ])
 
 const LARGURA_DA_PISCINA = Math.max(1, Number(process.env.HII_TEST_JOBS || 0) || cpus().length - 1)
@@ -56,7 +57,10 @@ function arquivosDeTeste(raiz) {
 
 function rodar(arquivo) {
   return new Promise((pronto) => {
-    const filho = spawn('bun', ['test', '--timeout', String(TETO_POR_TESTE_MS), `./${arquivo}`])
+    // Um arquivo ainda pode registrar testes que compartilham process.env, portas
+    // efemeras e worktrees. A piscina ja isola processos; a concorrencia interna
+    // tambem precisa ser 1 para nao cruzar esses recursos dentro do processo.
+    const filho = spawn('bun', ['test', '--timeout', String(TETO_POR_TESTE_MS), '--max-concurrency', '1', `./${arquivo}`])
     let saida = ''
     filho.stdout.on('data', (pedaco) => { saida += pedaco })
     filho.stderr.on('data', (pedaco) => { saida += pedaco })
