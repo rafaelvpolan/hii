@@ -124,7 +124,10 @@ start() {
   if pid="$(dono_do_pidfile)"; then echo "runner ja online (PID $pid)"; return 0; fi
   if pid="$(find_daemon)"; then marca_dono "$pid"; echo "runner ja online (PID $pid)"; return 0; fi
   cd "$ROOT"
-  nohup "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
+  # `nohup` ignora SIGHUP, mas o daemon ainda herdava a sessao/grupo do shell.
+  # `setsid` tambem o desanexa do terminal que iniciou o comando, evitando que um
+  # encerramento normal da sessao mate o runner enquanto um harness esta em voo.
+  nohup setsid "$RUNTIME" runner.ts >>"$LOG" 2>&1 &
   pid=$!
   if ! arrancou "$pid"; then
     echo "runner NAO subiu: o processo $pid morreu no arranque - motivo em $LOG" >&2
