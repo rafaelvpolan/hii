@@ -1,4 +1,4 @@
-import { agentRoles, effortFor, harnessPorNome, modelFor, providerLimits, providerNameFor, providerNames } from '../../tomada/registro.ts'
+import { agentRoles, effortFor, harnessPorNome, modelFor, modoFor, providerLimits, providerNameFor, providerNames } from '../../tomada/registro.ts'
 import { provedoresDisponiveis } from '../../tomada/disponibilidade.ts'
 import type { ProvedorDisponivel } from '../../tomada/disponibilidade.ts'
 import { JANELA_5H, JANELA_SEMANA, consumoPorProvedor, serieDeCusto } from '../../euclides/tesouro/consumo.ts'
@@ -61,6 +61,9 @@ function linhaDeProvedor(nome: HarnessId, estados: Map<string, ProvedorDisponive
     papeis: papeisDe(nome),
     modelo: papel ? modelFor(papel) ?? '' : '',
     esforco: papel ? effortFor(papel) ?? '' : '',
+    aceitaEsforco: limites.acceptsEffort,
+    modo: papel ? modoFor(papel) ?? '' : '',
+    modosDisponiveis: [...harness.modos.modos],
     restringeFerramenta: limites ? limites.restrictsTools : true,
     isolaLeitura: limites ? limites.isolatesReadonly : true,
     reportaCusto: limites ? limites.reportsCostUsd : true,

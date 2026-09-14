@@ -117,7 +117,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         && comandosDaIaAtiva(repoPath(state.repo)).comandos.find(c => c.comando === cabecaDesconhecida)
       if (comandoDaIa) {
         const instrucao = effect.raw ? `/${effect.raw}` : cabecaDesconhecida
-        io.log(`  ${cabecaDesconhecida} e um comando de ${providerNameFor('implement')}, nao do hii — anotado como instrucao em #${state.seguindo}`)
+        const origem = comandoDaIa.origem === 'orquestrador'
+          ? 'do orquestrador HII'
+          : `da IA ${providerNameFor('implement')}`
+        io.log(`  ${cabecaDesconhecida} e um comando ${origem}, nao um comando nativo do hii — anotado como instrucao executavel em #${state.seguindo}`)
         return aplicar({ kind: 'instruct', id: state.seguindo, text: instrucao }, state, io)
       }
       io.log(texto)

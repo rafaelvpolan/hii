@@ -139,8 +139,13 @@ async function tui(state0: SessionState): Promise<void> {
     sugestoes: (opcoes, selecionado) => {
       const daIa = comandosDaIaAtiva(state.repo ? repoPath(state.repo) : '')
       const descricaoPorComando = new Map(daIa.comandos.map(c => [c.comando, c.descricao]))
+      const origemPorComando = new Map(daIa.comandos.map(c => [c.comando, c.origem ?? 'ia']))
       const grupoDe = (opcao: string): GrupoDeSugestao | null =>
-        descricaoPorComando.has(opcao) ? { titulo: daIa.provedor, cor: corDaIa(daIa.provedor) } : null
+        descricaoPorComando.has(opcao)
+          ? origemPorComando.get(opcao) === 'orquestrador'
+            ? { titulo: 'orquestrador', cor: corDaIa('orquestrador') }
+            : { titulo: daIa.provedor, cor: corDaIa(daIa.provedor) }
+          : null
       return renderSugestoes(opcoes, {
         color, selecionado, width: larguraUtil(),
         // A janela e dimensionada pelas linhas do terminal: sem isto o quadro

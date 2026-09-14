@@ -118,6 +118,7 @@ export function completer(line: string, repo = ''): [string[], string] {
     modos: [...modosDoProvedor(providerNameFor('implement'))],
     papeis: agentRoles(),
     comandosDaIa: daIa.comandos.map(c => c.comando),
+    comandosDoOrquestrador: daIa.comandos.filter(c => c.origem === 'orquestrador').map(c => c.comando),
   })
 }
 

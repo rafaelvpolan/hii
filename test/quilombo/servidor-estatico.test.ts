@@ -29,11 +29,13 @@ test('PONTA A PONTA: o live server do motor serve a pasta, injeta o recarregamen
   writeFileSync(join(site, 'css', 'a.css'), 'h1{color:red}')
   writeFileSync(join(BASE, 'segredo.txt'), 'nao servir')
   const porta = 5900 + Math.floor(Math.random() * 90)
-  const filho = spawn(runtimeDeScript(), [join(ROOT, 'scripts', 'servidor-estatico.mjs'), '--dir', site, '--port', String(porta)], { stdio: 'ignore' })
+  const filho = spawn(runtimeDeScript(), [join(ROOT, 'scripts', 'servidor-estatico.mjs'), '--dir', site, '--port', String(porta)], { stdio: ['ignore', 'pipe', 'pipe'] })
   filhos.push(filho)
+  let erroDeArranque = ''
+  filho.stderr?.on('data', (d: Buffer) => { erroDeArranque += d.toString('utf8') })
   const base = `http://127.0.0.1:${porta}`
   const r = await esperarHttp(`${base}/`, 8000)
-  expect(r?.status).toBe(200)
+  expect(r?.status, r ? undefined : `servidor HTTP local indisponivel; o ambiente precisa liberar loopback e subprocessos (${erroDeArranque.trim() || 'sem diagnostico'})`).toBe(200)
   const html = await r!.text()
   expect(html).toContain('<h1>oi</h1>')
   expect(html, 'o script de recarregar entra antes de </body>').toContain('/__hii/recarregar')

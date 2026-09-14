@@ -67,15 +67,28 @@ test('codex: descobre as skills do CODEX_HOME e do projeto', async () => {
   expect(r.comandos.map(c => c.comando).sort()).toEqual(['/imagegen', '/openai-docs'])
 })
 
+test('codex: carrega Nexus e Codefox do projeto como recursos executaveis do HII', async () => {
+  skill(join(repoDir, '.claude', 'skills'), 'nexus', 'orquestra agentes no projeto')
+  skill(join(repoDir, '.claude', 'skills'), 'codefox', 'revisa o PR do projeto')
+  process.env.CODEX_HOME = join(home, '.codex-custom')
+  process.env.HII_IMPLEMENT_PROVIDER = 'codex'
+  const { comandosDaIaAtiva, instrucoesDosComandos } = await import('../../motor/tomada/mapa/comandos.ts')
+  const r = comandosDaIaAtiva(repoDir)
+  expect(r.comandos.filter(c => c.origem === 'orquestrador').map(c => c.comando).sort()).toEqual(['/codefox', '/nexus'])
+  expect(instrucoesDosComandos('/nexus corrigir o projeto', repoDir)).toContain('corpo')
+})
+
 test('codex: descobre comandos de plugins instalados, incluindo o ECC', async () => {
   const comandos = join(home, '.codex', 'plugins', 'cache', 'ecc', 'ecc', '2.2.1', 'commands')
   comando(comandos, 'model-route', 'escolhe o melhor modelo')
+  skill(join(home, '.codex', 'plugins', 'cache', 'ecc', 'ecc', '2.2.1', 'skills'), 'tdd-workflow', 'desenvolve com testes')
   process.env.CODEX_HOME = join(home, '.codex')
   process.env.HII_IMPLEMENT_PROVIDER = 'codex'
   const { comandosDaIaAtiva } = await import('../../motor/tomada/mapa/comandos.ts')
   const r = comandosDaIaAtiva(repoDir)
   expect(r.comandos.map(c => c.comando)).toContain('/model-route')
   expect(r.comandos.find(c => c.comando === '/model-route')?.descricao).toBe('escolhe o melhor modelo')
+  expect(r.comandos.map(c => c.comando)).toContain('/tdd-workflow')
 })
 
 test('kimi: descobre as skills do usuario e do projeto', async () => {

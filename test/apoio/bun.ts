@@ -124,7 +124,17 @@ export async function servidorDeTeste(fetch: (req: Request) => Response | Promis
         .catch(() => { res.writeHead(500); res.end('') })
     })
   })
-  await new Promise<void>((ok) => servidor.listen(0, '127.0.0.1', () => ok()))
+  await new Promise<void>((ok, rejeitar) => {
+    const erro = (e: NodeJS.ErrnoException): void => {
+      const codigo = e.code ?? 'erro-desconhecido'
+      rejeitar(new Error(`servidor HTTP local indisponivel (${codigo}: ${e.message}); libere loopback/portas para executar testes de rede`))
+    }
+    servidor.once('error', erro)
+    servidor.listen(0, '127.0.0.1', () => {
+      servidor.off('error', erro)
+      ok()
+    })
+  })
   const port = (servidor.address() as AddressInfo).port
   return {
     port,
