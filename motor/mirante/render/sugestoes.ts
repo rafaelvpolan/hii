@@ -46,7 +46,7 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/testes': 'roda so o passo de testes do card e pausa de novo',
   '/seguranca': 'roda so o passo de seguranca do card e pausa de novo',
   '/limpeza': 'roda so o passo de limpeza do card e pausa de novo',
-  '/hii': 'ativa o orquestrador passivo; /hii off volta ao gateway; /hii <id> roda o pipeline manual',
+  '/hii': 'executa uma tarefa ou arquivo.spec com o orquestrador na session atual',
 }
 
 export interface GrupoDeSugestao {

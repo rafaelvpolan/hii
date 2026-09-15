@@ -21,9 +21,12 @@ test('a forma /hii:code:X da referencia resolve para o mesmo passo', () => {
   expect(handle('/hii:code:polimento 9', newSession()).effect).toMatchObject({ kind: 'pipeline-step', id: '9', text: 'polimento' })
 })
 
-test('/hii ativa modo passivo; id explicito preserva a suite manual', () => {
-  expect(handle('/hii', seguir(newSession(), '7')).effect).toMatchObject({ kind: 'orquestrador', text: 'on' })
-  expect(handle('/hii 21', newSession()).effect).toMatchObject({ kind: 'pipeline-suite', id: '21' })
+test('/hii recebe tarefa ou spec sem interpretar argumentos como modo ou id de pipeline', () => {
+  expect(handle('/hii implemente a API', seguir(newSession(), '7')).effect).toMatchObject({ kind: 'orquestrador', text: 'implemente a API' })
+  expect(handle('/hii 21', newSession()).effect).toMatchObject({ kind: 'orquestrador', text: '21' })
+  expect(handle('/hii "docs/meu plano.spec"', newSession()).effect.text).toBe('"docs/meu plano.spec"')
+  expect(handle('/hii primeira linha\n## Criterios\n  teste', newSession()).effect.text).toBe('primeira linha\n## Criterios\n  teste')
+  for (const cmd of ['/hii', '/hii on', '/hii off']) expect(handle(cmd, newSession()).effect.kind).toBe('error')
 })
 
 test('passo ou suite sem id e sem tarefa aberta explicam o uso, em vez de falhar mudo', () => {
@@ -31,6 +34,6 @@ test('passo ou suite sem id e sem tarefa aberta explicam o uso, em vez de falhar
   expect(passo.effect.kind).toBe('error')
   expect(passo.effect.text).toContain('/testes')
   const suite = handle('/hii', newSession())
-  expect(suite.effect.kind).toBe('orquestrador')
-  expect(suite.effect.text).toBe('on')
+  expect(suite.effect.kind).toBe('error')
+  expect(suite.effect.text).toContain('<tarefa ou arquivo.spec>')
 })

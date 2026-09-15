@@ -133,9 +133,9 @@ function passoPipeline(extra: string[]): number {
 async function suitePipeline(extra: string[]): Promise<number> {
   const repo = valorDaFlag(extra, '--repo')
   const argumentos = extra.filter(a => !a.startsWith('--') && a !== repo)
-  if (['on', 'off', 'status', 'doctor', 'setup', 'plan', 'close'].includes(argumentos[0] ?? '')) {
-    const { comandoHii } = await import('../motor/oswaldo/orquestracao/comando.ts')
-    for (const linha of comandoHii(repo, argumentos.join(' '))) process.stdout.write(`${linha}\n`)
+  if (['status', 'doctor', 'setup', 'plan', 'close'].includes(argumentos[0] ?? '')) {
+    const { comandoDoPipeline } = await import('../motor/oswaldo/orquestracao/comando.ts')
+    for (const linha of comandoDoPipeline(repo, argumentos.join(' '))) process.stdout.write(`${linha}\n`)
     return repo ? 0 : 2
   }
   const id = extra.filter(a => !a.startsWith('--'))[0] ?? ''

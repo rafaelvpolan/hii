@@ -26,7 +26,8 @@ import { migrarRefsDaSessao } from '../quilombo/alfandega/anexo.ts'
 import { sessaoAtual } from '../euclides/sessao.ts'
 import type { Effect, SessionState } from './sessao.ts'
 import { situacaoDoCard } from './cli/situacao-cli.ts'
-import { comandoHii } from '../oswaldo/orquestracao/comando.ts'
+import { lerPedidoOrquestrado } from '../oswaldo/orquestracao/pedido.ts'
+import type { ModoDoMotor } from '../oswaldo/orquestracao/config.ts'
 import { prepararExecucao, registrarPedido, sessaoDaTarefa } from './execucao-da-sessao.ts'
 import { registrarMensagem } from '../euclides/sessoes.ts'
 
@@ -79,15 +80,15 @@ function resolverProvedorParaLogin(arg: string): HarnessId | null {
 // A UNICA porta de criacao de card a partir da sessao. Submit livre e atalho de
 // intake passam os dois por aqui — e o teste de item 16 le esta fonte para
 // provar que o atalho nao abriu caminho paralelo.
-async function criarCardEEnfileirar(texto: string, state: SessionState, io: DispatchIO, extras: Record<string, string>): Promise<SessionState> {
+async function criarCardEEnfileirar(texto: string, state: SessionState, io: DispatchIO, extras: Record<string, string>, modo: ModoDoMotor = 'gateway'): Promise<SessionState> {
   if (!texto.trim()) { io.log('nada para criar'); return state }
   if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
   const pronta = io.iaProntaParaEnviar()
   if (!pronta.ok) { io.log(pronta.motivo); return state }
   const base = state.perguntando ? respondido(state) : state
-  const execucao = prepararExecucao(base.repo, base.seguindo, texto)
+  const execucao = prepararExecucao(base.repo, base.seguindo, texto, modo)
   const novoId = core.submit({ title: texto, repo: base.repo, ...extras, ...execucao })
-  registrarPedido(execucao.sessao_id, novoId, execucao.motor_modo, texto)
+  registrarPedido(execucao.sessao_id, novoId, execucao.motor_modo, extras.desc || texto)
   const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
   if (refs.migrados > 0) {
     io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
@@ -95,7 +96,7 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const r = core.approvePlan(novoId)
   const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
   io.log(r.ok
-    ? `session #${execucao.sessao_id} | execucao #${novoId} na fila | ${execucao.motor_modo} — ${destino} (/historico sai)`
+    ? `session #${execucao.sessao_id} | execucao #${novoId} na fila | ${modo === 'passivo' ? 'orquestrador' : 'gateway'} — ${destino} (/historico sai)`
     : `card #${novoId} criado — ${r.reason}`)
   return seguir(base, novoId)
 }
@@ -105,8 +106,14 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
   const texto = effect.text ?? ''
   switch (effect.kind) {
     case 'orquestrador': {
-      for (const linha of comandoHii(state.repo, texto)) io.log(linha)
-      return state
+      if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
+      try {
+        const pedido = await lerPedidoOrquestrado(texto, repoPath(state.repo))
+        return await criarCardEEnfileirar(pedido.titulo, state, io, { desc: pedido.descricao }, 'passivo')
+      } catch (erro) {
+        io.log(`orquestrador: ${(erro as Error).message}`)
+        return state
+      }
     }
     case 'help': {
       const espera = esperandoVoce(allCards(), state.repo)
@@ -340,11 +347,6 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       // o runner (mesmo handleFinish, mesmos gates e mesma contabilidade). Um
       // agente rodando dentro do dispatch travaria a interface por minutos.
       const p = pedirPassoManual(id, texto)
-      io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
-      return p.ok ? seguir(state, id) : state
-    }
-    case 'pipeline-suite': {
-      const p = pedirSuiteManual(id)
       io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
       return p.ok ? seguir(state, id) : state
     }

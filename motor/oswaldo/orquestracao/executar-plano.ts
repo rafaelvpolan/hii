@@ -30,7 +30,7 @@ export function planoInicial(card: Card, wt: string): PlanoDeExecucao {
   return { versao: 1, id: card.fm.id ?? '', repo: card.fm.repo ?? '', sessaoId: card.fm.sessao_id ?? card.fm.id ?? '', objetivo,
     risco: card.fm.risk === 'high' ? 'high' : 'low', criterios,
     microtasks: [{ id: 'implementacao', titulo: card.fm.title ?? objetivo, instrucao: objetivo, agente: 'limpio', dependeDe: [], arquivos: [], criterios: criterios.map(c => c.id) }],
-    rollout: { ativacao: 'PR aprovado pelo humano; sem merge automatico', sucesso: 'criterios obrigatorios aprovados e review liberado', interrupcao: 'falha, evidencia inconclusiva ou parada humana', reversao: 'reverter a mudanca revisada; /hii off altera somente os proximos pedidos' } }
+    rollout: { ativacao: 'PR aprovado pelo humano; sem merge automatico', sucesso: 'criterios obrigatorios aprovados e review liberado', interrupcao: 'falha, evidencia inconclusiva ou parada humana', reversao: 'reverter a mudanca revisada; /stop interrompe a execucao' } }
 }
 
 interface Checkpoint { versao: 1; hash: string; feitas: string[]; fingerprint: string }

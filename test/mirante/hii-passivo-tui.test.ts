@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApp } from '../../motor/mirante/tui/app.ts'
@@ -8,9 +8,11 @@ import { handle, newSession } from '../../motor/mirante/sessao.ts'
 import { dispatch } from '../../motor/mirante/despacho.ts'
 import { dispatchIOFalso } from '../fixtures/dispatch-io-falso.ts'
 import { telaVirtual } from '../fixtures/tela-virtual.ts'
-import { configDoOrquestrador } from '../../motor/oswaldo/orquestracao/config.ts'
-import { readCard, patchCard } from '../../motor/cordel/store.ts'
+import { arquivoDoOrquestrador, configDoOrquestrador, configurarOrquestrador } from '../../motor/oswaldo/orquestracao/config.ts'
+import { readCard, allCards } from '../../motor/cordel/store.ts'
 import { lerSessaoHii } from '../../motor/euclides/sessoes.ts'
+import { objetivoComInstrucoes } from '../../motor/mirante/instruir.ts'
+import { complete } from '../../motor/mirante/completar.ts'
 
 let dir = ''
 let anterior: NodeJS.ProcessEnv
@@ -18,10 +20,13 @@ beforeEach(() => {
   anterior = { ...process.env }
   dir = mkdtempSync(join(tmpdir(), 'hii-tui-passivo-'))
   process.env.HII_CARDS_DIR = dir
+  process.env.HII_REPOS_FILE = join(dir, 'repos.json')
+  mkdirSync(join(dir, 'alvo'))
+  writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/app', path: join(dir, 'alvo'), branch: 'main' }]))
 })
 afterEach(() => { process.env = anterior; rmSync(dir, { recursive: true, force: true }) })
 
-for (const largura of [48, 100]) test(`teclado e tela virtual ${largura}: /hii, /new, pedidos encadeados, /ask, off e close`, async () => {
+for (const largura of [48, 100]) test(`teclado e tela virtual ${largura}: /hii tarefa/spec, gateway seguinte e /ask sem executar`, async () => {
   const saida: string[] = []
   let tecla = (_k: string): void => {}
   const terminal: Terminal = { write: s => { saida.push(s) }, rows: () => 28, cols: () => largura,
@@ -50,14 +55,17 @@ for (const largura of [48, 100]) test(`teclado e tela virtual ${largura}: /hii, 
   }
   try {
     expect(configDoOrquestrador('org/app').modo).toBe('gateway')
-    expect(await digitar('/hii')).toContain('motor: passivo')
+    configurarOrquestrador('org/app', 2)
+    writeFileSync(arquivoDoOrquestrador('org/app'), JSON.stringify({ ...configDoOrquestrador('org/app'), modo: 'passivo' }))
+    expect(await digitar('/hii')).toContain('arquivo.spec')
+    expect(allCards().length).toBe(0)
     expect(await digitar('/new fluxo')).toContain('session #')
     const sessao = state.seguindo
-    expect(await digitar('implemente o endpoint')).toContain('na fila')
+    expect(await digitar('/hii implemente o endpoint')).toContain('na fila')
     const primeira = state.seguindo
     expect(readCard(primeira)?.fm.motor_modo).toBe('passivo')
-    expect(await digitar('/hii off')).toContain('motor: gateway')
-    expect(readCard(primeira)?.fm.motor_modo).toBe('passivo')
+    expect(readCard(primeira)?.fm.pipeline).toBe('auto')
+    expect(readCard(primeira)?.fm.status).toBe('EXECUTING')
     await digitar('agora ajuste o texto')
     const segunda = state.seguindo
     expect(readCard(segunda)?.fm.motor_modo).toBe('gateway')
@@ -65,9 +73,19 @@ for (const largura of [48, 100]) test(`teclado e tela virtual ${largura}: /hii, 
     expect(await digitar('/ask qual o estado?')).toContain('resposta somente leitura')
     expect(consultas).toBe(1)
     expect(lerSessaoHii(sessao)?.execucoes.length).toBe(2)
-    patchCard(primeira, { status: 'HALTED', halt_class: 'humano' })
-    patchCard(segunda, { status: 'COMPLETED' })
-    expect(await digitar(`/hii close ${sessao}`)).toContain(`#${sessao} closed`)
-    expect(lerSessaoHii(sessao)?.estado).toBe('fechada')
+    writeFileSync(join(dir, 'alvo', 'meu plano.spec'), '# Pedido\nimplemente validacao\n## Criterios\npreserve a API\n## Instrucoes\nnao perca o final\n')
+    expect(await digitar('/hii "meu plano.spec"')).toContain('na fila')
+    const terceira = state.seguindo
+    expect(readCard(terceira)?.fm.motor_modo).toBe('passivo')
+    expect(objetivoComInstrucoes(readCard(terceira)!.body)).toContain('nao perca o final')
+    expect(lerSessaoHii(sessao)?.mensagens.at(-1)?.texto).toContain('preserve a API')
+    const quantidade = allCards().length
+    expect(await digitar('/hii ausente.spec')).toContain('orquestrador:')
+    expect(await digitar('/hii off')).toContain('arquivo.spec')
+    expect(state.seguindo).toBe(terceira)
+    expect(allCards().length).toBe(quantidade)
+    expect(lerSessaoHii(sessao)?.execucoes.length).toBe(3)
+    expect(complete('/hii ', { cards: ['001'], repos: [] })[0]).toEqual([])
+    expect(configDoOrquestrador('org/app').modo).toBe('gateway')
   } finally { app.encerrar(); await rodando }
 })

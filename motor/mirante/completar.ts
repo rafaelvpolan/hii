@@ -48,7 +48,6 @@ export function complete(line: string, ctx: CompleteContext): Completion {
   if (partes.length > 2) return [[], arg]
 
   const principal = canonico(head)
-  if (principal === '/hii') return [byPrefix(['on', 'off', 'status', 'doctor', 'setup', 'plan', 'close', ...ctx.cards], arg), arg]
   if (principal === '/ia' || principal === '/login') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.provedores ?? [])], arg), arg]
   if (principal === '/model') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.modelos ?? []), 'padrao'], arg), arg]
   if (principal === '/effort') return [byPrefix([...(ctx.papeis ?? []), ...(ctx.esforcos ?? []), 'padrao'], arg), arg]

@@ -1,4 +1,4 @@
-import { arquivoDoOrquestrador, configDoOrquestrador, configurarOrquestrador } from './config.ts'
+import { configDoOrquestrador } from './config.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { readCard, patchCard, normalizeId, repoPath } from '../../cordel/store.ts'
 import { lerDocumentoDePlano } from './contrato.ts'
@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { motivoParaEsperarHarness } from '../../tomada/harness-em-voo.ts'
 import { initHicodeHome } from '../../cordel/alicerce/home.ts'
 
-export function comandoHii(projeto: string, argumento = 'on'): string[] {
+export function comandoDoPipeline(projeto: string, argumento = 'status'): string[] {
   if (!projeto) return ['sem projeto: /repo <owner/nome>']
   if (argumento === 'setup') {
     const alvo = repoPath(projeto)
@@ -34,7 +34,7 @@ export function comandoHii(projeto: string, argumento = 'on'): string[] {
     const emVoo = motivoParaEsperarHarness(id)
     if (emVoo) return [emVoo]
     const caminho = partes.join(' ').trim()
-    if (!caminho) return ['uso: /hii plan <id> <arquivo.json>']
+    if (!caminho) return ['uso: hii pipeline plan <id> <arquivo.json> --repo <owner/nome>']
     const plano = lerDocumentoDePlano(readFileSync(caminho, 'utf8'))
     if (plano.id !== id || plano.repo !== projeto || plano.sessaoId !== card.fm.sessao_id) return ['plano: IDs da execucao, projeto e session devem coincidir']
     const atual = lerPlano(projeto, id)
@@ -42,13 +42,8 @@ export function comandoHii(projeto: string, argumento = 'on'): string[] {
     patchCard(id, { plano_revisao: String(r.revisao), plano_hash: r.hash })
     return [`plano #${id} revisao ${r.revisao} validado; retome a execucao para aplicar`]
   }
-  if (!['on', 'off', 'status'].includes(argumento)) return ['uso: /hii [on|off|status|doctor|setup], /hii <id>, /hii close <session>, /hii plan <id> <arquivo.json>']
-  const c = argumento === 'status' ? configDoOrquestrador(projeto)
-    : configurarOrquestrador(projeto, argumento === 'on' ? 'passivo' : 'gateway')
-  return [
-    `motor: ${c.modo} | ${projeto}`,
-    c.modo === 'passivo' ? 'orquestracao ativada para os proximos pedidos; aprovacoes humanas mantidas'
-      : 'gateway: pedidos diretos para a IA, sem pipeline automatico',
-    `origem: ${c.revisao ? arquivoDoOrquestrador(projeto) : 'padrao'} | revisao ${c.revisao}`,
-  ]
+  if (argumento !== 'status') return ['uso: hii pipeline <id|status|doctor|setup|plan|close> --repo <owner/nome>']
+  const c = configDoOrquestrador(projeto)
+  return [`motor: gateway | ${projeto}`, 'orquestrador: /hii <tarefa ou arquivo.spec>, somente neste pedido',
+    `concorrencia: ${c.concorrencia} | revisao ${c.revisao}`]
 }

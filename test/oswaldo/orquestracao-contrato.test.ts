@@ -1,8 +1,8 @@
 import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { configDoOrquestrador, configurarOrquestrador, modoDaExecucao } from '../../motor/oswaldo/orquestracao/config.ts'
+import { arquivoDoOrquestrador, configDoOrquestrador, configurarOrquestrador, modoDaExecucao } from '../../motor/oswaldo/orquestracao/config.ts'
 import { contarLinhas, lerDocumentoDePlano, ondasEstritas, validarPlano } from '../../motor/oswaldo/orquestracao/contrato.ts'
 import { lerPlano, salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
@@ -20,16 +20,17 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('gateway e padrao; ativacao passiva e persistente, idempotente e isolada por projeto', () => {
+test('configuracao de concorrencia e idempotente, isolada e nao ativa orquestracao', () => {
   expect(configDoOrquestrador('org/app').modo).toBe('gateway')
-  expect(configurarOrquestrador('org/app', 'passivo', 2).revisao).toBe(1)
-  expect(configurarOrquestrador('org/app', 'passivo', 2).revisao).toBe(1)
+  expect(configurarOrquestrador('org/app', 2).revisao).toBe(1)
+  expect(configurarOrquestrador('org/app', 2).revisao).toBe(1)
   expect(configDoOrquestrador('org/app').concorrencia).toBe(2)
   expect(configDoOrquestrador('org/outro').modo).toBe('gateway')
-  configurarOrquestrador('org/app', 'gateway')
+  writeFileSync(arquivoDoOrquestrador('org/app'), JSON.stringify({ ...configDoOrquestrador('org/app'), modo: 'passivo' }))
+  expect(configDoOrquestrador('org/app').modo).toBe('gateway')
   expect(modoDaExecucao({ motor_modo: 'passivo' })).toBe('passivo')
   expect(modoDaExecucao({})).toBe('legado')
-  expect(() => configurarOrquestrador('org/app', 'passivo', 0)).toThrow()
+  expect(() => configurarOrquestrador('org/app', 0)).toThrow()
 })
 
 test('grafo valida predecessoras e preserva ondas paralelas', () => {

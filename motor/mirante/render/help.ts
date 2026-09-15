@@ -79,7 +79,7 @@ const SECOES: Secao[] = [
       { chave: '/testes', arg: '[id]', texto: 'roda so os testes (testudo) e pausa de novo' },
       { chave: '/seguranca', arg: '[id]', texto: 'roda so a seguranca (escudo) e pausa de novo' },
       { chave: '/limpeza', arg: '[id]', texto: 'roda so a limpeza (pura) e pausa de novo' },
-      { chave: '/hii', arg: '[on|off|status|doctor]', texto: 'ativa o orquestrador passivo; off volta ao gateway; com id roda o pipeline manual' },
+      { chave: '/hii', arg: '<tarefa ou arquivo.spec>', texto: 'executa este pedido com o orquestrador na session atual' },
     ],
   },
   {

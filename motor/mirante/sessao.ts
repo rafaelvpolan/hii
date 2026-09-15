@@ -6,7 +6,7 @@ export type EffectKind =
   | 'approve-url' | 'reject-url' | 'reopen-repo'
   | 'confirm-close' | 'reject-close'
   | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake' | 'servir'
-  | 'pipeline-step' | 'pipeline-suite' | 'orquestrador'
+  | 'pipeline-step' | 'orquestrador'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -65,7 +65,7 @@ export function canonico(comando: string): string {
 }
 
 export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/ask', '/new', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
-  // Pipeline manual: um comando por passo + a suite. Mesma implementacao do CLI
+  // Pipeline manual: um comando por passo. Mesma implementacao do CLI
   // (`hii passo`, `hii pipeline`) — cartorio/passos-manuais.ts.
   '/arquitetura', '/polimento', '/testes', '/seguranca', '/limpeza', '/hii',
   // Item 16 — atalhos de intake. Entram na MESMA lista porque sao comandos como
@@ -190,7 +190,7 @@ function command(line: string, state: SessionState): Reply {
       ? reply({ kind: 'intake', text: intake.texto, raw: intake.comando }, cleared)
       : reply({ kind: 'error', text: `uso: ${intake.comando} <o que fazer> — cria a tarefa com o conhecimento do dominio ja carregado` }, state)
   }
-  // Pipeline manual: um passo por vez, ou a suite com /hii. Sem id, vale a
+  // Pipeline manual: um passo por vez. Sem id, vale a
   // tarefa aberta — o caso comum e estar olhando para ela quando o card pausa.
   const passoManual = head ? PASSOS_MANUAIS[head] : undefined
   if (passoManual) {
@@ -200,8 +200,10 @@ function command(line: string, state: SessionState): Reply {
       : reply({ kind: 'error', text: `uso: /${head} <id> — roda so esse passo do pipeline e pausa de novo (sem id, vale a tarefa aberta)` }, state)
   }
   if (head === 'hii') {
-    if (/^\d+$/.test(arg)) return reply({ kind: 'pipeline-suite', id: arg }, cleared)
-    return reply({ kind: 'orquestrador', text: arg || 'on' }, cleared)
+    const pedido = line.trim().slice('/hii'.length).trim()
+    return pedido && !['on', 'off'].includes(pedido)
+      ? reply({ kind: 'orquestrador', text: pedido }, cleared)
+      : reply({ kind: 'error', text: 'uso: /hii <tarefa ou arquivo.spec> — executa este pedido com o orquestrador, sem on/off' }, state)
   }
   switch (head) {
     case 'help':

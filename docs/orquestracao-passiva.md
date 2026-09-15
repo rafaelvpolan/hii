@@ -1,4 +1,4 @@
-# Orquestracao passiva do HII
+# Orquestracao por pedido do HII
 
 ## Escopo desta entrega
 
@@ -7,26 +7,35 @@ Branch: `feat/orquestrador-passivo`. Relacionada a #46, #47, #48, #49, #50 e #51
 As issues abrangem mais que esta implementacao e nao devem ser fechadas automaticamente.
 
 O comando reaproveitado e `/hii`. Nao foi criado outro comando de orquestrador.
-O motor e gateway por padrao. `/hii` ou `/hii on` ativa o modo passivo no projeto;
-`/hii off` desativa para pedidos futuros. Cada execucao captura o modo na criacao.
+O motor e gateway por padrao. `/hii <tarefa ou arquivo.spec>` aciona o orquestrador
+somente para esse pedido, dentro da session atual. Nao ha interruptor on/off nem
+ativacao persistente. Configuracoes antigas de modo passivo nao alteram novos pedidos comuns.
+Cada execucao captura o modo na criacao; o valor interno `passivo` foi preservado
+para compatibilidade dos registros, mas nao representa mais ativacao por projeto.
 Uma tarefa antiga sem esse campo continua no pipeline legado.
 
 ## Comandos
 
 | TUI | Efeito |
 | --- | --- |
-| `/hii status` | Modo efetivo, projeto, origem e revisao da configuracao |
-| `/hii doctor` | Reutiliza diagnosticos de gh, provedores, contrato e runtimes |
-| `/hii setup` | Reutiliza initHicodeHome, sem sobrescrever arquivos existentes |
-| `/hii plan <id> <arquivo.json>` | Importa plano v1 para execucao passiva READY/HALTED, sem harness ativo |
-| `/hii <id>` | Acionamento explicito do pipeline manual preexistente |
-| `/hii close <session>` | Fecha session sem trabalho pendente; saida `#id closed` |
+| `/hii implemente a API` | Cria uma execucao orquestrada na session atual |
+| `/hii tarefas/login.spec` | Le o arquivo relativo ao projeto selecionado e cria a execucao |
+| `/hii "docs/meu plano.spec"` | Aceita caminho com espacos; arquivo absoluto tambem e aceito |
 | `/new [assunto]` | Cria session HII no projeto selecionado |
 | `/ask <pergunta>` | Consulta em modo readonly, sem criar execucao de tarefa |
 
-No CLI, use `hii pipeline on|off|status|doctor|setup --repo owner/repo`.
+No CLI, use `hii pipeline status|doctor|setup --repo owner/repo` para manutencao.
 Importacao: `hii pipeline plan <id> <arquivo.json> --repo owner/repo`.
+Pipeline manual: `hii pipeline <id>` ou ENTER na tarefa pausada.
+Fechamento: `hii pipeline close <session> --repo owner/repo`, com saida `#id closed`.
 O setup nao instala pacotes, autentica provedores ou provisiona MCPs automaticamente.
+
+O `.spec` (tambem `.spec.md`) e texto UTF-8, distinto do contrato JSON v1. Seu conteudo
+e capturado na criacao da execucao; alteracoes futuras no arquivo nao mudam esse pedido.
+Arquivo ausente, diretorio, conteudo vazio/binario, UTF-8 invalido ou mais de 1 MiB
+sao recusados antes de criar a tarefa. Titulos Markdown internos sao protegidos
+para nao serem confundidos com secoes de controle do card. Mencionar um spec numa
+descricao, como `/hii implemente conforme o contrato file.spec`, continua sendo texto.
 
 ## Session e contexto
 
@@ -135,7 +144,7 @@ opcional define a pasta das capturas; o padrao e `/tmp/hii-visualizador`.
 
 | Issue | Entregue aqui | Ainda pendente |
 | --- | --- | --- |
-| #46 | Ativacao passiva e caminho executavel no motor | Fluxo de descoberta/produto no Hicode e publicacao editorial |
+| #46 | Acionamento por tarefa/spec e caminho executavel no motor | Fluxo de descoberta/produto no Hicode e publicacao editorial |
 | #47 | Contrato v1, revisoes, DAG validado, snapshot aditivo | Editor e integracao ponta a ponta no outro repositorio |
 | #48 | Setup local idempotente; doctor confere auth/capacidades | Provisionamento selecionavel de MCPs e diagnostico WSL completo |
 | #49 | DAG serial, checkpoints, contexto, retomada sem apagar diff | Planejador semantico e worktrees paralelos por microtask |

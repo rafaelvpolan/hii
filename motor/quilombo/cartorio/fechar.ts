@@ -210,14 +210,14 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   if (decisao.retomada.foraDoPerfil) patchCard(id, {}, avisoDeRetomadaForaDoPerfil(resumeFrom, plan.profile, decisao.retomada, steps.length))
   if (decisao.tipo === 'pausar') {
     const comandos = decisao.restantes.map(s => s.id)
-    const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (/hii ${id} ou ENTER no card)`
+    const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (hii pipeline ${id} ou ENTER no card)`
     const cauda = decisao.motivo ? `; restantes: [${comandos.join(', ') || 'nenhum'}]` : ''
     patchCard(id, { status: 'PAUSED', retomar_em: 'URL_OK', pipeline_pausa: 'manual', pipeline_passo: '' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->PAUSED ${motivo}${cauda}`)
     process.stdout.write(`[runner] #${id}: PAUSED — ${decisao.motivo || 'pipeline manual, aguardando pedido de passo'}\n`)
     return
   }
   if (decisao.liberacaoCaducada) {
-    patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo /hii ${id}`)
+    patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo hii pipeline ${id}`)
   }
   if (decisao.repetido) {
     patchCard(id, {}, `${isoNow()} passo "${decisao.passoUnicoAtivo}" ja rodou nesta rodada — rodando de novo a pedido do humano`)
@@ -351,7 +351,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   }
   // Passo unico pedido pelo humano: roda ele, registra em pipeline_feitos e
   // volta a PAUSED — o fecho (build, gates, PR) so acontece quando nao resta
-  // passo nenhum ou quando a suite e liberada (/hii, ENTER).
+  // passo nenhum ou quando a suite e liberada (hii pipeline, ENTER).
   if (passoUnicoAtivo) {
     const agora = pagos
     const restam = passosRestantes(steps, agora).map(s => s.id)
@@ -362,7 +362,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       pipeline_passo: '',
       pipeline_feitos: agora.join(','),
       ...accumulatedTotals(card, fsteps),
-    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnicoAtivo}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ` — pipeline completo: /hii ${id} ou ENTER fecham o card (build, gates e PR)`}`)
+    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnicoAtivo}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ` — pipeline completo: hii pipeline ${id} ou ENTER fecham o card (build, gates e PR)`}`)
     process.stdout.write(`[runner] #${id}: PAUSED — passo ${passoUnicoAtivo} feito${restam.length ? `, restam [${restam.join(', ')}]` : ', pipeline completo'}\n`)
     return
   }

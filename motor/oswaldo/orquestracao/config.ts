@@ -30,22 +30,21 @@ export function configDoOrquestrador(projeto: string): ConfigDoOrquestrador {
     || !Number.isInteger(c.revisao) || !Number.isInteger(c.concorrencia) || c.concorrencia < 1 || c.concorrencia > 4) {
     throw new Error('configuracao do orquestrador invalida: confira versao, projeto, modo e concorrencia (1-4)')
   }
-  return c
+  // Configuracoes antigas nao podem transformar pedidos comuns em orquestracao.
+  return { ...c, modo: 'gateway' }
 }
 
-export function configurarOrquestrador(projeto: string, modo: ModoDoMotor, concorrencia?: number): ConfigDoOrquestrador {
+export function configurarOrquestrador(projeto: string, concorrencia: number): ConfigDoOrquestrador {
   if (!projeto.trim()) throw new Error('selecione um projeto antes de configurar o orquestrador')
-  if (!['gateway', 'passivo'].includes(modo)) throw new Error('modo invalido: gateway ou passivo')
-  if (concorrencia !== undefined && (!Number.isInteger(concorrencia) || concorrencia < 1 || concorrencia > 4)) {
+  if (!Number.isInteger(concorrencia) || concorrencia < 1 || concorrencia > 4) {
     throw new Error('concorrencia deve ser um inteiro entre 1 e 4')
   }
   mkdirSync(join(cardsDir(), 'orquestracao'), { recursive: true })
   const arquivo = arquivoDoOrquestrador(projeto)
   return withFileLock(arquivo, () => {
     const anterior = configDoOrquestrador(projeto)
-    const limite = concorrencia ?? anterior.concorrencia
-    if (anterior.modo === modo && anterior.concorrencia === limite) return anterior
-    const proxima: ConfigDoOrquestrador = { ...anterior, modo, concorrencia: limite, revisao: anterior.revisao + 1 }
+    if (anterior.concorrencia === concorrencia) return anterior
+    const proxima: ConfigDoOrquestrador = { ...anterior, concorrencia, revisao: anterior.revisao + 1 }
     writeFileAtomic(arquivo, JSON.stringify(proxima, null, 2) + '\n')
     return proxima
   })
