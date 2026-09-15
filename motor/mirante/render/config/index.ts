@@ -3,6 +3,7 @@ import { serie } from '../widget/serie.ts'
 import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis.ts'
 import type { EstadoDaConfig, OpcoesConfig } from './tipos.ts'
 import { truncVisible } from '../../tui/layout.ts'
+import { configDoOrquestrador } from '../../../oswaldo/orquestracao/config.ts'
 
 export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos.ts'
 
@@ -69,7 +70,7 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   const resumo = `projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}${tetoNaLinha(e.tetoUsd)}${tetoGlobalNaLinha(e)}`
   const cabecalho = [
     `  ${paint('/config', CYAN, o)}  ${paint(truncVisible(resumo, Math.max(8, o.largura - 13)), DIM, o)}`,
-    '',
+    truncVisible(`  motor: ${configDoOrquestrador(e.projeto).modo} | /hii status`, o.largura).padEnd(o.largura),
   ]
   const custo = caixa('CUSTO NA JANELA DE 5H', serie(e.serie, {
     color: o.color, largura: o.largura - 4, altura: compacto ? ALTURA_DA_SERIE_COMPACTA : ALTURA_DA_SERIE,

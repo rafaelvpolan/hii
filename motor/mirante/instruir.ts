@@ -5,7 +5,7 @@ import { motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
 import { existsSync } from 'node:fs'
 import type { Fields } from '../cordel/tipos.ts'
 
-export const TERMINAIS = ['MERGED', 'DEPLOYED']
+export const TERMINAIS = ['MERGED', 'DEPLOYED', 'COMPLETED']
 const ANTES_DE_EXECUTAR = ['INBOX', 'READY', 'CLARIFY', 'SPECCED', 'PLAN_APPROVED']
 const TITULO = '## Instrucoes'
 

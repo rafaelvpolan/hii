@@ -97,7 +97,7 @@ test('o atalho cria card pelo caminho normal, com os packs gravados', async () =
   expect(r.effect.kind).toBe('intake')
   expect(r.effect.raw).toBe('/orquestrador-android')
   await dispatch(r.effect, r.state, io)
-  const cards = allCards()
+  const cards = allCards().filter(c => c.tipo !== 'session')
   expect(cards.length).toBe(1)
   const c = readCard(cards[0]?.id ?? '')
   expect(c?.fm.packs).toBe('common,mobile')
@@ -107,12 +107,12 @@ test('o atalho cria card pelo caminho normal, com os packs gravados', async () =
 test('MESMO PIPELINE o card do atalho e indistinguivel do card de /new-task, menos o conteudo', async () => {
   const viaAtalho = handle('/orquestrador-android tela de login', newSession('org/app'))
   await dispatch(viaAtalho.effect, viaAtalho.state, io)
-  const a = readCard(allCards()[0]?.id ?? '')
+  const a = readCard(allCards().find(c => c.tipo !== 'session')?.id ?? '')
 
   // Mesmo texto, pelo caminho livre.
   const viaSubmit = handle('/new-task tela de login', newSession('org/app'))
   await dispatch(viaSubmit.effect, viaSubmit.state, io)
-  const b = readCard(allCards().find(c => c.id !== a?.fm.id)?.id ?? '')
+  const b = readCard(allCards().find(c => c.tipo !== 'session' && c.id !== a?.fm.id)?.id ?? '')
 
   expect(a).toBeTruthy()
   expect(b).toBeTruthy()
@@ -129,7 +129,7 @@ test('MESMO PIPELINE o card do atalho e indistinguivel do card de /new-task, men
 test('/layout grava layout: on no card, pelo mesmo caminho', async () => {
   const r = handle('/layout revisar o espacamento do board', newSession('org/app'))
   await dispatch(r.effect, r.state, io)
-  const c = readCard(allCards()[0]?.id ?? '')
+  const c = readCard(allCards().find(c => c.tipo !== 'session')?.id ?? '')
   expect(c?.fm.layout).toBe('on')
   expect(c?.fm.packs).toBe('common,frontend-web')
 })

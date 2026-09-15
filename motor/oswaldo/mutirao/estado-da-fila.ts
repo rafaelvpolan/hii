@@ -5,6 +5,9 @@ import { marcarOrfao, prOrfaoDe } from '../../quilombo/salvo-conduto/compensacao
 import { activeSteps } from '../../niemeyer/config.ts'
 import { RESUME_POST_STEPS } from '../../quilombo/cartorio/retomar.ts'
 import { encerrando } from './encerramento.ts'
+import { lerSessaoHii, interromperSubsessoes } from '../../euclides/sessoes.ts'
+import { configDoOrquestrador } from '../orquestracao/config.ts'
+import { motivoParaEsperarHarness, harnessesRegistrados, pidVivo, mesmoProcesso } from '../../tomada/harness-em-voo.ts'
 
 const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLEANED']
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
@@ -79,6 +82,8 @@ export function reconcileStranded(): void {
   }
   for (const s of RERUN_STATES) {
     for (const c of cardsByStatus(s)) {
+      if (motivoParaEsperarHarness(c.id ?? '')) continue
+      if (c.sessao_id) interromperSubsessoes(c.sessao_id, c.id ?? '')
       if (c.reconciled !== s) {
         patchCard(c.id ?? '', { reconciled: s }, `${isoNow()} ${s} interrompido por reinicio do daemon — sera reexecutado`)
       }
@@ -99,12 +104,43 @@ export function pending(): Job[] {
   // Drenando: nao entrega trabalho novo. O que ja esta em voo termina; o resto
   // fica no disco esperando o proximo arranque.
   if (encerrando()) return []
-  const cards = allCards()
+  const cards = allCards().sort((a, b) => Number(a.id) - Number(b.id))
   const porStatus = (status: string): Array<Fields & { file: string }> => cards.filter(c => c.status === status)
   const ex: Job[] = porStatus('EXECUTING').map(c => ({ kind: 'execute', id: c.id ?? '' }))
   const fi: Job[] = porStatus('URL_OK').map(c => ({ kind: 'finish', id: c.id ?? '' }))
   const co: Job[] = porStatus('CORRECTING').map(c => ({ kind: 'correct', id: c.id ?? '' }))
   const sp: Job[] = porStatus('SPECCED').map(c => ({ kind: 'spec', id: c.id ?? '' }))
   const agoraMs = Date.now()
-  return [...sp, ...ex, ...fi, ...co].filter(j => !emVoo.has(j.id) && !aindaEmCooldown(j.id, agoraMs))
+  const ativos = new Set(emVoo)
+  for (const { id, registro } of harnessesRegistrados()) {
+    if (pidVivo(registro.pid) && mesmoProcesso(registro)) ativos.add(id)
+  }
+  const reposGateway = new Set<string>()
+  const passivos = new Map<string, number>()
+  return [...sp, ...ex, ...fi, ...co].filter(j => {
+    if (ativos.has(j.id) || aindaEmCooldown(j.id, agoraMs)) return false
+    const c = cards.find(c => c.id === j.id)
+    if (c?.tipo === 'session') return false
+    const sessao = c?.sessao_id ? lerSessaoHii(c.sessao_id) : null
+    if (sessao) {
+      const indice = sessao.execucoes.findIndex(e => e.id === j.id)
+      if (sessao.execucoes.slice(0, indice).some(e => {
+        const status = readCard(e.id)?.fm.status
+        return status && !['COMPLETED', 'PR_OPEN', 'MERGED', 'DEPLOYED'].includes(status)
+      })) return false
+    }
+    if (c?.motor_modo === 'gateway') {
+      const repo = c.repo ?? ''
+      if (reposGateway.has(repo) || cards.some(a => a.repo === repo && a.motor_modo === 'gateway' && ativos.has(a.id ?? ''))) return false
+      reposGateway.add(repo)
+    }
+    if (c?.motor_modo === 'passivo') {
+      const repo = c.repo ?? ''
+      const selecionados = passivos.get(repo) ?? 0
+      const emExecucao = cards.filter(a => a.repo === repo && a.motor_modo === 'passivo' && ativos.has(a.id ?? '')).length
+      if (emExecucao + selecionados >= configDoOrquestrador(repo).concorrencia) return false
+      passivos.set(repo, selecionados + 1)
+    }
+    return true
+  })
 }

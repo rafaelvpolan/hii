@@ -6,7 +6,7 @@ export type EffectKind =
   | 'approve-url' | 'reject-url' | 'reopen-repo'
   | 'confirm-close' | 'reject-close'
   | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake' | 'servir'
-  | 'pipeline-step' | 'pipeline-suite'
+  | 'pipeline-step' | 'pipeline-suite' | 'orquestrador'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -200,10 +200,8 @@ function command(line: string, state: SessionState): Reply {
       : reply({ kind: 'error', text: `uso: /${head} <id> — roda so esse passo do pipeline e pausa de novo (sem id, vale a tarefa aberta)` }, state)
   }
   if (head === 'hii') {
-    const alvo = rest[0] || state.seguindo
-    return alvo
-      ? reply({ kind: 'pipeline-suite', id: alvo }, cleared)
-      : reply({ kind: 'error', text: 'uso: /hii <id> — roda o pipeline restante de uma vez e segue para o fecho (sem id, vale a tarefa aberta)' }, state)
+    if (/^\d+$/.test(arg)) return reply({ kind: 'pipeline-suite', id: arg }, cleared)
+    return reply({ kind: 'orquestrador', text: arg || 'on' }, cleared)
   }
   switch (head) {
     case 'help':

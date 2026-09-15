@@ -26,6 +26,9 @@ import { migrarRefsDaSessao } from '../quilombo/alfandega/anexo.ts'
 import { sessaoAtual } from '../euclides/sessao.ts'
 import type { Effect, SessionState } from './sessao.ts'
 import { situacaoDoCard } from './cli/situacao-cli.ts'
+import { comandoHii } from '../oswaldo/orquestracao/comando.ts'
+import { prepararExecucao, registrarPedido, sessaoDaTarefa } from './execucao-da-sessao.ts'
+import { registrarMensagem } from '../euclides/sessoes.ts'
 
 export interface SituacaoDeEnvio {
   ok: boolean
@@ -82,7 +85,9 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const pronta = io.iaProntaParaEnviar()
   if (!pronta.ok) { io.log(pronta.motivo); return state }
   const base = state.perguntando ? respondido(state) : state
-  const novoId = core.submit({ title: texto, repo: base.repo, ...extras })
+  const execucao = prepararExecucao(base.repo, base.seguindo, texto)
+  const novoId = core.submit({ title: texto, repo: base.repo, ...extras, ...execucao })
+  registrarPedido(execucao.sessao_id, novoId, execucao.motor_modo, texto)
   const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
   if (refs.migrados > 0) {
     io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
@@ -90,7 +95,7 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const r = core.approvePlan(novoId)
   const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
   io.log(r.ok
-    ? `card #${novoId} criado e na fila — ${destino} (/historico sai)`
+    ? `session #${execucao.sessao_id} | execucao #${novoId} na fila | ${execucao.motor_modo} — ${destino} (/historico sai)`
     : `card #${novoId} criado — ${r.reason}`)
   return seguir(base, novoId)
 }
@@ -99,6 +104,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
   const id = effect.id ?? ''
   const texto = effect.text ?? ''
   switch (effect.kind) {
+    case 'orquestrador': {
+      for (const linha of comandoHii(state.repo, texto)) io.log(linha)
+      return state
+    }
     case 'help': {
       const espera = esperandoVoce(allCards(), state.repo)
       const linhas = renderHelp({
@@ -210,12 +219,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         io.log(`#${id} nao existe mais — o texto vira tarefa nova`)
         return aplicar({ kind: 'submit', text: texto }, { ...state, seguindo: '' }, io)
       }
-      if (card.fm.tipo === 'session') {
-        io.log(io.dim(`  session #${id}: pergunta de leitura, sem executar tarefa`))
-        const linhas = await io.responder(texto, state.conversa, id)
-        for (const l of linhas) io.log(l)
-        patchCard(id, {}, `${isoNow()} pergunta na session: ${semTitulo(umaLinha(texto)).slice(0, 400)}`)
-        return comConversa(state, texto, linhas.join(' '))
+      if (card.fm.tipo === 'session' || card.fm.sessao_id) {
+        return criarCardEEnfileirar(texto, seguir(state, id), io, {})
       }
       const r = instruir(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
@@ -358,7 +363,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       // pelo mesmo caminho que qualquer instrucao humana; so o card ja entregue
       // (MERGED/DEPLOYED) cai no caminho de sempre e vira tarefa nova.
       const aberto = state.seguindo ? readCard(state.seguindo) : null
-      if (aberto && !TERMINAIS.includes(aberto.fm.status ?? '')) {
+      if (aberto && !aberto.fm.sessao_id && aberto.fm.tipo !== 'session' && !TERMINAIS.includes(aberto.fm.status ?? '')) {
         const alvo = state.seguindo
         const perfil = [`passos=${c.steps || 'padrao'}`, c.ligaLayout ? 'layout=on' : '', `packs=${c.packs.join(',')}`].filter(Boolean).join(' · ')
         patchCard(alvo, extras, `${isoNow()} perfil ${c.nome} aplicado pelo humano na tarefa aberta: ${perfil}`)
@@ -444,7 +449,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         repo: state.repo,
         desc: texto.trim() || 'sessao de conversa do projeto',
       })
-      io.log(`session #${idNovo} criada em ${state.repo} — use perguntas dentro dela; cada IA chamada vira subsessao no historico`)
+      io.log(`session #${idNovo} criada em ${state.repo}`)
       return seguir({ ...state, tela: '', perguntando: '', aprovando: '', comentando: '', pendingPlan: '' }, idNovo)
     }
     case 'ref': {
@@ -463,7 +468,9 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'consultar': {
       if (!texto.trim()) { io.log('uso: /new-ask <pergunta>'); return state }
       io.log(io.dim('  consultando o ambiente e o projeto (leitura, sem alterar arquivo)…'))
-      const linhas = await io.responder(texto, state.conversa)
+      const sessao = sessaoDaTarefa(state.seguindo)
+      if (sessao) registrarMensagem(sessao, { autor: 'humano', texto, execucao: '', provedor: '', modelo: '' })
+      const linhas = await io.responder(texto, state.conversa, sessao || undefined)
       for (const l of linhas) io.log(l)
       return comConversa(state, texto, linhas.join(' '))
     }

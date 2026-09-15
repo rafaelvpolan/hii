@@ -18,6 +18,11 @@ delete process.env.HII_RIGOR_ESTRITO
 delete process.env.HII_PIPELINE
 process.env.HII_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+const pathAnterior = process.env.PATH
+const binDir = join(BASE, 'bin')
+mkdirSync(binDir)
+writeFileSync(join(binDir, 'gh'), '#!/bin/sh\nif [ "$1" = repo ] && [ "$2" = view ]; then printf "WRITE\\n"; exit 0; fi\nexit 1\n', { mode: 0o755 })
+process.env.PATH = `${binDir}:${pathAnterior ?? ''}`
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -55,6 +60,8 @@ const { pedirPassoManual, pedirSuiteManual } = await import('../../motor/quilomb
 const { RESUME_POST_STEPS } = await import('../../motor/quilombo/cartorio/retomar.ts')
 
 afterAll(() => {
+  if (pathAnterior === undefined) delete process.env.PATH
+  else process.env.PATH = pathAnterior
   rmSync(BASE, { recursive: true, force: true })
 })
 

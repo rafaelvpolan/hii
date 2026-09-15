@@ -327,6 +327,12 @@ Comandos de barra dentro da TUI:
 | `/new-task` | cria a tarefa explicitamente — mesmo efeito de escrever o texto solto |
 | `/ask`, `/new-ask` | pergunta sobre o projeto **sem** criar session/card e sem executar tarefa |
 | `/new [assunto]` | cria uma session do hii no projeto; perguntas e execuções de IA ficam encadeadas dentro dela |
+| `/hii`, `/hii on` | ativa a orquestração passiva no projeto para os próximos pedidos |
+| `/hii off`, `/hii status` | volta ao gateway ou consulta modo, origem e revisão da configuração |
+| `/hii doctor`, `/hii setup` | diagnóstico sem chamada de IA; setup local idempotente usando o inicializador existente |
+| `/hii <id>` | mantém o acionamento explícito do pipeline manual de uma tarefa |
+| `/hii plan <id> <arquivo.json>` | importa um plano v1 para uma execução passiva parada; valida IDs, critérios e dependências |
+| `/hii close <session>` | fecha uma session sem execução pendente; mostra `#id closed` |
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
@@ -341,6 +347,34 @@ Teclas: `↑↓` seleciona a tarefa no rodapé, `enter` entra nela, `←` navega
 
 A resposta da IA sai com **markdown renderizado em ANSI** — cabeçalho, negrito, lista, citação,
 bloco de código e link viram formatação, não `##` e `**` na tela.
+
+### Gateway e orquestração passiva
+
+Pedidos novos da TUI e de `hii new` usam **gateway por padrão**: o pedido vai ao harness no
+diretório do projeto, sem criar worktree, pipeline ou PR automaticamente. A conclusão é
+`COMPLETED`, sem reexecução no próximo arranque. Tarefas antigas sem `motor_modo` mantêm
+o fluxo anterior. A escolha do modo fica fixada na execução: `/hii off` não muda uma tarefa em voo.
+
+No modo passivo, o motor salva um plano v1, executa as microtasks em ordem de dependência,
+mantém o pipeline e as aprovações existentes, coleta evidências de comandos reais e revisa antes
+do PR. Microtasks de uma execução são **seriais**, no worktree dela. O plano inicial é conservador:
+uma microtask de implementação e verificações detectadas no contrato do projeto. Decomposição
+mais detalhada pode ser importada com `/hii plan`; a geração semântica de múltiplas microtasks
+e worktrees paralelos por microtask ainda não estão implementados.
+
+Uma session HII tem identidade própria, várias execuções e uma subsession por chamada de IA.
+O histórico persistido acompanha trocas de provedor; IDs nativos de threads não são inventados.
+Em falha de cota, o gateway tenta outro provedor elegível na mesma execução e registra a falha
+e a troca no log ao vivo. No fluxo com worktree, a retomada preserva alterações não commitadas.
+`/ask` continua somente leitura e não cria execução de tarefa.
+
+Evidências obrigatórias ausentes, inconclusivas ou reprovadas bloqueiam o PR. Os resultados
+incluem exit code, sinal, timeout, saída redigida e fingerprint do HEAD/diff/arquivos novos.
+No fluxo passivo, o PR é consultado no remoto antes de criar e sua seção gerenciada é atualizada
+sem substituir notas humanas. O merge continua humano.
+
+Contratos e limites desta entrega: [processo de orquestração](docs/orquestracao-passiva.md).
+Visualizador local: [processo-orquestracao.html](docs/processo-orquestracao.html).
 
 ### Referências de imagem
 

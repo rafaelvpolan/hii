@@ -12,6 +12,7 @@ import { sessaoAtual } from '../sessao.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { atualizarRegistroDeConversa } from '../registros.ts'
 import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
+import { contextoDaSessao, iniciarSubsessao, concluirSubsessao, registrarMensagem, lerSessaoHii } from '../sessoes.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -76,6 +77,7 @@ export function recusaPorLimite(provider: Harness, req: AgentRequest): string {
   // capabilities() e obrigatoria: nao existe mais o caso "nao declarou, entao
   // pode tudo", que era permissividade silenciosa.
   const capacidades = provider.capabilities()
+  if (req.mode === 'edit' && !provider.agentic) return `${provider.name} nao executa tarefas com edicao de arquivos`
   if (req.mode === 'readonly' && !capacidades.isolatesReadonly) {
     return `${provider.name} nao sabe rodar em modo somente-leitura (nao restringe ferramenta) — um papel de verificacao nele poderia editar arquivo`
   }
@@ -159,19 +161,34 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
   }
   const t0 = Date.now()
   let pidRegistrado = 0
-  const res = await provider.run({
-    ...req,
-    rotulo: req.rotulo ?? papel,
-    aoIniciar: (pid) => {
-      pidRegistrado = pid
-      registrarHarness(id, pid, papel)
-      req.aoIniciar?.(pid)
-    },
-  })
-  if (pidRegistrado) esquecerHarness(id, pidRegistrado)
-  recordCostTrust(id, provider.name, res)
-  anotarChamada(id, provider, req, papel, res, t0)
-  return res
+  const fm = id ? readCard(id)?.fm : undefined
+  const sessao = fm?.sessao_id || (fm?.tipo === 'session' ? id : '')
+  const contexto = sessao && lerSessaoHii(sessao) ? contextoDaSessao(sessao) : ''
+  const sub = contexto ? iniciarSubsessao(sessao, id, provider.name, req.model ?? '', papel) : ''
+  let concluida = false
+  try {
+    const res = await provider.run({
+      ...req,
+      prompt: contexto ? `${contexto}\n\nPEDIDO ATUAL:\n${req.prompt}` : req.prompt,
+      rotulo: req.rotulo ?? papel,
+      aoIniciar: (pid) => {
+        pidRegistrado = pid
+        registrarHarness(id, pid, papel)
+        req.aoIniciar?.(pid)
+      },
+    })
+    recordCostTrust(id, provider.name, res)
+    anotarChamada(id, provider, req, papel, res, t0)
+    if (sub) semPropagarFalhaDeRegistro(() => {
+      concluirSubsessao(sessao, sub, res.ok)
+      concluida = true
+      registrarMensagem(sessao, { autor: 'ia', texto: res.text || res.detail, execucao: id, provedor: provider.name, modelo: req.model ?? '' }, sub)
+    })
+    return res
+  } finally {
+    if (pidRegistrado) esquecerHarness(id, pidRegistrado)
+    if (sub && !concluida) semPropagarFalhaDeRegistro(() => concluirSubsessao(sessao, sub, false))
+  }
 }
 
 export function warnBudgetWithoutGuarantee(id: string, fm: Fields, budgetUsd: number): void {

@@ -10,7 +10,7 @@ import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
 import { decisaoDoEval, evaluate } from '../ciclo/crivo/avaliar.ts'
 import { readCard, patchCard, repoPath, repoBase } from '../cordel/store.ts'
-import { descreverOrigem, ensureWorktree, refreshFromBase, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
+import { descreverOrigem, ensureWorktree, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
 import type { WorktreeFate } from '../quilombo/git.ts'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../ciclo/crivo/url-viva.ts'
 import { classifySurface, pedeUrl, type SurfaceVerdict } from './rota/superficie.ts'
@@ -27,6 +27,7 @@ import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
+import { executarPlano } from './orquestracao/executar-plano.ts'
 
 export interface ExecuteDeps {
   implement: typeof implement
@@ -267,18 +268,9 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       return
     }
     if (reuse) {
-      // `reset --hard` + `clean` descartam so o NAO COMMITADO — sobra do passo que
-      // falhou. Os commits do card sobrevivem, que e o que "segue de onde parou"
-      // tem de significar.
-      await runGit(wt, ['reset', '--hard', 'HEAD'])
-      await runGit(wt, ['clean', '-fd', '-e', 'node_modules'])
-      const up = await refreshFromBase(wt, base)
-      if (!up.ok) {
-        const motivo = `nao consegui partir de ${base} atualizado: ${up.detail}`
-        patchCard(id, { status: 'HALTED', halt_class: 'terminal', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
-        return
-      }
-      patchCard(id, {}, `${isoNow()} base: ${up.detail} (worktree reaproveitado — o trabalho ja commitado foi mantido)`)
+      // A tentativa seguinte precisa do diff parcial, inclusive arquivos novos.
+      // Atualizar a base aqui mistura a retomada com uma integracao nao solicitada.
+      patchCard(id, {}, `${isoNow()} worktree reaproveitado: commits, alteracoes parciais e arquivos novos preservados; base mantida ate a integracao`)
     } else {
       const info = await ensureWorktree(target, wt, branch, base, { refazerDoZero })
       patchCard(id, { base_commit: info.baseCommit, refazer: '' }, `${isoNow()} base: ${descreverOrigem(info, base, branch)}${refazerDoZero ? ' (refazendo do zero, a pedido)' : ''}`)
@@ -311,7 +303,9 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     patchCard(id, { escopo_alvos: escopo.alvos.join(', '), escopo_refs: escopo.referencias.join(', ') },
       `${isoNow()} escopo lido do pedido: ${escopo.motivo}`)
   }
-  const res = await deps.implement(card, wt, '', surface.surface === 'visual')
+  const res = card.fm.motor_modo === 'passivo'
+    ? await executarPlano(card, wt, deps.implement, surface.surface === 'visual')
+    : await deps.implement(card, wt, '', surface.surface === 'visual')
   steps.Executando.time += toSeconds(Date.now() - tx)
   steps.Executando.cost += parseFloat(res.cost) || 0
   steps.Executando.tokens += tokensOf(res.usage)
@@ -348,7 +342,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
       extraFields: totals,
     })
     if (outcome === 'waiting') return
-    const fate: WorktreeFate = failureClass === 'transient' ? 'keep-for-inspection' : 'discard'
+    const fate: WorktreeFate = failureClass === 'transient' || card.fm.motor_modo === 'passivo' ? 'keep-for-inspection' : 'discard'
     if (fate === 'discard' && urlPid) stopUrl(String(urlPid))
     await settleWorktree(target, wt, fate)
     return

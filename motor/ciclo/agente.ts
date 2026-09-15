@@ -248,7 +248,9 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   // inexistente e `deps` saia sempre vazio — os 12 SKILL.md com gatilho `deps:` nunca
   // disparavam, e o roteamento por dependencia do item 11 era letra morta.
   const ctxSkill = contextoDeSkill(workdir, target, packsDoCard(card.fm.packs))
-  const escolhidos = agentesEscolhidos(ctxSkill, `${card.fm.title ?? ''} ${desc}`)
+  const agenteDoPlano = card.fm.orq_agente
+  if (agenteDoPlano && !AGENTES_IMPLEMENT.includes(agenteDoPlano)) throw new Error(`agente de implementacao nao disponivel: ${agenteDoPlano}`)
+  const escolhidos = agenteDoPlano ? [agenteDoPlano] : agentesEscolhidos(ctxSkill, `${card.fm.title ?? ''} ${desc}`)
   // `!escolhidos.length` era condicao morta: agentesEscolhidos nunca devolve lista
   // vazia desde que AGENTE_PADRAO entrou. Guarda que nao pode ser verdadeira
   // esconde a regra de verdade, que e "acao externa nao injeta agente".

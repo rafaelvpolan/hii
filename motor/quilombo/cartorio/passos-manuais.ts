@@ -71,7 +71,7 @@ export function pedirPassoManual(id: string, passo: string): PedidoPipeline {
     fields: { status: 'URL_OK', retomar_em: '', resume_from: '', pipeline_pausa: 'manual', pipeline_liberado: '', pipeline_passo: alvo },
     log: `${isoNow()} ${r.status}->URL_OK pedido humano: rodar so o passo "${alvo}" e pausar de novo${aviso}`,
   })
-  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar${aviso} — /hii roda o restante de uma vez` }
+  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar${aviso} — /hii ${id} roda o restante de uma vez` }
 }
 
 // A suite: roda o que falta do pipeline (menos o que pipeline_feitos ja pagou)

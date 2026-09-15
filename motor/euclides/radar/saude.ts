@@ -274,7 +274,7 @@ export function lerSaudeDoMotor(agoraMs: number = Date.now()): SaudeDoMotor {
     .map(c => paradaDoCard(c, agoraMs))
     .sort((a, b) => Number(a.card) - Number(b.card))
   const esperandoVoce = cards
-    .filter(c => SEM_CONSUMIDOR_AUTOMATICO.includes(texto(c, 'status')))
+    .filter(c => c.tipo !== 'session' && SEM_CONSUMIDOR_AUTOMATICO.includes(texto(c, 'status')))
     .map(c => checkpointDoCard(c, agoraMs))
     .sort((a, b) => b.idadeMs - a.idadeMs)
   const daemon = readDaemonHealth()

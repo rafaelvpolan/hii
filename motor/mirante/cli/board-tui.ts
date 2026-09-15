@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs'
 import { reposFile } from '../../cordel/alicerce/config.ts'
-import { repoPath, repoRegistered } from '../../cordel/store.ts'
+import { repoPath, repoRegistered, readCard } from '../../cordel/store.ts'
+import { listarSessoesHii, lerSessaoHii } from '../../euclides/sessoes.ts'
+import { truncVisible } from '../tui/layout.ts'
 import { chaveDaSessao, historicoDeSessoes, repoDoCard, sessaoPorChave } from '../historico.ts'
 import { avisoDeEstadoVazio, lerEstadoVazio } from '../estado-vazio.ts'
 import { renderHistorico } from '../render/historico.ts'
@@ -30,11 +32,15 @@ function pertenceAoRepo(chave: string, repo: string): boolean {
 export function ordemDasSessoes(repo = ''): string[] {
   const visiveis = sessoesVisiveis().filter(chave => pertenceAoRepo(chave, repo))
   if (visiveis.length) return visiveis
-  return historicoDeSessoes(0, undefined, undefined, repo).sessoes.map(chaveDaSessao)
+  return [...listarSessoesHii(repo).map(s => `session:${s.id}`), ...historicoDeSessoes(0, undefined, undefined, repo).sessoes.map(chaveDaSessao)]
 }
 
 export function cardDaSessao(chave: string): string {
   if (!chave) return ''
+  if (chave.startsWith('session:')) {
+    const s = lerSessaoHii(chave.slice(8))
+    return s?.execucoes.at(-1)?.id ?? s?.id ?? ''
+  }
   return sessaoPorChave(chave, historicoDeSessoes())?.card ?? ''
 }
 
@@ -74,7 +80,18 @@ function avisoDeProjetoSemSessao(repo: string): string[] {
 
 export function historicoDaTela(altura = 0, repo = ''): string[] {
   const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0, undefined, undefined, repo)
-  definirSessoesVisiveis(h.sessoes.map(chaveDaSessao))
+  const conversas = listarSessoesHii(repo).sort((a, b) => Number(b.id) - Number(a.id)).slice(0, altura > 0 ? Math.max(1, altura - 3) : 30)
+  h.sessoes = h.sessoes.filter(s => !readCard(s.card)?.fm.sessao_id)
+  definirSessoesVisiveis([...conversas.map(s => `session:${s.id}`), ...h.sessoes.map(chaveDaSessao)])
+  if (conversas.length) {
+    const w = Number(process.stdout.columns) || 78
+    return ['  SESSIONS', ...conversas.map(s => {
+      const ultima = s.execucoes.at(-1)
+      const estado = s.estado === 'fechada' ? 'closed' : ultima ? readCard(ultima.id)?.fm.status ?? 'ausente' : 'aberta'
+      const marca = selecionado() === `session:${s.id}` ? '> ' : '  '
+      return truncVisible(`${marca}#${s.id} ${estado} | ${s.titulo} | ${s.execucoes.length} execucoes`, w)
+    }), ...renderHistorico(h, { color, width: w, selecionado: selecionado(), avisoDeVazio: [] })]
+  }
   const vazio = lerEstadoVazio()
   const avisoDeVazio = h.sessoes.length
     ? []

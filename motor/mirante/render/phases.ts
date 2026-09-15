@@ -25,6 +25,7 @@ const ROTULO_FORA_DE_FASE: Record<string, string> = {
   PAUSED: 'Pausado',
   HALTED: 'Parado',
   CONFIRM: 'Confirmar',
+  COMPLETED: 'Concluido',
 }
 
 export function phaseLabel(status: string): string {
