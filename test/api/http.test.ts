@@ -310,3 +310,31 @@ test('perda do diario cria outra geracao e o novo cursor acompanha eventos', asy
   patchCard(id, { status: 'COMPLETED' })
   expect(lerEventos(novo).eventos.some(e => e.tipo === 'fim')).toBe(true)
 })
+
+test('negociacao de configuracao respeita admin e escopo da credencial', async () => {
+  async function capacidades(): Promise<{ configuracao: { leitura: boolean; escrita: boolean; versoes: number[] } }> {
+    return await (await fetch(url + '/v1/capacidades', { headers: { authorization: `Bearer ${token}` } })).json() as { configuracao: { leitura: boolean; escrita: boolean; versoes: number[] } }
+  }
+  expect((await capacidades()).configuracao).toEqual({ versoes: [1], leitura: true, escrita: false })
+  await fechar()
+  servidor = criarServidorApi(token, { admin: true })
+  await new Promise<void>(resolve => servidor.listen(0, '127.0.0.1', resolve))
+  const a = servidor.address()
+  assert.ok(a && typeof a !== 'string')
+  url = `http://127.0.0.1:${a.port}`
+  expect((await capacidades()).configuracao.escrita).toBe(true)
+  await fechar()
+  servidor = criarServidorApi(token, { admin: true, repos: ['org/app'] })
+  await new Promise<void>(resolve => servidor.listen(0, '127.0.0.1', resolve))
+  const b = servidor.address()
+  assert.ok(b && typeof b !== 'string')
+  url = `http://127.0.0.1:${b.port}`
+  expect((await capacidades()).configuracao).toEqual({ versoes: [1], leitura: false, escrita: false })
+})
+test('catalogo anuncia capacidade real do Ollama sem conceder agentividade', async () => {
+  const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
+  const body = await r.json() as { provedores: { nome: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean } }[] }
+  const ollama = body.provedores.find(p => p.nome === 'ollama')
+  expect(ollama?.aptidao.agentic).toBe(false)
+  expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
+})

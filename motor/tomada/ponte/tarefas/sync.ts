@@ -38,13 +38,19 @@ export async function runSync(): Promise<SyncReport> {
   }
   let created = 0
   for (const t of external) {
-    const source = `${sync.name}#${t.externalId}`
+    const source = t.source ?? `${sync.name}#${t.externalId}`
     if (seen.has(source)) continue
+    const legado = t.source ? cards.filter(c => c.source === `${sync.name}#${t.externalId}`) : []
+    if (legado.some(c => c.repo === t.repo)) continue
+    if (legado.some(c => !c.repo)) {
+      falhas.push(`origem legada ambigua de ${source}: associe o repositorio antes de importar`)
+      continue
+    }
     // Dentro do try: falha de escrita (ENOSPC/EACCES/cards read-only) fazia runSync
     // REJEITAR em vez de virar item em `falhas`, e o relato com exit code
     // desaparecia junto — cards criados antes da falha ficavam sem contabilizacao.
     try {
-      createCard({ status: 'READY', title: t.title, source }, `## Objetivo\n${t.body || t.title}\n`)
+      createCard({ status: 'READY', title: t.title, source, ...(t.repo ? { repo: t.repo } : {}) }, `## Objetivo\n${t.body || t.title}\n`)
       seen.add(source)
       created++
     } catch (e) {

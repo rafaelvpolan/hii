@@ -8,6 +8,7 @@ import { listarSessoesHii } from '../euclides/sessoes.ts'
 import { lerEventos, prepararPonte, TIPOS_DA_PONTE } from '../euclides/ponte-eventos.ts'
 import { comandosDaIaAtiva } from '../tomada/mapa/comandos.ts'
 import { provedoresDisponiveis } from '../tomada/disponibilidade.ts'
+import { harnessPorNome } from '../tomada/registro.ts'
 import { modelosDe } from '../tomada/catalogo.ts'
 import { lerPlano } from '../oswaldo/orquestracao/planos.ts'
 import { arquivoDeEvidencias } from '../oswaldo/orquestracao/evidencias.ts'
@@ -109,7 +110,7 @@ function stream(req: IncomingMessage, res: ServerResponse, aoFechar: () => void)
   ler()
 }
 
-function consulta(url: URL): RespostaApi {
+function consulta(url: URL, opcoes: OpcoesApi): RespostaApi {
   const observacao = consultarObservabilidade(url)
   if (observacao) return observacao
   const repo = url.searchParams.get('repo') ?? ''
@@ -118,6 +119,7 @@ function consulta(url: URL): RespostaApi {
     protocolo: 'hii-http', versao: 1, transporte: 'http-json+sse', statuses: STATUSES,
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
+    configuracao: { versoes: [1], leitura: !opcoes.repos, escrita: opcoes.admin === true && !opcoes.repos },
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
     observabilidade: { versoes: [1], snapshot: '/v1/observabilidade/snapshot', eventos: '/v1/observabilidade/eventos', recursos: '/v1/observabilidade/recursos', autorizacao: 'mesmo operador do bearer; filtros nao sao autorizacao' },
   })
@@ -145,7 +147,7 @@ function consulta(url: URL): RespostaApi {
   const perguntaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/perguntas$/)?.[1]
   if (perguntaId) return perguntas(perguntaId)
   if (url.pathname === '/v1/projetos') return resposta(200, { projetos: projetos() })
-  if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => ({ ...p, modelos: modelosDe(p.nome) })) })
+  if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => ({ ...p, modelos: modelosDe(p.nome), aptidao: { ...harnessPorNome(p.nome).capabilities(), agentic: harnessPorNome(p.nome).agentic } })) })
   if (url.pathname === '/v1/estado') {
     // Cursor ANTES do snapshot: duplicatas sao deduplicaveis; lacunas nao.
     const cursor = lerEventos().cursor
@@ -234,7 +236,7 @@ export function criarServidorApi(token: string, opcoes: OpcoesApi = {}): Server 
         if (url.pathname === '/v1/observabilidade/eventos') streamObservabilidade(req, res, url, () => { streams-- })
         else stream(req, res, () => { streams-- })
         streams++
-      } else if (req.method === 'GET') enviar(res, consulta(url))
+      } else if (req.method === 'GET') enviar(res, consulta(url, opcoes))
       else if (req.method === 'POST') enviar(res, await mutacao(req, url, opcoes))
       else throw new ErroApi(405, 'metodo_invalido', 'use GET ou POST')
     })().catch((e: Error) => {

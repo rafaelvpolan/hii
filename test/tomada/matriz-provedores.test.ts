@@ -318,15 +318,15 @@ test('timeout (wrapper generico de quilombo/git.ts) vira transient em qualquer h
   }
 })
 
-test('REGRESSAO cruzada: saida truncada/nao-JSON com exit 0 vira ok:true e texto cru NOS QUATRO harnesses — achado real, nao de um provedor so', async () => {
+test('saida nao-JSON: Ollama recusa resposta HTTP invalida; CLIs preservam caracterizacao legada', async () => {
   fakeBin('claude', "#!/usr/bin/env bash\necho 'lixo-claude-{{{ truncado'\n")
   fakeBin('codex', "#!/usr/bin/env bash\necho 'lixo-codex sem chave nenhuma'\n")
   fakeBin('kimi', "#!/usr/bin/env bash\necho 'lixo-kimi sem chave nenhuma'\n")
   fakeBin('curl', "#!/usr/bin/env bash\necho 'lixo-ollama sem chave nenhuma'\n")
   for (const nome of providerNames()) {
     const res = await harnessPorNome(nome).run(pedidoSimples())
-    expect(res.ok, `${nome}: caracterizacao do comportamento atual — isError so muda dentro do parse, o catch de saida ilegivel nunca o marca`).toBe(true)
-    expect(res.isError, nome).toBe(false)
+    expect(res.ok, nome).toBe(nome !== 'ollama')
+    expect(res.isError, nome).toBe(nome === 'ollama')
   }
 })
 

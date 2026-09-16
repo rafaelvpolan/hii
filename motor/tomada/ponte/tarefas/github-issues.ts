@@ -3,76 +3,74 @@ import type { Fields } from '../../../cordel/index.ts'
 import { executarComIdempotencia, FASE_DA_PONTE } from '../../../quilombo/salvo-conduto/idempotencia.ts'
 import type { ExternalTask, TaskSync } from './tipos.ts'
 
-interface GhIssue {
-  number?: number
-  title?: string
-  body?: string
-}
-
-// Ponte — espelho de tarefa externa. Duas regras aqui, e as duas nasceram de
-// defeito medido:
-//
-// 1. FALHA NAO VIRA LISTA VAZIA. `gh` ausente, sem login ou fora de cota devolvia
-//    err, o err era descartado e `pull` respondia []. O CLI imprimia "0 cards
-//    criados, N espelhados de 0 externos" com exit 0 — sucesso anunciado sobre
-//    trabalho que nao aconteceu, num comando cuja unica funcao e falar com o
-//    mundo de fora.
-// 2. COMENTARIO E EFEITO EXTERNO. Ele passa por Salvo-conduto. Antes ficava fora, e dois
-//    `hii sync` no mesmo card geravam dois comentarios na mesma issue.
-
-function repoArgs(): string[] {
-  const repo = process.env.HII_GH_REPO || ''
-  return repo ? ['--repo', repo] : []
-}
+interface GhIssue { number?: number; title?: string; body?: string | null; pull_request?: { url?: string } }
 
 function primeiraLinha(texto: string): string {
   return String(texto || '').split('\n').filter(Boolean)[0]?.slice(0, 200) ?? 'sem detalhe'
 }
 
-export function parseIssues(stdout: string): ExternalTask[] {
+export function parseIssues(stdout: string, origem = ''): ExternalTask[] {
   const arr = JSON.parse(stdout) as GhIssue[]
-  if (!Array.isArray(arr)) {
-    throw new Error(`gh issue list devolveu JSON que nao e lista: ${stdout.slice(0, 120)}`)
-  }
-  return arr.filter(i => i.number != null).map(i => ({ externalId: String(i.number), title: String(i.title ?? ''), body: String(i.body ?? '') }))
+  if (!Array.isArray(arr)) throw new Error('gh respondeu JSON que nao e lista de issues')
+  return arr.filter(i => !i?.pull_request).map(i => {
+    if (!i || !Number.isSafeInteger(i.number) || Number(i.number) < 1 || typeof i.title !== 'string' || (i.body != null && typeof i.body !== 'string')) throw new Error('issue com numero, titulo ou corpo invalido')
+    return { externalId: String(i.number), title: i.title, body: i.body ?? '',
+      ...(origem ? { source: `github-issues#${origem}/issues/${i.number}`, repo: new URL(origem).pathname.slice(1) } : {}) }
+  })
+}
+
+export function origemGithub(valor: string): string {
+  const url = new URL(valor)
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || !/^\/[\w.-]+\/[\w.-]+\/?$/.test(url.pathname)) throw new Error('repositorio GitHub invalido')
+  return `${url.origin}${url.pathname.replace(/\/$/, '')}`
 }
 
 export class GithubIssuesSync implements TaskSync {
   readonly name = 'github-issues'
+  private readonly run: typeof run
+  constructor(executar: typeof run = run) { this.run = executar }
 
   async pull(): Promise<ExternalTask[]> {
-    const r = await run('gh', ['issue', 'list', '--json', 'number,title,body', '--state', 'open', '--limit', '50', ...repoArgs()], { timeout: 30000 })
-    if (r.err) {
-      throw new Error(`gh issue list falhou — nenhuma issue foi lida (isto NAO significa "nenhuma issue aberta"): ${primeiraLinha(r.stderr) || r.err.message}`)
-    }
-    try {
-      return parseIssues(r.stdout)
-    } catch (e) {
-      throw new Error(`gh issue list respondeu, mas a saida nao e a lista esperada: ${String((e as Error).message)}`)
-    }
+    const repo = process.env.HII_GH_REPO || ''
+    const r = await this.run('gh', ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'], { timeout: 30000 })
+    if (r.err) throw new Error(`gh repo view falhou: ${primeiraLinha(r.stderr)}`)
+    const info = JSON.parse(r.stdout) as { url?: string }
+    const origem = origemGithub(info.url ?? '')
+    const url = new URL(origem)
+    const leitura = await this.run('gh', ['api', '--method', 'GET', '--hostname', url.hostname, '--paginate', '--slurp',
+      `repos${url.pathname}/issues?state=open&per_page=100`], { timeout: 120000 })
+    if (leitura.err) throw new Error(`gh api falhou — nenhuma lista parcial sera importada: ${primeiraLinha(leitura.stderr)}`)
+    const paginas = JSON.parse(leitura.stdout) as GhIssue[][]
+    if (!Array.isArray(paginas) || !paginas.every(Array.isArray)) throw new Error('gh api respondeu sem paginas de issues')
+    const tarefas = paginas.flatMap(pagina => parseIssues(JSON.stringify(pagina), origem))
+    return [...new Map(tarefas.map(t => [t.source, t])).values()]
   }
 
-  // `true` = comentou agora. `false` = a chave ja estava no diario e nada foi
-  // postado. Antes devolvia `void` e o chamador contava tudo como "espelhado",
-  // imprimindo N para efeito que nao aconteceu nesta execucao.
   async push(card: Fields): Promise<boolean> {
-    const num = String(card.source || '').split('#').pop() || ''
-    if (!num) return false
+    const source = String(card.source || '')
+    if (!source.startsWith('github-issues#')) return false
+    const ref = source.slice('github-issues#'.length)
+    let destino: string
+    if (/^https:\/\//.test(ref)) {
+      const url = new URL(ref)
+      const partes = url.pathname.match(/^(\/[\w.-]+\/[\w.-]+)\/issues\/([1-9]\d*)$/)
+      if (!partes) throw new Error('origem de issue invalida')
+      destino = `${origemGithub(url.origin + partes[1])}/issues/${partes[2]}`
+      if (url.search || url.hash || url.username || url.password) throw new Error('origem de issue invalida')
+    } else {
+      if (!/^[1-9]\d*$/.test(ref)) throw new Error('numero de issue invalido')
+      const repo = process.env.HII_GH_REPO || ''
+      if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || card.repo !== repo) throw new Error('origem legada ambigua; associe repo e HII_GH_REPO antes de espelhar')
+      destino = `https://github.com/${repo}/issues/${ref}`
+    }
     const status = String(card.status ?? '')
     const body = `hicode: card #${card.id} → ${status}${card.pr_url ? ` · PR ${card.pr_url}` : ''}`
-    // A chave inclui o STATUS: espelhar a mudanca de estado uma vez e o objetivo;
-    // repetir o mesmo estado a cada sync e ruido na issue de outra pessoa.
     const feito = await executarComIdempotencia({
-      card: String(card.id ?? ''),
-      fase: FASE_DA_PONTE,
-      operacao: `issue_comment:${status}`,
+      card: String(card.id ?? ''), fase: FASE_DA_PONTE, operacao: /^[1-9]\d*$/.test(ref) ? `issue_comment:${status}` : `issue_comment:${destino}:${status}`,
       executar: async (): Promise<string> => {
-        const r = await run('gh', ['issue', 'comment', num, '--body', body, ...repoArgs()], { timeout: 30000 })
-        if (r.err) {
-          throw new Error(`gh issue comment #${num} falhou: ${primeiraLinha(r.stderr) || r.err.message}`)
-        }
-        // Resultado nao-vazio e o que marca o efeito como produzido no diario.
-        return String(r.stdout || '').trim() || `comentado em #${num}`
+        const r = await this.run('gh', ['issue', 'comment', destino, '--body', body], { timeout: 30000 })
+        if (r.err) throw new Error(`gh issue comment falhou: ${primeiraLinha(r.stderr)}`)
+        return r.stdout.trim() || `comentado em ${destino}`
       },
     })
     return !feito.reaproveitada
