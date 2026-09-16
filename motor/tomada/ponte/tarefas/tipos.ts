@@ -1,6 +1,8 @@
 import type { Fields } from '../../../cordel/index.ts'
 
 export interface ExternalTask {
+  source?: string
+  repo?: string
   externalId: string
   title: string
   body: string

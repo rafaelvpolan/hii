@@ -80,8 +80,8 @@ export class OllamaProvider implements Harness {
     const model = req.model || process.env.HII_OLLAMA_MODEL || 'llama3.1'
     const body = JSON.stringify({ model, prompt: req.prompt, stream: false })
     const endpoint = `${baseUrl()}/api/generate`
-    const args = ['-q', ...noProxyArgs(endpoint), '-s', '-H', 'Content-Type: application/json', endpoint, '-d', body]
-    const { err, stdout, stderr } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
+    const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', body]
+    const { err, stdout } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     const usage = emptyUsage()
     let text = ''
     let isError = false
@@ -93,18 +93,24 @@ export class OllamaProvider implements Harness {
     let erroDoCorpo = ''
     try {
       const j = JSON.parse(stdout) as OllamaResponse
+      if (!j || typeof j !== 'object' || Array.isArray(j) || (typeof j.response !== 'string' && typeof j.error !== 'string')) throw new Error('resposta Ollama invalida')
       text = String(j.response ?? '')
-      usage.tokens_in = j.prompt_eval_count || 0
-      usage.tokens_out = j.eval_count || 0
+      usage.tokens_in = Number.isSafeInteger(j.prompt_eval_count) && Number(j.prompt_eval_count) >= 0 ? Number(j.prompt_eval_count) : 0
+      usage.tokens_out = Number.isSafeInteger(j.eval_count) && Number(j.eval_count) >= 0 ? Number(j.eval_count) : 0
       if (j.error) {
         isError = true
         erroDoCorpo = String(j.error)
         if (!text) text = erroDoCorpo
       }
     } catch {
-      text = String(stdout || stderr || '')
+      isError = true
+      erroDoCorpo = 'Ollama respondeu sem um documento de geracao valido'
+      text = erroDoCorpo
     }
     const failed = !!err
+    if (!failed && !isError && text) {
+      try { req.aoEmitir?.('assistant', text) } catch { /* observador isolado */ }
+    }
     if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: text ? text.split('\n') : [], custoUsd: costOfEndpoint().cost })
     return {
       ok: !failed && !isError,

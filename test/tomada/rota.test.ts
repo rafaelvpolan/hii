@@ -9,7 +9,7 @@ import { decidirRota } from '../../motor/tomada/rota.ts'
 import type { CandidatoDeRota, ConsultaDeRota, EntradaDeRota } from '../../motor/tomada/rota.ts'
 
 function candidato(nome: string, extra: Partial<CandidatoDeRota> = {}): CandidatoDeRota {
-  return { nome, agentic: true, isolaLeitura: true, rodaLocal: false, autenticado: true, cotaEsgotada: false, ...extra }
+  return { nome, agentic: true, isolaLeitura: true, rodaLocal: false, autenticado: true, cotaEsgotada: false, emitsStructuredJson: true, ...extra }
 }
 
 function consultaDe(candidatos: CandidatoDeRota[]): ConsultaDeRota {
@@ -102,4 +102,22 @@ test('candidato que a consulta nao conhece e pulado sem lancar — nome invalido
   }
   const r = decidirRota(quota(), consulta)
   expect(r.acao === 'trocar' && r.para).toBe('codex')
+})
+
+test('gate e verify recusam candidato sem JSON mesmo com prioridade maior', () => {
+  for (const papel of ['gate', 'verify'] as const) {
+    const r = decidirRota(quota({ papel }), consultaDe([
+      candidato('sem-json', { emitsStructuredJson: false, prioridade: 9999 }),
+      candidato('apto'),
+    ]))
+    expect(r.acao === 'trocar' && r.para).toBe('apto')
+    expect(decidirRota(quota({ papel }), consultaDe([candidato('ausente', { emitsStructuredJson: undefined })])).acao).toBe('manter_politica_atual')
+  }
+})
+test('JSON exigido pelo pedido tambem filtra papeis mecanicos', () => {
+  const r = decidirRota(quota({ papel: 'step', exigeJson: true }), consultaDe([
+    candidato('local', { rodaLocal: true, emitsStructuredJson: false }),
+    candidato('json'),
+  ]))
+  expect(r.acao === 'trocar' && r.para).toBe('json')
 })

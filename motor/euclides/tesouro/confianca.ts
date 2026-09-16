@@ -13,7 +13,7 @@ import { sessaoAtual } from '../sessao.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { atualizarRegistroDeConversa } from '../registros.ts'
 import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
-import { contextoDaSessao, iniciarSubsessao, concluirSubsessao, registrarMensagem, lerSessaoHii } from '../sessoes.ts'
+import { contextoDaSessao, iniciarSubsessao, finalizarChamada, lerSessaoHii } from '../sessoes.ts'
 import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
@@ -166,8 +166,8 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
   const fm = id ? readCard(id)?.fm : undefined
   const sessao = fm?.sessao_id || (fm?.tipo === 'session' ? id : '')
   const contexto = sessao && lerSessaoHii(sessao) ? contextoDaSessao(sessao) : ''
-  const sub = contexto ? iniciarSubsessao(sessao, id, provider.name, req.model ?? '', papel) : ''
-  const atividade = iniciar({ repo: fm?.repo ?? escopoAtual()?.repo ?? '', sessao, execucao: id },
+  const sub = contexto ? iniciarSubsessao(sessao, req.consultaId || id, provider.name, req.model ?? '', papel) : ''
+  const atividade = iniciar({ repo: fm?.repo ?? escopoAtual()?.repo ?? '', sessao, execucao: fm?.tipo === 'session' ? '' : id },
     { ...recurso(provider.name, 'harness'), observabilidade: 'partial', capacidades: Object.entries(provider.capabilities()).filter(([, v]) => v).map(([k]) => k) },
     { provedorEfetivo: provider.name, modeloConfigurado: req.model ?? null, modeloEfetivo: req.model ?? null,
       papel, modo: req.mode, permissao: req.modo ?? null, esforco: req.effort ?? null,
@@ -223,9 +223,8 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     recordCostTrust(id, provider.name, res)
     anotarChamada(id, provider, req, papel, res, t0)
     if (sub) semPropagarFalhaDeRegistro(() => {
-      concluirSubsessao(sessao, sub, res.ok)
+      finalizarChamada(sessao, sub, { ok: res.ok, texto: res.text || res.detail, interrompida: !!paradaHumana })
       concluida = true
-      registrarMensagem(sessao, { autor: 'ia', texto: res.text || res.detail, execucao: id, provedor: provider.name, modelo: req.model ?? '' }, sub)
     })
     return res
   } finally {
@@ -233,7 +232,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     clearInterval(pulso)
     if (!terminou) terminar(atividade, 'failed', 'chamada interrompida por excecao; consulte a tarefa')
     if (pidRegistrado) esquecerHarness(id, pidRegistrado)
-    if (sub && !concluida) semPropagarFalhaDeRegistro(() => concluirSubsessao(sessao, sub, false))
+    if (sub && !concluida) semPropagarFalhaDeRegistro(() => finalizarChamada(sessao, sub, { ok: false, texto: 'chamada interrompida por excecao; resultado nao confirmado' }))
   }
 }
 

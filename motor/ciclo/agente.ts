@@ -210,7 +210,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
   const id = card.fm.id ?? ''
   const override = card.fm.provider_override_implement || undefined
   const provider = providerFor('implement', override)
-  const model = modelFor('implement', override)
+  const model = card.fm.orq_modelo || modelFor('implement', override)
   if (override && !isProviderName(override)) markProviderSubstituted(id, override, provider.name)
   if (!provider.agentic) return { ok: false, reason: `provider ${provider.name} nao edita arquivos (nao-agentico) — use claude/codex para implementar`, cost: '', costMeasured: true, provider: provider.name, model, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos' }
   const acaoExterna = lerAcaoExterna(card.fm.title ?? '', desc)

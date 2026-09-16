@@ -35,6 +35,7 @@ export interface EntradaDeRota {
   classeDeFalha: FailureClass
   provedorAtual: HarnessId
   tentadosNestaRodada: readonly HarnessId[]
+  exigeJson?: boolean
 }
 
 export type DecisaoDeRota =
@@ -118,7 +119,7 @@ export function consultaReal(): ConsultaDeRota {
 
 function cumpreExigenciaDoPapel(papel: AgentRole, c: CandidatoDeRota): boolean {
   if (papel === 'implement') return c.agentic
-  if (papel === 'verify') return c.isolaLeitura
+  if (papel === 'verify' || papel === 'gate') return c.isolaLeitura
   return true
 }
 
@@ -170,6 +171,7 @@ export function decidirRota(e: EntradaDeRota, consulta: ConsultaDeRota = consult
     .map(nome => consulta.candidato(nome))
     .filter((c): c is CandidatoDeRota => c !== undefined)
     .filter(c => cumpreExigenciaDoPapel(e.papel, c))
+    .filter(c => !(e.exigeJson ?? (e.papel === 'verify' || e.papel === 'gate')) || c.emitsStructuredJson === true)
     .filter(c => c.autenticado)
     .filter(c => !c.cotaEsgotada)
   const ordenados = ranquearCandidatosDeRota(e.papel, aptos)

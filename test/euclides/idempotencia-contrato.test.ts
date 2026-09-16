@@ -102,6 +102,7 @@ const LEITURAS_DECLARADAS: readonly string[] = [
   "'auth', 'status'",
   "'repo', 'view'",
   "'issue', 'list'",
+  "'api', '--method', 'GET'",
   "'pr', 'view'",
 ]
 

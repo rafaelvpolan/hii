@@ -14,7 +14,7 @@ writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'fixture/app',
 const { criarServidorApi } = await import('../../motor/api/servidor.ts')
 const { iniciar, recurso, atualizar, saida } = await import('../../motor/observabilidade/registro.ts')
 const { emptyUsage } = await import('../../motor/tomada/uso.ts')
-const server = criarServidorApi(process.env.HII_API_TOKEN || '', { repos: ['fixture/app'], executarConsulta: async (_id, _p, req) => {
+const server = criarServidorApi(process.env.HII_API_TOKEN || '', { ...(process.env.HII_FIXTURE_ADMIN === '1' ? { admin: true } : { repos: ['fixture/app'] }), executarConsulta: async (_id, _p, req) => {
   if (req.mode !== 'readonly') throw new Error('fixture so permite leitura')
   return { ok: true, failed: false, timedOut: false, isError: false, text: 'Fixture somente leitura: nenhum card executavel criado.', detail: '', cost: 0, costMeasured: false, usage: emptyUsage() }
 } })

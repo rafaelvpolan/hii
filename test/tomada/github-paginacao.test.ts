@@ -1,0 +1,73 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { executarComIdempotencia, FASE_DA_PONTE } from '../../motor/quilombo/salvo-conduto/idempotencia.ts'
+import { test, expect } from '../apoio/runner.ts'
+import { GithubIssuesSync, parseIssues } from '../../motor/tomada/ponte/tarefas/github-issues.ts'
+import type { RunResult } from '../../motor/quilombo/git.ts'
+
+function ok(stdout: string): RunResult { return { err: null, stdout, stderr: '' } }
+
+test('le todas as paginas e exclui pull requests sem perder issues acima de 50', async () => {
+  const comandos: string[][] = []
+  const sync = new GithubIssuesSync(async (_, args) => {
+    comandos.push(args)
+    if (args[0] === 'repo') return ok('{"url":"https://github.com/org/app"}')
+    return ok(JSON.stringify([
+      Array.from({ length: 100 }, (_, i) => ({ number: i + 1, title: `Issue ${i + 1}` })),
+      [{ number: 101, title: 'ultima' }, { number: 102, title: 'PR', pull_request: {} }],
+    ]))
+  })
+  const tarefas = await sync.pull()
+  expect(tarefas.length).toBe(101)
+  expect(tarefas[100]?.source).toBe('github-issues#https://github.com/org/app/issues/101')
+  expect(tarefas[100]?.repo).toBe('org/app')
+  expect(comandos[1]).toContain('--paginate')
+  expect(comandos[1]).toContain('--slurp')
+})
+test('mesmo numero em repositorios e instancias diferentes conserva identidade', () => {
+  const corpo = '[{"number":1,"title":"a"}]'
+  const origens = ['https://github.com/org/a', 'https://github.com/org/b', 'https://git.example/org/a']
+  expect(new Set(origens.map(o => parseIssues(corpo, o)[0]?.source)).size).toBe(3)
+})
+test('falha de pagina posterior nao entrega lista parcial', async () => {
+  const sync = new GithubIssuesSync(async (_, args) => args[0] === 'repo' ? ok('{"url":"https://github.com/org/app"}') :
+    { err: new Error('rate limit'), stdout: '[[{"number":1,"title":"a"}]]', stderr: 'rate limit' })
+  let erro = ''
+  try { await sync.pull() } catch (e) { erro = String(e) }
+  expect(erro).toContain('nenhuma lista parcial')
+})
+test('registro malformado nao desaparece silenciosamente', () => {
+  for (const item of [null, {}, { number: 1.5, title: 'x' }, { number: 1, title: 42 }]) {
+    expect(() => parseIssues(JSON.stringify([item]))).toThrow()
+  }
+})
+test('origem legada ambigua nao gera comentario em outro projeto', async () => {
+  let chamadas = 0
+  const sync = new GithubIssuesSync(async () => { chamadas++; return ok('') })
+  let erro = ''
+  try { await sync.push({ id: '001', source: 'github-issues#1', repo: 'outro/projeto' }) } catch (e) { erro = String(e) }
+  expect(erro).toContain('ambigua')
+  expect(chamadas).toBe(0)
+})
+
+test('origem legada preserva o diario e nao republica comentario ja confirmado', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'hii-sync-legado-'))
+  const cardsAntes = process.env.HII_CARDS_DIR
+  const repoAntes = process.env.HII_GH_REPO
+  process.env.HII_CARDS_DIR = dir
+  process.env.HII_GH_REPO = 'org/app'
+  try {
+    await executarComIdempotencia({ card: '001', fase: FASE_DA_PONTE, operacao: 'issue_comment:READY', executar: async () => 'comentario anterior' })
+    let chamadas = 0
+    const sync = new GithubIssuesSync(async () => { chamadas++; return ok('novo comentario') })
+    expect(await sync.push({ id: '001', source: 'github-issues#1', repo: 'org/app', status: 'READY' })).toBe(false)
+    expect(chamadas).toBe(0)
+  } finally {
+    if (cardsAntes === undefined) delete process.env.HII_CARDS_DIR
+    else process.env.HII_CARDS_DIR = cardsAntes
+    if (repoAntes === undefined) delete process.env.HII_GH_REPO
+    else process.env.HII_GH_REPO = repoAntes
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

@@ -285,3 +285,24 @@ test('integridade do artefato corresponde aos bytes entregues apos redacao', asy
   assert.doesNotThrow(() => JSON.parse(r.conteudo))
   assert.ok(!r.conteudo.includes('segredo-de-fixture'))
 })
+
+test('ask vincula consulta a sessao, preserva idempotencia e recusa projeto incorreto', async () => {
+  const { submitSession } = await import('../../motor/mirante/acoes.ts')
+  const { lerSessaoHii } = await import('../../motor/euclides/sessoes.ts')
+  const sessao = submitSession({ title: 'Chat', repo: 'org/app' })
+  const b = { repo: 'org/app', sessao, pergunta: 'Preserve o contrato' }
+  const primeira = await post('/v1/ask', b, 'consulta-com-sessao')
+  assert.equal(primeira.status, 202)
+  const repetida = await post('/v1/ask', b, 'consulta-com-sessao')
+  assert.equal(repetida.status, 202)
+  assert.deepEqual(await repetida.json(), await primeira.json())
+  for (let i = 0; i < 30 && !chamadas; i++) await new Promise(r => setTimeout(r, 10))
+  assert.equal(chamadas, 1)
+  const s = lerSessaoHii(sessao)!
+  assert.equal(s.consultas?.length, 1)
+  assert.equal(s.mensagens.filter(m => m.autor === 'humano').length, 1)
+  assert.equal(s.execucoes.length, 0)
+  const outra = submitSession({ title: 'Outro', repo: 'org/outro' })
+  assert.equal((await post('/v1/ask', { ...b, sessao: outra }, 'consulta-fora-do-repo')).status, 403)
+  assert.equal(chamadas, 1)
+})

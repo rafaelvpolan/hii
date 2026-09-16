@@ -10,6 +10,7 @@ export type HarnessId = string
 export type AgentMode = 'edit' | 'readonly'
 
 export interface AgentRequest {
+  consultaId?: string
   prompt: string
   cwd: string
   dirs: string[]

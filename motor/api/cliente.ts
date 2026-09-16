@@ -113,7 +113,7 @@ export function clienteHii(base: string, token: string) {
     historico: (id: string, offset = 0) => get<{ eventos: object[]; proximo: number; fim: boolean }>(`/v1/tarefas/${idSeguro(id)}/historico?offset=${offset}`),
     configuracao: () => get<{ versao: 1; preferencias: object }>('/v1/configuracao'),
     configurar: (ajuste: { versao: 1; papel: string; provider?: string; model?: string; effort?: string; modo?: string; gauntlet?: boolean }, chave: string, etag: string) => post<Json>('/v1/configuracao', ajuste, chave, etag),
-    perguntar: (repo: string, pergunta: string, chave: string) => post<{ id: string; atividade: string; estado: string }>('/v1/ask', { repo, pergunta }, chave),
+    perguntar: (repo: string, pergunta: string, chave: string, sessao?: string) => post<{ id: string; atividade: string; estado: string }>('/v1/ask', { repo, pergunta, ...(sessao ? { sessao } : {}) }, chave),
     consulta: (id: string) => get<{ id: string; repo: string; estado: string; resposta: string; custoUsd: number | null }>(`/v1/consultas/${encodeURIComponent(id)}`),
     revisarPlano: (id: string, plano: object, revisaoEsperada: number, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/plano`, { plano, revisaoEsperada }, chave, etag),
     artefatos: (id: string) => get<{ artefatos: object[] }>(`/v1/tarefas/${idSeguro(id)}/artefatos`),
