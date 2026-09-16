@@ -15,6 +15,44 @@ hii <comando>    # CLI direta: subir daemon, ver status, governar cards
 
 > O que ficou em aberto (com o porquê e onde mexer) está em **[PENDENCIAS.md](PENDENCIAS.md)**.
 
+## Desenvolver o motor com IA
+
+As instruções comuns estão em [AGENTS.md](AGENTS.md). O Codex pode usar as skills
+versionadas em `.agents/skills/`, sem instalar ECC ou copiar configurações globais:
+
+| No chat do Codex | Finalidade |
+| --- | --- |
+| `$hii-desenvolver Implemente a issue #N` | Melhoria delimitada, com isolamento e validação |
+| `$hii-diagnosticar Investigue o card informado sem alterar seu estado` | Diagnóstico por evidências |
+| `$hii-revisar Revise esta branch contra origin/main` | Revisão de contratos e regressões |
+
+Abra uma nova sessão no checkout que contém as skills. Para trabalho novo, crie
+branch/worktree da `origin/main` atualizada; se o motor já forneceu a branch da
+tarefa, continue nela. Veja o [procedimento completo](docs/autoaperfeicoamento.md)
+para preparação do checkout, comandos e validação.
+
+### O HII pode melhorar a si mesmo?
+
+Sim: mantenha uma instalação **estável** operando, registre um **clone-alvo
+separado** do HII e deixe o pipeline criar o **worktree candidato**. Na TUI do HII,
+com esse alvo selecionado, use explicitamente:
+
+```text
+/hii docs/specs/autoaperfeicoamento-inicial.spec.md
+```
+
+O [spec inicial](docs/specs/autoaperfeicoamento-inicial.spec.md) delimita uma pequena
+melhoria documental. As instruções devem estar na base registrada antes de usar
+esse fluxo; antes do merge, experimente as skills diretamente na branch do PR.
+Texto solto e `hii task` usam gateway e não criam automaticamente esse pipeline.
+Não altere a instalação do daemon enquanto ela conduz a tarefa, não execute
+`bun link` no candidato e mantenha o merge humano. A execução real pode consumir
+cota do provedor; o guia também inclui validação offline sem IA paga.
+
+Para mudanças no próprio executor, fila ou recuperação, prefira começar com o
+Codex diretamente em um worktree. ECC é opcional e pode orientar etapas, enquanto
+o HII continua governando estado, orçamento e entrega.
+
 ---
 
 ## Requisitos

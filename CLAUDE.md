@@ -1,5 +1,10 @@
 # hii — regras para quem trabalha neste repo com IA
 
+Leia [AGENTS.md](AGENTS.md) para arquitetura, invariantes, isolamento do motor
+ativo e validação. As regras abaixo também se aplicam ao Claude. Procedimentos
+locais estão em `.agents/skills/hii-*/SKILL.md`; quando um for solicitado, leia o
+arquivo correspondente, sem presumir descoberta automática neste harness.
+
 ## Branch de trabalho
 
 - Nunca edite, commite ou execute trabalho diretamente em `main`.
