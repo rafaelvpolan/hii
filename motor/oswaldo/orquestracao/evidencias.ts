@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { cardsDir } from '../../cordel/alicerce/config.ts'
@@ -23,6 +23,7 @@ export interface Evidencia {
 
 export interface RelatorioDeEvidencias {
   versao: 1
+  tentativa?: string
   plano: string
   revisao: number
   fingerprint: string
@@ -102,9 +103,11 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
     const mudou = fingerprint !== await fingerprintDoTrabalho(wt)
     if (mudou) for (const e of evidencias) { e.estado = 'inconclusivo'; e.saida += '\nO trabalho mudou durante a verificacao; execute novamente.' }
     for (const [i, e] of evidencias.entries()) terminar(atividades[i] ?? '', e.estado === 'aprovado' ? 'succeeded' : e.estado === 'nao-aplicavel' ? 'skipped' : 'failed', e.estado)
-    const relatorio: RelatorioDeEvidencias = { versao: 1, plano: plano.id, revisao, fingerprint, instante: new Date().toISOString(), evidencias,
+    const relatorio: RelatorioDeEvidencias = { versao: 1, tentativa: randomUUID(), plano: plano.id, revisao, fingerprint, instante: new Date().toISOString(), evidencias,
       aprovado: evidencias.every(e => !e.obrigatorio || e.estado === 'aprovado') }
     mkdirSync(join(cardsDir(), 'evidencias'), { recursive: true })
+    // O ponteiro atual pode mudar; provas de tentativas anteriores nunca sao sobrescritas.
+    writeFileAtomic(join(cardsDir(), 'evidencias', `${plano.id}-${revisao}-${relatorio.tentativa}.json`), JSON.stringify(relatorio, null, 2) + '\n')
     writeFileAtomic(arquivoDeEvidencias(plano.id, revisao), JSON.stringify(relatorio, null, 2) + '\n')
     registrarArtefato({ repo: plano.repo, sessao: plano.sessaoId, execucao: plano.id }, `evidencias-revisao-${revisao}`, 'application/json', JSON.stringify(relatorio))
     return relatorio

@@ -1,6 +1,6 @@
 import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, symlinkSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { coletarEvidencias, evidenciaAtual } from '../../motor/oswaldo/orquestracao/evidencias.ts'
@@ -59,4 +59,16 @@ test('diretorio por symlink externo e recusado antes de executar', async () => {
   const r = await coletarEvidencias(plano, 1, dir, async () => { throw new Error('nao deve executar') })
   expect(r.aprovado).toBe(false)
   expect(r.evidencias[0]?.saida).toContain('sai do worktree')
+})
+
+test('retry preserva evidencia anterior em vez de sobrescrever a falha', async () => {
+  const plano = planoOrquestrado()
+  plano.criterios[0]!.comando = { binario: process.execPath, argumentos: ['-e', 'process.exit(7)'], diretorio: '.', timeoutMs: 3000 }
+  const falha = await coletarEvidencias(plano, 1, dir)
+  plano.criterios[0]!.comando.argumentos = ['-e', 'process.exit(0)']
+  const sucesso = await coletarEvidencias(plano, 1, dir)
+  expect(falha.tentativa).not.toBe(sucesso.tentativa)
+  const historico = readdirSync(join(process.env.HII_CARDS_DIR!, 'evidencias')).filter(n => n !== `${plano.id}-1.json`)
+  expect(historico.length).toBe(2)
+  expect(historico.some(n => readFileSync(join(process.env.HII_CARDS_DIR!, 'evidencias', n), 'utf8').includes('"reprovado"'))).toBe(true)
 })
