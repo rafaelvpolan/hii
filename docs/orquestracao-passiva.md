@@ -142,6 +142,10 @@ opcional define a pasta das capturas; o padrao e `/tmp/hii-visualizador`.
 
 ## Continuacoes das issues
 
+A integracao com a main atual do Hicode foi [diagnosticada separadamente](integracao-hicode.md).
+O snapshot aditivo nao significa que o painel ja o consome; o diagnostico reproduz
+as incompatibilidades de comandos, estados, sessions e eventos sem chamar IA.
+
 | Issue | Entregue aqui | Ainda pendente |
 | --- | --- | --- |
 | #46 | Acionamento por tarefa/spec e caminho executavel no motor | Fluxo de descoberta/produto no Hicode e publicacao editorial |
