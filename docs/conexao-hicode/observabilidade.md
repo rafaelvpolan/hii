@@ -145,4 +145,5 @@ Para reverter só a instrumentação: `HII_OBSERVABILIDADE=0` no próximo proces
 Cards, sessões, journal de efeitos, orçamento e ações v1 permanecem autoritativos.
 Nunca reinicie o motor ativo apenas para validar o candidato.
 
-Integração visual coordenada: [Hicode #22](https://github.com/rafaelvpolan/hicode/issues/22).
+Integração visual coordenada: [Hicode #22](https://github.com/rafaelvpolan/hicode/issues/22),
+entregue no [PR #23](https://github.com/rafaelvpolan/hicode/pull/23).

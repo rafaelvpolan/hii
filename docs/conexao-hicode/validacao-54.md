@@ -38,6 +38,15 @@ ask idempotente, conflitos de configuracao/plano/pergunta, segredo na borda do
 log, artefatos com integridade/symlink e cache invalidado por escrita externa.
 Os 21 testes HTTP legados continuam passando.
 
+As suites completas passaram numa rodada anterior (Bun: 3.207; Node: 3.202).
+A repeticao apos a otimizacao e os dois testes adicionais teve uma falha por
+runtime em `test/mirante/tui-motor-integrado.test.ts`: Bun na tela CONFIRM
+(3.208 aprovados), Node na mensagem final depois do fallback (3.172 aprovados
+na primeira etapa). O arquivo passou novamente isolado no Bun; no Node, a
+reverificacao serial dele junto dos quatro arquivos sensiveis a carga passou
+nos 41 testes. A ultima rodada integral nao deve ser anunciada como verde; asserts e timeouts nao foram
+relaxados para ocultar essas falhas intermitentes.
+
 E2E TUI: PTY 48x36/100x36, replay 390/1365, reconexao/reinicio em fixture,
 sem duplicacao. Visualizador: abas, filtro, importacao de snapshot e XSS nas
 duas larguras. Hicode: Playwright 1365/390 com API real e harness simulado,
