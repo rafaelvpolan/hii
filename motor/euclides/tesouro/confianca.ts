@@ -14,6 +14,7 @@ import { sumTokens } from '../../tomada/uso.ts'
 import { atualizarRegistroDeConversa } from '../registros.ts'
 import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
 import { contextoDaSessao, iniciarSubsessao, concluirSubsessao, registrarMensagem, lerSessaoHii } from '../sessoes.ts'
+import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -166,12 +167,39 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
   const sessao = fm?.sessao_id || (fm?.tipo === 'session' ? id : '')
   const contexto = sessao && lerSessaoHii(sessao) ? contextoDaSessao(sessao) : ''
   const sub = contexto ? iniciarSubsessao(sessao, id, provider.name, req.model ?? '', papel) : ''
+  const atividade = iniciar({ repo: fm?.repo ?? escopoAtual()?.repo ?? '', sessao, execucao: id },
+    { ...recurso(provider.name, 'harness'), observabilidade: 'partial', capacidades: Object.entries(provider.capabilities()).filter(([, v]) => v).map(([k]) => k) },
+    { provedorEfetivo: provider.name, modeloConfigurado: req.model ?? null, modeloEfetivo: req.model ?? null,
+      papel, modo: req.mode, permissao: req.modo ?? null, esforco: req.effort ?? null,
+      agentesSolicitados: req.useAgents, ferramentasInternas: 'nao observaveis por este contrato',
+      saidaIncremental: provider.saidaIncremental?.(req) ?? false })
+  atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
+  let terminou = false
+  const pulso = setInterval(() => heartbeat(atividade), 15000)
+  pulso.unref()
+  let emitiuResposta = false
+  const pendente = new Map<'stdout' | 'stderr' | 'assistant' | 'error', string>()
+  let envio: ReturnType<typeof setTimeout> | undefined
+  const descarregar = (): void => {
+    if (envio) clearTimeout(envio)
+    envio = undefined
+    for (const [canal, texto] of pendente) saida(atividade, canal, texto)
+    pendente.clear()
+  }
   let concluida = false
   try {
     const bruto = await provider.run({
       ...req,
       prompt: contexto ? `${contexto}\n\nPEDIDO ATUAL:\n${req.prompt}` : req.prompt,
       rotulo: req.rotulo ?? papel,
+      aoEmitir: (canal, texto) => {
+        if (canal === 'assistant') emitiuResposta = true
+        pendente.set(canal, (pendente.get(canal) ?? '') + texto)
+        if ((pendente.get(canal)?.length ?? 0) >= 8192) descarregar()
+        else envio ??= setTimeout(descarregar, 100)
+        // Telemetria de consumidores externos nao interfere no resultado pago.
+        try { req.aoEmitir?.(canal, texto) } catch { /* observador isolado */ }
+      },
       aoIniciar: (pid) => {
         pidRegistrado = pid
         registrarHarness(id, pid, papel)
@@ -179,6 +207,19 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       },
     })
     const res = bruto.ok ? bruto : { ...bruto, text: redigirDiagnostico(bruto.text), detail: redigirDiagnostico(bruto.detail) }
+    descarregar()
+    if (!emitiuResposta) saida(atividade, 'assistant', res.text)
+    if (res.detail) saida(atividade, 'error', res.detail)
+    atualizar(atividade, a => {
+      const instante = new Date().toISOString()
+      a.metricas.custoUsd = { valor: res.costMeasured ? res.cost : null, qualidade: res.costMeasured ? 'measured' : 'unknown', fonte: provider.name, instante }
+      const tokensReportados = provider.capabilities().reportsTokens && sumTokens(res.usage) > 0
+      a.metricas.tokens = { valor: tokensReportados ? sumTokens(res.usage) : null, qualidade: tokensReportados ? 'measured' : 'unknown', fonte: provider.name, instante }
+      a.detalhes.timeout = res.timedOut
+    })
+    const paradaHumana = id && readCard(id)?.fm.halt_class === 'humano'
+    terminar(atividade, paradaHumana ? 'cancelled' : res.ok ? 'succeeded' : 'failed', res.detail)
+    terminou = true
     recordCostTrust(id, provider.name, res)
     anotarChamada(id, provider, req, papel, res, t0)
     if (sub) semPropagarFalhaDeRegistro(() => {
@@ -188,6 +229,9 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     })
     return res
   } finally {
+    descarregar()
+    clearInterval(pulso)
+    if (!terminou) terminar(atividade, 'failed', 'chamada interrompida por excecao; consulte a tarefa')
     if (pidRegistrado) esquecerHarness(id, pidRegistrado)
     if (sub && !concluida) semPropagarFalhaDeRegistro(() => concluirSubsessao(sessao, sub, false))
   }

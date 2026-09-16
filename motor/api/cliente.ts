@@ -4,6 +4,8 @@ import type { AcaoApi, Json } from './contrato.ts'
 import type { ProvedorDisponivel } from '../tomada/disponibilidade.ts'
 import type { RevisaoDePlano } from '../oswaldo/orquestracao/planos.ts'
 import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.ts'
+import type { Escopo, Evento, Snapshot, Recurso as RecursoObservavel } from '../observabilidade/contrato.ts'
+import { Projecao } from '../observabilidade/projecao.ts'
 
 export type PedidoHicode = { modo: 'gateway' | 'orquestrador'; texto: string }
   | { modo: 'orquestrador'; spec: { nome: string; conteudo: string } }
@@ -48,8 +50,77 @@ export function clienteHii(base: string, token: string) {
     if (!/^\d{3,12}$/.test(id)) throw new Error('ID invalido')
     return id
   }
+  function filtroQuery(filtro: Partial<Escopo>): string {
+    return new URLSearchParams(Object.entries(filtro).filter(([, v]) => !!v)).toString()
+  }
+  const observarSnapshot = (filtro: Partial<Escopo> = {}, depois = '', signal?: AbortSignal) => get<Snapshot>(`/v1/observabilidade/snapshot?${filtroQuery(filtro)}&depois=${encodeURIComponent(depois)}`, signal)
+  function observar(filtro: Partial<Escopo>, receber: (p: Projecao) => void, falhar: (e: Error) => void = () => {}): { dispose: () => void; concluido: Promise<void> } {
+    const controle = new AbortController()
+    const projecao = new Projecao()
+    const concluido = (async () => {
+      while (!controle.signal.aborted) {
+        try {
+          const primeiro = (await observarSnapshot(filtro, '', controle.signal)).valor
+          let pagina = primeiro
+          const atividades = [...primeiro.atividades]
+          while (pagina.proxima) { pagina = (await observarSnapshot(filtro, pagina.proxima, controle.signal)).valor; atividades.push(...pagina.atividades) }
+          projecao.reconstruir({ ...primeiro, atividades })
+          receber(projecao)
+          // Reconcilia periodicamente mesmo sem eventos; nao executa POST.
+          const prazo = AbortSignal.timeout(30000)
+          const signal = AbortSignal.any([controle.signal, prazo])
+          const r = await chamar(`/v1/observabilidade/eventos?${filtroQuery(filtro)}`, { signal, headers: { 'last-event-id': projecao.cursor } })
+          if (!r.body) throw new Error('stream sem corpo')
+          const leitor = r.body.getReader()
+          const decoder = new TextDecoder()
+          let buffer = ''
+          try {
+            while (!signal.aborted) {
+              const parte = await leitor.read()
+              if (parte.done) break
+              buffer += decoder.decode(parte.value, { stream: true })
+              if (buffer.length > 1048576) throw new Error('evento excede limite')
+              let fim = buffer.indexOf('\n\n')
+              while (fim >= 0) {
+                const bloco = buffer.slice(0, fim)
+                buffer = buffer.slice(fim + 2)
+                const linhas = bloco.split('\n')
+                const tipo = linhas.find(l => l.startsWith('event: '))?.slice(7)
+                if (tipo === 'reset') throw new Error('snapshot requerido')
+                if (tipo === 'activity' || tipo === 'output') {
+                  const dados = linhas.filter(l => l.startsWith('data: ')).map(l => l.slice(6)).join('\n')
+                  projecao.aplicar(JSON.parse(dados) as Evento)
+                  receber(projecao)
+                }
+                fim = buffer.indexOf('\n\n')
+              }
+            }
+          } finally { await leitor.cancel().catch(() => {}); leitor.releaseLock() }
+        } catch (e) { if (!controle.signal.aborted && (e as Error).name !== 'TimeoutError') falhar(e as Error) }
+        if (!controle.signal.aborted) await new Promise<void>(resolve => {
+          const fechar = (): void => { clearTimeout(timer); controle.signal.removeEventListener('abort', fechar); resolve() }
+          const timer = setTimeout(fechar, 1000)
+          controle.signal.addEventListener('abort', fechar, { once: true })
+        })
+      }
+    })()
+    return { dispose: () => controle.abort(), concluido }
+  }
   return {
-    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[] }>('/v1/capacidades'),
+    observarSnapshot,
+    observar,
+    catalogoObservabilidade: (repo = '', depois = '') => get<{ versao: 1; recursos: RecursoObservavel[]; proxima: string | null }>(`/v1/observabilidade/recursos?repo=${encodeURIComponent(repo)}&depois=${encodeURIComponent(depois)}`),
+    historico: (id: string, offset = 0) => get<{ eventos: object[]; proximo: number; fim: boolean }>(`/v1/tarefas/${idSeguro(id)}/historico?offset=${offset}`),
+    configuracao: () => get<{ versao: 1; preferencias: object }>('/v1/configuracao'),
+    configurar: (ajuste: { versao: 1; papel: string; provider?: string; model?: string; effort?: string; modo?: string; gauntlet?: boolean }, chave: string, etag: string) => post<Json>('/v1/configuracao', ajuste, chave, etag),
+    perguntar: (repo: string, pergunta: string, chave: string) => post<{ id: string; atividade: string; estado: string }>('/v1/ask', { repo, pergunta }, chave),
+    consulta: (id: string) => get<{ id: string; repo: string; estado: string; resposta: string; custoUsd: number | null }>(`/v1/consultas/${encodeURIComponent(id)}`),
+    revisarPlano: (id: string, plano: object, revisaoEsperada: number, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/plano`, { plano, revisaoEsperada }, chave, etag),
+    artefatos: (id: string) => get<{ artefatos: object[] }>(`/v1/tarefas/${idSeguro(id)}/artefatos`),
+    artefato: (id: string) => get<{ id: string; nome: string; tipo: string; tamanho: number; sha256: string; conteudo: string }>(`/v1/artefatos/${encodeURIComponent(id)}`),
+    perguntas: (id: string) => get<{ perguntaId: string | null; pendencia: { origem: string; indice: number; atual: { q: string; options: string[]; recommended?: string } } | null }>(`/v1/tarefas/${idSeguro(id)}/perguntas`),
+    responderPergunta: (id: string, perguntaId: string, texto: string, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/respostas`, { perguntaId, texto }, chave, etag),
+    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[]; observabilidade?: { versoes: number[] } }>('/v1/capacidades'),
     provedores: () => get<{ provedores: (ProvedorDisponivel & { modelos: string[] })[] }>('/v1/provedores'),
     estado: (repo = '') => get<SnapshotDoMotor & { cursor: string }>(`/v1/estado?repo=${encodeURIComponent(repo)}`),
     novaSessao: (repo: string, titulo: string, chave: string) => post<SessaoHii>('/v1/sessoes', { repo, titulo }, chave),

@@ -10,6 +10,8 @@ O protocolo escolhido e **HTTP/JSON + SSE v1**, com autenticacao no backend.
 | [Protocolo](protocolo.md) | Decisao arquitetural, alternativas, endpoints, payloads, idempotencia, revisoes, eventos e limites |
 | [Operacao](operacao.md) | Variaveis, inicializacao, seguranca, proxy, diagnostico e recuperacao |
 | [Adapter Hicode](adapter-hicode.md) | Como migrar o consumidor, fluxo de session, comandos, SSE e logs |
+| [Observabilidade v1](observabilidade.md) | Atividades, saida, recuperacao, ask, configuracao, planos, artefatos e limites |
+| [Validacao da issue 54](validacao-54.md) | Escopo entregue, comandos de verificacao e evidencias |
 | [OpenAPI](openapi.json) | Contrato legivel por ferramentas para gerar clientes e consultar schemas |
 | [Diagnostico inicial](diagnostico-inicial.md) | Evidencias das incompatibilidades do antigo adapter de CLI/disco, com SHAs verificados |
 
@@ -44,9 +46,10 @@ sessions, pedidos gateway/orquestrador por texto ou spec, acoes humanas,
 snapshot, catalogos de leitura, plano/evidencias, log incremental, eventos com
 cursor duravel, idempotencia e cliente TypeScript de referencia.
 
-**Ainda pendente no Hicode:** substituir seu adapter de CLI/disco por HTTP,
-conectar os controles e o estado da interface, remover escritas paralelas e
-validar o fluxo no navegador. Preparar o motor nao equivale a implantar o painel.
+**Hicode:** a rota `/motor` e entregue em PR coordenado com
+[Hicode #22](https://github.com/rafaelvpolan/hicode/issues/22), usando HTTP/SSE
+e sessao autenticada. As outras paginas seguem legadas. Preparar e testar
+os candidatos nao equivale a implantar o painel.
 Nao foram feitas chamadas de IA paga para validar esta conexao.
 
 ## Codigo e verificacao

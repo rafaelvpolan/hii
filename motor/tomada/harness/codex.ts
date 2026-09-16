@@ -163,6 +163,7 @@ export const CODEX_SINAIS: SinaisDoHarness = {
 }
 
 export class CodexProvider implements Harness {
+  saidaIncremental(): boolean { return true }
   readonly name: HarnessId = 'codex'
   readonly supportsAgents = false
   readonly supportsVision = false
@@ -189,14 +190,25 @@ export class CodexProvider implements Harness {
   async run(req: AgentRequest): Promise<AgentResult> {
     const workdir = req.dirs[0] ?? req.cwd
     const live = liveCodexLog(req)
+    const observadas = new AcumuladorDeLinhas()
+    const errosObservados = new AcumuladorDeLinhas()
+    const emitir = (linha: string): void => {
+      try {
+        const e = JSON.parse(linha) as CodexEvent
+        if (e.type === 'item.completed' && e.item?.type === 'agent_message' && e.item.text) req.aoEmitir?.('assistant', e.item.text)
+        if (e.type === 'error' || e.type === 'turn.failed') req.aoEmitir?.('error', e.message || e.error?.message || 'falha do Codex')
+      } catch { /* JSON parcial ou nao publico */ }
+    }
     const { err, stdout, stderr } = await run('codex', argv(req, workdir), {
       cwd: workdir,
       timeout: req.timeoutMs,
       aoIniciar: req.aoIniciar,
       aoLerStdout: (pedaco) => {
+        for (const linha of observadas.empurrar(pedaco)) emitir(linha)
         for (const line of live?.stdout.empurrar(pedaco) ?? []) live?.linha(line)
       },
       aoLerStderr: (pedaco) => {
+        for (const linha of errosObservados.empurrar(pedaco)) req.aoEmitir?.('stderr', linha + '\n')
         for (const line of live?.stderr.empurrar(pedaco) ?? []) live?.linha(line)
       },
       aoEstourarTempo: () => {
@@ -204,6 +216,8 @@ export class CodexProvider implements Harness {
       },
     })
     const parsed = parse(stdout)
+    for (const linha of observadas.esvaziar()) emitir(linha)
+    for (const linha of errosObservados.esvaziar()) req.aoEmitir?.('stderr', linha + '\n')
     live?.finalizar(err, parsed.isError)
     const failed = !!err
     return {

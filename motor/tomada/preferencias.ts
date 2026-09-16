@@ -4,6 +4,12 @@ import { ROOT } from '../cordel/alicerce/config.ts'
 import { memoArquivo } from './eco/memo.ts'
 import { avisarArquivoIlegivel, motivoDoErro } from '../cordel/alicerce/aviso.ts'
 import type { AgentRole } from './tipos.ts'
+import { AsyncLocalStorage } from 'node:async_hooks'
+
+const fixas = new AsyncLocalStorage<PreferenciasDeIa>()
+export function comPreferenciasFixas<T>(executar: () => Promise<T>): Promise<T> {
+  return fixas.run(structuredClone(preferencias()), executar)
+}
 
 export const ESFORCOS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 export type Esforco = (typeof ESFORCOS)[number]
@@ -65,7 +71,7 @@ function lerDoDisco(caminho: string): PreferenciasDeIa {
 const lerMemorizado = memoArquivo(caminho => caminho, lerDoDisco)
 
 export function preferencias(): PreferenciasDeIa {
-  return lerMemorizado(arquivoDePreferencias())
+  return fixas.getStore() ?? lerMemorizado(arquivoDePreferencias())
 }
 
 export function preferenciaDoPapel(role: AgentRole): PreferenciaDePapel {

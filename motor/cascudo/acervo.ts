@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { diretorioDeSkills } from '../cordel/alicerce/config.ts'
 import { casaPadrao } from './lei/guarda.ts'
 import { auditarTexto, relatoDaAuditoria } from '../agentes/vital/auditoria-harness.ts'
+import { createHash } from 'node:crypto'
+import { escopoAtual, iniciar, terminar, recurso } from '../observabilidade/registro.ts'
 
 export { diretorioDeSkills }
 
@@ -209,6 +211,12 @@ export function skillsPara(papel: PapelDeSkill, ctx: ContextoDeGatilho, acervo: 
 
 export function renderizarSkills(skills: readonly Skill[]): string {
   if (!skills.length) return ''
+  const escopo = escopoAtual()
+  if (escopo) for (const s of skills) {
+    const id = iniciar(escopo, { ...recurso(s.id, 'skill', s.origem), versao: createHash('sha256').update(s.instrucoes).digest('hex') },
+      { estadoDoConteudo: 'loaded', evidencia: 'conteudo incluido no prompt pelo renderizador', consumidor: s.papeis.join(','), pack: s.pack, gatilho: JSON.stringify(s.gatilho), processo: false })
+    terminar(id, 'succeeded', 'carregamento de instrucoes; nao e processo nem prova de obediencia do modelo')
+  }
   const blocos = skills.map(s => `### skill: ${s.id} (${s.pack})\n${s.instrucoes}`)
   return [
     `CONHECIMENTO CARREGADO (${skills.length} skill(s), gatilho determinístico por arquivo/dependência):`,

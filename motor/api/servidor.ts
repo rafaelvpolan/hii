@@ -20,6 +20,15 @@ import type { RespostaApi } from './idempotencia.ts'
 import { agir, tarefa, sessao, etagDaSessao, novaSessao, novoPedido, fecharSessao, projetos } from './operacoes.ts'
 import { lerLog } from './log.ts'
 import { openapi } from './openapi.ts'
+import { consultarObservabilidade, streamObservabilidade } from './observabilidade.ts'
+import { jsonPublico as publico } from '../observabilidade/registro.ts'
+import { configuracao, configurar } from './configuracao.ts'
+import { revisarPlano } from './plano.ts'
+import { criarConsulta, lerConsulta } from './consulta.ts'
+import type { runProvider } from '../euclides/tesouro/confianca.ts'
+import { lerArtefato, listarArtefatos } from '../observabilidade/artefatos.ts'
+import { eventosDoCard } from '../euclides/eventos.ts'
+import { perguntas, responderPergunta } from './perguntas.ts'
 
 const LIMITE_CORPO = 2 * 1024 * 1024
 function cabecalho(req: IncomingMessage, nome: string): string {
@@ -55,7 +64,14 @@ async function corpo(req: IncomingMessage): Promise<string> {
 function enviar(res: ServerResponse, r: RespostaApi): void {
   res.writeHead(r.status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
     'x-content-type-options': 'nosniff', ...(r.etag ? { etag: r.etag } : {}) })
-  res.end(r.corpo)
+  const valor = JSON.parse(r.corpo) as Json
+  if (r.artefatoVerificado) {
+    // O produtor redigiu os bytes ANTES do hash. Redigir o JSON escapado uma
+    // segunda vez altera conteudo, tamanho e SHA-256 (inclusive JSON valido).
+    const a = objeto(valor)
+    const metadados = objeto(publico({ ...a, conteudo: null }))
+    res.end(JSON.stringify({ ...metadados, conteudo: a.conteudo }))
+  } else res.end(JSON.stringify(publico(valor)))
 }
 
 function stream(req: IncomingMessage, res: ServerResponse, aoFechar: () => void): void {
@@ -79,7 +95,7 @@ function stream(req: IncomingMessage, res: ServerResponse, aoFechar: () => void)
       }
       for (const e of lote.eventos) {
         cursor = e.id
-        if (!res.write(`id: ${e.id}\nevent: ${e.tipo}\ndata: ${JSON.stringify(e)}\n\n`)) {
+        if (!res.write(`id: ${e.id}\nevent: ${e.tipo}\ndata: ${JSON.stringify(publico(JSON.parse(JSON.stringify(e)) as Json))}\n\n`)) {
           // Cliente lento reconecta pelo ultimo evento recebido; fila nao cresce.
           res.end()
           return
@@ -94,6 +110,8 @@ function stream(req: IncomingMessage, res: ServerResponse, aoFechar: () => void)
 }
 
 function consulta(url: URL): RespostaApi {
+  const observacao = consultarObservabilidade(url)
+  if (observacao) return observacao
   const repo = url.searchParams.get('repo') ?? ''
   if (repo && !repoRegistered(repo)) throw new ErroApi(404, 'repo_ausente', 'projeto nao registrado')
   if (url.pathname === '/v1/capacidades') return resposta(200, {
@@ -101,8 +119,31 @@ function consulta(url: URL): RespostaApi {
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
+    observabilidade: { versoes: [1], snapshot: '/v1/observabilidade/snapshot', eventos: '/v1/observabilidade/eventos', recursos: '/v1/observabilidade/recursos', autorizacao: 'mesmo operador do bearer; filtros nao sao autorizacao' },
   })
   if (url.pathname === '/v1/openapi.json') return resposta(200, openapi)
+  if (url.pathname === '/v1/configuracao') return configuracao()
+  const consultaId = url.pathname.match(/^\/v1\/consultas\/([a-f0-9-]{36})$/)?.[1]
+  if (consultaId) return resposta(200, lerConsulta(consultaId))
+  const artefatoId = url.pathname.match(/^\/v1\/artefatos\/([a-f0-9]{64})$/)?.[1]
+  if (artefatoId) {
+    const a = lerArtefato(artefatoId)
+    if (!a) throw new ErroApi(404, 'artefato_ausente', 'artefato ausente ou expirado')
+    return { ...resposta(200, a), artefatoVerificado: true }
+  }
+  const artefatosDaTarefa = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/artefatos$/)?.[1]
+  if (artefatosDaTarefa) { tarefa(artefatosDaTarefa); return resposta(200, { artefatos: listarArtefatos(artefatosDaTarefa) }) }
+  const historicoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/historico$/)?.[1]
+  if (historicoId) {
+    tarefa(historicoId)
+    const offset = Number(url.searchParams.get('offset') || '0')
+    if (!Number.isSafeInteger(offset) || offset < 0) throw new ErroApi(400, 'offset_invalido', 'offset deve ser inteiro nao negativo')
+    const todos = eventosDoCard(historicoId)
+    const eventos = todos.slice(offset, offset + 200)
+    return resposta(200, { eventos, proximo: offset + eventos.length, fim: offset + eventos.length >= todos.length, fonte: 'journal de efeitos; leitura passiva' })
+  }
+  const perguntaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/perguntas$/)?.[1]
+  if (perguntaId) return perguntas(perguntaId)
   if (url.pathname === '/v1/projetos') return resposta(200, { projetos: projetos() })
   if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => ({ ...p, modelos: modelosDe(p.nome) })) })
   if (url.pathname === '/v1/estado') {
@@ -132,17 +173,25 @@ function consulta(url: URL): RespostaApi {
   return resposta(200, t, t.etag)
 }
 
-async function mutacao(req: IncomingMessage, url: URL): Promise<RespostaApi> {
+async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   const bruto = await corpo(req)
   let b: Json
   try { b = JSON.parse(bruto) as Json } catch { throw new ErroApi(400, 'json_invalido', 'JSON invalido') }
   const entrada = objeto(b)
+  if (opcoes.repos && ['/v1/sessoes', '/v1/ask'].includes(url.pathname)) autorizarRepo(typeof entrada.repo === 'string' ? entrada.repo : '', opcoes)
+  if (url.pathname === '/v1/configuracao' && opcoes.admin !== true) throw new ErroApi(403, 'administrador_obrigatorio', 'configuracao exige API administrativa explicita')
   const m = url.pathname.match(/^\/v1\/(sessoes|tarefas)\/(\d{3,12})\/(pedidos|fechar|acoes)$/)
-  const rotaValida = url.pathname === '/v1/sessoes' || (m && (
+  const planoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/plano$/)?.[1]
+  const respostaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/respostas$/)?.[1]
+  const rotaValida = ['/v1/sessoes', '/v1/configuracao', '/v1/ask'].includes(url.pathname) || planoId || respostaId || (m && (
     (m[1] === 'sessoes' && ['pedidos', 'fechar'].includes(m[3] ?? '')) || (m[1] === 'tarefas' && m[3] === 'acoes')))
   if (!rotaValida || url.search) throw new ErroApi(404, 'rota_ausente', 'rota nao encontrada')
   const esperado = cabecalho(req, 'if-match')
   return umaVez(cabecalho(req, 'idempotency-key'), JSON.stringify([url.pathname, esperado, entrada]), () => {
+    if (url.pathname === '/v1/configuracao') return configurar(entrada, esperado)
+    if (url.pathname === '/v1/ask') return criarConsulta(entrada, opcoes.executarConsulta)
+    if (planoId) return revisarPlano(planoId, entrada, esperado, cabecalho(req, 'idempotency-key'))
+    if (respostaId) return responderPergunta(respostaId, entrada, esperado)
     if (url.pathname === '/v1/sessoes') return novaSessao(entrada)
     const id = m?.[2] ?? ''
     if (m?.[3] === 'pedidos') return novoPedido(id, entrada)
@@ -151,7 +200,26 @@ async function mutacao(req: IncomingMessage, url: URL): Promise<RespostaApi> {
   })
 }
 
-export function criarServidorApi(token: string): Server {
+export interface OpcoesApi { admin?: boolean; repos?: readonly string[]; executarConsulta?: typeof runProvider }
+function autorizarRepo(repo: string, opcoes: OpcoesApi): void {
+  if (opcoes.repos && (!repo || !opcoes.repos.includes(repo))) throw new ErroApi(403, 'escopo_recusado', 'credencial nao autoriza este projeto')
+}
+function autorizarUrl(url: URL, opcoes: OpcoesApi, metodo: string): void {
+  if (!opcoes.repos) return
+  if (['/v1/capacidades', '/v1/openapi.json', '/v1/provedores'].includes(url.pathname)) return
+  if (metodo === 'POST' && ['/v1/sessoes', '/v1/ask'].includes(url.pathname)) return // corpo validado antes do efeito
+  const tarefaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})(?:\/|$)/)?.[1]
+  if (tarefaId) return autorizarRepo(tarefa(tarefaId).campos.repo ?? '', opcoes)
+  const sessaoId = url.pathname.match(/^\/v1\/sessoes\/(\d{3,12})(?:\/|$)/)?.[1]
+  if (sessaoId) return autorizarRepo(sessao(sessaoId).repo, opcoes)
+  const consultaId = url.pathname.match(/^\/v1\/consultas\/([a-f0-9-]{36})$/)?.[1]
+  if (consultaId) return autorizarRepo(lerConsulta(consultaId).repo, opcoes)
+  const artefatoId = url.pathname.match(/^\/v1\/artefatos\/([a-f0-9]{64})$/)?.[1]
+  if (artefatoId) return autorizarRepo(lerArtefato(artefatoId)?.repo ?? '', opcoes)
+  if (['/v1/estado', '/v1/sessoes', '/v1/recursos', '/v1/observabilidade/snapshot', '/v1/observabilidade/eventos', '/v1/observabilidade/recursos'].includes(url.pathname)) return autorizarRepo(url.searchParams.get('repo') || '', opcoes)
+  throw new ErroApi(403, 'escopo_recusado', 'rota global nao disponivel para credencial restrita')
+}
+export function criarServidorApi(token: string, opcoes: OpcoesApi = {}): Server {
   if (token.length < 32 || /\s/.test(token)) throw new Error('HII_API_TOKEN deve ter ao menos 32 caracteres sem espacos')
   prepararPonte()
   let streams = 0
@@ -160,12 +228,14 @@ export function criarServidorApi(token: string): Server {
       if (!timingSafeEqual(digest(cabecalho(req, 'authorization')), digest(`Bearer ${token}`))) throw new ErroApi(401, 'nao_autorizado', 'Bearer token obrigatorio')
       if (req.headers.origin !== undefined) throw new ErroApi(403, 'origem_recusada', 'use o backend do Hicode; token nao pertence ao navegador')
       const url = new URL(req.url ?? '/', 'http://hii.local')
-      if (req.method === 'GET' && url.pathname === '/v1/eventos') {
+      autorizarUrl(url, opcoes, req.method ?? '')
+      if (req.method === 'GET' && ['/v1/eventos', '/v1/observabilidade/eventos'].includes(url.pathname)) {
         if (streams >= 16) throw new ErroApi(429, 'limite_streams', 'limite de streams atingido')
-        stream(req, res, () => { streams-- })
+        if (url.pathname === '/v1/observabilidade/eventos') streamObservabilidade(req, res, url, () => { streams-- })
+        else stream(req, res, () => { streams-- })
         streams++
       } else if (req.method === 'GET') enviar(res, consulta(url))
-      else if (req.method === 'POST') enviar(res, await mutacao(req, url))
+      else if (req.method === 'POST') enviar(res, await mutacao(req, url, opcoes))
       else throw new ErroApi(405, 'metodo_invalido', 'use GET ou POST')
     })().catch((e: Error) => {
       if (res.headersSent) { res.end(); return }
@@ -183,7 +253,7 @@ export async function servirApi(): Promise<void> {
   const porta = Number(process.env.HII_API_PORT || 8787)
   if (!Number.isInteger(porta) || porta < 1 || porta > 65535) throw new Error('HII_API_PORT invalida')
   const host = process.env.HII_API_HOST || '127.0.0.1'
-  const servidor = criarServidorApi(process.env.HII_API_TOKEN || '')
+  const servidor = criarServidorApi(process.env.HII_API_TOKEN || '', { admin: process.env.HII_API_ADMIN === '1', repos: process.env.HII_API_REPOS ? process.env.HII_API_REPOS.split(',').map(r => r.trim()).filter(Boolean) : undefined })
   await new Promise<void>((resolve, reject) => {
     servidor.once('error', reject)
     servidor.listen(porta, host, resolve)

@@ -110,7 +110,10 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
   // `doMotor` vem ANTES de `processos`: renderFrame corta o pinado pelo FIM
   // (tui/layout.ts), e num terminal baixo o que tem de sobreviver e a decisao do
   // motor (perfil, escopo, fase, gate, gasto), nao a lista de passos.
-  return [...cab, ...pend, ...doMotor, ...processos, '']
+  const observado = snapshot({ execucao: state.seguindo })
+  const ativos = resumoAtivo(observado.atividades).slice(-3).map(l => truncVisible(`    ${l}`, larguraUtil()))
+  if (observado.degradado) ativos.push('    observabilidade degradada; consulte estado da tarefa')
+  return [...cab, ...pend, ...ativos, ...doMotor, ...processos, '']
 }
 
 export function seguimento(state: SessionState): string[] {
@@ -127,3 +130,5 @@ export function seguimento(state: SessionState): string[] {
   if (status === 'CLARIFY') return ['  esperando a sua resposta abaixo']
   return ['  nada em execucao nesta tarefa']
 }
+import { snapshot } from '../../observabilidade/registro.ts'
+import { resumoAtivo } from '../../observabilidade/projecao.ts'

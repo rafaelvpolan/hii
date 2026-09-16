@@ -1,4 +1,5 @@
 import { anexarEvento } from '../euclides/eventos.ts'
+import { iniciar, atualizar, terminar, dentro, escopoAtual, recurso } from '../observabilidade/registro.ts'
 
 // Ciclo — o repair loop generico. Uma tentativa DIRIGIDA por vez, com teto, e
 // sempre reportando ao humano o que ja foi tentado quando esgota.
@@ -63,36 +64,44 @@ export interface Reparo {
 }
 
 export async function repararAteOTeto(gate: GateReparavel, teto: number, card = ''): Promise<Reparo> {
-  const relato: string[] = []
-  let veredicto = await gate.rodar()
-  let tentativas = 0
-  let semProgresso = false
+  const atividade = iniciar(escopoAtual() ?? { repo: '', sessao: '', execucao: card }, recurso(gate.nome, 'loop'), { iteracao: 0, maximo: teto })
+  try {
+    return await dentro(atividade, async () => {
+      const relato: string[] = []
+      let veredicto = await gate.rodar()
+      let tentativas = 0
+      let semProgresso = false
 
-  while (veredicto.status === 'falhou' && tentativas < teto) {
-    tentativas++
-    if (card) {
-      anexarEvento({ card, evento: 'repair_attempt', fase: gate.nome, detalhe: `tentativa ${tentativas}/${teto}: ${veredicto.detalhe.slice(0, 200)}` })
-    }
-    const antes = assinaturaDeVeredicto(veredicto.detalhe)
-    const oQueFez = await gate.consertoEstreito(veredicto, tentativas)
-    relato.push(`tentativa ${tentativas}: ${oQueFez || 'ajustou'} — motivo: ${veredicto.detalhe.slice(0, 200)}`)
-    veredicto = await gate.rodar()
-    // Mesma reprovacao, palavra por palavra, depois de um conserto dirigido: o
-    // conserto nao pegou. Continuar ate o teto paga as voltas restantes para
-    // receber esta mesma frase de novo.
-    if (veredicto.status === 'falhou' && assinaturaDeVeredicto(veredicto.detalhe) === antes) {
-      semProgresso = true
-      relato.push(`parou na tentativa ${tentativas}: o gate repetiu a MESMA reprovacao — o conserto nao mudou o veredicto`)
-      if (card) {
-        anexarEvento({ card, evento: 'repair_attempt', fase: gate.nome, detalhe: `sem progresso na tentativa ${tentativas}: veredicto identico ao anterior — parando antes do teto de ${teto}` })
+      while (veredicto.status === 'falhou' && tentativas < teto) {
+        tentativas++
+        atualizar(atividade, a => { a.detalhes.iteracao = tentativas; a.detalhes.motivo = veredicto.detalhe })
+        if (card) {
+          anexarEvento({ card, evento: 'repair_attempt', fase: gate.nome, detalhe: `tentativa ${tentativas}/${teto}: ${veredicto.detalhe.slice(0, 200)}` })
+        }
+        const antes = assinaturaDeVeredicto(veredicto.detalhe)
+        const oQueFez = await gate.consertoEstreito(veredicto, tentativas)
+        relato.push(`tentativa ${tentativas}: ${oQueFez || 'ajustou'} — motivo: ${veredicto.detalhe.slice(0, 200)}`)
+        veredicto = await gate.rodar()
+        // Mesma reprovacao, palavra por palavra, depois de um conserto dirigido: o
+        // conserto nao pegou. Continuar ate o teto paga as voltas restantes para
+        // receber esta mesma frase de novo.
+        if (veredicto.status === 'falhou' && assinaturaDeVeredicto(veredicto.detalhe) === antes) {
+          semProgresso = true
+          relato.push(`parou na tentativa ${tentativas}: o gate repetiu a MESMA reprovacao — o conserto nao mudou o veredicto`)
+          if (card) {
+            anexarEvento({ card, evento: 'repair_attempt', fase: gate.nome, detalhe: `sem progresso na tentativa ${tentativas}: veredicto identico ao anterior — parando antes do teto de ${teto}` })
+          }
+          break
+        }
       }
-      break
-    }
-  }
 
-  // 'inconclusivo' NAO dispara reparo, de proposito: nao da para consertar de
-  // forma dirigida o que nao foi diagnosticado. Tentar seria adivinhacao cara.
-  return { veredicto, tentativas, relato, semProgresso }
+      // 'inconclusivo' NAO dispara reparo, de proposito: nao da para consertar de
+      // forma dirigida o que nao foi diagnosticado. Tentar seria adivinhacao cara.
+      atualizar(atividade, a => { a.detalhes.semProgresso = semProgresso; a.detalhes.veredito = veredicto.status })
+      terminar(atividade, veredicto.status === 'ok' ? 'succeeded' : 'failed', semProgresso ? 'sem progresso' : veredicto.status)
+      return { veredicto, tentativas, relato, semProgresso }
+    })
+  } finally { terminar(atividade, 'failed', 'loop interrompido por excecao') }
 }
 
 export function relatoParaHumano(r: Reparo): string {

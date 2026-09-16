@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
+import { observarEstado } from '../observabilidade/registro.ts'
 
 export const TIPOS_DA_PONTE = ['tarefa_atualizada', 'fim', 'pausa', 'ia_falhou', 'ia_trocada', 'sessao_atualizada'] as const
 export interface EventoDaPonte {
@@ -65,6 +66,7 @@ export function lerEventos(desde = ''): { cursor: string; reset: boolean; evento
 }
 
 export function publicarEstado(tarefa: string, campos: Record<string, string>): void {
+  observarEstado(tarefa, campos)
   const status = campos.status ?? ''
   const sessao = campos.tipo === 'session' ? tarefa : campos.sessao_id ?? ''
   publicarEvento('tarefa_atualizada', tarefa, sessao, { status })

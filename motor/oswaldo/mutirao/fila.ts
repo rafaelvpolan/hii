@@ -18,11 +18,22 @@ import { avisarFalhaSilenciosa, motivoDoErro } from '../../cordel/alicerce/aviso
 import { despachoLiberado } from '../../euclides/tesouro/teto-global.ts'
 import { executarGateway } from '../gateway.ts'
 import { modoDaExecucao } from '../orquestracao/config.ts'
+import { iniciar, terminar, recurso, dentro, paiDaExecucao } from '../../observabilidade/registro.ts'
+import { comPreferenciasFixas } from '../../tomada/preferencias.ts'
 
 export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.ts'
 
 
 export async function runJob(job: Job): Promise<void> {
+  const fm = readCard(job.id)?.fm ?? {}
+  const atividade = iniciar({ repo: fm.repo ?? '', sessao: fm.sessao_id ?? '', execucao: job.id }, recurso(modoDaExecucao(fm), 'orchestrator'), { fase: job.kind }, paiDaExecucao(job.id))
+  try { await dentro(atividade, () => comPreferenciasFixas(() => executarJob(job))) } finally {
+    const depois = readCard(job.id)?.fm ?? {}
+    terminar(atividade, depois.status === 'HALTED' ? depois.halt_class === 'humano' ? 'cancelled' : 'failed' : 'succeeded', `despacho encerrado: ${depois.status ?? 'unknown'}; conclusao da tarefa e independente`)
+  }
+}
+
+async function executarJob(job: Job): Promise<void> {
   marcarEmVoo(job.id)
   const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {

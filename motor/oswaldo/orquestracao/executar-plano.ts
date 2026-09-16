@@ -13,6 +13,7 @@ import type { PlanoDeExecucao, CriterioDoPlano } from './contrato.ts'
 import { lerPlano, salvarPlano } from './planos.ts'
 import { fingerprintDoTrabalho } from './evidencias.ts'
 import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
+import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
 
 export function planoInicial(card: Card, wt: string): PlanoDeExecucao {
   const contrato = ensureContract(repoPath(card.fm.repo ?? ''), isoNow())
@@ -59,13 +60,25 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   let ultimo: ImplementResult = { ok: true, cost: '0', costMeasured: true, resultText: 'microtasks ja concluidas' }
   for (const onda of ondasEstritas(r.plano.microtasks)) {
     for (const m of onda) {
-      if (checkpoint.feitas.includes(m.id)) continue
+      if (checkpoint.feitas.includes(m.id)) {
+        const pulada = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { checkpoint: r.hash })
+        atualizar(pulada, a => { a.microtask = m.id; a.planoRevisao = r.revisao })
+        terminar(pulada, 'skipped', 'microtask ja concluida; fingerprint do checkpoint conferido')
+        continue
+      }
       if (readCard(id)?.fm.status !== 'EXECUTING') return { ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       const gasto = gastoDoCard(card.fm.cost_usd)
       if (gasto === null || gasto + custo >= tetoDoCard()) return { ok: false, reason: 'orcamento atingido entre microtasks', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       patchCard(id, { microtask_atual: m.id }, `${isoNow()} microtask ${m.id}: ${m.titulo} | agente ${m.agente}`)
       const pedido: Card = { ...card, fm: { ...card.fm, title: m.titulo, orq_agente: m.agente }, body: `## Objetivo\n${r.plano.objetivo}\n\nMICROTASK ATUAL (${m.id}):\n${m.instrucao}\nArquivos previstos: ${m.arquivos.join(', ') || 'inspecionar o projeto'}\nCriterios: ${m.criterios.join(', ')}\n` }
-      ultimo = await implementar(pedido, wt, '', visual)
+      const atividade = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { papel: 'microtask', processoSeparado: false })
+      atualizar(atividade, a => { a.microtask = m.id; a.planoRevisao = r.revisao; a.etapa = m.titulo })
+      let concluida = false
+      try {
+        ultimo = await dentro(atividade, () => implementar(pedido, wt, '', visual))
+        terminar(atividade, ultimo.ok ? 'succeeded' : 'failed', ultimo.reason ?? '')
+        concluida = true
+      } finally { if (!concluida) terminar(atividade, 'failed', 'microtask interrompida por excecao') }
       custo += Number(ultimo.cost) || 0
       medido &&= ultimo.costMeasured === true
       for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += ultimo.usage?.[k] ?? 0

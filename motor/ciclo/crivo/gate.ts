@@ -18,6 +18,7 @@ import { gauntletLigado } from '../../tomada/preferencias.ts'
 import { gastoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { iniciar, atualizar, terminar, recurso, dentro, atividadeAtual, escopoAtual } from '../../observabilidade/registro.ts'
 
 // Derivado de ROTULOS, nao copiado: `cegar()` aceita `MAX_CANDIDATOS_CEGOS`
 // candidatos e um deles e sempre a tela do motor. Como copia manual, mudar ROTULOS
@@ -228,6 +229,19 @@ function gastoConhecido(id: string): number | undefined {
 }
 
 async function gateReview(wt: string, base: string, desc: string, working: boolean, id: string): Promise<GateResult> {
+  const fm = readCard(id)?.fm ?? {}
+  const atividade = iniciar({ repo: fm.repo ?? '', sessao: fm.sessao_id ?? '', execucao: id }, recurso('crivo', 'validation'), { fase: 'review' })
+  let concluido = false
+  try {
+    const r = await dentro(atividade, () => gateReviewInterno(wt, base, desc, working, id))
+    atualizar(atividade, a => { a.detalhes.veredito = r.ok ? r.verdict : null; a.detalhes.criterio = r.criterio })
+    terminar(atividade, r.ok && r.verdict !== 'BLOCKED' ? 'succeeded' : 'failed', r.reason)
+    concluido = true
+    return r
+  } finally { if (!concluido) terminar(atividade, 'failed', 'crivo interrompido por excecao') }
+}
+
+async function gateReviewInterno(wt: string, base: string, desc: string, working: boolean, id: string): Promise<GateResult> {
   const diff = await accumulatedDiff(wt, base, working)
   if (diff.falhou) {
     return { ok: false, verdict: 'BLOCKED', reason: `nao consegui LER o diff para revisar — ${diff.falhou}`, criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
@@ -267,6 +281,10 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
       ? `${escolha.motivo}, mas ${provider.supportsVision ? 'o card nao tem tela renderizada' : `${provider.name} nao le imagem`} — cai no criterio escrito`
       : escolha.motivo
   if (id) patchCard(id, { crivo_modo: gauntlet ? 'gauntlet' : 'criterio-escrito' }, `${isoNow()} Canudos: ${motivoDoModo}${avisoDeCorte}`)
+  atualizar(atividadeAtual(), a => {
+    a.detalhes.gauntletHabilitado = gauntletLigado(); a.detalhes.gauntletElegivel = gauntlet
+    a.detalhes.gauntletMotivo = motivoDoModo; a.detalhes.candidatos = gauntlet ? referencias.length + 1 : 0
+  })
   const res = await runProvider(id, provider, {
     prompt: gauntlet ? buildPromptGauntlet(desc, tela, referencias, id) : buildPrompt(desc, diff),
     cwd: ROOT,
@@ -314,13 +332,20 @@ export function runGatedReview(wt: string, base: string, desc: string, id = ''):
 }
 
 export async function withGateRetry(run: () => Promise<GateResult>, onRetry?: (reason: string) => void): Promise<GateResult> {
-  let g = await run()
-  for (let retry = 0; !g.ok && retry < GATE_RETRIES; retry++) {
-    onRetry?.(g.reason)
-    const again = await run()
-    g = { ...again, cost: g.cost + again.cost, costMeasured: g.costMeasured && again.costMeasured, tokens: g.tokens + again.tokens }
-  }
-  return g
+  const atividade = iniciar(escopoAtual() ?? { repo: '', sessao: '', execucao: '' }, recurso('gate-retry', 'loop'), { iteracao: 1, maximo: GATE_RETRIES + 1 })
+  try {
+    return await dentro(atividade, async () => {
+      let g = await run()
+      for (let retry = 0; !g.ok && retry < GATE_RETRIES; retry++) {
+        atualizar(atividade, a => { a.detalhes.iteracao = retry + 2; a.detalhes.motivoRetry = g.reason })
+        onRetry?.(g.reason)
+        const again = await run()
+        g = { ...again, cost: g.cost + again.cost, costMeasured: g.costMeasured && again.costMeasured, tokens: g.tokens + again.tokens }
+      }
+      terminar(atividade, g.ok ? 'succeeded' : 'failed', g.reason)
+      return g
+    })
+  } finally { terminar(atividade, 'failed', 'loop interrompido antes de obter resultado') }
 }
 
 export function persistGate(id: string, gate: GateResult): void {
