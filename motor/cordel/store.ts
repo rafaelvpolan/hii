@@ -8,6 +8,8 @@ import { memoArquivo } from '../tomada/eco/memo.ts'
 import { conferirTransicao } from '../niemeyer/deriva-de-transicao.ts'
 import { lerTopologia } from '../niemeyer/topologia.ts'
 import { anexarEvento } from '../euclides/eventos.ts'
+import { publicarEstado } from '../euclides/ponte-eventos.ts'
+import { conferirRevisao } from './revisao.ts'
 
 interface RepoConfig {
   name: string
@@ -93,6 +95,7 @@ function escrever(id: string, patch: CardPatch, apesarDaParada: boolean): Escrit
   const file = join(cardsDir(), name)
   return withFileLock(file, () => {
     const { fm, order, body } = splitFrontMatter(readFileSync(file, 'utf8'))
+    conferirRevisao(id, { fm, order, body, file: name })
     const before: Fields = { ...fm }
     const pedidos = typeof patch.fields === 'function' ? patch.fields(before) : (patch.fields ?? {})
     // Card parado pelo humano so sai da parada por decisao humana. O job em voo que
@@ -148,7 +151,10 @@ function escrever(id: string, patch: CardPatch, apesarDaParada: boolean): Escrit
     if (paradaSemClasse) nb = appendLog(nb, `${isoNow()} DEFEITO: esta escrita levou o card a HALTED sem halt_class — carimbado como ${PARADA_SEM_CLASSE}. Quem parou o card tem de dizer a classe (motor/cordel/tipos.ts, CLASSES_DE_PARADA), senao /health nao sabe se isto e cota, orcamento, escopo ou voce`)
     if (desfariaParada) nb = appendLog(nb, `${isoNow()} escrita descartada: o card esta em ${before.status} e um job em voo tentou leva-lo para ${resolvedStatus(pedidos)} — parada humana so sai por decisao humana`)
     writeFileAtomic(file, serializeCard(fm, order, nb) + '\n')
-    if (mudouStatus) emitirEventoDeCheckpoint(id, before.status, String(resolvedFields.status))
+    if (mudouStatus) {
+      emitirEventoDeCheckpoint(id, before.status, String(resolvedFields.status))
+      publicarEstado(id, fm)
+    }
     const escrito: Fields = { ...fm, file: name }
     return { card: escrito, recusa: desfariaParada ? motivoDaRecusa(before.status, resolvedStatus(pedidos)) : '' }
   })
@@ -248,6 +254,7 @@ export function createCard(fields: Fields, body: string): string {
     const fm: Fields = { id, ...semId }
     const order = Object.keys(fm)
     writeFileSync(join(cardsDir(), `${id}-${slug}.md`), serializeCard(fm, order, body) + '\n', { flag: 'wx' })
+    publicarEstado(id, fm)
     return id
   })
 }

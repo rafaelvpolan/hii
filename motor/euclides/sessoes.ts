@@ -6,6 +6,8 @@ import { readCard } from '../cordel/store.ts'
 import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
 import { idValido } from '../oswaldo/orquestracao/contrato.ts'
 import type { ModoDoMotor } from '../oswaldo/orquestracao/config.ts'
+import { publicarEvento } from './ponte-eventos.ts'
+import { conferirRevisao } from '../cordel/revisao.ts'
 
 export interface MensagemDaSessao {
   id: string
@@ -65,6 +67,7 @@ export function criarSessaoHii(id: string, repo: string, titulo: string): Sessao
     }
     const s: SessaoHii = { versao: 1, id, repo, titulo, revisao: 1, estado: 'aberta', mensagens: [], execucoes: [], subsessoes: [] }
     writeFileAtomic(caminho, JSON.stringify(s, null, 2) + '\n')
+    publicarEvento('sessao_atualizada', '', id, { estado: s.estado, revisao: String(s.revisao) })
     return s
   })
 }
@@ -77,6 +80,7 @@ function atualizar(id: string, mudar: (sessao: SessaoHii) => void): SessaoHii {
     mudar(s)
     s.revisao++
     writeFileAtomic(caminho, JSON.stringify(s, null, 2) + '\n')
+    publicarEvento('sessao_atualizada', '', id, { estado: s.estado, revisao: String(s.revisao) })
     return s
   })
 }
@@ -125,6 +129,7 @@ export function interromperSubsessoes(id: string, execucao: string): void {
 
 export function fecharSessaoHii(id: string): SessaoHii {
   return atualizar(id, s => {
+    conferirRevisao(id, s)
     if (s.subsessoes.some(e => e.estado === 'executando')) throw new Error('sessao possui execucao em andamento')
     if (s.execucoes.some(e => {
       const status = readCard(e.id)?.fm.status

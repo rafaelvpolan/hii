@@ -28,7 +28,8 @@ import type { Effect, SessionState } from './sessao.ts'
 import { situacaoDoCard } from './cli/situacao-cli.ts'
 import { lerPedidoOrquestrado } from '../oswaldo/orquestracao/pedido.ts'
 import type { ModoDoMotor } from '../oswaldo/orquestracao/config.ts'
-import { prepararExecucao, registrarPedido, sessaoDaTarefa } from './execucao-da-sessao.ts'
+import { sessaoDaTarefa } from './execucao-da-sessao.ts'
+import { criarExecucao } from './criar-execucao.ts'
 import { registrarMensagem } from '../euclides/sessoes.ts'
 
 export interface SituacaoDeEnvio {
@@ -86,9 +87,7 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const pronta = io.iaProntaParaEnviar()
   if (!pronta.ok) { io.log(pronta.motivo); return state }
   const base = state.perguntando ? respondido(state) : state
-  const execucao = prepararExecucao(base.repo, base.seguindo, texto, modo)
-  const novoId = core.submit({ title: texto, repo: base.repo, ...extras, ...execucao })
-  registrarPedido(execucao.sessao_id, novoId, execucao.motor_modo, extras.desc || texto)
+  const { id: novoId, sessao } = criarExecucao(base.repo, base.seguindo, texto, modo, extras)
   const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
   if (refs.migrados > 0) {
     io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
@@ -96,7 +95,7 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const r = core.approvePlan(novoId)
   const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
   io.log(r.ok
-    ? `session #${execucao.sessao_id} | execucao #${novoId} na fila | ${modo === 'passivo' ? 'orquestrador' : 'gateway'} — ${destino} (/historico sai)`
+    ? `session #${sessao} | execucao #${novoId} na fila | ${modo === 'passivo' ? 'orquestrador' : 'gateway'} — ${destino} (/historico sai)`
     : `card #${novoId} criado — ${r.reason}`)
   return seguir(base, novoId)
 }

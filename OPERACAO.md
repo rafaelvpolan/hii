@@ -661,11 +661,14 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 |---|---|---|---|
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HII_API_HOST` | `'127.0.0.1'` | — | `motor/api/servidor.ts` |
+| `HII_API_PORT` | `8787` | — | `motor/api/servidor.ts` |
+| `HII_API_TOKEN` | `''` | — | `bin/hii.ts`, `motor/api/servidor.ts` |
 | `HII_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
 | `HII_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
 | `HII_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
 | `HII_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
-| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` |
+| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+1) |
 | `HII_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
 | `HII_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
@@ -699,6 +702,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_HEALTH_PORT` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/euclides/radar/servidor.ts` |
 | `HII_HEALTH_PROBE_BIN_TIMEOUT_MS` | `15000` | — | `motor/tomada/sonda.ts` |
 | `HII_HEALTH_PROBE_TIMEOUT_MS` | `5000` | — | `motor/tomada/sonda.ts` |
+| `HII_HOME` | — | — | `scripts/diagnosticar-hicode.mjs` |
 | `HII_HYPERLINKS` | — | — | `motor/mirante/tui/layout.ts` |
 | `HII_IA_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/preferencias.ts` |
 | `HII_IDEATE_FRAMES` | `4` | — | `motor/agentes/tarsila/ideate-run.ts` |

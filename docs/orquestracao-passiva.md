@@ -142,14 +142,16 @@ opcional define a pasta das capturas; o padrao e `/tmp/hii-visualizador`.
 
 ## Continuacoes das issues
 
-A integracao com a main atual do Hicode foi [diagnosticada separadamente](integracao-hicode.md).
+A integracao com a main atual do Hicode foi [diagnosticada separadamente](conexao-hicode/diagnostico-inicial.md).
 O snapshot aditivo nao significa que o painel ja o consome; o diagnostico reproduz
 as incompatibilidades de comandos, estados, sessions e eventos sem chamar IA.
+O motor agora oferece [HTTP/JSON + SSE autenticado](conexao-hicode/README.md), OpenAPI,
+cliente de referencia e testes reais de comunicacao. A migracao do Hicode segue pendente.
 
 | Issue | Entregue aqui | Ainda pendente |
 | --- | --- | --- |
 | #46 | Acionamento por tarefa/spec e caminho executavel no motor | Fluxo de descoberta/produto no Hicode e publicacao editorial |
-| #47 | Contrato v1, revisoes, DAG validado, snapshot aditivo | Editor e integracao ponta a ponta no outro repositorio |
+| #47 | Contrato v1, revisoes, DAG, snapshot e API HTTP/JSON + SSE | Migracao do adapter Hicode, editor e validacao visual ponta a ponta |
 | #48 | Setup local idempotente; doctor confere auth/capacidades | Provisionamento selecionavel de MCPs e diagnostico WSL completo |
 | #49 | DAG serial, checkpoints, contexto, retomada sem apagar diff | Planejador semantico e worktrees paralelos por microtask |
 | #50 | Evidencias executaveis, fingerprint, bloqueio e TUI testada | Politicas executaveis completas de observabilidade/rollout e retencao de todos os relatorios |

@@ -1,4 +1,9 @@
-# Diagnostico Hicode / HII
+# Diagnostico Inicial Hicode / HII
+
+Atualizacao: o motor agora oferece [HTTP/JSON + SSE v1](protocolo.md),
+cliente de referencia e OpenAPI. Os achados abaixo documentam a integracao antiga
+em `21dae62`; a migracao do consumidor Hicode ainda nao foi feita. O script de
+diagnostico antigo continua testando o adapter CLI/disco, nao a nova API.
 
 ## Resultado
 

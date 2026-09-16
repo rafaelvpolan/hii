@@ -180,6 +180,13 @@ hii — progresso  2026-08-19T14:08:23Z · 11 cards
 
 ### Para o painel (contrato de máquina)
 
+Para integrar o Hicode sem compartilhar arquivos, use `hii api`: HTTP/JSON + SSE,
+autenticado com `HII_API_TOKEN`, em `127.0.0.1:8787` por padrao. O contrato v1,
+cliente TypeScript, sessions, pedidos por tarefa/spec, idempotencia e reconexao
+estao em [Conexao Hicode / HII](docs/conexao-hicode/README.md). O daemon continua separado.
+O consumidor Hicode precisa migrar para esse contrato; os comandos abaixo seguem
+disponiveis para integracao local.
+
 O painel (hicode) não precisa reimplementar a leitura do estado: pede ao motor.
 
 | Comando | O que faz |

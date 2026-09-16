@@ -45,10 +45,13 @@ test('INVARIANTE a guarda de pack ausente REPROVA de verdade', () => {
 
 test('INVARIANTE o atalho NAO cria caminho de execucao paralelo', () => {
   const fonte = readFileSync('motor/mirante/despacho.ts', 'utf8')
-  // core.submit mora num lugar so. Duas chamadas significam que o atalho ganhou
-  // criacao propria, e a partir dai os dois caminhos divergem em silencio.
+  // TUI, CLI e API compartilham a criacao da execucao e o registro na session.
   const chamadas = fonte.match(/core\.submit\(/g) ?? []
-  expect(chamadas.length, 'submit livre e atalho de intake tem de passar pela MESMA criacao de card').toBe(1)
+  expect(chamadas.length).toBe(0)
+  expect((fonte.match(/criarExecucao\(/g) ?? []).length).toBe(1)
+  const criacao = readFileSync('motor/mirante/criar-execucao.ts', 'utf8')
+  expect((criacao.match(/core\.submit\(/g) ?? []).length).toBe(1)
+  expect(criacao).toContain('registrarPedido(')
   // approvePlan tem dois usos legitimos: a criacao (aqui) e o /approve
   // explicito do humano. O que nao pode duplicar e a CRIACAO.
 })

@@ -2,6 +2,8 @@ import { join } from 'node:path'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 import { gravarChamadaNoLiveLog } from './harness/live-log.ts'
 import type { AgentRole, HarnessId } from './tipos.ts'
+import { publicarEvento } from '../euclides/ponte-eventos.ts'
+import { readCard } from '../cordel/store.ts'
 
 export interface TrocaDeIaNoLog {
   readonly id: string
@@ -25,6 +27,9 @@ export function contextoDaTrocaDeIa(t: TrocaDeIaNoLog): string {
 
 export function registrarTrocaDeIaNoLiveLog(t: TrocaDeIaNoLog): void {
   const de = t.de || 'provedor desconhecido'
+  const sessao = readCard(t.id)?.fm.sessao_id ?? ''
+  publicarEvento('ia_falhou', t.id, sessao, { provedor: de, papel: t.papel, mensagem: t.falha })
+  publicarEvento('ia_trocada', t.id, sessao, { de, para: t.para, papel: t.papel, mensagem: `mudando automaticamente para ${t.para}` })
   const linhas = [
     `IA ${de} falhou: ${t.falha || 'falha sem motivo resumido'}`,
     t.detalhe ? `detalhe: ${t.detalhe}` : '',

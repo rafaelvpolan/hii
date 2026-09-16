@@ -32,6 +32,7 @@ try {
       await page.locator(`#tab-${tab}`).click()
       assert.ok(await page.locator(`#${tab}`).isVisible())
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow em ${tab}`)
+      await page.screenshot({ path: `${destino}/${tab}-${viewport.width}.png`, fullPage: true })
     }
     await page.locator('#search').fill('#49')
     assert.equal(await page.locator('#issue-table tbody tr:visible').count(), 1)
