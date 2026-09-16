@@ -4,6 +4,7 @@ import { isoNow } from '../cordel/index.ts'
 import type { FailureClass, IaDaSessao, ImplementResult, Run, StepMap } from '../cordel/index.ts'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 import { chamadasDaSessao, resumoDaSessao, sessaoDoCard } from './ias-da-sessao.ts'
+import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
 
 export const MOTIVO_SEM_CLASSIFICACAO = 'falha nao classificada — tratada como terminal'
 
@@ -74,7 +75,12 @@ export function writeRun(id: string, res: ImplementResult, durationS = 0, steps:
     trocas: resumo.trocas,
     ...failureFields(res),
   }
-  writeFileSync(join(dir, `${id}-${safe}.json`), JSON.stringify(rec, null, 2))
+  withFileLock(join(dir, `${id}-run`), () => {
+    let caminho = join(dir, `${id}-${safe}.json`)
+    let sequencia = 0
+    while (existsSync(caminho)) caminho = join(dir, `${id}-${safe}_${String(++sequencia).padStart(6, '0')}.json`)
+    writeFileAtomic(caminho, JSON.stringify(rec, null, 2))
+  })
   return rec
 }
 

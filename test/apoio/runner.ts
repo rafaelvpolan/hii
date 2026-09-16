@@ -1,3 +1,4 @@
+import './ambiente.ts'
 export { expect } from './expect.ts'
 export { lerArquivo, dormir, qualBinario, rodar, servidorDeTeste } from './bun.ts'
 

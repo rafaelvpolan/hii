@@ -134,6 +134,8 @@ test('INVARIANTE nenhum ponto do motor le o teto de outro lugar que nao o govern
 // justamente pelos pontos novos.
 const QUEM_LE_O_TETO: readonly string[] = [
   'motor/oswaldo/executar.ts',
+  'motor/oswaldo/gateway.ts',
+  'motor/oswaldo/orquestracao/executar-plano.ts',
   'motor/ciclo/corrigir.ts',
   'motor/quilombo/cartorio/fechar.ts',
   'motor/ciclo/canudos/gauntlet.ts',

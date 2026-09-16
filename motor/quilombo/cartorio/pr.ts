@@ -1,5 +1,6 @@
 import { executarComIdempotencia, FASE_DO_CARTORIO } from '../salvo-conduto/idempotencia.ts'
 import { run } from '../git.ts'
+import { sincronizarPr } from './sincronizar-pr.ts'
 
 export function pularCriacaoDePr(prUrl: string): boolean {
   return String(prUrl ?? '').trim().length > 0
@@ -15,6 +16,7 @@ export interface PedidoDePr {
   readonly worktree: string
   // URL que o card JA tem. Preenchida = nao chama o gh.
   readonly prExistente: string
+  readonly sincronizar?: boolean
 }
 
 export interface AberturaDePr {
@@ -39,6 +41,7 @@ const TIMEOUT_GH_MS = 60000
 // no arquivo, e apontar `prExistente` para um campo que ninguem escreve mantinha
 // tudo verde com o segundo PR de volta.
 export async function abrirPrUmaVez(p: PedidoDePr, executar: typeof run = run): Promise<AberturaDePr> {
+  if (p.sincronizar) return sincronizarPr(p, executar)
   let erro = ''
   let chamouOGh = false
   const r = await executarComIdempotencia({

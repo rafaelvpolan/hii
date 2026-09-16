@@ -16,7 +16,7 @@ test('o motor le HII_*; HICODE_* antigo e herdado UMA vez com aviso, e nao sobre
   expect(avisos.length, 'sem env antiga, sem aviso').toBe(1)
 })
 
-test('INVARIANTE: nenhum arquivo versionado do motor ainda le HICODE_ — o prefixo antigo so existe no shim de heranca', () => {
+test('INVARIANTE: prefixo antigo so existe no shim e nas provas de compatibilidade com o consumidor', () => {
   const saida = execFileSync('git', ['grep', '-l', 'HICODE_', '--', 'motor', 'bin', 'runner.ts', 'scripts', 'test', 'config'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim().split('\n').filter(Boolean)
-  expect(saida.sort()).toEqual(['motor/cordel/alicerce/config.ts', 'test/cordel/envs-prefixo-hii.test.ts'])
+  expect(saida.sort()).toEqual(['motor/cordel/alicerce/config.ts', 'scripts/diagnosticar-hicode.mjs', 'test/cordel/envs-prefixo-hii.test.ts'])
 })

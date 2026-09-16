@@ -18,6 +18,10 @@ import { esperaHumano, isActive, phaseIndex, phaseLabel, waitsHuman } from './re
 import { passosDe } from '../niemeyer/passos.ts'
 import type { Passo } from './progresso.ts'
 import { floorProviders, formatProviders } from '../euclides/tesouro/lacuna.ts'
+import { listarSessoesHii } from '../euclides/sessoes.ts'
+import type { SessaoHii } from '../euclides/sessoes.ts'
+import { configDoOrquestrador } from '../oswaldo/orquestracao/config.ts'
+import type { ConfigDoOrquestrador } from '../oswaldo/orquestracao/config.ts'
 
 export const VERSAO_DO_CONTRATO = 1
 
@@ -72,6 +76,8 @@ export interface SnapshotDoMotor {
   cota: LeituraDeCota
   tarefas: TarefaNoPainel[]
   sessoes: Sessao[]
+  conversas: SessaoHii[]
+  orquestrador: ConfigDoOrquestrador
 }
 
 function texto(c: Fields, campo: keyof Fields): string {
@@ -127,7 +133,7 @@ function arquivosDoEstado(): string[] {
   const raiz = cardsDir()
   if (!existsSync(raiz)) return []
   const saida: string[] = []
-  for (const dir of [raiz, join(raiz, 'runs')]) {
+  for (const dir of [raiz, ...['runs', 'sessoes', 'planos', 'orquestracao', 'evidencias'].map(d => join(raiz, d))]) {
     if (!existsSync(dir)) continue
     for (const nome of readdirSync(dir)) {
       if (nome.endsWith('.md') || nome.endsWith('.json')) saida.push(join(dir, nome))
@@ -179,5 +185,7 @@ export function snapshotDoMotor(opts: OpcoesDoSnapshot = {}): SnapshotDoMotor {
     cota: lerCota(agoraMs),
     tarefas: [...cards].sort(porId).map(tarefaNoPainel),
     sessoes: historicoDeSessoes(opts.limiteDeSessoes ?? 20).sessoes,
+    conversas: listarSessoesHii(repo),
+    orquestrador: configDoOrquestrador(repo),
   }
 }

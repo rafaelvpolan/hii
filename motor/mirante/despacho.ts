@@ -20,12 +20,17 @@ import { renderPergunta } from './render/clarify.ts'
 import { instruir, TERMINAIS } from './instruir.ts'
 import { renderHelp } from './render/help.ts'
 import { esperandoVoce } from './render/rodape.ts'
-import { seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './sessao.ts'
+import { seguir, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa, perguntando, newSession } from './sessao.ts'
 import { alvoDeRef, comandoRef } from './refs-comando.ts'
 import { migrarRefsDaSessao } from '../quilombo/alfandega/anexo.ts'
 import { sessaoAtual } from '../euclides/sessao.ts'
 import type { Effect, SessionState } from './sessao.ts'
 import { situacaoDoCard } from './cli/situacao-cli.ts'
+import { lerPedidoOrquestrado } from '../oswaldo/orquestracao/pedido.ts'
+import type { ModoDoMotor } from '../oswaldo/orquestracao/config.ts'
+import { sessaoDaTarefa } from './execucao-da-sessao.ts'
+import { criarExecucao } from './criar-execucao.ts'
+import { registrarMensagem } from '../euclides/sessoes.ts'
 
 export interface SituacaoDeEnvio {
   ok: boolean
@@ -76,13 +81,13 @@ function resolverProvedorParaLogin(arg: string): HarnessId | null {
 // A UNICA porta de criacao de card a partir da sessao. Submit livre e atalho de
 // intake passam os dois por aqui — e o teste de item 16 le esta fonte para
 // provar que o atalho nao abriu caminho paralelo.
-async function criarCardEEnfileirar(texto: string, state: SessionState, io: DispatchIO, extras: Record<string, string>): Promise<SessionState> {
+async function criarCardEEnfileirar(texto: string, state: SessionState, io: DispatchIO, extras: Record<string, string>, modo: ModoDoMotor = 'gateway'): Promise<SessionState> {
   if (!texto.trim()) { io.log('nada para criar'); return state }
   if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
   const pronta = io.iaProntaParaEnviar()
   if (!pronta.ok) { io.log(pronta.motivo); return state }
   const base = state.perguntando ? respondido(state) : state
-  const novoId = core.submit({ title: texto, repo: base.repo, ...extras })
+  const { id: novoId, sessao } = criarExecucao(base.repo, base.seguindo, texto, modo, extras)
   const refs = migrarRefsDaSessao(sessaoAtual(), novoId)
   if (refs.migrados > 0) {
     io.log(`  ${refs.migrados} referencia(s) da sessao anexada(s) a #${novoId}`)
@@ -90,7 +95,7 @@ async function criarCardEEnfileirar(texto: string, state: SessionState, io: Disp
   const r = core.approvePlan(novoId)
   const destino = io.daemonOnline() ? `rodando em ${providerNameFor('implement')}` : AVISO_DAEMON_OFFLINE
   io.log(r.ok
-    ? `card #${novoId} criado e na fila — ${destino} (/historico sai)`
+    ? `session #${sessao} | execucao #${novoId} na fila | ${modo === 'passivo' ? 'orquestrador' : 'gateway'} — ${destino} (/historico sai)`
     : `card #${novoId} criado — ${r.reason}`)
   return seguir(base, novoId)
 }
@@ -99,6 +104,16 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
   const id = effect.id ?? ''
   const texto = effect.text ?? ''
   switch (effect.kind) {
+    case 'orquestrador': {
+      if (!state.repo) { io.log('sem projeto — /repo <owner/nome>'); return state }
+      try {
+        const pedido = await lerPedidoOrquestrado(texto, repoPath(state.repo))
+        return await criarCardEEnfileirar(pedido.titulo, state, io, { desc: pedido.descricao }, 'passivo')
+      } catch (erro) {
+        io.log(`orquestrador: ${(erro as Error).message}`)
+        return state
+      }
+    }
     case 'help': {
       const espera = esperandoVoce(allCards(), state.repo)
       const linhas = renderHelp({
@@ -129,6 +144,11 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'plan': {
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
+      const pergunta = pendencia(normalizeId(id))
+      if (pergunta) {
+        for (const l of renderPergunta(pergunta, { color: io.color })) io.log(l)
+        return perguntando(seguir(state, normalizeId(id)), normalizeId(id))
+      }
       const st = card.fm.status ?? 'INBOX'
       if (st === 'URL') {
         const alvo = card.fm.id ?? id
@@ -210,12 +230,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         io.log(`#${id} nao existe mais — o texto vira tarefa nova`)
         return aplicar({ kind: 'submit', text: texto }, { ...state, seguindo: '' }, io)
       }
-      if (card.fm.tipo === 'session') {
-        io.log(io.dim(`  session #${id}: pergunta de leitura, sem executar tarefa`))
-        const linhas = await io.responder(texto, state.conversa, id)
-        for (const l of linhas) io.log(l)
-        patchCard(id, {}, `${isoNow()} pergunta na session: ${semTitulo(umaLinha(texto)).slice(0, 400)}`)
-        return comConversa(state, texto, linhas.join(' '))
+      if (card.fm.tipo === 'session' || card.fm.sessao_id) {
+        return criarCardEEnfileirar(texto, seguir(state, id), io, {})
       }
       const r = instruir(id, texto)
       if (!r.ok) { io.log(r.reason); return state }
@@ -263,7 +279,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         return state
       }
       io.log(`projeto agora e ${alvo}`)
-      return { ...foraDaTarefa(state), repo: alvo, perguntando: '', removendo: '', retomando: '' }
+      return newSession(alvo)
     }
     case 'aprovacao': {
       const emConfirmacao = readCard(id)?.fm.status === 'CONFIRM'
@@ -338,11 +354,6 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
       return p.ok ? seguir(state, id) : state
     }
-    case 'pipeline-suite': {
-      const p = pedirSuiteManual(id)
-      io.log(`${p.mensagem}${p.ok && !io.daemonOnline() ? ` — ${AVISO_DAEMON_OFFLINE}` : ''}`)
-      return p.ok ? seguir(state, id) : state
-    }
     case 'submit':
       return criarCardEEnfileirar(texto, state, io, {})
     case 'intake': {
@@ -358,7 +369,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
       // pelo mesmo caminho que qualquer instrucao humana; so o card ja entregue
       // (MERGED/DEPLOYED) cai no caminho de sempre e vira tarefa nova.
       const aberto = state.seguindo ? readCard(state.seguindo) : null
-      if (aberto && !TERMINAIS.includes(aberto.fm.status ?? '')) {
+      if (aberto && !aberto.fm.sessao_id && aberto.fm.tipo !== 'session' && !TERMINAIS.includes(aberto.fm.status ?? '')) {
         const alvo = state.seguindo
         const perfil = [`passos=${c.steps || 'padrao'}`, c.ligaLayout ? 'layout=on' : '', `packs=${c.packs.join(',')}`].filter(Boolean).join(' · ')
         patchCard(alvo, extras, `${isoNow()} perfil ${c.nome} aplicado pelo humano na tarefa aberta: ${perfil}`)
@@ -444,8 +455,8 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         repo: state.repo,
         desc: texto.trim() || 'sessao de conversa do projeto',
       })
-      io.log(`session #${idNovo} criada em ${state.repo} — use perguntas dentro dela; cada IA chamada vira subsessao no historico`)
-      return seguir({ ...state, tela: '', perguntando: '', aprovando: '', comentando: '', pendingPlan: '' }, idNovo)
+      io.log(`session #${idNovo} criada em ${state.repo}`)
+      return seguir(state, idNovo)
     }
     case 'ref': {
       const r = await comandoRef(texto, alvoDeRef(state.seguindo || state.pendingPlan))
@@ -463,7 +474,9 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'consultar': {
       if (!texto.trim()) { io.log('uso: /new-ask <pergunta>'); return state }
       io.log(io.dim('  consultando o ambiente e o projeto (leitura, sem alterar arquivo)…'))
-      const linhas = await io.responder(texto, state.conversa)
+      const sessao = sessaoDaTarefa(state.seguindo)
+      if (sessao) registrarMensagem(sessao, { autor: 'humano', texto, execucao: '', provedor: '', modelo: '' })
+      const linhas = await io.responder(texto, state.conversa, sessao || undefined)
       for (const l of linhas) io.log(l)
       return comConversa(state, texto, linhas.join(' '))
     }
@@ -509,7 +522,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         if (proxima) for (const l of renderPergunta(proxima, { color: io.color })) io.log(l)
         return state
       }
-      io.log(`#${id} retomado — seguindo a execucao (/historico sai)`)
+      io.log(r.retomou ? `#${id} retomado — seguindo a execucao (/historico sai)` : `#${id} respondido — o estado da tarefa foi preservado`)
       return seguir(respondido(state), id)
     }
     default:

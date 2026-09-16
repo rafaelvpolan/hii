@@ -20,6 +20,8 @@ import { atividadeDe, chamadasDe, eventosDe, larguraUtil, linhaDoTempoDe, passos
 import { chamadasEmVoo } from '../../euclides/linha-do-tempo.ts'
 import { referenciasDoCard } from '../../ciclo/canudos/gauntlet.ts'
 import { renderSituacao } from '../render/situacao.ts'
+import { lerSessaoHii } from '../../euclides/sessoes.ts'
+import { truncVisible } from '../tui/layout.ts'
 
 const MARCOS_NA_TELA = 300
 const LINHAS_NA_TELA = 200
@@ -50,6 +52,13 @@ export function planoDe(id: string): string {
 export function cabecalhoDaTarefa(state: SessionState): string[] {
   const card = readCard(state.seguindo)
   if (!card) return [`card #${state.seguindo} nao encontrado`]
+  if (card.fm.tipo === 'session') {
+    const s = lerSessaoHii(state.seguindo)
+    return [truncVisible(`#${state.seguindo} ${s?.estado === 'fechada' ? 'closed' : 'session'} | ${card.fm.title ?? ''}`, larguraUtil()), '']
+  }
+  if (card.fm.motor_modo === 'gateway') {
+    return [truncVisible(`session #${card.fm.sessao_id} | #${state.seguindo} ${card.fm.status === 'COMPLETED' ? 'concluido' : card.fm.status} | gateway`, larguraUtil()), '']
+  }
   const cab = renderCabecalhoTarefa(card, {
     color,
     width: larguraUtil(),
@@ -106,6 +115,10 @@ export function cabecalhoDaTarefa(state: SessionState): string[] {
 
 export function seguimento(state: SessionState): string[] {
   const card = readCard(state.seguindo)
+  if (card?.fm.tipo === 'session') {
+    const s = lerSessaoHii(state.seguindo)
+    return (s?.mensagens ?? []).slice(-30).flatMap(m => [`${m.autor}${m.provedor ? ` | ${m.provedor} ${m.modelo}` : ''}`, ...m.texto.split('\n').map(l => truncVisible(l, larguraUtil()))])
+  }
   const marcos = linhaDoTempoDe(state.seguindo)
   if (marcos.length) return renderLinhaDoTempo(marcos.slice(-MARCOS_NA_TELA), { color, largura: larguraUtil() }).slice(-LINHAS_NA_TELA)
   const status = String(card?.fm.status ?? '')

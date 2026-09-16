@@ -13,7 +13,7 @@ export const JANELA_COTA_MS = 4 * 60 * 60 * 1000
 
 
 const FOLGA_DO_NOME_MS = 60_000
-const RE_ARQUIVO_DE_RUN = /^(\d+)-(\d{14})\.json$/
+const RE_ARQUIVO_DE_RUN = /^(\d+)-(\d{14})(?:_\d+)?\.json$/
 const RE_ARQUIVO_DE_CONVERSA = /^conversa-(\d{14})-\d+\.json$/
 
 export function ehArquivoDeSessao(nome: string): boolean {

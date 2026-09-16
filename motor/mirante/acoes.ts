@@ -9,6 +9,7 @@ import { conferirParedeDoPlano } from '../quilombo/cartorio/aprovar-plano.ts'
 import { CONFIRMADO } from '../quilombo/cartorio/confirmar-fecho.ts'
 import { RESUME_POST_STEPS } from '../quilombo/cartorio/retomar.ts'
 import { encerrarHarnessDoCard, motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
+import { criarSessaoHii } from '../euclides/sessoes.ts'
 
 export interface NewCardInput {
   title: string
@@ -22,6 +23,9 @@ export interface NewCardInput {
   packs?: string
   steps?: string
   tipo?: string
+  motor_modo?: string
+  sessao_id?: string
+  pipeline?: string
 }
 
 export interface ClarifyAnswer {
@@ -47,18 +51,20 @@ export function submit(input: NewCardInput): string {
     risk: input.risk === 'high' ? 'high' : 'low',
     repo: input.repo ?? '',
     created: isoNow(),
-    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs, steps: input.steps, tipo: input.tipo }),
+    ...optional({ layout: input.layout, pilha: input.pilha, ai: input.ai, effort: input.effort, packs: input.packs, steps: input.steps, tipo: input.tipo, motor_modo: input.motor_modo, sessao_id: input.sessao_id, pipeline: input.pipeline }),
   }, body)
 }
 
 export function submitSession(input: { title: string; repo: string; desc?: string }): string {
-  return submit({
+  const id = submit({
     title: input.title,
     repo: input.repo,
     desc: input.desc ?? input.title,
     tipo: 'session',
     steps: 'nada',
   })
+  criarSessaoHii(id, input.repo, input.title)
+  return id
 }
 
 function recusadoPorHarnessEmVoo(id: string): boolean {
@@ -179,15 +185,18 @@ export function approvePlan(id: string): GuardedResult {
   const card = readCard(id)
   if (!card) return { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
   const status = card.fm.status ?? 'INBOX'
+  if (card.fm.tipo === 'session') return { ok: false, reason: 'a session recebe execucoes, nao executa como tarefa', motivo: 'estado' }
   if (!canApprovePlan(status)) {
     return { ok: false, reason: `#${id} esta em ${status} — o plano ja foi executado; aprovar aqui descartaria o trabalho e pagaria de novo`, motivo: 'estado' }
   }
-  const parede = conferirParedeDoPlano(id)
-  patchCard(id, { matriz_entendimento: parede.satisfeito ? 'ok' : 'incompleta' }, `${isoNow()} Cartorio (Fase 4): ${parede.motivo}`)
-  if (!parede.satisfeito && rigorEstrito()) {
-    return { ok: false, reason: `#${id} nao pode ser aprovado: ${parede.motivo}`, motivo: 'parede' }
+  if (card.fm.motor_modo !== 'gateway') {
+    const parede = conferirParedeDoPlano(id)
+    patchCard(id, { matriz_entendimento: parede.satisfeito ? 'ok' : 'incompleta' }, `${isoNow()} Cartorio (Fase 4): ${parede.motivo}`)
+    if (!parede.satisfeito && rigorEstrito()) {
+      return { ok: false, reason: `#${id} nao pode ser aprovado: ${parede.motivo}`, motivo: 'parede' }
+    }
   }
-  const r = transition(id, 'EXECUTING', 'plano aprovado')
+  const r = transition(id, 'EXECUTING', card.fm.motor_modo === 'gateway' ? 'pedido enfileirado no gateway' : 'plano aprovado')
   return r ? { ok: true, reason: '', card: r } : { ok: false, reason: `card #${id} nao encontrado`, motivo: 'nao-encontrado' }
 }
 

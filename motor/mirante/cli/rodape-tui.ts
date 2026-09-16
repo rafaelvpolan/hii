@@ -76,7 +76,9 @@ export function dicaDa(state: SessionState, sugerindo = false): string {
     if (sugerindo) return '↑/↓ escolhe · tab completa · enter usa'
     if (selecionado()) return '↑/↓ move · enter entra · esc sai'
     if (state.comentando) return 'escreva o ajuste · enter vazio desiste'
-    if (state.aprovando) return '↑/↓ escolhe · 1 aprova · 2 refaz · 3 comenta'
+    if (state.aprovando) return readCard(state.aprovando)?.fm.status === 'CONFIRM'
+      ? '↑/↓ escolhe · 1 encerra · 2 diz o que falta'
+      : '↑/↓ escolhe · 1 aprova · 2 refaz · 3 comenta'
     if (state.escolhendo) return 'numero ou nome do projeto · enter desiste'
     if (state.retomando) return 'enter retoma de onde parou · ctrl+c sai do hii'
     if (state.removendo) return 'enter confirma · n cancela'
@@ -86,9 +88,9 @@ export function dicaDa(state: SessionState, sugerindo = false): string {
     // Quem de fato sai da tarefa aberta e `/historico` — e `esc` tambem.
     if (state.seguindo) return 'escreva para instruir · esc ou /historico sai da tarefa'
     const aqui = cardsPerguntando(todosOsCards(), state.repo)
-    if (aqui.length) return `#${aqui[0]} espera resposta · /ask responde`
+    if (aqui.length) return `#${aqui[0]} espera resposta · digite ${Number(aqui[0])} para abrir`
     const noutro = cardsPerguntando(todosOsCards())
-    if (noutro.length) return `#${noutro[0]} espera resposta em outro projeto · /ask ${Number(noutro[0])}`
+    if (noutro.length) return `#${noutro[0]} espera resposta em outro projeto · digite ${Number(noutro[0])} para abrir`
     return 'shift+tab cicla o modo da ia · ctrl+j quebra linha · /help para tudo'
   })()
   return color ? `${DIM}${texto}${RESET}` : texto

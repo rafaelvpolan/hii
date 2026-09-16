@@ -103,6 +103,14 @@ export function checkProvider(): Check {
   if (faltando.length) {
     return check('IA', 'erro', `CLI ausente: ${faltando.join(', ')}`, `instale ou troque o provedor por papel (HII_*_PROVIDER)`)
   }
+  const semAuth = nomes.filter(n => !harnessPorNome(n).autenticado())
+  if (semAuth.length) return check('IA', 'erro', `autenticacao ausente: ${semAuth.join(', ')}`, 'use /login <ia>; nenhuma chamada paga foi feita')
+  const incapazes = papeis.filter(p => {
+    const h = harnessPorNome(providerNameFor(p))
+    const c = h.capabilities()
+    return p === 'implement' || p === 'step' ? !h.agentic : !c.isolatesReadonly || (p === 'gate' && !c.emitsStructuredJson)
+  })
+  if (incapazes.length) return check('IA', 'erro', `capacidades incompativeis com os papeis: ${incapazes.join(', ')}`, 'configure um provedor compativel em /ia')
   return check('IA', 'ok', `provedores: ${nomes.join(', ')}`)
 }
 

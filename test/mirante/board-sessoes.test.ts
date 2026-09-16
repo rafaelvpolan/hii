@@ -174,6 +174,11 @@ test('com /config aberto, a seta de baixo continua escolhendo provedor na tela',
   const naConfig = { ...newSession('org/app'), tela: 'config' as const }
   selecionar('')
   expect(navegarNaTela(naConfig, 1, 'rodape')).toBe(true)
-  expect(providerNames() as string[]).toContain(selecionado())
+  expect(selecionado()).toBe(providerNames()[1])
   expect(alvoDeEntrada('rodape', naConfig)).toEqual({ kind: 'provedor', nome: selecionado() })
+  expect(navegarNaTela(naConfig, -1, 'rodape')).toBe(true)
+  expect(selecionado()).toBe(providerNames()[0])
+  selecionar('session:001')
+  expect(navegarNaTela(naConfig, 1, 'rodape')).toBe(true)
+  expect(selecionado()).toBe(providerNames()[1])
 })

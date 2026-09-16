@@ -32,22 +32,22 @@ async function entrar(texto: string): Promise<{ state: ReturnType<typeof newSess
 test('REGRESSAO: texto livre cria a tarefa e ja entra na fila, sem plano nem aprovacao', async () => {
   const antes = allCards().length
   const { state, saida: texto } = await entrar('remove o selo beta do header')
-  expect(allCards().length).toBe(antes + 1)
-  expect(allCards()[0]?.status).toBe('EXECUTING')
-  expect(texto).toContain('criado')
+  expect(allCards().length).toBe(antes + 2)
+  expect(allCards().find(c => c.tipo !== 'session')?.status).toBe('EXECUTING')
+  expect(texto).toContain('session #')
   expect(texto).toContain('na fila')
   expect(texto).toContain(providerNameFor('implement'))
   expect(texto).not.toContain('enter aprova')
   expect(state.pendingPlan).toBe('')
-  const criado = allCards()[0]?.id
+  const criado = allCards().find(c => c.tipo !== 'session')?.id
   if (!criado) throw new Error('o card criado ficou sem id')
   expect(state.seguindo).toBe(criado)
 })
 
 test('/new-task cria direto, igual ao texto livre', async () => {
   const { saida: texto } = await entrar('/new-task remove o selo beta')
-  expect(allCards().length).toBe(1)
-  expect(allCards()[0]?.status).toBe('EXECUTING')
+  expect(allCards().filter(c => c.tipo !== 'session').length).toBe(1)
+  expect(allCards().find(c => c.tipo !== 'session')?.status).toBe('EXECUTING')
   expect(texto).toContain('na fila')
 })
 

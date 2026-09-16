@@ -9,10 +9,18 @@ import type { ImplementResult } from '../../motor/cordel/index.ts'
 import type { StepResult } from '../../motor/ciclo/agente.ts'
 import type { ExecuteDeps } from '../../motor/oswaldo/executar.ts'
 import type { FinishDeps } from '../../motor/quilombo/cartorio/fechar.ts'
+import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
+import { salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
+import { coletarEvidencias } from '../../motor/oswaldo/orquestracao/evidencias.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-finishcost-'))
 process.env.HII_CARDS_DIR = join(BASE, 'cards')
 mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+const pathAnterior = process.env.PATH
+const binDir = join(BASE, 'bin')
+mkdirSync(binDir)
+writeFileSync(join(binDir, 'gh'), '#!/bin/sh\nif [ "$1" = repo ] && [ "$2" = view ]; then printf "WRITE\\n"; exit 0; fi\nexit 1\n', { mode: 0o755 })
+process.env.PATH = `${binDir}:${pathAnterior ?? ''}`
 
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -65,13 +73,47 @@ const agenteFinish: FinishDeps = {
   runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_BLOCKED),
 }
 
-afterAll(() => rmSync(BASE, { recursive: true, force: true }))
+afterAll(() => {
+  if (pathAnterior === undefined) delete process.env.PATH
+  else process.env.PATH = pathAnterior
+  rmSync(BASE, { recursive: true, force: true })
+})
 
 let seq = 0
 
 function worktreeParaTeste(): string {
   return join(BASE, `wt-${++seq}`)
 }
+
+test('parada durante evidencias preserva decisao humana e nao chama Codefox', async () => {
+  const wt = worktreeParaTeste()
+  const id = createCard({ title: 'parada nas evidencias', status: 'EXECUTING', repo: 'org/repo',
+    surface: 'none', clarified: 'true', steps: 'nada', pipeline: 'auto', worktree: wt }, '## Objetivo\nvalidar parada\n')
+  await handleExecute(id, { ...agenteExecute, implement: async () => SUCESSO })
+  const plano = { ...planoOrquestrado(), id, repo: 'org/repo' }
+  salvarPlano(plano, 0, 'parada')
+  patchCard(id, { status: 'URL_OK', motor_modo: 'passivo', plano_revisao: '1' })
+  let coletas = 0
+  const deps: FinishDeps = {
+    ...agenteFinish,
+    coletarEvidencias: async (p, r, cwd) => {
+      coletas++
+      const relatorio = await coletarEvidencias(p, r, cwd)
+      patchCard(id, { status: 'HALTED', halt_class: 'humano' })
+      return relatorio
+    },
+    runCodefoxGate: async () => { throw new Error('nao pode revisar apos parada') },
+  }
+  await handleFinish(id, deps)
+  if (readCard(id)?.fm.status === 'CONFIRM') {
+    expect(core.confirmarFecho(id).ok).toBe(true)
+    await handleFinish(id, deps)
+  }
+  expect(coletas).toBe(1)
+  expect(readCard(id)?.fm.status).toBe('HALTED')
+  expect(readCard(id)?.fm.halt_class).toBe('humano')
+  expect(readCard(id)?.fm.pr_url ?? '').toBe('')
+}, TEMPO_COM_GIT_MS)
 
 test('REGRESSAO: custo do card NUNCA decresce ao longo de execute->halt->resume->execute->finish(halt)', async () => {
   const wt = worktreeParaTeste()

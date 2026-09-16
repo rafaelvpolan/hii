@@ -19,6 +19,7 @@ export const CODEX_MODOS: CatalogoDeModo = { modos: ['never', 'on-request'], pad
 interface CodexEvent {
   type?: string
   message?: string
+  error?: { message?: string }
   item?: { type?: string; text?: string; message?: string; command?: string; path?: string }
   usage?: { input_tokens?: number; output_tokens?: number; cached_input_tokens?: number }
 }
@@ -54,7 +55,8 @@ function parse(stdout: string): { text: string; usage: Usage; isError: boolean }
       usage.tokens_cache_read = ev.usage.cached_input_tokens || 0
     } else if (ev.type === 'error' || ev.type === 'turn.failed') {
       isError = true
-      if (ev.message) errorText = [errorText, ev.message].filter(Boolean).join('\n')
+      const mensagem = ev.message || ev.error?.message
+      if (mensagem) errorText = [errorText, mensagem].filter(Boolean).join('\n')
     }
   }
   return { text: [text, errorText].filter(Boolean).join('\n'), usage, isError }
@@ -83,7 +85,7 @@ export function linhasDoLiveLog(stdout: string): string[] {
 function mensagemDeErroDaLinha(line: string): string {
   try {
     const ev = JSON.parse(line) as CodexEvent
-    if (ev.type === 'error' || ev.type === 'turn.failed') return ev.message || 'Codex informou uma falha'
+    if (ev.type === 'error' || ev.type === 'turn.failed') return ev.message || ev.error?.message || 'Codex informou uma falha'
   } catch {
     return ''
   }
@@ -94,7 +96,7 @@ interface LiveCodexLog {
   stdout: AcumuladorDeLinhas
   stderr: AcumuladorDeLinhas
   linha: (line: string) => void
-  finalizar: (err: { message?: string; killed?: boolean } | null) => void
+  finalizar: (err: { message?: string; killed?: boolean } | null, isError: boolean) => void
 }
 
 function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
@@ -103,7 +105,7 @@ function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
   try {
     const dir = dirname(caminho)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-    appendFileSync(caminho, `\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`)
+    appendFileSync(caminho, comRaia(`\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`, req.raia))
   } catch {
     return null
   }
@@ -127,12 +129,12 @@ function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
     stdout,
     stderr,
     linha,
-    finalizar: (err) => {
+    finalizar: (err, isError) => {
       for (const l of stdout.esvaziar()) linha(l)
       for (const l of stderr.esvaziar()) escrever(`${l}\n`)
       if (err?.killed) return
       if (err) escrever(`— falha: ${String(err.message || 'execucao encerrada com erro').replace(/\s+/g, ' ').slice(0, 300)} —\n`)
-      else escrever(`${linhaDeConclusao()}\n`)
+      escrever(err || isError ? '— encerrado com falha —\n' : `${linhaDeConclusao()}\n`)
     },
   }
 }
@@ -197,7 +199,7 @@ export class CodexProvider implements Harness {
       },
     })
     const parsed = parse(stdout)
-    live?.finalizar(err)
+    live?.finalizar(err, parsed.isError)
     const failed = !!err
     return {
       ok: !failed && !parsed.isError,

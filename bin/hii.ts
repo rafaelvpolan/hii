@@ -130,7 +130,14 @@ function passoPipeline(extra: string[]): number {
   return r.ok ? 0 : 1
 }
 
-function suitePipeline(extra: string[]): number {
+async function suitePipeline(extra: string[]): Promise<number> {
+  const repo = valorDaFlag(extra, '--repo')
+  const argumentos = extra.filter(a => !a.startsWith('--') && a !== repo)
+  if (['status', 'doctor', 'setup', 'plan', 'close'].includes(argumentos[0] ?? '')) {
+    const { comandoDoPipeline } = await import('../motor/oswaldo/orquestracao/comando.ts')
+    for (const linha of comandoDoPipeline(repo, argumentos.join(' '))) process.stdout.write(`${linha}\n`)
+    return repo ? 0 : 2
+  }
   const id = extra.filter(a => !a.startsWith('--'))[0] ?? ''
   if (!id) {
     process.stderr.write('uso: hii pipeline <id>\n')
@@ -168,6 +175,7 @@ function usage(): void {
     '',
     'Uso: hii                  abre a TUI (escrever card, aprovar, acompanhar)',
     '     hii start            sobe o daemon',
+    '     hii api              API HTTP JSON + SSE (exige HII_API_TOKEN)',
     '     hii disco [--limpar] uso de disco do estado (refs, tmp, urls, runs)',
     '     hii estado [--compacto]  snapshot do motor em JSON (para o painel); --revisao so o token',
     '     hii responder <id> <texto>   responde a pergunta aberta da tarefa',
@@ -271,6 +279,11 @@ async function main(): Promise<number> {
     case 'stop':
     case 'restart':
       return daemon(cmd)
+    case 'api': {
+      const { servirApi } = await import('../motor/api/servidor.ts')
+      await servirApi()
+      return 0
+    }
     case 'status':
       daemon('status')
       process.stdout.write(`\n${renderProgress()}\n`)

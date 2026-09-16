@@ -1,0 +1,1427 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "HII Motor API",
+    "version": "1.0.0",
+    "description": "API single-user para o backend Hicode. O motor e a autoridade do estado. Nao inicia o daemon nem faz merge."
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/v1/capacidades": {
+      "get": {
+        "operationId": "capacidades",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capacidades"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openapi.json": {
+      "get": {
+        "operationId": "contrato",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projetos": {
+      "get": {
+        "operationId": "projetos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "projetos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "nome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "nome"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "projetos"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/provedores": {
+      "get": {
+        "operationId": "provedores",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "provedores"
+                  ],
+                  "properties": {
+                    "provedores": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/estado": {
+      "get": {
+        "operationId": "estado",
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estado"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recursos": {
+      "get": {
+        "operationId": "recursos",
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes": {
+      "get": {
+        "operationId": "sessoes",
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sessoes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Sessao"
+                      }
+                    }
+                  },
+                  "required": [
+                    "sessoes"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "novaSessao",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "repo": {
+                    "type": "string"
+                  },
+                  "titulo": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "repo",
+                  "titulo"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sessao"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes/{id}": {
+      "get": {
+        "operationId": "sessao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sessao"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes/{id}/pedidos": {
+      "post": {
+        "operationId": "novoPedido",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pedido"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoCriado"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes/{id}/fechar": {
+      "post": {
+        "operationId": "fecharSessao",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sessao"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}": {
+      "get": {
+        "operationId": "tarefa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tarefa"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/acoes": {
+      "post": {
+        "operationId": "agir",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "acao": {
+                    "enum": [
+                      "aprovar-plano",
+                      "aprovar-url",
+                      "recusar",
+                      "responder",
+                      "parar",
+                      "retomar",
+                      "confirmar-fecho",
+                      "recusar-fecho"
+                    ]
+                  },
+                  "texto": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "acao"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/log": {
+      "get": {
+        "operationId": "log",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Log"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/plano": {
+      "get": {
+        "operationId": "plano",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "plano",
+                    "evidencias",
+                    "atualidadeVerificada"
+                  ],
+                  "properties": {
+                    "plano": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "evidencias": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "atualidadeVerificada": {
+                      "const": false
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/eventos": {
+      "get": {
+        "operationId": "eventos",
+        "parameters": [
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "SSE com cursor duravel. Sem cursor inicia no presente. 409 exige snapshot e reconexao. Duplicatas devem ser deduplicadas por id. Eventos pronto/reset sao de controle.",
+        "responses": {
+          "200": {
+            "description": "Stream SSE",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "erro": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "codigo": {
+                "type": "string"
+              },
+              "mensagem": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "codigo",
+              "mensagem"
+            ]
+          }
+        },
+        "required": [
+          "erro"
+        ]
+      },
+      "Capacidades": {
+        "type": "object",
+        "required": [
+          "protocolo",
+          "versao",
+          "statuses",
+          "acoes",
+          "eventos",
+          "modos"
+        ],
+        "properties": {
+          "protocolo": {
+            "const": "hii-http"
+          },
+          "versao": {
+            "const": 1
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "INBOX",
+                "READY",
+                "CLARIFY",
+                "SPECCED",
+                "PLAN_APPROVED",
+                "EXECUTING",
+                "PAUSED",
+                "WAITING",
+                "EXECUTED",
+                "URL",
+                "CORRECTING",
+                "URL_OK",
+                "REFINED",
+                "TESTS_GREEN",
+                "SEC_CLEARED",
+                "REVIEWED",
+                "CLEANED",
+                "CONFIRM",
+                "PR_OPEN",
+                "MERGED",
+                "DEPLOYED",
+                "HALTED",
+                "COMPLETED"
+              ]
+            }
+          },
+          "acoes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "aprovar-plano",
+                "aprovar-url",
+                "recusar",
+                "responder",
+                "parar",
+                "retomar",
+                "confirmar-fecho",
+                "recusar-fecho"
+              ]
+            }
+          },
+          "eventos": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "tarefa_atualizada",
+                "fim",
+                "pausa",
+                "ia_falhou",
+                "ia_trocada",
+                "sessao_atualizada"
+              ]
+            }
+          },
+          "modos": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "gateway",
+                "orquestrador"
+              ]
+            }
+          }
+        }
+      },
+      "Sessao": {
+        "type": "object",
+        "required": [
+          "versao",
+          "id",
+          "repo",
+          "titulo",
+          "revisao",
+          "estado",
+          "mensagens",
+          "execucoes",
+          "subsessoes"
+        ],
+        "properties": {
+          "versao": {
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "revisao": {
+            "type": "integer"
+          },
+          "estado": {
+            "enum": [
+              "aberta",
+              "fechada"
+            ]
+          },
+          "mensagens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Mensagem"
+            }
+          },
+          "execucoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Execucao"
+            }
+          },
+          "subsessoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Subsessao"
+            }
+          }
+        }
+      },
+      "Mensagem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "autor": {
+            "enum": [
+              "humano",
+              "ia"
+            ]
+          },
+          "texto": {
+            "type": "string"
+          },
+          "execucao": {
+            "type": "string"
+          },
+          "provedor": {
+            "type": "string"
+          },
+          "modelo": {
+            "type": "string"
+          },
+          "instante": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "autor",
+          "texto",
+          "execucao",
+          "provedor",
+          "modelo",
+          "instante"
+        ]
+      },
+      "Execucao": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "modo": {
+            "enum": [
+              "gateway",
+              "passivo"
+            ]
+          },
+          "criadaEm": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "modo",
+          "criadaEm"
+        ]
+      },
+      "Subsessao": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "execucao": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "provedor": {
+            "type": "string"
+          },
+          "modelo": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string"
+          },
+          "nativa": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inicio": {
+            "type": "string"
+          },
+          "fim": {
+            "type": "string"
+          },
+          "estado": {
+            "enum": [
+              "executando",
+              "concluida",
+              "falhou",
+              "interrompida"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "execucao",
+          "provedor",
+          "modelo",
+          "papel",
+          "nativa",
+          "inicio",
+          "fim",
+          "estado"
+        ]
+      },
+      "Pedido": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "modo": {
+                "enum": [
+                  "gateway",
+                  "orquestrador"
+                ]
+              },
+              "texto": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1048576
+              }
+            },
+            "required": [
+              "modo",
+              "texto"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "modo": {
+                "const": "orquestrador"
+              },
+              "spec": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "pattern": "^[^/\\\\]+\\.spec(?:\\.md)?$",
+                    "maxLength": 200
+                  },
+                  "conteudo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1048576
+                  }
+                },
+                "required": [
+                  "nome",
+                  "conteudo"
+                ]
+              }
+            },
+            "required": [
+              "modo",
+              "spec"
+            ]
+          }
+        ],
+        "description": "Limites de texto tambem aplicados em bytes UTF-8. Spec enviado por conteudo; nunca como caminho do servidor."
+      },
+      "PedidoCriado": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "sessao": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "modo": {
+            "enum": [
+              "gateway",
+              "orquestrador"
+            ]
+          },
+          "status": {
+            "enum": [
+              "INBOX",
+              "READY",
+              "CLARIFY",
+              "SPECCED",
+              "PLAN_APPROVED",
+              "EXECUTING",
+              "PAUSED",
+              "WAITING",
+              "EXECUTED",
+              "URL",
+              "CORRECTING",
+              "URL_OK",
+              "REFINED",
+              "TESTS_GREEN",
+              "SEC_CLEARED",
+              "REVIEWED",
+              "CLEANED",
+              "CONFIRM",
+              "PR_OPEN",
+              "MERGED",
+              "DEPLOYED",
+              "HALTED",
+              "COMPLETED"
+            ]
+          },
+          "enfileirada": {
+            "type": "boolean"
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sessao",
+          "modo",
+          "status",
+          "enfileirada",
+          "mensagem"
+        ]
+      },
+      "Tarefa": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "etag": {
+            "type": "string"
+          },
+          "campos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "objetivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "etag",
+          "campos",
+          "objetivo"
+        ]
+      },
+      "Estado": {
+        "type": "object",
+        "required": [
+          "versao",
+          "cursor",
+          "tarefas",
+          "conversas",
+          "orquestrador"
+        ],
+        "properties": {
+          "versao": {
+            "const": 1
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "tarefas": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "conversas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sessao"
+            }
+          },
+          "orquestrador": {
+            "type": "object"
+          }
+        }
+      },
+      "Evento": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "versao": {
+            "const": 1
+          },
+          "tipo": {
+            "enum": [
+              "tarefa_atualizada",
+              "fim",
+              "pausa",
+              "ia_falhou",
+              "ia_trocada",
+              "sessao_atualizada"
+            ]
+          },
+          "instante": {
+            "type": "string"
+          },
+          "tarefa": {
+            "type": "string"
+          },
+          "sessao": {
+            "type": "string"
+          },
+          "dados": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "versao",
+          "tipo",
+          "instante",
+          "tarefa",
+          "sessao",
+          "dados"
+        ]
+      },
+      "Log": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "texto": {
+            "type": "string"
+          },
+          "proximo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reset": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "texto",
+          "proximo",
+          "reset"
+        ]
+      }
+    }
+  }
+}
