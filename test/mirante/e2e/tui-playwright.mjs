@@ -155,10 +155,13 @@ try {
       await ver('retomad')
       assert.equal(readClarify(pendente)[0].answer, 'verde')
       await page.keyboard.press('Control+c')
-      await ver('retoma')
+      await ver('enter retoma de onde parou')
       assert.equal(readCard(pendente).fm.status, 'HALTED')
       await capturar('interrompido')
       await page.keyboard.press('Enter')
+      // "retomad" ja existe na resposta a pergunta anterior. Espere a dica de
+      // HALTED desaparecer para nao aceitar aquele quadro antes do Enter.
+      await page.waitForFunction(() => !window.tela().includes('enter retoma de onde parou'))
       await ver('retomad')
       assert.equal(readCard(pendente).fm.status, 'EXECUTING')
       for (const status of ['URL', 'URL_OK', 'CONFIRM']) patchCard(pendente, { status, verify: 'sem-url' })

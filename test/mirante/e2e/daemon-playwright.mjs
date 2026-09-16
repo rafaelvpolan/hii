@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import { ambienteDaemon } from './daemon-ambiente.mjs'
 import { gravarRelatorio } from './relatorio.ts'
+import { historicoSelecionado } from './daemon-navegacao.ts'
 
 const destination = resolve(process.argv[2] || '/tmp/hii-daemon-e2e')
 mkdirSync(destination, { recursive: true })
@@ -177,16 +178,19 @@ try {
   await command('/repo e2e/outro')
   await command('/new conversa exclusiva outro')
   await see('conversa exclusiva outro')
+  await until(() => state().conversas.some(item => item.repo === 'e2e/outro' && item.titulo === 'conversa exclusiva outro'), 'sessao do outro projeto persistida')
+  const otherSession = state().conversas.find(item => item.repo === 'e2e/outro' && item.titulo === 'conversa exclusiva outro').id
   await command('/historico')
   await page.keyboard.press('ArrowLeft')
-  await see('conversa exclusiva outro')
+  await until(async () => historicoSelecionado(await page.evaluate(() => screenText()), 'e2e/outro', otherSession), 'board filtrado do outro projeto selecionado')
   const otherHistory = await page.evaluate(() => screenText())
   assert.ok(!otherHistory.includes('sessao extensa') && !otherHistory.includes('conversa daemon real'), 'historico filtrado pelo projeto selecionado')
   await capture('historico-projeto-isolado')
   await command('/repo e2e/app')
   await command('/historico')
   await page.keyboard.press('ArrowLeft')
-  await see('sessao extensa 36')
+  const newestSession = state().conversas.find(item => item.repo === 'e2e/app' && item.titulo === 'sessao extensa 36').id
+  await until(async () => historicoSelecionado(await page.evaluate(() => screenText()), 'e2e/app', newestSession), 'board do projeto original selecionado')
   assert.ok(!(await page.evaluate(() => screenText())).includes('conversa exclusiva outro'))
   const extensive = state()
   assert.equal(extensive.conversas.filter(item => item.repo === 'e2e/app').length, 37)

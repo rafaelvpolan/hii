@@ -25,7 +25,7 @@ defeito de isolamento, nao a causa desse timeout.
 | Cotas curta/semanal, autenticacao, CLI ausente, timeout, stream e destinos indisponiveis | `oswaldo/gateway-sessao.test.ts`, `oswaldo/executar-rota-de-quota.test.ts` |
 | Contexto e arquivos preservados em duas trocas sem repetir efeitos concluidos | `oswaldo/gateway-sessao.test.ts` |
 | Resize de xterm **e PTY** durante streaming/pergunta; colagem com acentos, caractere largo e multiplas linhas; config/modo ate argv | `e2e/tui-playwright.mjs`, `streaming-resize`, `pergunta-resize`, `argv-e-colagem` |
-| 36 sessions e 24 projetos navegados pelo teclado | `e2e/daemon-playwright.mjs`, `board-sessoes.test.ts` |
+| 36 sessions e 24 projetos navegados pelo teclado, aguardando o board do projeto apos repintura | `e2e/daemon-playwright.mjs`, `e2e-daemon-sincronizacao.test.ts`, `board-sessoes.test.ts` |
 | Comparacao visual determinista capaz de reprovar uma sobreposicao induzida | `e2e/visual.mjs`, `e2e/baselines/config-*.png` |
 | Relatorio parcial apos falha de etapa ou Chromium, movido e aberto por HTTP | `e2e/relatorio-playwright.mjs`, `e2e-relatorio.test.ts` |
 
