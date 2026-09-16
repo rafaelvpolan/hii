@@ -12,6 +12,8 @@ import { readCard, patchCard, repoPath, repoBase } from '../../cordel/store.ts'
 import { warnBudgetWithoutGuarantee } from '../../euclides/tesouro/confianca.ts'
 import { pushOwnedBranch, removeWorktree, runGit, stageAll, worktreePath } from '../git.ts'
 import { abrirPrUmaVez, pularCriacaoDePr } from './pr.ts'
+import { lerPlano } from '../../oswaldo/orquestracao/planos.ts'
+import { coletarEvidencias, evidenciaAtual } from '../../oswaldo/orquestracao/evidencias.ts'
 import type { PushResult } from '../git.ts'
 import { stopUrl } from '../../ciclo/crivo/url-viva.ts'
 import { activeSteps } from '../../niemeyer/config.ts'
@@ -42,6 +44,7 @@ import { contratoPublicoMudou, relatoDeContrato } from '../../agentes/clarice/do
 export interface FinishDeps {
   runStep: typeof runStep
   runCodefoxGate: typeof runCodefoxGate
+  coletarEvidencias?: typeof coletarEvidencias
 }
 
 async function commitAll(wt: string, message: string): Promise<void> {
@@ -207,14 +210,14 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   if (decisao.retomada.foraDoPerfil) patchCard(id, {}, avisoDeRetomadaForaDoPerfil(resumeFrom, plan.profile, decisao.retomada, steps.length))
   if (decisao.tipo === 'pausar') {
     const comandos = decisao.restantes.map(s => s.id)
-    const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (/hii ou ENTER no card)`
+    const motivo = decisao.motivo || `pipeline manual: restam [${comandos.join(', ')}] — rode um a um (/${comandos.join(' /')}, ou \`hii passo ${id} <passo>\`) ou tudo de uma vez (hii pipeline ${id} ou ENTER no card)`
     const cauda = decisao.motivo ? `; restantes: [${comandos.join(', ') || 'nenhum'}]` : ''
     patchCard(id, { status: 'PAUSED', retomar_em: 'URL_OK', pipeline_pausa: 'manual', pipeline_passo: '' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->PAUSED ${motivo}${cauda}`)
     process.stdout.write(`[runner] #${id}: PAUSED — ${decisao.motivo || 'pipeline manual, aguardando pedido de passo'}\n`)
     return
   }
   if (decisao.liberacaoCaducada) {
-    patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo /hii`)
+    patchCard(id, { pipeline_liberado: '' }, `${isoNow()} pedido de passo unico "${decisao.passoUnicoAtivo}" vence a liberacao que ficou gravada — a suite completa so roda com um novo hii pipeline ${id}`)
   }
   if (decisao.repetido) {
     patchCard(id, {}, `${isoNow()} passo "${decisao.passoUnicoAtivo}" ja rodou nesta rodada — rodando de novo a pedido do humano`)
@@ -348,7 +351,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   }
   // Passo unico pedido pelo humano: roda ele, registra em pipeline_feitos e
   // volta a PAUSED — o fecho (build, gates, PR) so acontece quando nao resta
-  // passo nenhum ou quando a suite e liberada (/hii, ENTER).
+  // passo nenhum ou quando a suite e liberada (hii pipeline, ENTER).
   if (passoUnicoAtivo) {
     const agora = pagos
     const restam = passosRestantes(steps, agora).map(s => s.id)
@@ -359,7 +362,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
       pipeline_passo: '',
       pipeline_feitos: agora.join(','),
       ...accumulatedTotals(card, fsteps),
-    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnicoAtivo}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ' — pipeline completo: /hii ou ENTER fecham o card (build, gates e PR)'}`)
+    }, `${isoNow()} ${statusAtual}->PAUSED passo "${passoUnicoAtivo}" concluido${restam.length ? ` — restam [${restam.join(', ')}]` : ` — pipeline completo: hii pipeline ${id} ou ENTER fecham o card (build, gates e PR)`}`)
     process.stdout.write(`[runner] #${id}: PAUSED — passo ${passoUnicoAtivo} feito${restam.length ? `, restam [${restam.join(', ')}]` : ', pipeline completo'}\n`)
     return
   }
@@ -401,6 +404,18 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // de agente COM escrita habilitada. Quem faz a revisao adversarial e este gate,
   // que LE o diff — entao e ele que registra o tier, senao o criterio de
   // governanca fica em disco sem nada em execucao para governar.
+  const revisaoDoPlano = card.fm.motor_modo === 'passivo' ? Number(card.fm.plano_revisao) : 0
+  if (card.fm.motor_modo === 'passivo') {
+    const plano = lerPlano(repoName, id, revisaoDoPlano)
+    if (!plano) throw new Error('plano fixado ausente; nao e possivel liberar o PR')
+    const relatorio = await (deps.coletarEvidencias ?? coletarEvidencias)(plano.plano, plano.revisao, wt)
+    patchCard(id, { evidencia_fingerprint: relatorio.fingerprint }, `${isoNow()} evidencias: ${relatorio.evidencias.map(e => `${e.criterio}=${e.estado}`).join(', ')}`)
+    if (['HALTED', 'PAUSED'].includes(readCard(id)?.fm.status ?? '')) return
+    if (!relatorio.aprovado) {
+      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED criterio obrigatorio reprovado ou inconclusivo; confira as evidencias`, RESUME_POST_STEPS, 'escopo')
+      return
+    }
+  }
   registrarTier(id, 'review', tierDoCard('review', { leiForcou: lei.forca === 'completo', pedidoDoCard: card.fm.tier }))
   const gate = await withGateRetry(
     () => deps.runCodefoxGate(wt, base, desc ?? '', id),
@@ -428,6 +443,13 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     process.stdout.write(`[runner] #${id}: HALTED ${gate.ok ? 'codefox gate BLOCKED' : 'codefox gate nao concluiu'}\n`)
     return
   }
+  if (card.fm.motor_modo === 'passivo') {
+    if (['HALTED', 'PAUSED'].includes(readCard(id)?.fm.status ?? '')) return
+    if (!(await evidenciaAtual(id, revisaoDoPlano, wt))) {
+      haltForInspection(id, card, fsteps, `${isoNow()} ${statusAtual}->HALTED evidencia invalidada por mudanca no trabalho`, RESUME_POST_STEPS, 'escopo')
+      return
+    }
+  }
   updateRunSteps(id, fsteps)
   const totalsFields = accumulatedTotals(card, fsteps)
   const donoComprovado = !!String(card.fm.pr_url ?? '').trim()
@@ -453,6 +475,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   // morria depois de todo o gasto — com o push ja feito.
   const abertura = await abrirPrUmaVez({
     card: id, repoName: slugDoGh(target, repoName), base, branch, titulo: msg, corpo: body, worktree: wt, prExistente,
+    sincronizar: card.fm.motor_modo === 'passivo',
   })
   const erroDoGh = abertura.erro
   const url = abertura.url

@@ -2,6 +2,7 @@ import { readCard, listRepos, repoRegistered } from '../cordel/store.ts'
 import * as core from './acoes.ts'
 import type { MotivoDeRecusa } from './acoes.ts'
 import { responder } from './responder.ts'
+import { criarExecucao } from './criar-execucao.ts'
 
 export type AcaoDeTarefa = 'aprovar-url' | 'aprovar-plano' | 'recusar' | 'parar' | 'responder' | 'criar'
 
@@ -59,7 +60,7 @@ export function criarTarefa(titulo: string, repo: string): ResultadoDeAcao {
     const conhecidos = listRepos().map(r => r.name).join(', ') || 'nenhum'
     return resultado(false, 'criar', '', `"${repo}" nao esta registrado — hii repo add <owner/nome> (registrados: ${conhecidos})`)
   }
-  const id = core.submit({ title: texto, repo })
+  const { id } = criarExecucao(repo, '', texto)
   const r = core.approvePlan(id)
   const criado = resultado(r.ok, 'criar', id, r.ok ? `#${id} criado e na fila` : `#${id} criado — ${r.reason}`)
   return r.ok ? criado : { ...criado, motivo: r.motivo }

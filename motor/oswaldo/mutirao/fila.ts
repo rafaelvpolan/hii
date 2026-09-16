@@ -16,6 +16,8 @@ import { limparTmpAntigo, usoDeDisco } from '../../euclides/estado-em-disco.ts'
 import { podarRegistrosAntigos } from '../../euclides/podar.ts'
 import { avisarFalhaSilenciosa, motivoDoErro } from '../../cordel/alicerce/aviso.ts'
 import { despachoLiberado } from '../../euclides/tesouro/teto-global.ts'
+import { executarGateway } from '../gateway.ts'
+import { modoDaExecucao } from '../orquestracao/config.ts'
 
 export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.ts'
 
@@ -24,7 +26,8 @@ export async function runJob(job: Job): Promise<void> {
   marcarEmVoo(job.id)
   const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {
-    if (job.kind === 'execute') await handleExecute(job.id)
+    if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
+    else if (job.kind === 'execute') await handleExecute(job.id)
     else if (job.kind === 'finish') await handleFinish(job.id)
     else if (job.kind === 'spec') await handleSpec(job.id)
     else await handleCorrect(job.id)

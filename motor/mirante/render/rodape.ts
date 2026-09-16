@@ -140,7 +140,7 @@ export function linhaDeOutrosProjetos(fora: Espera[], opts: Partial<RodapeOption
 
 export function esperandoVoce(cards: Fields[], repo: string): Espera[] {
   return cards
-    .filter(c => !repo || c.repo === repo)
+    .filter(c => c.tipo !== 'session' && (!repo || c.repo === repo))
     .map(c => ({ card: c, esp: esperaHumano(String(c.status ?? '')) }))
     .filter((x): x is { card: Fields; esp: { motivo: string; comando: string } } => !!x.esp)
     .sort((a, b) => Number(a.card.id) - Number(b.card.id))
@@ -193,4 +193,3 @@ export function linhasExecucao(lista: EmExecucao[], opts: Partial<RodapeOptions>
     return `${marca(e.id, o)}${paint(giro, CYAN, o)} ${id} ${realce(titulo, e.id, o)} ${paint(meio, DIM, o)}${aberta(e.id, o)}`
   }), ...contador(lista.length, visiveis.length, o)]
 }
-

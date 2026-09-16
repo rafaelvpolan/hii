@@ -63,7 +63,7 @@ test('PEDIDO em tarefa que sumiu vira tarefa nova, sem perder o texto', async ()
   const { seguir } = await import('../../motor/mirante/sessao.ts')
   const { allCards } = await import('../../motor/cordel/store.ts')
   const state = await digitar(['tira tambem o do hero'], seguir(newSession('org/app'), '099'))
-  const novos = allCards()
+  const novos = allCards().filter(c => c.tipo !== 'session')
   expect(novos.length).toBe(1)
   const idNovo = novos[0]?.id
   if (idNovo === undefined) throw new Error('a instrucao perdida nao virou tarefa nova com id')
@@ -76,9 +76,9 @@ test('REGRESSAO: texto em tarefa que sumiu tambem vira tarefa nova — nao ha ma
   const { seguir } = await import('../../motor/mirante/sessao.ts')
   const { allCards } = await import('../../motor/cordel/store.ts')
   const state = await digitar(['tem acesso ao notion pelo claude?'], seguir(newSession('org/app'), '099'))
-  const novo = allCards()[0]?.id
+  const novo = allCards().find(c => c.tipo !== 'session')?.id
   if (!novo) throw new Error('o card criado ficou sem id')
-  expect(allCards().length).toBe(1)
+  expect(allCards().filter(c => c.tipo !== 'session').length).toBe(1)
   expect(state.seguindo).toBe(novo)
   expect(saida.join(' ')).toContain('nao existe mais')
 })
@@ -87,7 +87,7 @@ test('a tarefa nova entra direto na fila, sem esperar aprovacao', async () => {
   const { seguir } = await import('../../motor/mirante/sessao.ts')
   const { allCards } = await import('../../motor/cordel/store.ts')
   await digitar(['remove o header de beta'], seguir(newSession('org/app'), '099'))
-  expect(allCards()[0]?.status).toBe('EXECUTING')
+  expect(allCards().find(c => c.tipo !== 'session')?.status).toBe('EXECUTING')
   expect(saida.join(' ')).toContain('na fila')
 })
 

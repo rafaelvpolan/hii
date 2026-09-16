@@ -57,7 +57,7 @@ test('submit segue normal quando a ia esta pronta (comportamento padrao do fixtu
   const state = newSession('org/app')
   const r = handle('remove o selo beta', state)
   const d = await dispatch(r.effect, r.state, io)
-  expect(allCards().length).toBe(antes + 1)
+  expect(allCards().length).toBe(antes + 2)
   expect(d.state.seguindo).not.toBe('')
 })
 

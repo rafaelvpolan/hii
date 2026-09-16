@@ -7,7 +7,7 @@ import { feitosDoCard, passosRestantes } from './plano-de-passos.ts'
 
 // Cartorio — os pedidos humanos do pipeline manual (default; ver pipelineManual
 // em cordel/alicerce/config.ts). A TUI (/polimento, /testes, /seguranca,
-// /limpeza, /hii) e o CLI (`hii passo`, `hii pipeline`) batem AQUI, e aqui so se
+// /limpeza) e o CLI (`hii passo`, `hii pipeline`) batem AQUI, e aqui so se
 // escreve intencao no card: quem executa o passo e o runner, no handleFinish de
 // fechar.ts, com os mesmos gates, teto e contabilidade de qualquer execucao.
 // Um caminho que rodasse o agente DENTRO da TUI travaria a interface por
@@ -71,7 +71,7 @@ export function pedirPassoManual(id: string, passo: string): PedidoPipeline {
     fields: { status: 'URL_OK', retomar_em: '', resume_from: '', pipeline_pausa: 'manual', pipeline_liberado: '', pipeline_passo: alvo },
     log: `${isoNow()} ${r.status}->URL_OK pedido humano: rodar so o passo "${alvo}" e pausar de novo${aviso}`,
   })
-  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar${aviso} — /hii roda o restante de uma vez` }
+  return { ok: true, mensagem: `#${id} vai rodar so "${alvo}" e pausar${aviso} — hii pipeline ${id} roda o restante de uma vez` }
 }
 
 // A suite: roda o que falta do pipeline (menos o que pipeline_feitos ja pagou)

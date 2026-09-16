@@ -180,6 +180,13 @@ hii — progresso  2026-08-19T14:08:23Z · 11 cards
 
 ### Para o painel (contrato de máquina)
 
+Para integrar o Hicode sem compartilhar arquivos, use `hii api`: HTTP/JSON + SSE,
+autenticado com `HII_API_TOKEN`, em `127.0.0.1:8787` por padrao. O contrato v1,
+cliente TypeScript, sessions, pedidos por tarefa/spec, idempotencia e reconexao
+estao em [Conexao Hicode / HII](docs/conexao-hicode/README.md). O daemon continua separado.
+O consumidor Hicode precisa migrar para esse contrato; os comandos abaixo seguem
+disponiveis para integracao local.
+
 O painel (hicode) não precisa reimplementar a leitura do estado: pede ao motor.
 
 | Comando | O que faz |
@@ -327,6 +334,8 @@ Comandos de barra dentro da TUI:
 | `/new-task` | cria a tarefa explicitamente — mesmo efeito de escrever o texto solto |
 | `/ask`, `/new-ask` | pergunta sobre o projeto **sem** criar session/card e sem executar tarefa |
 | `/new [assunto]` | cria uma session do hii no projeto; perguntas e execuções de IA ficam encadeadas dentro dela |
+| `/hii <descrever tarefa>` | cria uma execução com o orquestrador na session atual, somente para este pedido |
+| `/hii <arquivo.spec>` | lê a especificação no projeto selecionado e envia seu conteúdo ao orquestrador |
 | `/ref <url\|caminho\|clipboard>` | anexa imagem de referência; sem argumento, lista as anexadas |
 | `/repo` | troca de projeto |
 | `/ia`, `/model`, `/effort` | escolhe provedor, modelo e nível de esforço de cada papel (`implement`, `verify`, `gate`, `step`) |
@@ -341,6 +350,45 @@ Teclas: `↑↓` seleciona a tarefa no rodapé, `enter` entra nela, `←` navega
 
 A resposta da IA sai com **markdown renderizado em ANSI** — cabeçalho, negrito, lista, citação,
 bloco de código e link viram formatação, não `##` e `**` na tela.
+
+### Gateway e orquestração por pedido
+
+Pedidos comuns da TUI e de `hii task` usam **gateway por padrão**: o pedido vai ao harness no
+diretório do projeto, sem criar worktree, pipeline ou PR automaticamente. A conclusão é
+`COMPLETED`, sem reexecução no próximo arranque. Tarefas antigas sem `motor_modo` mantêm
+o fluxo anterior. `/hii implemente a API` ou `/hii tarefas/login.spec` chama o orquestrador
+somente para aquela execução. Não existe on/off persistente; a mensagem comum seguinte
+continua no gateway, inclusive quando há configuração antiga de modo passivo.
+
+O `.spec` é texto UTF-8, não um plano JSON. Caminhos relativos partem do projeto selecionado;
+use aspas para nomes com espaços (`/hii "docs/meu plano.spec"`). Arquivo ausente, vazio,
+binário ou acima de 1 MiB é recusado antes de criar tarefa. Cabeçalhos Markdown são protegidos
+para não esconder requisitos ao extrair o objetivo do card. `/ask` não aciona o orquestrador.
+
+Na execução orquestrada, o motor salva um plano v1, executa as microtasks em ordem de dependência,
+mantém o pipeline e as aprovações existentes, coleta evidências de comandos reais e revisa antes
+do PR. Microtasks de uma execução são **seriais**, no worktree dela. O plano inicial é conservador:
+uma microtask de implementação e verificações detectadas no contrato do projeto. Decomposição
+mais detalhada pode ser importada com `hii pipeline plan <id> <arquivo.json> --repo <owner/nome>`; a geração semântica de múltiplas microtasks
+e worktrees paralelos por microtask ainda não estão implementados.
+
+Manutenção continua no CLI: `hii pipeline status|doctor|setup --repo <owner/nome>`,
+`hii pipeline <id>` para liberar o pipeline manual e `hii pipeline close <session> --repo <owner/nome>`
+para fechar uma session sem trabalho pendente (`#id closed`).
+
+Uma session HII tem identidade própria, várias execuções e uma subsession por chamada de IA.
+O histórico persistido acompanha trocas de provedor; IDs nativos de threads não são inventados.
+Em falha de cota, o gateway tenta outro provedor elegível na mesma execução e registra a falha
+e a troca no log ao vivo. No fluxo com worktree, a retomada preserva alterações não commitadas.
+`/ask` continua somente leitura e não cria execução de tarefa.
+
+Evidências obrigatórias ausentes, inconclusivas ou reprovadas bloqueiam o PR. Os resultados
+incluem exit code, sinal, timeout, saída redigida e fingerprint do HEAD/diff/arquivos novos.
+No fluxo passivo, o PR é consultado no remoto antes de criar e sua seção gerenciada é atualizada
+sem substituir notas humanas. O merge continua humano.
+
+Contratos e limites desta entrega: [processo de orquestração](docs/orquestracao-passiva.md).
+Visualizador local: [processo-orquestracao.html](docs/processo-orquestracao.html).
 
 ### Referências de imagem
 

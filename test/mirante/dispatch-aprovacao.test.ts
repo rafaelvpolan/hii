@@ -170,21 +170,21 @@ test('FLUXO REAL: /new cria uma session persistida no projeto e passa a segui-la
   expect(saida.join(' ')).toContain('session #')
 })
 
-test('FLUXO REAL: texto dentro da session aparece na TUI como pergunta sem execucao', async () => {
+test('FLUXO REAL: /ask dentro da session pergunta sem criar execucao', async () => {
   const { readCard } = await import('../../motor/cordel/store.ts')
   let state = await digitar(['/new diagnostico do roteador'])
   const id = state.seguindo
   saida = []
 
-  state = await digitar(['por que nao trocou de IA?'], state)
+  state = await digitar(['/ask por que nao trocou de IA?'], state)
 
   const textoDaTela = saida.join('\n')
   expect(state.seguindo).toBe(id)
-  expect(textoDaTela).toContain(`session #${id}: pergunta de leitura, sem executar tarefa`)
+  expect(textoDaTela).toContain('leitura, sem alterar arquivo')
   expect(textoDaTela).toContain('resposta para: por que nao trocou de IA?')
   const session = readCard(id)
   expect(session?.fm.status).toBe('READY')
-  expect(session?.body).toContain('pergunta na session: por que nao trocou de IA?')
+  expect(session?.body).not.toContain('EXECUTING')
 })
 
 test('FLUXO REAL: pergunta dentro da session encaminha o ID para o ledger da IA', async () => {
@@ -199,7 +199,7 @@ test('FLUXO REAL: pergunta dentro da session encaminha o ID para o ledger da IA'
     },
   })
   const id = submitSession({ title: 'session ledger', repo: 'org/app', desc: 'perguntas' })
-  await dispatch({ kind: 'instruct', id, text: 'qual o estado?' }, { ...newSession('org/app'), seguindo: id }, ioDaSession)
+  await dispatch({ kind: 'consultar', id, text: 'qual o estado?' }, { ...newSession('org/app'), seguindo: id }, ioDaSession)
   expect(sessionId).toBe(id)
 })
 

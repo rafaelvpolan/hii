@@ -35,7 +35,7 @@ export interface VarreduraDeHarnesses {
 
 const SUFIXO = '.harness.pid'
 const BINARIOS_DE_HARNESS: readonly string[] = ['claude', 'codex', 'kimi', 'curl']
-const ESTADOS_SEM_HARNESS: readonly string[] = ['HALTED', 'PR_OPEN', 'MERGED', 'DEPLOYED']
+const ESTADOS_SEM_HARNESS: readonly string[] = ['HALTED', 'PR_OPEN', 'MERGED', 'DEPLOYED', 'COMPLETED']
 export const ESPERA_SIGTERM_MS = 3000
 const ESPERA_SIGKILL_MS = 1000
 const PASSO_MS = 50
