@@ -13,6 +13,13 @@ try {
     const erros = []
     page.on('pageerror', e => erros.push(e.message))
     await page.goto(pathToFileURL(resolve('docs/processo-orquestracao.html')).href)
+    await page.evaluate(() => {
+      const status = document.createElement('aside')
+      status.className = 'wrap'; status.setAttribute('role', 'status')
+      status.textContent = `Rodada: replay · commit ${'8'.repeat(40)} · Chromium`
+      document.body.prepend(status)
+    })
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'hash do manifesto causa overflow')
     await page.locator('#steps button').first().waitFor()
     assert.equal(await page.locator('#stat-mode').textContent(), 'Gateway')
     await page.locator('#passivo').click()
@@ -36,6 +43,17 @@ try {
     }
     await page.locator('#search').fill('#49')
     assert.equal(await page.locator('#issue-table tbody tr:visible').count(), 1)
+    await page.locator('#tab-contratos').click()
+    await page.locator('#obs-tree button').first().click()
+    assert.ok((await page.locator('#obs-output').textContent()).includes('limite temporario'))
+    const observacao = { versao: 1, atividades: [{ id: 'fixture', pai: null, recurso: { nome: '<img src=x onerror=alert(1)>' }, estado: 'running', etapa: 'validacao', saida: [{ sequencia: 1, canal: 'stdout', texto: 'saida antes do fim' }] }] }
+    await page.locator('#obs-file').setInputFiles({ name: 'observacao.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(observacao)) })
+    await page.waitForFunction(() => document.getElementById('obs-note').textContent.includes('observacao.json'))
+    await page.locator('#obs-tree button').click()
+    assert.equal(await page.locator('#obs-tree img').count(), 0)
+    assert.ok((await page.locator('#obs-output').textContent()).includes('saida antes do fim'))
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'overflow no replay de observabilidade')
+    await page.screenshot({ path: `${destino}/observabilidade-${viewport.width}.png`, fullPage: true })
     await page.locator('#tab-fluxo').click()
     const snapshot = { versao: 1, conversas: [{ id: '900', repo: 'org/app', titulo: '<img src=x onerror=alert(1)>', estado: 'aberta', execucoes: [], subsessoes: [] }], orquestrador: { modo: 'gateway' } }
     await page.locator('#snapshot').setInputFiles({ name: 'snapshot.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(snapshot)) })

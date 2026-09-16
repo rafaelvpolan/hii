@@ -15,6 +15,8 @@ import { motivoDoErro } from '../cordel/alicerce/aviso.ts'
 import { agentRoles, providerNameFor, modoFor } from './registro.ts'
 import { modosDoProvedor, temModos, papelHonraModo } from './modos.ts'
 import type { AgentRole } from './tipos.ts'
+import { withFileLock } from '../oswaldo/mutirao/trava-arquivo.ts'
+import { etagDe } from '../cordel/revisao.ts'
 
 export interface ResultadoEscolha {
   ok: boolean
@@ -88,8 +90,14 @@ export interface Ajuste {
 }
 
 
-export function aplicar(ajuste: Ajuste): ResultadoEscolha {
-  return comoMensagem(() => aplicarInterno(ajuste))
+export function aplicar(ajuste: Ajuste, esperada?: string): ResultadoEscolha {
+  return comoMensagem(() => {
+    mkdirSync(dirname(arquivoDePreferencias()), { recursive: true })
+    return withFileLock(arquivoDePreferencias(), () => {
+      if (esperada !== undefined && etagDe(ler()) !== esperada) return { ok: false, mensagem: 'revisao_alterada' }
+      return aplicarInterno(ajuste)
+    })
+  })
 }
 
 function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
@@ -116,7 +124,7 @@ function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
 }
 
 export function limpar(papeis: AgentRole[]): ResultadoEscolha {
-  return comoMensagem(() => limparInterno(papeis))
+  return comoMensagem(() => comTrava(() => limparInterno(papeis)))
 }
 
 function limparInterno(papeis: AgentRole[]): ResultadoEscolha {
@@ -127,7 +135,7 @@ function limparInterno(papeis: AgentRole[]): ResultadoEscolha {
 }
 
 export function limparEsforco(papeis: AgentRole[]): ResultadoEscolha {
-  return comoMensagem(() => limparEsforcoInterno(papeis))
+  return comoMensagem(() => comTrava(() => limparEsforcoInterno(papeis)))
 }
 
 function limparEsforcoInterno(papeis: AgentRole[]): ResultadoEscolha {
@@ -143,7 +151,12 @@ function limparEsforcoInterno(papeis: AgentRole[]): ResultadoEscolha {
 }
 
 export function ciclarModo(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
-  return comoMensagem(() => ciclarModoInterno(role, dir))
+  return comoMensagem(() => comTrava(() => ciclarModoInterno(role, dir)))
+}
+
+function comTrava<T>(fn: () => T): T {
+  mkdirSync(dirname(arquivoDePreferencias()), { recursive: true })
+  return withFileLock(arquivoDePreferencias(), fn)
 }
 
 function ciclarModoInterno(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
@@ -158,4 +171,3 @@ function ciclarModoInterno(role: AgentRole, dir: -1 | 1): ResultadoEscolha {
   aplicarInterno({ papeis: [role], modo: proximo })
   return { ok: true, mensagem: `${provedor}: modo ${proximo}` }
 }
-

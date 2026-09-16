@@ -55,6 +55,33 @@ o HII continua governando estado, orçamento e entrega.
 
 ---
 
+## Conectar Hicode, IDE ou task manager
+
+A API HTTP/SSE inclui uma extensão de observabilidade v1: árvore de atividades,
+harnesses, skills carregadas, loops, crivo, saída incremental e métricas com
+qualidade explícita. Também há consulta readonly, configuração administrativa,
+revisão de planos e artefatos por ID. O motor continua controlando os efeitos.
+
+```bash
+# No checkout candidato, com credencial fornecida pelo ambiente:
+export HII_API_HOST=127.0.0.1
+export HII_API_PORT=8787
+export HII_API_REPOS=owner/projeto  # escopo autorizado desta instancia
+bun bin/hii.ts api                # API; nao inicia o daemon
+
+# Outro terminal/backend, usando a mesma credencial HII_API_TOKEN:
+HII_API_REPO=owner/projeto bun examples/observador.ts
+HII_API_REPO=owner/projeto bun examples/observador.ts --poll
+```
+
+`HII_API_TOKEN` deve ter ao menos 32 caracteres. Nunca o envie ao navegador.
+Consulte [contrato, paridade, limites e rollout](docs/conexao-hicode/observabilidade.md)
+e [OpenAPI](docs/conexao-hicode/openapi.json). A interface Hicode é entregue em
+PR separado; não é necessário compartilhar `cards/` para essa integração.
+`HII_OBSERVABILIDADE=0` desativa a instrumentação no próximo processo sem
+alterar a fila ou o journal de efeitos. Merge e troca do motor em uso continuam
+sendo operações explícitas.
+
 ## Requisitos
 
 ### Bun runtime

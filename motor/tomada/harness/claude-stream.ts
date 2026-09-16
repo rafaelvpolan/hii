@@ -183,7 +183,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
         const human = renderEvent(ev, ferramentasEmVoo)
         if (human) write(semControle(human) + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {
-          for (const c of ev.message.content) if (c.type === 'text' && c.text) assistantText = c.text
+          for (const c of ev.message.content) if (c.type === 'text' && c.text) { assistantText = c.text; req.aoEmitir?.('assistant', c.text) }
         }
         if (ev.type === 'result') {
           gotResult = true
@@ -209,12 +209,12 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
 
     child.stderr.on('data', (d: Buffer) => {
       stderr.push(String(d))
-      for (const l of stderrAcumulado.empurrar(String(d))) write(l + '\n')
+      for (const l of stderrAcumulado.empurrar(String(d))) { write(l + '\n'); req.aoEmitir?.('stderr', l + '\n') }
     })
     child.on('error', (e: Error) => done(true, String(e?.message || e)))
     child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
       if (buf.trim()) handleLine(buf)
-      for (const l of stderrAcumulado.esvaziar()) write(l + '\n')
+      for (const l of stderrAcumulado.esvaziar()) { write(l + '\n'); req.aoEmitir?.('stderr', l + '\n') }
       if (!gotResult && code) isError = true
       const detalhe = timedOut ? 'timeout' : signal ? `interrompido por ${signal}` : code ? `exit ${code}` : !gotResult ? 'CLI terminou sem evento result' : ''
       done(timedOut || !gotResult, detalhe, signal === 'SIGTERM' || signal === 'SIGINT')

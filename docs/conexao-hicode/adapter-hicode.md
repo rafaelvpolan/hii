@@ -2,9 +2,11 @@
 
 [Indice](README.md) | [OpenAPI](openapi.json)
 
-Este guia descreve a migracao que o repositorio Hicode ainda precisa aplicar.
-O cliente de referencia ja esta no HII; os exemplos nao afirmam que as rotas
-Nuxt do painel ja foram alteradas.
+Este guia descreve o contrato base e a migracao das paginas legadas do Hicode.
+A nova rota `/motor` e entregue separadamente em
+[Hicode #22](https://github.com/rafaelvpolan/hicode/issues/22), usando a
+[extensao de observabilidade v1](observabilidade.md). Isso nao migra automaticamente
+as outras paginas nem significa que o candidato foi implantado.
 
 ## Responsabilidades
 
@@ -46,8 +48,8 @@ uma segunda tarefa.
 8. Fechar por `/sessoes/{id}/fechar` quando solicitado. A confirmacao do motor,
    e nao um clique otimista no cliente, autoriza mostrar `#077 closed`.
 
-`/ask` continua local no HII nesta versao HTTP: nao converter uma pergunta readonly
-em um pedido executavel para contornar a ausencia de endpoint.
+`POST /v1/ask` oferece consulta readonly identificada, sem criar card executavel.
+Negocie a capacidade anunciada antes de usa-la; veja o contrato da extensao.
 
 ## Acoes humanas
 
@@ -110,12 +112,14 @@ Renderizar texto de log e respostas de agentes com escape, nunca `innerHTML`.
 
 `/v1/provedores` mostra disponibilidade/modelos conhecidos; `/v1/recursos` mostra
 o catalogo descoberto para o provedor ativo e projeto. Descoberta nao e instalacao
-nem uma chamada de agente. Configuracao de IA continua nas interfaces locais
-nesta entrega; nao voltar a escrever `ia.json` pelo painel como atalho.
+nem uma chamada de agente. A extensao oferece configuracao tipada com revisao
+em `/v1/configuracao`, mediante autorizacao administrativa; nao escrever `ia.json`
+pelo painel como atalho.
 
 `/v1/tarefas/{id}/plano` expoe o plano e relatorio persistidos. O campo
 `atualidadeVerificada: false` impede confundir leitura com revalidacao do trabalho.
-O editor de planos e envio de revisoes nao estao expostos por HTTP nesta etapa.
+A extensao aceita revisoes por POST com tarefa parada, ETag e idempotencia;
+salvar uma revisao nao aprova nem inicia automaticamente sua execucao.
 
 ## Criterios de aceite do Hicode
 

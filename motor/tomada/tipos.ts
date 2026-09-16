@@ -24,6 +24,8 @@ export interface AgentRequest {
   extraTools?: string[]
   agentsJson?: string
   aoIniciar?: (pid: number) => void
+  /** Somente saida publica estruturada; nunca prompt, argv ou raciocinio. */
+  aoEmitir?: (canal: 'stdout' | 'stderr' | 'assistant' | 'error', texto: string) => void
   rotulo?: string
   raia?: string
 }
@@ -112,6 +114,7 @@ export const SEM_PLANO: PlanoDoProvedor = {
 // `if (nome === 'claude')` em sete arquivos, inclusive fora de tomada/ — o que
 // fazia "adicionar uma IA" ser uma caca ao tesouro pelo repositorio.
 export interface Harness {
+  saidaIncremental?: (req: AgentRequest) => boolean
   readonly name: HarnessId
   readonly supportsAgents: boolean
   readonly supportsVision: boolean

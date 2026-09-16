@@ -8,6 +8,7 @@ const idParam = { name: 'id', in: 'path', required: true, schema: id }
 const chave = { name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', pattern: '^[A-Za-z0-9._:-]{8,128}$' } }
 const revisao = { name: 'If-Match', in: 'header', required: true, schema: str }
 const repo = { name: 'repo', in: 'query', schema: str }
+const escopo = [repo, { name: 'sessao', in: 'query', schema: id }, { name: 'execucao', in: 'query', schema: id }]
 const ref = (nome: string): { $ref: string } => ({ $ref: `#/components/schemas/${nome}` })
 const json = (schema: object): object => ({ 'application/json': { schema } })
 const ok = (schema: object): object => ({ description: 'Resposta do motor', content: json(schema), headers: { ETag: { schema: str, description: 'Revisao para If-Match quando aplicavel' } } })
@@ -24,9 +25,20 @@ function objeto(properties: object, required: string[] = []): object {
 
 export const openapi = {
   openapi: '3.1.1',
-  info: { title: 'HII Motor API', version: '1.0.0', description: 'API single-user para o backend Hicode. O motor e a autoridade do estado. Nao inicia o daemon nem faz merge.' },
+  info: { title: 'HII Motor API', version: '1.1.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Nao inicia o daemon nem faz merge.' },
   security: [{ bearer: [] }],
   paths: {
+    '/v1/observabilidade/snapshot': { get: get('snapshotObservabilidade', ref('SnapshotObservabilidade'), [...escopo, { name: 'depois', in: 'query', schema: str }, { name: 'limite', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } }]) },
+    '/v1/observabilidade/recursos': { get: get('catalogoObservabilidade', { type: 'object', properties: { recursos: { type: 'array', items: ref('RecursoObservavel') } } }, [repo]) },
+    '/v1/observabilidade/eventos': { get: { operationId: 'eventosObservabilidade', parameters: [...escopo, { name: 'Last-Event-ID', in: 'header', schema: str }], description: 'SSE extensao v1: activity/output/cursor/reset. 409 exige reconstruir snapshot. Filtros nao concedem autorizacao.', responses: { '200': { description: 'SSE', content: { 'text/event-stream': { schema: str } } }, default: erro } } },
+    '/v1/ask': { post: post('perguntar', objeto({ repo: str, pergunta: { ...str, maxLength: 16000 } }, ['repo', 'pergunta']), ref('Consulta'), '202') },
+    '/v1/consultas/{consultaId}': { get: get('consultarResposta', ref('Consulta'), [{ name: 'consultaId', in: 'path', required: true, schema: { ...str, format: 'uuid' } }]) },
+    '/v1/configuracao': { get: get('configuracao', { type: 'object' }), post: post('configurar', objeto({ versao: { const: 1 }, papel: { enum: ['implement', 'verify', 'gate', 'step'] }, provider: str, model: str, effort: { enum: ['low', 'medium', 'high', 'xhigh', 'max'] }, modo: str, gauntlet: { type: 'boolean' } }, ['versao', 'papel']), { type: 'object' }, '200', [revisao]) },
+    '/v1/tarefas/{id}/artefatos': { get: get('listarArtefatos', { type: 'object', properties: { artefatos: { type: 'array', items: ref('Artefato') } } }, [idParam]) },
+    '/v1/tarefas/{id}/historico': { get: get('historicoDaExecucao', { type: 'object' }, [idParam, { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 } }]) },
+    '/v1/tarefas/{id}/perguntas': { get: get('perguntas', { type: 'object', properties: { perguntaId: { type: ['string', 'null'] }, pendencia: { type: ['object', 'null'] } } }, [idParam]) },
+    '/v1/tarefas/{id}/respostas': { post: post('responderPergunta', objeto({ perguntaId: str, texto: str }, ['perguntaId', 'texto']), { type: 'object' }, '200', [idParam, revisao]) },
+    '/v1/artefatos/{artefatoId}': { get: get('lerArtefato', ref('Artefato'), [{ name: 'artefatoId', in: 'path', required: true, schema: { ...str, pattern: '^[a-f0-9]{64}$' } }]) },
     '/v1/capacidades': { get: get('capacidades', ref('Capacidades')) },
     '/v1/openapi.json': { get: get('contrato', { type: 'object' }) },
     '/v1/projetos': { get: get('projetos', objeto({ projetos: { type: 'array', items: objeto({ nome: str }, ['nome']) } }, ['projetos'])) },
@@ -43,7 +55,7 @@ export const openapi = {
     '/v1/tarefas/{id}': { get: get('tarefa', ref('Tarefa'), [idParam]) },
     '/v1/tarefas/{id}/acoes': { post: post('agir', objeto({ acao: { enum: ACOES }, texto: str }, ['acao']), { type: 'object' }, '200', [idParam, revisao]) },
     '/v1/tarefas/{id}/log': { get: get('log', ref('Log'), [idParam, { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0, default: 0 } }]) },
-    '/v1/tarefas/{id}/plano': { get: get('plano', { type: 'object', required: ['plano', 'evidencias', 'atualidadeVerificada'], properties: { plano: { type: ['object', 'null'] }, evidencias: { type: ['object', 'null'] }, atualidadeVerificada: { const: false } } }, [idParam]) },
+    '/v1/tarefas/{id}/plano': { get: get('plano', { type: 'object', required: ['plano', 'evidencias', 'atualidadeVerificada'], properties: { plano: { type: ['object', 'null'] }, evidencias: { type: ['object', 'null'] }, atualidadeVerificada: { const: false } } }, [idParam]), post: post('revisarPlano', objeto({ plano: { type: 'object' }, revisaoEsperada: { type: 'integer', minimum: 0 } }, ['plano', 'revisaoEsperada']), { type: 'object' }, '200', [idParam, revisao]) },
     '/v1/eventos': { get: {
       operationId: 'eventos', parameters: [{ name: 'Last-Event-ID', in: 'header', schema: str }],
       description: 'SSE com cursor duravel. Sem cursor inicia no presente. 409 exige snapshot e reconexao. Duplicatas devem ser deduplicadas por id. Eventos pronto/reset sao de controle.',
@@ -53,6 +65,13 @@ export const openapi = {
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } },
     schemas: {
+      RecursoObservavel: objeto({ id: str, namespace: str, nome: str, tipo: { enum: ['orchestrator', 'agent', 'harness', 'skill', 'loop', 'validation'] }, origem: str, versao: { type: ['string', 'null'] }, capacidades: { type: 'array', items: str }, observabilidade: { enum: ['instrumented', 'partial', 'unobservable'] } }, ['id', 'namespace', 'nome', 'tipo', 'origem', 'versao', 'capacidades', 'observabilidade']),
+      Medida: objeto({ valor: { type: ['number', 'null'] }, fonte: str, instante: { ...str, format: 'date-time' }, qualidade: { enum: ['measured', 'unknown', 'lower_bound'] } }, ['valor', 'fonte', 'instante', 'qualidade']),
+      Saida: objeto({ sequencia: { type: 'integer', minimum: 1 }, canal: { enum: ['stdout', 'stderr', 'assistant', 'error'] }, texto: str, instante: str }, ['sequencia', 'canal', 'texto', 'instante']),
+      Atividade: { type: 'object', required: ['id', 'pai', 'recurso', 'repo', 'sessao', 'execucao', 'revisao', 'estado', 'metricas', 'saida'], properties: { id: str, pai: { type: ['string', 'null'] }, recurso: ref('RecursoObservavel'), repo: str, sessao: str, execucao: str, revisao: { type: 'integer', minimum: 1 }, estado: { enum: ['queued', 'running', 'waiting_human', 'waiting_retry', 'blocked', 'succeeded', 'failed', 'cancelled', 'skipped', 'unknown'] }, metricas: objeto({ custoUsd: ref('Medida'), tokens: ref('Medida') }), saida: { type: 'array', items: ref('Saida') }, detalhes: { type: 'object' }, atualizado: str, heartbeat: { type: ['string', 'null'] }, fim: { type: ['string', 'null'] }, truncado: { type: 'boolean' } } },
+      SnapshotObservabilidade: objeto({ versao: { const: 1 }, cursor: str, atividades: { type: 'array', items: ref('Atividade') }, degradado: { type: 'boolean' }, motivo: { type: ['string', 'null'] }, proxima: { type: ['string', 'null'] }, retencao: { type: 'object' } }, ['versao', 'cursor', 'atividades', 'degradado', 'motivo', 'proxima', 'retencao']),
+      Consulta: { type: 'object', required: ['versao', 'id', 'repo', 'estado', 'atividade', 'resposta', 'custoUsd'], properties: { versao: { const: 1 }, id: { ...str, format: 'uuid' }, repo: str, estado: { enum: ['running', 'succeeded', 'failed', 'unknown'] }, atividade: str, resposta: str, custoUsd: { type: ['number', 'null'] } } },
+      Artefato: { type: 'object', required: ['id', 'repo', 'execucao', 'nome', 'tipo', 'tamanho', 'sha256', 'expira'], properties: { id: str, repo: str, execucao: str, sessao: str, nome: str, tipo: { enum: ['text/plain', 'text/markdown', 'application/json'] }, tamanho: { type: 'integer', maximum: 262144 }, sha256: str, expira: { ...str, format: 'date-time' }, conteudo: str } },
       Erro: objeto({ erro: objeto({ codigo: str, mensagem: str }, ['codigo', 'mensagem']) }, ['erro']),
       Capacidades: {
         type: 'object', required: ['protocolo', 'versao', 'statuses', 'acoes', 'eventos', 'modos'],

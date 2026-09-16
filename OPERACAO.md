@@ -661,14 +661,16 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 |---|---|---|---|
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HII_API_ADMIN` | — | — | `motor/api/servidor.ts` |
 | `HII_API_HOST` | `'127.0.0.1'` | — | `motor/api/servidor.ts` |
 | `HII_API_PORT` | `8787` | — | `motor/api/servidor.ts` |
+| `HII_API_REPOS` | — | — | `motor/api/servidor.ts` |
 | `HII_API_TOKEN` | `''` | — | `bin/hii.ts`, `motor/api/servidor.ts` |
 | `HII_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
 | `HII_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
 | `HII_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
 | `HII_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
-| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+2) |
+| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+3) |
 | `HII_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
 | `HII_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
@@ -725,6 +727,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_MEM_TOTAL_MB` | — | — | `motor/quilombo/limites.ts` |
 | `HII_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
+| `HII_OBSERVABILIDADE` | — | — | `motor/observabilidade/registro.ts` |
 | `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |

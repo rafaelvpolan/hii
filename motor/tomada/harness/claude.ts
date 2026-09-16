@@ -42,6 +42,7 @@ export const CLAUDE_SINAIS: SinaisDoHarness = {
 }
 
 export class ClaudeProvider implements Harness {
+  saidaIncremental(req: AgentRequest): boolean { return !!req.liveLog }
   readonly name: HarnessId = 'claude'
   readonly supportsAgents = true
   readonly supportsVision = true

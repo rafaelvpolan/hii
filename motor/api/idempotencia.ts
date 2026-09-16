@@ -5,7 +5,7 @@ import { cardsDir } from '../cordel/alicerce/config.ts'
 import { withFileLock, writeFileAtomic } from '../oswaldo/mutirao/trava-arquivo.ts'
 import { ErroApi } from './contrato.ts'
 
-export interface RespostaApi { status: number; corpo: string; etag?: string }
+export interface RespostaApi { status: number; corpo: string; etag?: string; artefatoVerificado?: true }
 export function resposta(status: number, corpo: object, etag?: string): RespostaApi {
   return { status, corpo: JSON.stringify(corpo), etag }
 }
