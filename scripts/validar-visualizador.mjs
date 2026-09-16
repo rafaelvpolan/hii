@@ -13,6 +13,13 @@ try {
     const erros = []
     page.on('pageerror', e => erros.push(e.message))
     await page.goto(pathToFileURL(resolve('docs/processo-orquestracao.html')).href)
+    await page.evaluate(() => {
+      const status = document.createElement('aside')
+      status.className = 'wrap'; status.setAttribute('role', 'status')
+      status.textContent = `Rodada: replay · commit ${'8'.repeat(40)} · Chromium`
+      document.body.prepend(status)
+    })
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'hash do manifesto causa overflow')
     await page.locator('#steps button').first().waitFor()
     assert.equal(await page.locator('#stat-mode').textContent(), 'Gateway')
     await page.locator('#passivo').click()
