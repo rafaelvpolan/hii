@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { criarSessaoHii, lerSessaoHii, registrarMensagem, vincularExecucao, iniciarSubsessao, concluirSubsessao, fecharSessaoHii, contextoDaSessao } from '../../motor/euclides/sessoes.ts'
+import { criarSessaoHii, lerSessaoHii, registrarMensagem, vincularExecucao, iniciarSubsessao, concluirSubsessao, fecharSessaoHii, contextoDaSessao, finalizarChamada } from '../../motor/euclides/sessoes.ts'
 
 let dir = ''
 let anterior: string | undefined
@@ -43,4 +43,21 @@ test('sessao rejeita reutilizacao entre projetos e sinaliza contexto nao incluid
   registrarMensagem('001', { autor: 'humano', texto: 'x'.repeat(1000), execucao: '', provedor: '', modelo: '' })
   expect(contextoDaSessao('001', 50)).toContain('1 mensagens anteriores preservadas')
   expect(lerSessaoHii('001')?.mensagens[0]?.texto.length).toBe(1000)
+})
+
+test('resposta e estado sao atomicos e idempotentes; mensagem conflitante e rejeitada', () => {
+  criarSessaoHii('001', 'org/app', 'Conversa')
+  const mensagem = { autor: 'humano' as const, texto: 'contrato', execucao: '', provedor: '', modelo: '' }
+  registrarMensagem('001', mensagem, 'pedido')
+  const revisao = lerSessaoHii('001')!.revisao
+  registrarMensagem('001', mensagem, 'pedido')
+  expect(lerSessaoHii('001')!.revisao).toBe(revisao)
+  expect(() => registrarMensagem('001', { ...mensagem, texto: 'outro' }, 'pedido')).toThrow('outro conteudo')
+  const sub = iniciarSubsessao('001', '002', 'codex', 'modelo', 'implement')
+  finalizarChamada('001', sub, { ok: true, texto: 'feito' })
+  finalizarChamada('001', sub, { ok: true, texto: 'feito' })
+  expect(lerSessaoHii('001')!.mensagens.length).toBe(2)
+  expect(lerSessaoHii('001')!.subsessoes[0]!.estado).toBe('concluida')
+  fecharSessaoHii('001')
+  expect(() => iniciarSubsessao('001', '003', 'claude', '', 'implement')).toThrow('fechada')
 })

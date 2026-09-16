@@ -18,6 +18,7 @@ export interface Microtask {
   titulo: string
   instrucao: string
   agente: string
+  ia?: { provedor: string; modelo?: string }
   dependeDe: string[]
   arquivos: string[]
   criterios: string[]
@@ -112,6 +113,11 @@ export function validarPlano(plano: PlanoDeExecucao): PlanoDeExecucao {
   exigir(Array.isArray(plano.microtasks) && plano.microtasks.length > 0, 'microtasks', 'ao menos uma microtask')
   for (const m of plano.microtasks) {
     exigir(!!m && idValido(m.id) && texto(m.titulo) && texto(m.instrucao) && texto(m.agente), 'microtasks', 'ID, titulo, instrucao e agente obrigatorios')
+    if (m.ia !== undefined) {
+      exigir(!!m.ia && typeof m.ia === 'object' && !Array.isArray(m.ia), `microtasks.${m.id}.ia`, 'objeto obrigatorio')
+      exigir(texto(m.ia.provedor), `microtasks.${m.id}.ia.provedor`, 'provedor obrigatorio')
+      if (m.ia.modelo !== undefined) exigir(texto(m.ia.modelo), `microtasks.${m.id}.ia.modelo`, 'modelo nao pode ser vazio')
+    }
     exigir(lista(m.arquivos) && m.arquivos.every(relativo), `microtasks.${m.id}.arquivos`, 'caminhos relativos sem duplicacao')
     exigir(lista(m.criterios) && m.criterios.length > 0 && m.criterios.every(c => criterios.has(c)), `microtasks.${m.id}.criterios`, 'referencia a criterio ausente ou lista vazia')
   }

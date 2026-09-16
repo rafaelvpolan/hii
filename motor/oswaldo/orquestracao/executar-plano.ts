@@ -1,3 +1,4 @@
+import { harnessPorNome } from '../../tomada/registro.ts'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import type { Card, ImplementResult } from '../../cordel/tipos.ts'
@@ -34,7 +35,8 @@ export function planoInicial(card: Card, wt: string): PlanoDeExecucao {
     rollout: { ativacao: 'PR aprovado pelo humano; sem merge automatico', sucesso: 'criterios obrigatorios aprovados e review liberado', interrupcao: 'falha, evidencia inconclusiva ou parada humana', reversao: 'reverter a mudanca revisada; /stop interrompe a execucao' } }
 }
 
-interface Checkpoint { versao: 1; hash: string; feitas: string[]; fingerprint: string }
+interface Tentativa { microtask: string; inicio: string; fim: string; provedor: string; modelo: string; estado: 'executando' | 'concluida' | 'falhou' | 'interrompida'; custo: string; motivo: string }
+interface Checkpoint { versao: 1; hash: string; feitas: string[]; fingerprint: string; tentativas?: Tentativa[] }
 
 export async function executarPlano(card: Card, wt: string, implementar: (card: Card, wt: string, feedback: string, visual: boolean) => Promise<ImplementResult>, visual: boolean): Promise<ImplementResult> {
   const id = card.fm.id ?? ''
@@ -43,6 +45,10 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   if (!r && revisao !== undefined) throw new Error('revisao fixada do plano nao existe')
   r ??= salvarPlano(planoInicial(card, wt), 0, `inicial-${id}`)
   if (r.plano.sessaoId !== (card.fm.sessao_id || id)) throw new Error('plano pertence a outra session')
+  // Uma atribuicao invalida nao pode produzir efeitos nas tarefas anteriores.
+  for (const m of r.plano.microtasks) {
+    if (m.ia && !harnessPorNome(m.ia.provedor).agentic) throw new Error(`microtask ${m.id}: provedor ${m.ia.provedor} nao edita arquivos`)
+  }
   patchCard(id, { plano_revisao: String(r.revisao), plano_hash: r.hash }, `${isoNow()} plano v1 #${id} revisao ${r.revisao}: ${r.plano.microtasks.length} microtask(s), execucao serial`)
   const dir = join(cardsDir(), 'orquestracao')
   mkdirSync(dir, { recursive: true })
@@ -51,6 +57,12 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   if (existsSync(arquivo)) {
     checkpoint = JSON.parse(readFileSync(arquivo, 'utf8')) as Checkpoint
     if (checkpoint.versao !== 1 || checkpoint.hash !== r.hash || !Array.isArray(checkpoint.feitas)) throw new Error('checkpoint incompativel com o plano')
+    for (const tentativa of checkpoint.tentativas ?? []) {
+      if (tentativa.estado !== 'executando') continue
+      tentativa.estado = 'interrompida'
+      tentativa.fim = isoNow()
+      tentativa.motivo = 'processo anterior terminou sem resultado confirmado'
+    }
     // Alteracao externa invalida o cache; o diff nunca e descartado.
     if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) checkpoint.feitas = []
   }
@@ -70,15 +82,34 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       const gasto = gastoDoCard(card.fm.cost_usd)
       if (gasto === null || gasto + custo >= tetoDoCard()) return { ok: false, reason: 'orcamento atingido entre microtasks', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       patchCard(id, { microtask_atual: m.id }, `${isoNow()} microtask ${m.id}: ${m.titulo} | agente ${m.agente}`)
-      const pedido: Card = { ...card, fm: { ...card.fm, title: m.titulo, orq_agente: m.agente }, body: `## Objetivo\n${r.plano.objetivo}\n\nMICROTASK ATUAL (${m.id}):\n${m.instrucao}\nArquivos previstos: ${m.arquivos.join(', ') || 'inspecionar o projeto'}\nCriterios: ${m.criterios.join(', ')}\n` }
+      const pedido: Card = { ...card, fm: { ...card.fm, title: m.titulo, orq_agente: m.agente, ...(m.ia ? { provider_override_implement: m.ia.provedor, orq_modelo: m.ia.modelo ?? '' } : {}) }, body: `## Objetivo\n${r.plano.objetivo}\n\nMICROTASK ATUAL (${m.id}):\n${m.instrucao}\nArquivos previstos: ${m.arquivos.join(', ') || 'inspecionar o projeto'}\nCriterios: ${m.criterios.join(', ')}\n` }
       const atividade = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { papel: 'microtask', processoSeparado: false })
       atualizar(atividade, a => { a.microtask = m.id; a.planoRevisao = r.revisao; a.etapa = m.titulo })
+      checkpoint.tentativas ??= []
+      const tentativa: Tentativa = { microtask: m.id, inicio: isoNow(), fim: '', provedor: m.ia?.provedor ?? '', modelo: m.ia?.modelo ?? '', estado: 'executando', custo: '', motivo: '' }
+      checkpoint.tentativas.push(tentativa)
+      writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
       let concluida = false
       try {
         ultimo = await dentro(atividade, () => implementar(pedido, wt, '', visual))
+        tentativa.provedor = ultimo.provider ?? tentativa.provedor
+        tentativa.modelo = ultimo.model ?? tentativa.modelo
+        tentativa.custo = ultimo.cost
+        tentativa.motivo = ultimo.reason ?? ''
+        tentativa.estado = ultimo.ok ? 'concluida' : 'falhou'
+        // Atribuicao explicita exige revisao do plano, nao fallback silencioso.
+        if (m.ia && !ultimo.ok && ultimo.failureClass === 'quota') ultimo = { ...ultimo, failureClass: 'terminal', failureReason: `IA atribuida a ${m.id} indisponivel: ${ultimo.failureReason ?? ultimo.reason}` }
         terminar(atividade, ultimo.ok ? 'succeeded' : 'failed', ultimo.reason ?? '')
         concluida = true
-      } finally { if (!concluida) terminar(atividade, 'failed', 'microtask interrompida por excecao') }
+      } finally {
+        tentativa.fim = isoNow()
+        if (!concluida) {
+          tentativa.estado = 'interrompida'
+          tentativa.motivo = 'microtask interrompida por excecao; resultado incerto'
+          terminar(atividade, 'failed', tentativa.motivo)
+        }
+        writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
+      }
       custo += Number(ultimo.cost) || 0
       medido &&= ultimo.costMeasured === true
       for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += ultimo.usage?.[k] ?? 0
