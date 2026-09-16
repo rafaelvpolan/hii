@@ -718,7 +718,6 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_KIMI_URL` | `'https://api.moonshot.ai'` | — | `motor/tomada/harness/kimi.ts` |
 | `HII_LIVELOG_KEEP_BYTES` | `200_000` | — | `motor/tomada/harness/claude-stream.ts` |
 | `HII_LIVELOG_MAX_BYTES` | `1_000_000` | — | `motor/tomada/harness/claude-stream.ts` |
-| `HII_LOCK_STALE_MS` | `15000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
 | `HII_LOCK_TIMEOUT_MS` | `10000` | — | `motor/oswaldo/mutirao/trava-arquivo.ts` |
 | `HII_MAX_CARDS` | `10` | — | `motor/cordel/arquivar.ts` |
 | `HII_MCN_IDEIAS` | — | — | `motor/ciclo/macunaima/divergir.ts` |

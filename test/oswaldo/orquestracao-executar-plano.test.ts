@@ -98,3 +98,23 @@ test('cota da IA atribuida exige intervencao sem trocar silenciosamente o plano'
   expect(resultado.failureClass).toBe('terminal')
   expect(resultado.failureReason).toContain('IA atribuida a A')
 })
+
+test('excecao depois de efeito preserva trabalho e bloqueia repeticao cega na retomada', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  const id = submit({ title: 'Interrompida', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  salvarPlano({ ...planoOrquestrado(), id, sessaoId: id }, 0, 'incerta')
+  let chamadas = 0
+  const implementar: Parameters<typeof executarPlano>[2] = async () => {
+    chamadas++
+    writeFileSync(join(dir, 'efeito.txt'), 'efeito confirmado no disco')
+    throw new Error('resposta perdida')
+  }
+  await expect(executarPlano(readCard(id)!, dir, implementar, false)).rejects.toThrow('resposta perdida')
+  const retomada = await executarPlano(readCard(id)!, dir, implementar, false)
+  expect(retomada.ok).toBe(false)
+  expect(retomada.failureReason).toContain('reconciliacao')
+  expect(retomada.costMeasured).toBe(false)
+  expect(chamadas).toBe(1)
+  expect(readFileSync(join(dir, 'efeito.txt'), 'utf8')).toBe('efeito confirmado no disco')
+})

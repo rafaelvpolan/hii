@@ -1,7 +1,9 @@
 import { test, expect, afterAll } from '../apoio/runner.ts'
-import { mkdtempSync, rmSync, existsSync, closeSync, openSync, utimesSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync, utimesSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
+import { tmpdir, hostname } from 'node:os'
 import { withFileLock } from '../../motor/oswaldo/mutirao/trava-arquivo.ts'
 
 const BASE = mkdtempSync(join(tmpdir(), 'hicode-filelock-'))
@@ -31,7 +33,8 @@ test('withFileLock libera o lock mesmo quando fn lanca — a proxima chamada nao
 test('REGRESSAO: um lock orfao muito alem do prazo de obsolescencia e roubado em vez de esperar o timeout inteiro', () => {
   const alvo = alvoDeTeste()
   const lockOrfao = `${alvo}.lock`
-  closeSync(openSync(lockOrfao, 'w'))
+  const pid = Number(execFileSync('node', ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' }))
+  writeFileSync(lockOrfao, JSON.stringify({ versao: 1, pid, host: hostname(), token: randomUUID() }))
   const bemVelho = new Date(Date.now() - 10 * 60 * 1000)
   utimesSync(lockOrfao, bemVelho, bemVelho)
 
@@ -42,4 +45,28 @@ test('REGRESSAO: um lock orfao muito alem do prazo de obsolescencia e roubado em
   expect(resultado).toBe('destravou')
   expect(duracao).toBeLessThan(2000)
   expect(existsSync(lockOrfao)).toBe(false)
+})
+
+test('idade e timeout nao roubam lock de dono vivo ou legado desconhecido', () => {
+  const anterior = process.env.HII_LOCK_TIMEOUT_MS
+  process.env.HII_LOCK_TIMEOUT_MS = '15'
+  try {
+    for (const conteudo of ['', JSON.stringify({ versao: 1, pid: process.pid, host: hostname(), token: 'vivo' })]) {
+      const alvo = alvoDeTeste()
+      writeFileSync(`${alvo}.lock`, conteudo)
+      utimesSync(`${alvo}.lock`, new Date(0), new Date(0))
+      expect(() => withFileLock(alvo, () => 'indevido')).toThrow('nenhum lock ativo foi removido')
+      expect(readFileSync(`${alvo}.lock`, 'utf8')).toBe(conteudo)
+    }
+  } finally {
+    if (anterior === undefined) delete process.env.HII_LOCK_TIMEOUT_MS
+    else process.env.HII_LOCK_TIMEOUT_MS = anterior
+  }
+})
+
+test('liberacao nunca remove lock substituido por outro dono', () => {
+  const alvo = alvoDeTeste()
+  const outro = { versao: 1, pid: process.pid, host: hostname(), token: 'outro' }
+  withFileLock(alvo, () => writeFileSync(`${alvo}.lock`, JSON.stringify(outro)))
+  expect(JSON.parse(readFileSync(`${alvo}.lock`, 'utf8')).token).toBe('outro')
 })

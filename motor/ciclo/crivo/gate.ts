@@ -1,3 +1,4 @@
+import { fingerprintDoTrabalho } from '../../oswaldo/orquestracao/evidencias.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, FailureClass } from '../../cordel/index.ts'
 import { cardsDir, GATE_DIFF_LIMIT, GATE_RETRIES, GATE_TIMEOUT_MAX_MS, GATE_TIMEOUT_MIN_MS, GATE_TIMEOUT_MS_PER_KB, ROOT } from '../../cordel/alicerce/config.ts'
@@ -58,6 +59,7 @@ export interface DiffParts {
   names: string
   patch: string
   falhou?: string
+  parcial?: boolean
 }
 
 interface ParsedGate {
@@ -138,7 +140,7 @@ export async function accumulatedDiff(wt: string, base: string, working: boolean
   if (corpo.err) return { names: '', patch: '', falhou: `git diff falhou: ${primeiraLinha(corpo.stderr)}` }
   const raw = corpo.stdout
   const patch = raw.length > GATE_DIFF_LIMIT ? raw.slice(0, GATE_DIFF_LIMIT) + '\n[...diff truncado...]' : raw
-  return { names, patch }
+  return { names, patch, parcial: namesRaw.length > 4000 || raw.length > GATE_DIFF_LIMIT }
 }
 
 function primeiraLinha(texto: string): string {
@@ -243,6 +245,9 @@ async function gateReview(wt: string, base: string, desc: string, working: boole
 
 async function gateReviewInterno(wt: string, base: string, desc: string, working: boolean, id: string): Promise<GateResult> {
   const diff = await accumulatedDiff(wt, base, working)
+  if (diff.parcial) {
+    return { ok: false, verdict: 'CONDITIONAL', reason: 'revisao inconclusiva: diff ou lista de arquivos excede o limite; divida a entrega ou revise o limite configurado', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0, failureClass: 'terminal' }
+  }
   if (diff.falhou) {
     return { ok: false, verdict: 'BLOCKED', reason: `nao consegui LER o diff para revisar — ${diff.falhou}`, criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
@@ -285,6 +290,13 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
     a.detalhes.gauntletHabilitado = gauntletLigado(); a.detalhes.gauntletElegivel = gauntlet
     a.detalhes.gauntletMotivo = motivoDoModo; a.detalhes.candidatos = gauntlet ? referencias.length + 1 : 0
   })
+  const fingerprint = await fingerprintDoTrabalho(wt)
+  const confirmado = await accumulatedDiff(wt, base, working)
+  if (confirmado.falhou || confirmado.parcial || confirmado.names !== diff.names || confirmado.patch !== diff.patch) {
+    return { ok: false, verdict: 'CONDITIONAL', reason: 'trabalho mudou durante a coleta do diff; revise novamente', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
+  }
+  const baseAntes = await runGit(wt, ['rev-parse', `origin/${base}`])
+  if (baseAntes.err) return { ok: false, verdict: 'CONDITIONAL', reason: 'base da revisao indisponivel', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   const res = await runProvider(id, provider, {
     prompt: gauntlet ? buildPromptGauntlet(desc, tela, referencias, id) : buildPrompt(desc, diff),
     cwd: ROOT,
@@ -299,9 +311,13 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
     rotulo: gauntlet ? `gate · crivo · gauntlet ${1 + referencias.length} candidatos cegos` : 'gate · crivo',
   }, 'gate')
   const tokens = sumTokens(res.usage)
-  if (res.failed) {
+  if (!res.ok) {
     const cls = classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text })
     return { ok: false, verdict: 'CONDITIONAL', reason: `gate NAO executou (${res.timedOut ? 'timeout' : 'erro'}): ${oneLine(res.detail).slice(0, 120)}`, criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens, failureClass: cls.failureClass, failureReason: cls.reason, waitClass: cls.classeDeEspera, provider: provider.name }
+  }
+  const baseDepois = await runGit(wt, ['rev-parse', `origin/${base}`])
+  if (baseDepois.err || baseDepois.stdout !== baseAntes.stdout || fingerprint !== await fingerprintDoTrabalho(wt)) {
+    return { ok: false, verdict: 'CONDITIONAL', reason: 'trabalho ou base mudou durante a revisao; parecer antigo invalidado', criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens }
   }
   const parsed = buildParsed(res.text, res.cost, tokens)
   if (!parsed.found) {
@@ -336,7 +352,7 @@ export async function withGateRetry(run: () => Promise<GateResult>, onRetry?: (r
   try {
     return await dentro(atividade, async () => {
       let g = await run()
-      for (let retry = 0; !g.ok && retry < GATE_RETRIES; retry++) {
+      for (let retry = 0; !g.ok && g.failureClass !== 'terminal' && retry < GATE_RETRIES; retry++) {
         atualizar(atividade, a => { a.detalhes.iteracao = retry + 2; a.detalhes.motivoRetry = g.reason })
         onRetry?.(g.reason)
         const again = await run()

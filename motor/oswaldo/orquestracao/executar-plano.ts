@@ -63,6 +63,10 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       tentativa.fim = isoNow()
       tentativa.motivo = 'processo anterior terminou sem resultado confirmado'
     }
+    if (checkpoint.tentativas?.some(t => t.estado === 'interrompida')) {
+      writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
+      return { ok: false, reason: 'microtask com resultado incerto; reconcilie os efeitos e publique uma revisao do plano antes de retomar', failureClass: 'terminal', failureReason: 'resultado incerto exige reconciliacao', cost: '', costMeasured: false }
+    }
     // Alteracao externa invalida o cache; o diff nunca e descartado.
     if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) checkpoint.feitas = []
   }
@@ -100,6 +104,8 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
         // Atribuicao explicita exige revisao do plano, nao fallback silencioso.
         if (m.ia && !ultimo.ok && ultimo.failureClass === 'quota') ultimo = { ...ultimo, failureClass: 'terminal', failureReason: `IA atribuida a ${m.id} indisponivel: ${ultimo.failureReason ?? ultimo.reason}` }
         terminar(atividade, ultimo.ok ? 'succeeded' : 'failed', ultimo.reason ?? '')
+        if (ultimo.ok) checkpoint.feitas.push(m.id)
+        checkpoint.fingerprint = await fingerprintDoTrabalho(wt)
         concluida = true
       } finally {
         tentativa.fim = isoNow()
@@ -113,9 +119,6 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       custo += Number(ultimo.cost) || 0
       medido &&= ultimo.costMeasured === true
       for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += ultimo.usage?.[k] ?? 0
-      if (ultimo.ok) checkpoint.feitas.push(m.id)
-      checkpoint.fingerprint = await fingerprintDoTrabalho(wt)
-      writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
       if (!ultimo.ok) return { ...ultimo, cost: String(custo), costMeasured: medido, usage }
     }
   }

@@ -220,7 +220,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     const paradaHumana = id && readCard(id)?.fm.halt_class === 'humano'
     terminar(atividade, paradaHumana ? 'cancelled' : res.ok ? 'succeeded' : 'failed', res.detail)
     terminou = true
-    recordCostTrust(id, provider.name, res)
+    semPropagarFalhaDeRegistro(() => recordCostTrust(id, provider.name, res))
     anotarChamada(id, provider, req, papel, res, t0)
     if (sub) semPropagarFalhaDeRegistro(() => {
       finalizarChamada(sessao, sub, { ok: res.ok, texto: res.text || res.detail, interrompida: !!paradaHumana })
