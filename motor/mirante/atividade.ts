@@ -124,6 +124,7 @@ function parseLinhaSemRaia(linha: string, ts = ''): Atividade | null {
   if (sessao) return { tipo: 'sessao', nome: 'sessao', alvo: sessao[1] ?? '', ts }
   const fim = linha.match(RE_FIM)
   if (fim) return { tipo: 'fim', nome: 'concluido', alvo: fim[1] ? `US$${fim[1]}` : '', ts }
+  if (/^—\s*chamada interrompida\s*—?$/.test(linha)) return { tipo: 'fim', nome: 'interrompida', alvo: '', ts }
   if (RE_TIMEOUT.test(linha)) return { tipo: 'fim', nome: 'timeout', alvo: '', ts }
   if (/^—\s*encerrado com falha\s*—?$/.test(linha)) return { tipo: 'fim', nome: 'falhou', alvo: '', ts }
   const tool = linha.match(RE_TOOL)

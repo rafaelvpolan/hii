@@ -11,6 +11,7 @@ Thumbs.db
 .runner.lock
 .claude/worktrees/
 cards/runs/
+cards/diagnosticos/
 cards/previews/
 cards/urls/
 cards/sessions/

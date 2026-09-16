@@ -14,6 +14,8 @@ import type { CorpoContexto } from '../tui/app.ts'
 import { ACC, DIM, RESET, color } from './saida.ts'
 import { atividadeDe, todosOsCards } from './dados.ts'
 import { selecionado } from './estado.ts'
+import { lerSessaoHii } from '../../euclides/sessoes.ts'
+import { sessaoDaTarefa } from '../execucao-da-sessao.ts'
 
 export function custoDoDia(repo: string): DailySpend {
   const hoje = new Date().toISOString().slice(0, 10)
@@ -36,7 +38,12 @@ export function papeisDivergentes(): string[] {
 export function rodapeDa(state: SessionState, noRodape = false): string[] {
   const largura = Number(process.stdout.columns) || 80
   const gasto = custoDoDia(state.repo)
+  const sessao = sessaoDaTarefa(state.seguindo)
+  const sub = sessao ? lerSessaoHii(sessao)?.subsessoes.slice().reverse().find(s =>
+    s.estado === 'executando' && s.papel === 'implement' &&
+    (state.seguindo === sessao || s.execucao === state.seguindo)) : undefined
   const props = linhaPropriedades({
+    ativa: sub ? { provedor: sub.provedor, modelo: sub.modelo } : undefined,
     provedor: providerNameFor('implement'),
     modelo: modelFor('implement') ?? '',
     effort: esforcoAtual(state),

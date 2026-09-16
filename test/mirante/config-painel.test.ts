@@ -77,13 +77,13 @@ test('estado vazio nao quebra e nao mente', () => {
   expect(t).toContain('nada em execucao')
 })
 
-test('altura curta esconde os paineis menos essenciais, sem cortar os principais', () => {
+test('altura curta mantem todos os paineis acessiveis pela rolagem', () => {
   const t = renderConfig(base, { color: false, largura: 104, altura: 16 }).join('\n')
   expect(t).toContain('IAS')
   expect(t).toContain('GASTO DO MOTOR · 5H')
   expect(t).toContain('LOOP EM EXECUCAO')
-  expect(t).not.toContain('GASTO DO MOTOR · 7D')
-  expect(t).not.toContain('TOKENS 5H')
+  expect(t).toContain('GASTO DO MOTOR · 7D')
+  expect(t).toContain('TOKENS 5H')
 })
 
 test('altura generosa mantem todos os paineis', () => {
@@ -324,4 +324,77 @@ test('o painel mostra o TETO por card, nao so o gasto', () => {
 test('teto ZERO nao vira omissao — diz que nao conseguiu ler, em vez de parecer "sem limite"', () => {
   const texto = renderConfig({ ...base, gastoHoje: 1, tetoUsd: 0 }, { color: false, largura: 100, altura: 30 }).join('\n')
   expect(texto).toContain('NAO LEGIVEL')
+})
+
+for (const [largura, altura] of [[48, 24], [80, 24], [120, 40]] as const) {
+  test(`REGRESSAO #53: config ${largura}x${altura} preserva valores longos e medidas sem plano`, () => {
+    const modelo = 'modelo-' + 'x'.repeat(100) + '-FIM'
+    const p = ia('codex', {
+      planoLido: false, modelo,
+      detalheDoPlano: 'conta corporativa com identificador longo FINAL-CONTA',
+      contexto: { usadoTokens: 123456, limiteTokens: 258400, percentual: 47.8, medidoEm: '2026-09-16T00:00:00Z' },
+      janelas: [{ rotulo: '7d', percentualDoLimite: null, limiteConfiavel: false, gastoDoMotorUsd: 1.25, runsDoMotor: 3, restamMs: 2 * 86400000 }],
+    })
+    const linhas = renderConfig({ ...base, selecionado: 'codex', provedores: [p] }, { color: true, largura, altura })
+    for (const linha of linhas) expect(visibleLen(linha)).toBeLessThanOrEqual(largura)
+    const texto = stripAnsi(linhas.join('\n'))
+    expect(texto).toContain('plano nao lido')
+    expect(texto).toContain('47.8%')
+    expect(texto).toContain('123.456/258.400 tok')
+    expect(texto).toContain('limite nao reportado')
+    expect(texto).toContain('motor US$1.25')
+    expect(texto).toContain('reseta 2d0h')
+    expect(texto).toContain('FINAL-CONTA')
+    // Reconstroi o campo por coluna: as bordas e quebras nao podem apagar caracteres.
+    const colunas = largura >= 96 ? 2 : 1
+    const celulas = Array.from({ length: colunas }, (_, i) => linhas.map(l => stripAnsi(l).slice(i * largura / colunas, (i + 1) * largura / colunas).replace(/[│┌┐└┘─\s]/g, '')).join(''))
+    expect(celulas.some(c => c.includes(modelo))).toBe(true)
+    expect(texto).toContain('GASTO DO MOTOR · 7D')
+  })
+}
+
+test('REGRESSAO #53: contexto e janela ausentes dizem nao reportado sem inferir uso zero', () => {
+  const p = ia('codex', { planoLido: false })
+  const texto = renderConfig({ ...base, selecionado: 'codex', provedores: [p] }, { color: false, largura: 80, altura: 24 }).join('\n')
+  expect(texto).toContain('contexto')
+  expect(texto).toContain('nao reportado')
+  expect(texto).toContain('sem janela reportada')
+})
+
+test('cota medida em zero e diferente de limite nao reportado e do gasto do motor', () => {
+  const p = ia('codex', {
+    planoLido: false,
+    janelas: [
+      { rotulo: '5h', percentualDoLimite: 0, limiteConfiavel: true, gastoDoMotorUsd: 0.25, runsDoMotor: 1, restamMs: 3600000 },
+      { rotulo: '7d', percentualDoLimite: null, limiteConfiavel: false, gastoDoMotorUsd: 0.5, runsDoMotor: 2, restamMs: 86400000 },
+    ],
+  })
+  const texto = renderConfig({ ...base, selecionado: 'codex', provedores: [p] }, { color: false, largura: 48, altura: 24 }).join('\n')
+  expect(texto).toContain('0%')
+  expect(texto).toContain('limite nao reportado')
+  expect(texto).toContain('motor US$0.25')
+  expect(texto).toContain('motor US$0.50')
+  expect(texto).toContain('reseta 1h')
+  expect(texto).toContain('reseta 1d0h')
+})
+
+test('quebra de identificador unicode preserva grafemas e cor sem exceder colunas', async () => {
+  const { quebrarConfig } = await import('../../motor/mirante/render/config/quebrar.ts')
+  const valor = '界👩‍💻e\u0301'.repeat(30)
+  const linhas = quebrarConfig(`\x1b[36m${valor}\x1b[0m`, 46)
+  expect(linhas.length).toBeGreaterThan(1)
+  expect(linhas.map(stripAnsi).join('')).toBe(valor)
+  for (const linha of linhas) {
+    expect(visibleLen(linha)).toBeLessThanOrEqual(46)
+    expect(linha.startsWith('\x1b[36m')).toBe(true)
+    expect(linha.endsWith('\x1b[0m')).toBe(true)
+  }
+})
+
+test('medicao antiga orienta atualizar o provedor selecionado', () => {
+  const codex = ia('codex', { plano: 'plus', idadeDoUsoHoras: 192,
+    janelas: [{ rotulo: '5h', percentualDoLimite: 100, limiteConfiavel: false, gastoDoMotorUsd: 0, runsDoMotor: 0, restamMs: 0 }] })
+  const texto = renderConfig({ ...base, provedores: [codex], selecionado: 'codex' }, { color: false, largura: 80, altura: 24 }).join('\n')
+  expect(texto).toContain('VELHO, abra o codex')
+  expect(texto).not.toContain('abra o claude')
 })

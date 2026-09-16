@@ -175,7 +175,13 @@ test('REGRESSAO: quota com fallback ligado e rota apta troca na hora com o prove
   expect(c?.fm.rota_contexto, 'o proximo provedor recebe contexto explicito da troca').toContain('mesma tarefa e do mesmo worktree')
   expect(c?.fm.rota_contexto).toContain('IA anterior (claude)')
   expect(log).toContain('IA claude falhou: cota esgotada')
-  expect(log).toContain('detalhe: 429')
+  expect(log).not.toContain('detalhe: 429')
+  const caminho = log.match(/^diagnostico: (.+)$/m)?.[1]
+  expect(caminho).toBeTruthy()
+  const diagnostico = JSON.parse(readFileSync(caminho!, 'utf8')) as { detalhe: string; provedor: string; destino: string }
+  expect(diagnostico.detalhe).toBe('429')
+  expect(diagnostico.provedor).toBe('claude')
+  expect(diagnostico.destino).toBe('codex')
   expect(log).toContain('mudando automaticamente para codex')
   delete process.env.HII_QUOTA_FALLBACK
 })

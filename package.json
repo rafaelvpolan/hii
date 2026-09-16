@@ -16,7 +16,7 @@
     "lint:types": "bun scripts/check-no-any.mjs",
     "lint:clone": "bun scripts/check-clone-limpo.mjs",
     "test:unit": "bun scripts/test-bun.mjs",
-    "test:tui:e2e": "node test/mirante/e2e/tui-playwright.mjs",
+    "test:tui:e2e": "node scripts/test-tui-e2e.mjs",
     "test:node": "node --test --test-timeout=60000 $(find test -name '*.test.ts' | sort | grep -v apoio/expect-diferencial | grep -vE 'mirante/(tempo-de-pintura|tui-sob-carga)|quilombo/(fechar-custo|pipeline-manual-halt-no-build)') && node --test --test-timeout=60000 --test-concurrency=1 test/mirante/tempo-de-pintura.test.ts test/mirante/tui-sob-carga.test.ts test/quilombo/fechar-custo.test.ts test/quilombo/pipeline-manual-halt-no-build.test.ts",
     "test": "bun run typecheck && bun run lint:types && bun run lint:clone && bun run test:unit && bun run test:node"
   },

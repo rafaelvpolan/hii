@@ -14,6 +14,7 @@ const BOLD = '\x1b[1m'
 export const GIRO = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 export interface Propriedades {
+  ativa?: { provedor: string; modelo: string }
   provedor: string
   modelo: string
   effort: string
@@ -80,7 +81,8 @@ export function linhaPropriedades(p: Propriedades, opts: Partial<RodapeOptions> 
   const o = { ...PADRAO, ...opts }
   const ia = p.modelo ? `${p.provedor}/${p.modelo}` : p.provedor
   const partes = [
-    `ia ${paint(ia, CYAN, o)}`,
+    p.ativa ? `ia ativa ${paint(p.ativa.modelo ? `${p.ativa.provedor}/${p.ativa.modelo}` : p.ativa.provedor, CYAN, o)}` : '',
+    `ia configurada ${paint(ia, CYAN, o)}`,
     `esforco ${paint(p.effort, CYAN, o)}`,
     p.modo ? `modo ${paint(p.modo, CYAN, o)}` : '',
     p.gauntlet ? `crivo ${paint('gauntlet', YELLOW, o)}` : '',

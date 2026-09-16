@@ -1,3 +1,4 @@
+import { encerrando } from './mutirao/encerramento.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { readCard, repoPath, patchCard } from '../cordel/store.ts'
@@ -12,6 +13,8 @@ import { classifyFailure } from '../ciclo/reprise/classe-de-falha.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
 import { writeRun, resolvedFailure } from '../euclides/registros.ts'
 import { decidirRota, rotaTentadas, comTentativaDeRota } from '../tomada/rota.ts'
+import { gravarDiagnostico, redigirDiagnostico, resumoDoDiagnostico } from '../tomada/diagnostico.ts'
+import { gravarChamadaNoLiveLog } from '../tomada/harness/live-log.ts'
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
 
 export async function chamarGateway(card: Card, cwd: string): Promise<ImplementResult> {
@@ -27,7 +30,7 @@ export async function chamarGateway(card: Card, cwd: string): Promise<ImplementR
   const comum = { cost: String(res.cost), costMeasured: res.costMeasured, usage: res.usage, provider: provider.name, model }
   if (res.ok) return { ...comum, ok: true, resultText: res.text.slice(0, 140), fullText: res.text }
   const falha = classifyFailure(provider, res)
-  return { ...comum, ok: false, reason: res.detail || res.text, timedOut: res.timedOut, failureClass: falha.failureClass, failureReason: falha.reason, waitClass: falha.classeDeEspera }
+  return { ...comum, ok: false, reason: [res.detail, res.text].filter(Boolean).join('\n'), timedOut: res.timedOut, failureClass: falha.failureClass, failureReason: falha.reason, waitClass: falha.classeDeEspera }
 }
 
 export async function executarGateway(id: string, deps = { chamar: chamarGateway, rota: decidirRota }): Promise<void> {
@@ -44,13 +47,33 @@ export async function executarGateway(id: string, deps = { chamar: chamarGateway
     }
     warnBudgetWithoutGuarantee(id, card.fm, teto)
     const inicio = Date.now()
-    const res = await deps.chamar(card, cwd)
+    let bruto: ImplementResult
+    try {
+      bruto = await deps.chamar(card, cwd)
+    } catch (e) {
+      const provider = providerFor('implement', card.fm.provider_override_implement || undefined)
+      const detalhe = redigirDiagnostico(e instanceof Error ? e.message : String(e))
+      const falha = classifyFailure(provider, { timedOut: false, detail: detalhe, text: '' })
+      bruto = { ok: false, cost: '0', provider: provider.name, reason: detalhe, failureClass: falha.failureClass, failureReason: falha.reason, waitClass: falha.classeDeEspera }
+    }
+    const res = bruto.ok ? bruto : { ...bruto, reason: redigirDiagnostico(bruto.reason ?? ''), failureReason: redigirDiagnostico(bruto.failureReason ?? '') || undefined }
     const duracao = (Date.now() - inicio) / 1000
     const run = writeRun(id, res, duracao)
     const totais = { cost_usd: (gasto + (Number(res.cost) || 0)).toFixed(4), tokens_total: String(Number(card.fm.tokens_total || 0) + run.tokens_total), tempo_s: String(Number(card.fm.tempo_s || 0) + duracao) }
     if (readCard(id)?.fm.status !== 'EXECUTING') { patchCard(id, totais); return }
     if (res.ok) {
       patchCard(id, { ...totais, status: 'COMPLETED', rota_tentados: '' }, `${isoNow()} EXECUTING->COMPLETED gateway concluido; session #${card.fm.sessao_id || id} continua aberta`)
+      return
+    }
+    // SIGTERM encerra o harness para drenar o daemon. A reconciliacao retoma
+    // esta execucao no proximo arranque; nao transforme a parada em HALTED.
+    if (encerrando()) {
+      patchCard(id, totais)
+      const diagnostico = gravarDiagnostico(id, { provedor: res.provider ?? '', falha: 'chamada interrompida pelo encerramento do motor', detalhe: res.reason ?? '' })
+      gravarChamadaNoLiveLog({ caminho: join(cardsDir(), 'runs', `${id}.live.log`), rotulo: 'retomada', linhas: [
+        'motor encerrando; a mesma tarefa sera retomada no proximo inicio',
+        diagnostico ? `diagnostico: ${diagnostico}` : 'diagnostico indisponivel — verifique permissoes e espaco em disco',
+      ] })
       return
     }
     const { failureClass, failureReason } = resolvedFailure(res)
@@ -63,7 +86,19 @@ export async function executarGateway(id: string, deps = { chamar: chamarGateway
       patchCard(id, { ...totais, provider_override_implement: rota.para, rota_tentados: comTentativaDeRota(card.fm.rota_tentados, res.provider), rota_contexto: contextoDaTrocaDeIa(troca) }, `${isoNow()} gateway: mudando automaticamente para ${rota.para}; falha: ${failureReason}`)
       continue
     }
-    applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: res.provider ?? '', failureClass, failureReason, waitClass: res.waitClass, technicalDetail: res.reason ?? '', extraFields: totais })
+    const diagnostico = gravarDiagnostico(id, { provedor: res.provider ?? '', falha: failureReason, detalhe: res.reason ?? '', motivo: rota.motivo })
+    const outcome = applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: res.provider ?? '', failureClass, failureReason, waitClass: res.waitClass, technicalDetail: res.reason ?? '', extraFields: totais })
+    const acao = outcome === 'waiting'
+      ? `retomada automatica em ${readCard(id)?.fm.wait_until ?? 'breve'}; /stop ${id} para interromper`
+      : failureClass === 'quota' ? 'sem destino apto; escolha outra IA com /ia ou aguarde a renovacao da cota'
+      : /credencial|autentic/i.test(failureReason) ? 'refaca a autenticacao com /login e retome a tarefa'
+      : /instalado|binario/i.test(failureReason) ? 'instale o CLI do provedor ou escolha outra IA com /ia e retome a tarefa'
+      : 'corrija a causa indicada e retome a tarefa'
+    gravarChamadaNoLiveLog({ caminho: join(cardsDir(), 'runs', `${id}.live.log`), rotulo: 'falha gateway', linhas: [
+      `IA ${res.provider || 'desconhecida'} falhou: ${resumoDoDiagnostico(failureReason)}`,
+      `proxima acao: ${acao}`,
+      diagnostico ? `diagnostico: ${diagnostico}` : 'diagnostico indisponivel — verifique permissoes e espaco em disco',
+    ] })
     return
   }
   patchCard(id, { status: 'HALTED', halt_class: 'quota', halt_reason: 'limite de trocas atingido' }, `${isoNow()} EXECUTING->HALTED limite de trocas atingido`)

@@ -1,3 +1,4 @@
+import { redigirDiagnostico } from '../../tomada/diagnostico.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { Fields } from '../../cordel/index.ts'
 import { classifyFailure } from '../../ciclo/reprise/classe-de-falha.ts'
@@ -167,7 +168,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
   const sub = contexto ? iniciarSubsessao(sessao, id, provider.name, req.model ?? '', papel) : ''
   let concluida = false
   try {
-    const res = await provider.run({
+    const bruto = await provider.run({
       ...req,
       prompt: contexto ? `${contexto}\n\nPEDIDO ATUAL:\n${req.prompt}` : req.prompt,
       rotulo: req.rotulo ?? papel,
@@ -177,6 +178,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         req.aoIniciar?.(pid)
       },
     })
+    const res = bruto.ok ? bruto : { ...bruto, text: redigirDiagnostico(bruto.text), detail: redigirDiagnostico(bruto.detail) }
     recordCostTrust(id, provider.name, res)
     anotarChamada(id, provider, req, papel, res, t0)
     if (sub) semPropagarFalhaDeRegistro(() => {

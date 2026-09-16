@@ -78,3 +78,22 @@ exit ${exitCode}
   expect(tela).toContain('falhou')
   expect(tela).not.toContain('concluido')
 })
+
+test('SIGTERM fecha chamada como interrompida sem despejar JSON tecnico na tela', async () => {
+  writeFileSync(join(bin, 'codex'), `#!/bin/sh
+printf '%s\\n' '{"type":"item.completed","item":{"type":"agent_message","text":"trabalho preservado"}}'
+kill -TERM $$
+`)
+  const caminho = join(base, 'interrompido.log')
+  const res = await new CodexProvider().run({ ...pedido(), liveLog: caminho })
+  expect(res.ok).toBe(false)
+  const log = readFileSync(caminho, 'utf8')
+  expect(log).not.toContain('Command failed')
+  expect(log).not.toContain('"item.completed"')
+  const marcos = linhaDoTempo({ eventos: [], chamadas: [], atividades: parseLog(log) })
+  expect(chamadasEmVoo(marcos)).toEqual([])
+  const tela = renderLinhaDoTempo(marcos).join('\n')
+  expect(tela).toContain('interrompida')
+  expect(tela).not.toContain('falhou')
+  expect(tela).not.toContain('concluido')
+})

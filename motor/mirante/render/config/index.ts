@@ -2,7 +2,8 @@ import { caixa, grade } from '../widget/caixa.ts'
 import { serie } from '../widget/serie.ts'
 import { painelDaSessao, painelDeIas, painelDeTokens, painelDeUso, painelDoLoop, painelDoPlano, painelDoProvedor } from './paineis.ts'
 import type { EstadoDaConfig, OpcoesConfig } from './tipos.ts'
-import { truncVisible } from '../../tui/layout.ts'
+import { padVisible } from '../../tui/layout.ts'
+import { quebrarConfig } from './quebrar.ts'
 
 export type { EstadoDaConfig, LinhaDeProvedor, ItemDoLoop, LedgerDaSessao, PapelDaSessao, OpcoesConfig } from './tipos.ts'
 
@@ -48,32 +49,29 @@ export function renderConfig(e: EstadoDaConfig, o: OpcoesConfig): string[] {
   const escolhido = e.provedores.find(p => p.nome === e.selecionado)
   const opcoes: OpcoesConfig = { ...o, largura: w }
   const cx = { color: o.color, largura: w }
+  const painel = (titulo: string, linhas: string[]): string[] => caixa(titulo, linhas.flatMap(l => quebrarConfig(l, w - 2)), cx)
 
   const blocos = [
-    caixa('IAS · instalada / ligada / plano', painelDeIas(e, w - 2, opcoes), cx),
-    caixa(`${(e.selecionado || 'ia').toUpperCase()} · PLANO E USO`, painelDoPlano(escolhido, w - 2, opcoes), cx),
-    caixa(`${(e.selecionado || 'ia').toUpperCase()} · CONFIGURADO`, painelDoProvedor(escolhido, w - 2, opcoes), cx),
-    caixa('GASTO DO MOTOR · 5H', painelDeUso(e.uso5h, w - 2, opcoes), cx),
-    ...(compacto ? [] : [caixa('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes), cx)]),
-    ...(compacto ? [] : [caixa('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes), cx)]),
-    caixa('LOOP EM EXECUCAO', painelDoLoop(e.loop, e.fila, w - 2, opcoes), cx),
-    caixa(`SESSAO ${e.sessao.curto} · POR PAPEL`, painelDaSessao(e.sessao, w - 2, opcoes), cx),
+    painel('IAS · instalada / ligada / plano', painelDeIas(e, w - 2, opcoes)),
+    painel(`${(e.selecionado || 'ia').toUpperCase()} · PLANO E USO`, painelDoPlano(escolhido, w - 2, opcoes)),
+    painel(`${(e.selecionado || 'ia').toUpperCase()} · CONFIGURADO`, painelDoProvedor(escolhido, w - 2, opcoes)),
+    painel('GASTO DO MOTOR · 5H', painelDeUso(e.uso5h, w - 2, opcoes)),
+    painel('GASTO DO MOTOR · 7D', painelDeUso(e.usoSemana, w - 2, opcoes)),
+    painel('TOKENS 5H', painelDeTokens(e.uso5h, w - 2, opcoes)),
+    painel('LOOP EM EXECUCAO', painelDoLoop(e.loop, e.fila, w - 2, opcoes)),
+    painel(`SESSAO ${e.sessao.curto} · POR PAPEL`, painelDaSessao(e.sessao, w - 2, opcoes)),
   ]
 
-  // O teto vinha calculado no snapshot e NINGUEM o mostrava: o humano via o gasto
-  // e nao o limite que o motor aplica em cada card. Valor computado e nao aplicado,
-  // com a agravante de estar a uma linha da tela.
-  //
-  // O corte pela largura e obrigatorio: a linha do cabecalho e medida junto com as
-  // caixas, e o painel exige largura visivel igual em todas as linhas.
   const resumo = `projeto ${e.projeto || '(nenhum)'} · gasto hoje US$ ${e.gastoHoje.toFixed(2)}${tetoNaLinha(e.tetoUsd)}${tetoGlobalNaLinha(e)}`
   const cabecalho = [
-    `  ${paint('/config', CYAN, o)}  ${paint(truncVisible(resumo, Math.max(8, o.largura - 13)), DIM, o)}`,
-    truncVisible('  motor: gateway | orquestrador por pedido: /hii', o.largura).padEnd(o.largura),
-  ]
+    ...quebrarConfig(`  ${paint('/config', CYAN, o)} · selecionada: ${e.selecionado || 'nenhuma'}`, o.largura),
+    '  ↑↓ ia · pgup/pgdn rola · esc sai',
+  ].map(l => padVisible(l, o.largura))
+  const resumoCompleto = quebrarConfig(paint(resumo, DIM, o), o.largura).map(l => padVisible(l, o.largura))
+  const operacao = quebrarConfig('  motor: gateway | orquestrador por pedido: /hii', o.largura).map(l => padVisible(l, o.largura))
   const custo = caixa('CUSTO NA JANELA DE 5H', serie(e.serie, {
     color: o.color, largura: o.largura - 4, altura: compacto ? ALTURA_DA_SERIE_COMPACTA : ALTURA_DA_SERIE,
   }), { color: o.color, largura: o.largura })
 
-  return [...cabecalho, ...grade(blocos, { largura: o.largura, colunas: cols }), ...custo]
+  return [...cabecalho, ...grade(blocos, { largura: o.largura, colunas: cols }), ...custo, ...resumoCompleto, ...operacao]
 }

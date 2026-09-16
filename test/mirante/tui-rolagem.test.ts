@@ -18,13 +18,13 @@ interface Bancada {
 function bancada(): Bancada {
   const saida: string[] = []
   let onKey: ((k: string) => void) | null = null
-  let repintar: (() => void) | null = null
+  const repinturas = new Set<() => void>()
   const term: Terminal = {
     write: (s) => { saida.push(s) },
     rows: () => 24,
     cols: () => 80,
-    onResize: (fn) => { repintar = fn },
-    offResize: () => { repintar = null },
+    onResize: (fn) => { repinturas.add(fn) },
+    offResize: (fn) => { repinturas.delete(fn) },
     onKey: (fn) => { onKey = fn },
     offKey: () => { onKey = null },
     setRaw: () => {},
@@ -55,7 +55,7 @@ function bancada(): Bancada {
     tecla: (k) => onKey?.(k),
     quadro: () => {
       saida.length = 0
-      repintar?.()
+      for (const repintar of repinturas) repintar()
       return telaVirtual(saida)
     },
     fim: () => { onKey?.('\x04') },

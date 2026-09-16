@@ -93,7 +93,11 @@ export async function tui(state0: SessionState, term: Terminal = nodeTerminal(),
 
   const indiceDoRepo = (): number => reposRegistrados().findIndex(r => r.name === state.repo)
   const app = createApp(term, {
-    header: () => `${color ? ACC : ''}hii${color ? RESET : ''}${dim(`   daemon ${daemonStatus()}`)}`,
+    header: () => {
+      const online = criarIO({ log: () => {} }, () => {}, state.repo).daemonOnline()
+      const status = online ? (daemonPid() ? daemonStatus() : 'online') : 'offline'
+      return `${color ? ACC : ''}hii${color ? RESET : ''}${dim(`   daemon ${status}`)}`
+    },
     corpo: (ctx) => {
       definirModo(ctx.navegando)
       return corpoDaTela(state, ctx)

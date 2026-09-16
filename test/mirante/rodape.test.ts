@@ -25,7 +25,7 @@ test('sem modo (provedor sem modos de operacao), o campo some em vez de mostrar 
 })
 
 test('provedor sem modelo nao mostra barra solta', () => {
-  expect(linhaPropriedades({ ...props, modelo: '' })).toContain('ia claude')
+  expect(linhaPropriedades({ ...props, modelo: '' })).toContain('ia configurada claude')
   expect(linhaPropriedades({ ...props, modelo: '' })).not.toContain('claude/')
 })
 

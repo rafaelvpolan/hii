@@ -19,23 +19,26 @@ interface Fake extends Terminal {
   saida: string[]
   tecla: (k: string) => void
   tela: () => string
+  resize: (rows: number, cols: number) => void
 }
 
 function fakeTerminal(rows = 16, cols = 60): Fake {
   const saida: string[] = []
   let onKeyFn: ((k: string) => void) | null = null
+  const resizeFns = new Set<() => void>()
   return {
     saida,
     write: (s) => { saida.push(s) },
     rows: () => rows,
     cols: () => cols,
-    onResize: () => {},
-    offResize: () => {},
+    onResize: fn => { resizeFns.add(fn) },
+    offResize: fn => { resizeFns.delete(fn) },
     onKey: (fn) => { onKeyFn = fn },
     offKey: () => { onKeyFn = null },
     setRaw: () => {},
     tecla: (k) => onKeyFn?.(k),
-    tela: () => telaVirtual(saida),
+    tela: () => telaVirtual(saida, cols),
+    resize: (altura, largura) => { rows = altura; cols = largura; for (const fn of resizeFns) fn() },
   }
 }
 
@@ -203,4 +206,71 @@ test('REGRESSAO na tela propria a seta nunca chega como ajustes ou board — sem
   }).run()
   for (const k of ['\x1b[Z', '\t', '\x1b[D', '\x1b[B', '\x1b[A']) t.tecla(k)
   expect(navs).toEqual([{ dir: 1, modo: '' }, { dir: -1, modo: '' }])
+})
+
+for (const [cols, rows] of [[48, 24], [80, 24], [120, 40]] as const) {
+  test(`REGRESSAO #53: pgdn percorre todo o config ${cols}x${rows} sem saltar campos`, () => {
+    const t = fakeTerminal(rows, cols)
+    const linhas = Array.from({ length: 90 }, (_, i) => `campo-${String(i).padStart(3, '0')}-fim`)
+    const a = app(t, { corpo: () => linhas, dica: () => 'pgup/pgdn rola · esc sai', rodape: () => ['estado', 'ia configurada', 'execucao'] })
+    void a.run()
+    const vistos = new Set<string>()
+    try {
+      for (let i = 0; i < 30; i++) {
+        for (const campo of t.tela().match(/campo-\d{3}-fim/g) ?? []) vistos.add(campo)
+        expect(t.tela()).toContain('›')
+        t.tecla('\x1b[6~')
+      }
+      expect([...vistos].sort()).toEqual(linhas)
+    } finally { a.encerrar() }
+  })
+}
+
+test('REGRESSAO #53: resize recalcula config imediatamente sem esperar tick nem tecla', () => {
+  const t = fakeTerminal(24, 48)
+  const a = app(t, { corpo: () => [`largura atual ${t.cols()}`, ...Array.from({ length: 50 }, (_, i) => `linha ${i}`)] })
+  void a.run()
+  try {
+    expect(t.tela()).toContain('largura atual 48')
+    t.resize(40, 120)
+    expect(t.tela()).toContain('largura atual 120')
+    t.resize(24, 80)
+    expect(t.tela()).toContain('largura atual 80')
+  } finally { a.encerrar() }
+})
+
+test('config reserva o prompt, preserva rascunho e devolve foco de entrada com Esc', () => {
+  const t = fakeTerminal(24, 48)
+  let emConfig = false
+  const a = app(t, { telaPropria: () => emConfig, sairDaTela: () => { emConfig = false } })
+  void a.run()
+  try {
+    t.tecla('rascunho preservado')
+    expect(t.tela()).toContain('rascunho preservado')
+    emConfig = true
+    a.log('atualizacao')
+    expect(t.tela()).toContain('›')
+    expect(t.tela()).not.toContain('rascunho preservado')
+    t.tecla('nao enviado')
+    t.tecla('\x1b')
+    expect(t.tela()).toContain('rascunho preservado')
+    expect(t.tela()).not.toContain('nao enviado')
+  } finally { a.encerrar() }
+})
+
+test('escolher outra ia apos rolar config retorna a selecao visivel', () => {
+  const t = fakeTerminal(24, 48)
+  let nome = 'claude'
+  const a = app(t, {
+    corpo: () => [`selecionada: ${nome}`, ...Array.from({ length: 80 }, (_, i) => `campo ${i}`)],
+    onNav: () => { nome = 'codex'; return true },
+  })
+  void a.run()
+  try {
+    t.tecla('\x1b[6~')
+    expect(t.tela()).not.toContain('selecionada: claude')
+    t.tecla('\x1b[B')
+    expect(t.tela()).toContain('selecionada: codex')
+    expect(t.tela()).toContain('›')
+  } finally { a.encerrar() }
 })

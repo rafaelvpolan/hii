@@ -1,4 +1,4 @@
-import { padVisible, truncVisible } from '../../tui/layout.ts'
+import { visibleLen } from '../../tui/layout.ts'
 import { barraRotulada } from '../widget/barra.ts'
 import type { ConsumoDoProvedor } from '../../../euclides/tesouro/consumo.ts'
 import type { EstadoDaConfig, ItemDoLoop, JanelaDoPainel, LedgerDaSessao, LinhaDeProvedor, OpcoesConfig } from './tipos.ts'
@@ -10,13 +10,17 @@ const VERDE = '\x1b[32m'
 const VERMELHO = '\x1b[31m'
 const CURSOR = '▸'
 
+function preencher(texto: string, largura: number): string {
+  return texto + ' '.repeat(Math.max(0, largura - visibleLen(texto)))
+}
+
 function paint(s: string, cor: string, o: { color: boolean }): string {
   return o.color && s ? `${cor}${s}${RESET}` : s
 }
 
 function campo(rotulo: string, valor: string, largura: number, o: OpcoesConfig): string {
   const espaco = Math.max(4, Math.floor(largura * 0.42))
-  return ` ${paint(padVisible(rotulo, espaco), DIM, o)}${truncVisible(valor, Math.max(1, largura - espaco - 2))}`
+  return ` ${paint(preencher(rotulo, espaco), DIM, o)}${valor}`
 }
 
 const AMARELO = '\x1b[33m'
@@ -48,15 +52,15 @@ function rotuloDoPlano(p: LinhaDeProvedor): string {
   return '—'
 }
 
-export function painelDeIas(e: EstadoDaConfig, largura: number, o: OpcoesConfig): string[] {
+export function painelDeIas(e: EstadoDaConfig, _largura: number, o: OpcoesConfig): string[] {
   if (!e.provedores.length) return [' nenhuma ia configurada']
   return e.provedores.map((p) => {
     const marca = p.nome === e.selecionado ? paint(CURSOR, CYAN, o) : ' '
-    const estado = padVisible(rotuloDaSituacao(p, o), 14)
-    const nome = p.nome === e.selecionado ? paint(padVisible(p.nome, 8), CYAN, o) : padVisible(p.nome, 8)
-    const ligada = padVisible(p.habilitado ? paint('on', VERDE, o) : paint('off', DIM, o), 3)
+    const estado = preencher(rotuloDaSituacao(p, o), 14)
+    const nome = p.nome === e.selecionado ? paint(preencher(p.nome, 8), CYAN, o) : preencher(p.nome, 8)
+    const ligada = preencher(p.habilitado ? paint('on', VERDE, o) : paint('off', DIM, o), 3)
     const plano = rotuloDoPlano(p)
-    return truncVisible(` ${marca} ${nome} ${estado} ${ligada}  ${paint(plano, DIM, o)}`, largura)
+    return ` ${marca} ${nome} ${estado} ${ligada}  ${paint(plano, DIM, o)}`
   })
 }
 
@@ -74,35 +78,32 @@ function gastoDoMotor(j: JanelaDoPainel): string {
   return `motor US$${j.gastoDoMotorUsd.toFixed(casas)} · ${j.runsDoMotor} run`
 }
 
-function linhasDaJanela(j: JanelaDoPainel, medidor: number, largura: number, o: OpcoesConfig): string[] {
+function linhasDaJanela(j: JanelaDoPainel, medidor: number, _largura: number, o: OpcoesConfig): string[] {
   const cauda = [gastoDoMotor(j), quandoReseta(j.restamMs)].filter(Boolean).join(' · ')
   if (j.percentualDoLimite === null) {
     return [
-      truncVisible(` ${padVisible(j.rotulo, 8)} ${paint('limite nao reportado', DIM, o)}`, largura),
-      truncVisible(`          ${paint(cauda, DIM, o)}`, largura),
+      ` ${preencher(j.rotulo, 8)} ${paint('limite nao reportado', DIM, o)}`,
+      ` ${paint(cauda, DIM, o)}`,
     ]
   }
   const barra = ' ' + barraRotulada(j.rotulo, j.percentualDoLimite, 100, {
     color: o.color, largura: medidor, mostrarPercentual: true, rotuloEm: 8,
   })
   const aviso = j.limiteConfiavel ? '' : paint(' (leitura mais velha que a janela)', AMARELO, o)
-  return [truncVisible(barra + aviso, largura), truncVisible(`          ${paint(cauda, DIM, o)}`, largura)]
+  return [barra + aviso, ` ${paint(cauda, DIM, o)}`]
 }
 
 export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o: OpcoesConfig): string[] {
   if (!p) return [' escolha uma ia com ↑↓']
-  if (!p.plano) {
-    if (semTierPago(p)) return [' (free) — nenhum tier pago identificado']
-    if (conectadoNaNuvem(p)) return [' plano nao lido — o hii nao sabe ler o tier desta ia']
-    return [' plano nao descoberto nesta maquina']
-  }
-  const linhas = [campo('plano', p.plano, largura, o)]
+  const plano = p.plano || (semTierPago(p) ? '(free) — nenhum tier pago identificado'
+    : conectadoNaNuvem(p) ? 'plano nao lido — o hii nao sabe ler o tier desta ia' : 'plano nao descoberto nesta maquina')
+  const linhas = [p.plano ? campo('plano', plano, largura, o) : ` ${plano}`]
   if (p.detalheDoPlano) linhas.push(campo('conta', p.detalheDoPlano, largura, o))
   if (p.contexto) {
     const usado = p.contexto.usadoTokens.toLocaleString('pt-BR')
     const limite = p.contexto.limiteTokens.toLocaleString('pt-BR')
     linhas.push(campo('contexto', `${p.contexto.percentual.toFixed(1)}% · ${usado}/${limite} tok`, largura, o))
-  } else if (!p.rodaLocal && !p.planoLido) {
+  } else {
     linhas.push(campo('contexto', 'nao reportado pelo historico local', largura, o))
   }
   if (!p.janelas.length) linhas.push(campo('uso', 'sem janela reportada', largura, o))
@@ -115,12 +116,12 @@ export function painelDoPlano(p: LinhaDeProvedor | undefined, largura: number, o
       ? `medido ha ${Math.round(p.idadeDoUsoHoras * 60)} min`
       : `medido ha ${p.idadeDoUsoHoras.toFixed(0)}h`
     const velho = p.idadeDoUsoHoras > 6
-    linhas.push(' ' + paint(velho ? `${idade} — VELHO, abra o claude` : idade, velho ? AMARELO : DIM, o))
+    linhas.push(' ' + paint(velho ? `${idade} — VELHO, abra o ${p.nome}` : idade, velho ? AMARELO : DIM, o))
   }
   if (p.modelosDisponiveis.length) {
-    linhas.push(campo('modelos', p.modelosDisponiveis.slice(0, 3).join(', '), largura, o))
+    linhas.push(campo('modelos', p.modelosDisponiveis.join(', '), largura, o))
   }
-  return linhas.map(l => truncVisible(l, largura))
+  return linhas
 }
 
 export function painelDoProvedor(p: LinhaDeProvedor | undefined, largura: number, o: OpcoesConfig): string[] {
@@ -157,10 +158,10 @@ export function painelDeUso(uso: ConsumoDoProvedor[], largura: number, o: Opcoes
   if (!uso.length) return [' sem execucao nesta janela']
   const total = totalDe(uso)
   const medidor = Math.max(8, largura - 22)
-  const linhas = uso.slice(0, 5).map(u =>
-    truncVisible(' ' + barraRotulada(u.provedor, u.custoUsd, total || 1, {
+  const linhas = uso.map(u =>
+    ' ' + barraRotulada(u.provedor, u.custoUsd, total || 1, {
       color: o.color, largura: medidor, mostrarPercentual: true, rotuloEm: 9,
-    }), largura))
+    }))
   const tokens = uso.reduce((t, u) => t + u.tokens, 0)
   linhas.push(campo('gasto', `US$ ${total.toFixed(4)}`, largura, o))
   linhas.push(campo('tokens', tokens.toLocaleString('pt-BR'), largura, o))
@@ -170,7 +171,7 @@ export function painelDeUso(uso: ConsumoDoProvedor[], largura: number, o: Opcoes
 
 export function painelDeTokens(uso: ConsumoDoProvedor[], largura: number, o: OpcoesConfig): string[] {
   if (!uso.length) return [' sem tokens na janela']
-  return uso.slice(0, 4).flatMap(u => [
+  return uso.flatMap(u => [
     ` ${paint(u.provedor, CYAN, o)} ${paint(u.modelos.join(',') || '(sem modelo)', DIM, o)}`,
     campo('  entrada', u.tokensEntrada.toLocaleString('pt-BR'), largura, o),
     campo('  saida', u.tokensSaida.toLocaleString('pt-BR'), largura, o),
@@ -178,23 +179,23 @@ export function painelDeTokens(uso: ConsumoDoProvedor[], largura: number, o: Opc
   ])
 }
 
-export function painelDoLoop(loop: ItemDoLoop[], fila: number, largura: number, o: OpcoesConfig): string[] {
+export function painelDoLoop(loop: ItemDoLoop[], fila: number, _largura: number, o: OpcoesConfig): string[] {
   if (!loop.length) return [fila ? ` ${fila} na fila, nada em execucao` : ' nada em execucao']
-  const linhas = loop.slice(0, 5).map(i => truncVisible(
-    ` ${paint(`#${i.id}`, CYAN, o)} ${padVisible(i.passo, 12)} ${paint(padVisible(i.agente, 9), DIM, o)} ${i.desde}`,
-    largura))
+  const linhas = loop.map(i =>
+    ` ${paint(`#${i.id}`, CYAN, o)} ${preencher(i.passo, 12)} ${paint(preencher(i.agente, 9), DIM, o)} ${i.desde}`,
+  )
   if (fila) linhas.push(paint(` +${fila} na fila`, DIM, o))
   return linhas
 }
 
-export function painelDaSessao(sessao: LedgerDaSessao, largura: number, o: OpcoesConfig): string[] {
+export function painelDaSessao(sessao: LedgerDaSessao, _largura: number, o: OpcoesConfig): string[] {
   if (!sessao.papeis.length) return [' esta sessao ainda nao chamou IA']
   const linhas = sessao.papeis.map((papel) => {
     const ia = papel.modelo ? `${papel.provedor}/${papel.modelo}` : papel.provedor
     const falhas = papel.falhas ? `${paint(`${papel.falhas} falha(s)`, VERMELHO, o)} ` : ''
     const cauda = `${papel.chamadas}x · US$${papel.custoUsd.toFixed(4)} · ${papel.tokens} tok`
-    return truncVisible(` ${padVisible(papel.rotulo, 9)}${padVisible(ia, 17)} ${falhas}${paint(cauda, DIM, o)}`, largura)
+    return ` ${preencher(papel.rotulo, 9)}${preencher(ia, 17)} ${falhas}${paint(cauda, DIM, o)}`
   })
-  const total = ` ${padVisible('total', 9)}${padVisible('', 17)} ${paint(`US$${sessao.custoUsd.toFixed(4)} · ${sessao.tokens} tok`, DIM, o)}`
-  return [...linhas, truncVisible(total, largura)]
+  const total = ` ${preencher('total', 9)}${preencher('', 17)} ${paint(`US$${sessao.custoUsd.toFixed(4)} · ${sessao.tokens} tok`, DIM, o)}`
+  return [...linhas, total]
 }

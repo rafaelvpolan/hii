@@ -4,6 +4,7 @@ import { gravarChamadaNoLiveLog } from './harness/live-log.ts'
 import type { AgentRole, HarnessId } from './tipos.ts'
 import { publicarEvento } from '../euclides/ponte-eventos.ts'
 import { readCard } from '../cordel/store.ts'
+import { gravarDiagnostico, resumoDoDiagnostico } from './diagnostico.ts'
 
 export interface TrocaDeIaNoLog {
   readonly id: string
@@ -16,7 +17,7 @@ export interface TrocaDeIaNoLog {
 }
 
 function limpo(texto: string, limite: number): string {
-  return texto.replace(/\s+/g, ' ').trim().slice(0, limite)
+  return resumoDoDiagnostico(texto, limite)
 }
 
 export function contextoDaTrocaDeIa(t: TrocaDeIaNoLog): string {
@@ -28,13 +29,15 @@ export function contextoDaTrocaDeIa(t: TrocaDeIaNoLog): string {
 export function registrarTrocaDeIaNoLiveLog(t: TrocaDeIaNoLog): void {
   const de = t.de || 'provedor desconhecido'
   const sessao = readCard(t.id)?.fm.sessao_id ?? ''
-  publicarEvento('ia_falhou', t.id, sessao, { provedor: de, papel: t.papel, mensagem: t.falha })
+  const falha = limpo(t.falha || 'falha sem motivo resumido', 180)
+  const diagnostico = gravarDiagnostico(t.id, { provedor: de, destino: t.para, papel: t.papel, falha: t.falha, detalhe: t.detalhe ?? '', motivo: t.motivo })
+  publicarEvento('ia_falhou', t.id, sessao, { provedor: de, papel: t.papel, mensagem: falha, diagnostico })
   publicarEvento('ia_trocada', t.id, sessao, { de, para: t.para, papel: t.papel, mensagem: `mudando automaticamente para ${t.para}` })
   const linhas = [
-    `IA ${de} falhou: ${t.falha || 'falha sem motivo resumido'}`,
-    t.detalhe ? `detalhe: ${t.detalhe}` : '',
+    `IA ${de} falhou: ${falha}`,
     `mudando automaticamente para ${t.para}`,
-    `motivo da rota: ${t.motivo}`,
+    `motivo da rota: ${limpo(t.motivo, 180)}`,
+    diagnostico ? `diagnostico: ${diagnostico}` : 'diagnostico indisponivel — verifique permissoes e espaco em disco',
   ].filter(Boolean)
   gravarChamadaNoLiveLog({
     caminho: join(cardsDir(), 'runs', `${t.id}.live.log`),
