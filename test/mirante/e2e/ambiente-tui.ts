@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 
 export function ambienteTui(base: string): void {
+  // A baseline deve usar a mesma paleta no terminal local e no CI.
+  delete process.env.NO_COLOR
   for (const nome of ['cards', 'bin', 'alvo', 'codex', 'claude', 'kimi', 'skills', 'agents', 'secrets']) mkdirSync(join(base, nome), { recursive: true })
   for (const nome of ['node', 'bun', 'git', 'script', 'stty', 'sh', 'bash', 'sleep', 'tty', 'setsid']) {
     const destino = join(base, 'bin', nome)
@@ -13,6 +15,7 @@ export function ambienteTui(base: string): void {
   }
   writeFileSync(join(base, 'bin', 'claude'), '#!/bin/sh\necho "fixture claude: CLI externo proibido" >&2\nexit 91\n', { mode: 0o755 })
   Object.assign(process.env, {
+    HII_COLOR_DEPTH: '256', TERM: 'xterm-256color',
     HII_CARDS_DIR: join(base, 'cards'), HII_IA_FILE: join(base, 'ia.json'),
     HII_REPOS_FILE: join(base, 'repos.json'), HII_MODELOS_FILE: join(base, 'modelos.json'),
     HII_SKILLS_DIR: join(base, 'skills'), HII_AGENTS_DIR: join(base, 'agents'),

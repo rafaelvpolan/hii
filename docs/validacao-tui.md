@@ -51,6 +51,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory /tmp/hii-tui-gates-nova
 ```
 
 Os screenshots de referencia usam DejaVu Sans Mono e Chromium do lockfile.
+A fixture fixa a paleta de 256 cores independentemente de `NO_COLOR` e do
+terminal hospedeiro; Chromium desativa antialiasing LCD dependente do sistema.
 O comparador mascara apenas valores volateis (tempo, PID e tamanho em bytes),
 limita a divergencia a 0,3% dos pixels e inclui uma sobreposicao proposital que
 deve reprovar. Para atualizar referencias, gere explicitamente e revise as

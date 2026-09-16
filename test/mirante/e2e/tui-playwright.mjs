@@ -26,7 +26,8 @@ relatar()
 let browser
 const quote = s => `'${s.replaceAll("'", "'\\''")}'`
 try {
-  browser = await chromium.launch({ headless: true })
+  // Antialiasing RGB do host muda pixels mesmo com a mesma fonte e geometria.
+  browser = await chromium.launch({ headless: true, args: ['--disable-lcd-text'] })
   for (const [cols, width] of [[48, 390], [100, 1365]]) {
     Object.assign(manifesto, { colunas: cols, linhas: 36, etapa: 'inicio' })
     const env = { ...process.env }

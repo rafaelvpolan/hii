@@ -3,6 +3,21 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { ambienteTui } from './e2e/ambiente-tui.ts'
+import { profundidadeDeCor } from '../../motor/mirante/tui/paleta.ts'
+
+test('fixture visual fixa cores mesmo herdando NO_COLOR ou terminal truecolor', () => {
+  const anterior = { ...process.env }
+  const base = mkdtempSync(join(tmpdir(), 'hii-cores-'))
+  try {
+    Object.assign(process.env, { NO_COLOR: '1', HII_COLOR_DEPTH: 'nenhuma', COLORTERM: 'truecolor' })
+    ambienteTui(base)
+    expect(profundidadeDeCor()).toBe('256')
+    expect(process.env.NO_COLOR).toBeUndefined()
+  } finally {
+    process.env = anterior
+    rmSync(base, { recursive: true, force: true })
+  }
+})
 
 test('fixture visual substitui todo estado operacional herdado do daemon externo', () => {
   const anterior = { ...process.env }
