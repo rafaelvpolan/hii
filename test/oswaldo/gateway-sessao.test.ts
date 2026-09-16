@@ -5,13 +5,19 @@ import { join } from 'node:path'
 import { submit, submitSession, approvePlan } from '../../motor/mirante/acoes.ts'
 import { readCard, patchCard } from '../../motor/cordel/store.ts'
 import { registrarPedido } from '../../motor/mirante/execucao-da-sessao.ts'
-import { executarGateway } from '../../motor/oswaldo/gateway.ts'
+import { chamarGateway, executarGateway } from '../../motor/oswaldo/gateway.ts'
 import { pending, reconcileStranded } from '../../motor/oswaldo/mutirao/estado-da-fila.ts'
 import { runProvider } from '../../motor/euclides/tesouro/confianca.ts'
 import { harnessPorNome } from '../../motor/tomada/registro.ts'
-import { lerSessaoHii, iniciarSubsessao } from '../../motor/euclides/sessoes.ts'
+import { lerSessaoHii, iniciarSubsessao, registrarMensagem } from '../../motor/euclides/sessoes.ts'
 import { registrarHarness, esquecerHarness } from '../../motor/tomada/harness-em-voo.ts'
 import type { AgentRequest, AgentResult, Harness } from '../../motor/tomada/tipos.ts'
+
+import { aplicar } from '../../motor/tomada/escolha-de-ia.ts'
+import { instruir } from '../../motor/mirante/instruir.ts'
+import type { EntradaDeRota, DecisaoDeRota } from '../../motor/tomada/rota.ts'
+
+import { pedirEncerramento, cancelarEncerramento } from '../../motor/oswaldo/mutirao/encerramento.ts'
 
 let dir = ''
 let anterior: NodeJS.ProcessEnv
@@ -136,4 +142,125 @@ test('excecao do harness fecha a subsessao com falha', async () => {
   } catch { falhou = true }
   expect(falhou).toBe(true)
   expect(lerSessaoHii(sessao)?.subsessoes[0]?.estado).toBe('falhou')
+})
+
+// Falhas precisam sair da execucao com estado, acao e diagnostico consultaveis.
+for (const caso of [
+  { nome: 'cota sem destino', detalhe: 'usage limit reached: weekly limit', classe: 'quota', status: 'HALTED', acao: 'escolha outra IA' },
+  { nome: 'autenticacao', detalhe: '401 unauthorized', classe: 'terminal', status: 'HALTED', acao: '/login' },
+  { nome: 'CLI ausente', detalhe: 'spawn codex ENOENT', classe: 'terminal', status: 'HALTED', acao: 'instale' },
+  { nome: 'timeout', detalhe: 'timeout', classe: 'transient', status: 'WAITING', acao: 'retomada automatica', timeout: true },
+  { nome: 'stream interrompido', detalhe: 'ECONNRESET durante stream', classe: 'transient', status: 'WAITING', acao: 'retomada automatica' },
+]) test(`gateway: ${caso.nome} explica proxima acao e preserva diagnostico sem segredo`, async () => {
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  process.env.HII_TEST_SECRET = 'segredo-gateway-nao-publico'
+  const id = pedido(submitSession({ title: caso.nome, repo: 'org/app' }))
+  const h = harnessPorNome('codex')
+  const original = h.run
+  aplicar({ papeis: ['implement'], provider: 'codex' })
+  h.run = async () => ({ ok: false, failed: true, timedOut: !!caso.timeout, isError: true,
+    detail: `${caso.detalhe}\nsegredo-gateway-nao-publico\nFIM-BRUTO`, text: 'SAIDA-DO-STREAM segredo-gateway-nao-publico', cost: 0, costMeasured: false, usage: uso })
+  try {
+    await executarGateway(id, { chamar: chamarGateway, rota: () => ({ acao: 'manter_politica_atual', motivo: 'nenhum candidato apto' }) })
+    const card = readCard(id)!
+    expect(card.fm.status).toBe(caso.status)
+    expect(card.fm.halt_class || (card.fm.wait_class ? 'transient' : '')).toBe(caso.classe)
+    const log = readFileSync(join(dir, 'cards', 'runs', `${id}.live.log`), 'utf8')
+    expect(log).toContain('IA codex falhou:')
+    expect(log).toContain(caso.acao)
+    expect(log).toContain('diagnostico:')
+    expect(log).not.toContain('FIM-BRUTO')
+    const arquivos = readdirSync(join(dir, 'cards'), { recursive: true }).filter(f => String(f).endsWith('.json') || String(f).endsWith('.md') || String(f).endsWith('.log'))
+    const persistido = arquivos.map(f => readFileSync(join(dir, 'cards', String(f)), 'utf8')).join('\n')
+    expect(persistido).not.toContain('segredo-gateway-nao-publico')
+    expect(persistido).toContain('FIM-BRUTO')
+    const diagnosticos = readdirSync(join(dir, 'cards', 'diagnosticos')).map(f => readFileSync(join(dir, 'cards', 'diagnosticos', f), 'utf8')).join('\n')
+    expect(diagnosticos).toContain('SAIDA-DO-STREAM')
+    expect(diagnosticos).toContain('FIM-BRUTO')
+  } finally { h.run = original }
+})
+
+test('excecao de stream vira espera registrada em vez de abandonar EXECUTING', async () => {
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  aplicar({ papeis: ['implement'], provider: 'codex' })
+  const id = pedido(submitSession({ title: 'stream lancou', repo: 'org/app' }))
+  await executarGateway(id, {
+    chamar: async () => { throw new Error('ECONNRESET stream interrompido') },
+    rota: () => { throw new Error('falha transitoria nao troca') },
+  })
+  expect(readCard(id)?.fm.status).toBe('WAITING')
+  expect(readCard(id)?.fm.wait_class).toBe('rede')
+  expect(readFileSync(join(dir, 'cards', 'runs', `${id}.live.log`), 'utf8')).toContain('retomada automatica')
+})
+
+test('duas trocas preservam instrucoes, efeitos e autoria da mesma execucao sem repetir ao reiniciar', async () => {
+  process.env.HII_IA_FILE = join(dir, 'ia.json')
+  aplicar({ papeis: ['implement'], provider: 'codex', model: 'modelo-inicial' })
+  const sessao = submitSession({ title: 'continuidade', repo: 'org/app' })
+  const conversa = [
+    ['ia', 'Qual contrato deve permanecer?'], ['humano', 'Decisao: manter /v1/clientes.'],
+    ['ia', 'Qual cor aplicar?'], ['humano', 'Resposta humana: azul.'],
+    ['ia', 'Onde esta a especificacao?'], ['humano', 'Artefato aprovado: decisao.txt.'],
+  ] as const
+  for (const [autor, texto] of conversa) registrarMensagem(sessao, { autor, texto, execucao: '', provedor: autor === 'ia' ? 'codex' : '', modelo: '' })
+  writeFileSync(join(dir, 'decisao.txt'), 'manter /v1/clientes; azul')
+  const id = pedido(sessao, 'Preserve a API publica')
+  expect(instruir(id, 'Mantenha o contrato HTTP').ok).toBe(true)
+  const nomes = ['codex', 'claude', 'ollama']
+  const restaurar: (() => void)[] = []
+  const chamadas: string[] = []
+  for (const [i, nome] of nomes.entries()) {
+    const h = harnessPorNome(nome)
+    const original = h.run
+    const agentic = Object.getOwnPropertyDescriptor(h, 'agentic')!
+    Object.defineProperty(h, 'agentic', { value: true, configurable: true })
+    restaurar.push(() => { h.run = original; Object.defineProperty(h, 'agentic', agentic) })
+    h.run = async r => {
+      chamadas.push(nome)
+      expect(r.cwd).toBe(dir)
+      expect(r.prompt).toContain('Preserve a API publica')
+      expect(r.prompt).toContain('Mantenha o contrato HTTP')
+      for (const [, texto] of conversa) expect(r.prompt).toContain(texto)
+      expect(readFileSync(join(dir, 'decisao.txt'), 'utf8')).toBe('manter /v1/clientes; azul')
+      for (const anterior of nomes.slice(0, i)) expect(readFileSync(join(dir, `${anterior}.efeito`), 'utf8')).toBe('unico')
+      if (i) {
+        expect(r.prompt).toContain('Continue do estado atual')
+        expect(r.prompt).toContain('Instrucao entre tentativas')
+        expect(r.prompt).toContain('resultado parcial codex')
+      }
+      writeFileSync(join(dir, `${nome}.efeito`), 'unico', { flag: 'wx' })
+      if (i === 0) expect(instruir(id, 'Instrucao entre tentativas').ok).toBe(true)
+      return { ok: i === 2, failed: i !== 2, timedOut: false, isError: i !== 2,
+        detail: i < 2 ? 'usage limit reached: weekly limit' : '', text: `resultado parcial ${nome}`, cost: 0, costMeasured: false, usage: uso }
+    }
+  }
+  const deps = { chamar: chamarGateway, rota: (e: EntradaDeRota): DecisaoDeRota => ({ acao: 'trocar', para: e.provedorAtual === 'codex' ? 'claude' : 'ollama', motivo: 'fixture apta' }) }
+  try {
+    await executarGateway(id, deps)
+    await executarGateway(id, deps)
+    expect(chamadas).toEqual(nomes)
+    expect(readCard(id)?.fm.status).toBe('COMPLETED')
+    expect(readCard(id)?.fm.tokens_total).toBe('18')
+    const s = lerSessaoHii(sessao)!
+    expect(s.execucoes.map(e => e.id)).toEqual([id])
+    expect(s.subsessoes.map(s => s.provedor)).toEqual(nomes)
+    expect(s.subsessoes.map(s => s.estado)).toEqual(['falhou', 'falhou', 'concluida'])
+    expect(s.mensagens.filter(m => m.autor === 'ia' && m.execucao === id).map(m => m.provedor)).toEqual(nomes)
+  } finally { for (const f of restaurar) f() }
+})
+
+for (const ok of [false, true]) test(`encerramento do daemon preserva custos e ${ok ? 'conclui sucesso recebido' : 'deixa falha para retomar no reinicio'}`, async () => {
+  const id = pedido(submitSession({ title: 'encerramento', repo: 'org/app' }))
+  try {
+    await executarGateway(id, {
+      chamar: async () => {
+        pedirEncerramento()
+        return { ok, cost: '0.25', usage: uso, provider: 'codex', reason: 'SIGTERM', failureClass: 'terminal' }
+      },
+      rota: () => { throw new Error('nao deve rotear durante encerramento') },
+    })
+    expect(readCard(id)?.fm.status).toBe(ok ? 'COMPLETED' : 'EXECUTING')
+    expect(readCard(id)?.fm.cost_usd).toBe('0.2500')
+    expect(readCard(id)?.fm.tokens_total).toBe('6')
+  } finally { cancelarEncerramento() }
 })

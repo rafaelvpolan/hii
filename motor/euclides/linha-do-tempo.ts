@@ -84,7 +84,7 @@ export function blocosDeChamada(atividades: readonly AtividadeDaIa[]): ChamadaNa
     const b = abertoPorRaia.get(raia) ?? abrir({ ...a, args: '', alvo: '' }, raia)
     if (a.tipo === 'fim') {
       b.concluida = true
-      b.custoAnunciado = a.nome === 'timeout' ? 'TIMEOUT' : a.nome === 'falhou' ? 'FALHA' : a.alvo
+      b.custoAnunciado = a.nome === 'interrompida' ? 'INTERRUPCAO' : a.nome === 'timeout' ? 'TIMEOUT' : a.nome === 'falhou' ? 'FALHA' : a.alvo
       abertoPorRaia.delete(raia)
       continue
     }

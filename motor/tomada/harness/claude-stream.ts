@@ -1,3 +1,4 @@
+import { redigirDiagnostico, resumoDoDiagnostico } from '../diagnostico.ts'
 import { FORMATO_STREAM, claudeArgv } from './claude-argv.ts'
 import { spawn } from 'node:child_process'
 import { appendFileSync, writeFileSync, readFileSync, statSync, mkdirSync, existsSync } from 'node:fs'
@@ -104,6 +105,7 @@ export function renderEvent(ev: StreamEvent, ferramentasEmVoo: Map<string, strin
       return `  ← ${short(c.content).replace(/\s+/g, ' ')}`
     }
   }
+  if (ev.type === 'result' && ev.is_error) return `— falha do Claude: ${resumoDoDiagnostico(ev.result || 'erro sem descricao')} —\n— encerrado com falha —`
   if (ev.type === 'result') return `— concluido (custo $${(Number(ev.total_cost_usd) || 0).toFixed(4)}) —`
   return ''
 }
@@ -129,7 +131,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
   const dir = dirname(liveLog)
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
-  const write = (s: string): void => { try { appendFileSync(liveLog, comRaia(s, req.raia)) } catch { void 0 } }
+  const write = (s: string): void => { try { appendFileSync(liveLog, comRaia(redigirDiagnostico(s), req.raia)) } catch { void 0 } }
   const stderrAcumulado = new AcumuladorDeLinhas()
   write(`\n${cabecalhoDaChamada(carimboAgora(), req.rotulo)}\n`)
   const ferramentasEmVoo = new Map<string, string>()
@@ -137,6 +139,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
   return new Promise<AgentResult>((resolve) => {
     let text = ''
     let assistantText = ''
+    const stderr: string[] = []
     let reading: CostReading = COST_UNKNOWN
     let isError = false
     let usage = emptyUsage()
@@ -151,17 +154,23 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
 
     const soft = setTimeout(() => {
       timedOut = true
-      write('\n— TIMEOUT: encerrando a IA —\n')
+      if (!gotResult) write('\n— TIMEOUT: encerrando a IA —\n')
       try { child.kill('SIGTERM') } catch { void 0 }
       hard = setTimeout(() => { try { child.kill('SIGKILL') } catch { void 0 } }, 5000)
     }, req.timeoutMs)
 
-    const done = (failed: boolean, detail = ''): void => {
+    const done = (failed: boolean, detail = '', interrompida = false): void => {
       if (settled) return
       settled = true
       clearTimeout(soft)
       if (hard) clearTimeout(hard)
-      resolve({ ok: !failed && !isError, failed, timedOut, isError, detail, text: text || assistantText, ...reading, usage })
+      // Spawn error e close podem ocorrer juntos; settled fecha uma unica vez.
+      // result e timeout ja escreveram seu proprio marcador terminal.
+      if (!gotResult && !timedOut) {
+        if (interrompida) write('— chamada interrompida —\n')
+        else write(`— falha do Claude: ${resumoDoDiagnostico(detail || 'CLI terminou sem evento result')} —\n— encerrado com falha —\n`)
+      }
+      resolve({ ok: !failed && !isError, failed, timedOut, isError, detail: redigirDiagnostico([detail, failed || isError ? stderr.join('') : ''].filter(Boolean).join('\n')), text: failed || isError ? redigirDiagnostico(text || assistantText) : text || assistantText, ...reading, usage })
     }
 
     const handleLine = (line: string): void => {
@@ -198,13 +207,17 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
       }
     })
 
-    child.stderr.on('data', (d: Buffer) => { for (const l of stderrAcumulado.empurrar(String(d))) write(l + '\n') })
+    child.stderr.on('data', (d: Buffer) => {
+      stderr.push(String(d))
+      for (const l of stderrAcumulado.empurrar(String(d))) write(l + '\n')
+    })
     child.on('error', (e: Error) => done(true, String(e?.message || e)))
-    child.on('close', (code: number | null) => {
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
       if (buf.trim()) handleLine(buf)
       for (const l of stderrAcumulado.esvaziar()) write(l + '\n')
       if (!gotResult && code) isError = true
-      done(timedOut || !gotResult, timedOut ? 'timeout' : code ? `exit ${code}` : '')
+      const detalhe = timedOut ? 'timeout' : signal ? `interrompido por ${signal}` : code ? `exit ${code}` : !gotResult ? 'CLI terminou sem evento result' : ''
+      done(timedOut || !gotResult, detalhe, signal === 'SIGTERM' || signal === 'SIGINT')
     })
   })
 }

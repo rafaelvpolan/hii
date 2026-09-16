@@ -192,11 +192,15 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     if (!emLote) desenhar()
   }
 
+  const redimensionar = (): void => { sujo = true; desenhar() }
+  term.onResize(redimensionar)
+
   const finalizar = (): void => {
     if (sair) return
     sair = true
     clearInterval(timer)
     term.offKey(onChunk)
+    term.offResize(redimensionar)
     screen.close()
     resolver?.()
   }
@@ -224,7 +228,9 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     if (precisaDesenhar && !sair) desenhar()
   }
 
-  const passoDeRolagem = (): number => Math.max(1, term.rows() - 8)
+  const passoDeRolagem = (): number => hooks.telaPropria(ctxAtual())
+    ? Math.max(1, quadro.corpo.length - 1)
+    : Math.max(1, term.rows() - 8)
 
   const onKey = (key: string): boolean => {
     if (sair) return false

@@ -38,7 +38,9 @@ test('PTY Linux: teclado real, session, tarefa offline, estado entre processos e
     filho.stdin.write('/new conversa PTY\r')
     await ate(() => allCards().length === 1 && tela().includes('conversa PTY'))
     filho.stdin.write('Ajuste o texto do projeto\r')
-    await ate(() => allCards().length === 2 && tela().includes('daemon offline'))
+    // O cabecalho ja diz offline antes do envio. O card passa por READY durante
+    // a criacao; espere o despacho concluir antes de simular sua conclusao.
+    await ate(() => allCards().length === 2 && allCards().some(c => c.tipo !== 'session' && c.status === 'EXECUTING') && tela().includes('daemon offline'))
     const id = allCards().find(c => c.tipo !== 'session')!.id!
     expect(readCard(id)?.fm.status).toBe('EXECUTING')
     patchCard(id, { status: 'COMPLETED' })

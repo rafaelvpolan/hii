@@ -20,6 +20,7 @@ jobs:
           node-version: '24'
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
+      - run: sudo apt-get install -y fonts-dejavu-core
       - run: bun run test:tui:e2e /tmp/hii-tui-visual
       - run: node scripts/validar-visualizador.mjs
       - uses: actions/upload-artifact@v4
@@ -29,7 +30,7 @@ jobs:
           path: |
             /tmp/hii-tui-visual
             /tmp/hii-visualizador
-          retention-days: 7
+          retention-days: 30
   motor:
     runs-on: ubuntu-latest
     steps:

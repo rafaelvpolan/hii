@@ -15,6 +15,14 @@ const base = process.argv[2]
 if (!base || !existsSync(join(base, 'ambiente-e2e'))) throw new Error('Exige ambiente E2E isolado')
 ambienteTui(base)
 writeFileSync(join(base, 'bin', 'codex'), `#!/bin/sh
+printf '%s\\n' "$@" > argv-ultima.txt
+case "$2" in
+  *"Conferir argv"*)
+    printf '%s\\n' '{"type":"item.completed","item":{"type":"agent_message","text":"ARGV_E_COLAGEM_CONFIRMADOS"}}'
+    printf '%s\\n' '{"type":"turn.completed","usage":{"input_tokens":4,"output_tokens":2}}'
+    exit 0
+    ;;
+esac
 printf '%s\\n' '{"type":"item.completed","item":{"type":"agent_message","text":"Codex iniciou o trabalho"}}'
 printf '%s' parcial > parcial.txt
 while [ ! -f liberar-cota ]; do sleep 0.05; done
@@ -41,7 +49,7 @@ const execucoes: Promise<void>[] = []
 // Apenas o agendamento e simulado; gateway, roteador e persistencia sao de producao.
 const timer = setInterval(() => {
   for (const c of allCards()) {
-    if (!c.id || c.title !== 'Preserve a API publica' || c.status !== 'EXECUTING' || iniciadas.has(c.id)) continue
+    if (!c.id || (c.title !== 'Preserve a API publica' && !String(c.title).startsWith('Conferir argv')) || c.status !== 'EXECUTING' || iniciadas.has(c.id)) continue
     iniciadas.add(c.id)
     execucoes.push(executarGateway(c.id))
   }

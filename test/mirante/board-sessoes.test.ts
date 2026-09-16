@@ -182,3 +182,48 @@ test('com /config aberto, a seta de baixo continua escolhendo provedor na tela',
   expect(navegarNaTela(naConfig, 1, 'rodape')).toBe(true)
   expect(selecionado()).toBe(providerNames()[1])
 })
+
+test('historico extenso mantem sessoes antigas alcancaveis e selecionadas dentro da janela', async () => {
+  const { criarSessaoHii } = await import('../../motor/euclides/sessoes.ts')
+  for (let n = 1; n <= 24; n++) {
+    const id = String(n).padStart(3, '0')
+    cardEmDisco(id, 'READY')
+    criarSessaoHii(id, 'org/app', `conversa extensa ${id}`)
+  }
+  const { historicoDaTela, navegar, alvoDeEntrada, ordemDasSessoes } = await import('../../motor/mirante/cli/board-tui.ts')
+  const { newSession } = await import('../../motor/mirante/sessao.ts')
+  const { selecionar, selecionado } = await import('../../motor/mirante/cli/estado.ts')
+  const state = newSession('org/app')
+  selecionar('')
+  historicoDaTela(8, state.repo)
+  expect(ordemDasSessoes(state.repo).length).toBe(24)
+  for (let n = 0; n < 24; n++) {
+    navegar(state, 1, 'board')
+    const linhas = historicoDaTela(8, state.repo)
+    expect(linhas.length).toBeLessThanOrEqual(8)
+    expect(linhas.join('\n')).toContain(`> #${selecionado().slice(8)} `)
+  }
+  expect(selecionado()).toBe('session:001')
+  expect(alvoDeEntrada('board', state)).toEqual({ kind: 'tarefa', id: '001' })
+  navegar(state, -1, 'board')
+  expect(historicoDaTela(8, state.repo).join('\n')).toContain('> #002 ')
+})
+
+test('historico de runs antigos tambem rola com as setas sem perder o alvo de enter', async () => {
+  cardEmDisco('010', 'MERGED')
+  const chaves = Array.from({ length: 24 }, (_, n) => sessaoEmDisco('010', (n + 1) * 60_000))
+  const { historicoDaTela, navegar, alvoDeEntrada } = await import('../../motor/mirante/cli/board-tui.ts')
+  const { newSession } = await import('../../motor/mirante/sessao.ts')
+  const { selecionar, selecionado } = await import('../../motor/mirante/cli/estado.ts')
+  const state = newSession('org/app')
+  selecionar('')
+  historicoDaTela(8, state.repo)
+  for (let n = 0; n < 24; n++) {
+    navegar(state, 1, 'board')
+    const linhas = historicoDaTela(8, state.repo)
+    expect(linhas.length).toBeLessThanOrEqual(8)
+    expect(linhas.join('\n')).toContain('▸')
+  }
+  expect(selecionado()).toBe(chaves.at(-1))
+  expect(alvoDeEntrada('board', state)).toEqual({ kind: 'tarefa', id: '010' })
+})

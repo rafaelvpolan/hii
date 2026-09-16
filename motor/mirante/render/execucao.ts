@@ -88,6 +88,7 @@ function horaDe(ts: string): string {
 }
 
 function marco(a: Atividade, o: OpcoesExecucao): string[] {
+  if (a.nome === 'interrompida') return [separador(CHECKPOINT, 'chamada interrompida', o.largura, AMARELO, o)]
   if (a.nome === 'timeout') return [separador(FALHA_DE_BLOCO, 'TIMEOUT — a IA foi encerrada', o.largura, VERMELHO, o)]
   if (a.tipo === 'fim' && a.nome === 'falhou') return [separador(FALHA_DE_BLOCO, 'falhou', o.largura, VERMELHO, o)]
   if (a.tipo === 'sessao') {
@@ -133,6 +134,7 @@ function duracao(s: number): string {
 
 function rodapeDaChamada(c: ChamadaNaLinha, o: OpcoesExecucao): string[] {
   if (!c.concluida) return []
+  if (c.custoAnunciado === 'INTERRUPCAO') return [separador(CHECKPOINT, 'chamada interrompida', o.largura, AMARELO, o)]
   if (c.custoAnunciado === 'TIMEOUT') return [separador(FALHA_DE_BLOCO, 'TIMEOUT — a IA foi encerrada', o.largura, VERMELHO, o)]
   const falhou = c.custoAnunciado === 'FALHA' || (c.ledger ? !c.ledger.ok : false)
   const partes = [falhou ? `falhou${c.ledger?.classeDeFalha ? ` (${c.ledger.classeDeFalha})` : ''}` : 'concluido']

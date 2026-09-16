@@ -1,3 +1,4 @@
+import { redigirDiagnostico } from '../diagnostico.ts'
 import { run } from '../../quilombo/git.ts'
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -96,7 +97,7 @@ interface LiveCodexLog {
   stdout: AcumuladorDeLinhas
   stderr: AcumuladorDeLinhas
   linha: (line: string) => void
-  finalizar: (err: { message?: string; killed?: boolean } | null, isError: boolean) => void
+  finalizar: (err: { message?: string; killed?: boolean; signal?: string | null } | null, isError: boolean) => void
 }
 
 function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
@@ -110,7 +111,7 @@ function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
     return null
   }
   const escrever = (texto: string): void => {
-    try { appendFileSync(caminho, comRaia(texto, req.raia)) } catch { void 0 }
+    try { appendFileSync(caminho, comRaia(redigirDiagnostico(texto), req.raia)) } catch { void 0 }
   }
   const stdout = new AcumuladorDeLinhas()
   const stderr = new AcumuladorDeLinhas()
@@ -133,7 +134,11 @@ function liveCodexLog(req: AgentRequest): LiveCodexLog | null {
       for (const l of stdout.esvaziar()) linha(l)
       for (const l of stderr.esvaziar()) escrever(`${l}\n`)
       if (err?.killed) return
-      if (err) escrever(`— falha: ${String(err.message || 'execucao encerrada com erro').replace(/\s+/g, ' ').slice(0, 300)} —\n`)
+      if (err?.signal === 'SIGTERM' || err?.signal === 'SIGINT') {
+        escrever('— chamada interrompida —\n')
+        return
+      }
+      if (err) escrever('— falha: CLI Codex encerrou com erro; consulte o diagnostico da tarefa —\n')
       escrever(err || isError ? '— encerrado com falha —\n' : `${linhaDeConclusao()}\n`)
     },
   }
@@ -206,8 +211,8 @@ export class CodexProvider implements Harness {
       failed,
       timedOut: !!err?.killed,
       isError: parsed.isError,
-      detail: err ? String(err.message || '') : '',
-      text: parsed.text || String(stdout || stderr || ''),
+      detail: err ? redigirDiagnostico(String(err.message || '')) : '',
+      text: failed || parsed.isError ? redigirDiagnostico(parsed.text || String(stdout || stderr || '')) : parsed.text || String(stdout || stderr || ''),
       ...COST_UNKNOWN,
       usage: parsed.usage,
     }

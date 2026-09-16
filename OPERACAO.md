@@ -668,7 +668,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
 | `HII_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
 | `HII_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
-| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+1) |
+| `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+2) |
 | `HII_CLARIFY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
 | `HII_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
@@ -738,11 +738,11 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
 | `HII_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
-| `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs` |
+| `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs`, `scripts/test-tui-e2e.mjs` |
 | `HII_RUN_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HII_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HII_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
-| `HII_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` |
+| `HII_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
+| `HII_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
+| `HII_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
 | `HII_RUNTIME` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
 | `HII_SECRETS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
 | `HII_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |

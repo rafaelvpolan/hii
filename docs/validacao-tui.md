@@ -4,6 +4,64 @@ O TUI e o daemon continuam independentes do Hicode e de `hii api`.
 Esta auditoria exercita teclado, tela, persistencia, gateway e harnesses locais
 simulados. Nao requer conexao HTTP com o painel nem chamadas de IA paga.
 
+## Estabilizacao da issue #53
+
+A falha do CI `35087272717` foi uma corrida no teste de `/ia`: o trace
+mostra indicadores presentes durante a impressao parcial da ajuda. O teste
+pulava PageUp; as linhas restantes ocultavam os indicadores. Agora a navegacao
+aguarda a ultima linha da resposta e a repintura de cada tecla, mantendo a
+assercao sobre o buffer **visivel** do terminal. O daemon externo era outro
+defeito de isolamento, nao a causa desse timeout.
+
+| Entrega | Regressao/evidencia |
+| --- | --- |
+| `/ia` sem corrida e fixture com PID/lock/log privados | `e2e-sincronizacao.test.ts`, `e2e-isolamento.test.ts`, `e2e/tui-playwright.mjs` |
+| Falha legivel, detalhes preservados e credenciais redigidas antes de streaming | `tomada/rota-diagnostico.test.ts`, `tomada/harness-diagnostico-redigido.test.ts` |
+| Claude encerrado sem evento `result` nao deixa chamada nem spinner abertos | `tomada/claude-stream-encerramento.test.ts` |
+| IA configurada separada da subsessao ativa, inclusive troca de session | `rodape-sessao-ativa.test.ts`, `rodape.test.ts` |
+| `/config` inteiro acessivel em 48x24, 80x24 e 120x40, inclusive valores longos | `config-painel.test.ts`, `tui-app-tela-propria.test.ts`, screenshots e transcripts de todas as paginas |
+| Uso/contexto conhecido, esgotado, expirado e desconhecido em `/ia`, `/model`, `/config` | `e2e-uso-fixture.test.ts`, `e2e/uso-fixture.ts`, capturas `uso-*` |
+| Entrypoint, preflight, projeto, daemon offline, desligamento e retomada reais | `e2e/daemon-playwright.mjs`, `oswaldo/gateway-sessao.test.ts` |
+| Cotas curta/semanal, autenticacao, CLI ausente, timeout, stream e destinos indisponiveis | `oswaldo/gateway-sessao.test.ts`, `oswaldo/executar-rota-de-quota.test.ts` |
+| Contexto e arquivos preservados em duas trocas sem repetir efeitos concluidos | `oswaldo/gateway-sessao.test.ts` |
+| Resize de xterm **e PTY** durante streaming/pergunta; colagem com acentos, caractere largo e multiplas linhas; config/modo ate argv | `e2e/tui-playwright.mjs`, `streaming-resize`, `pergunta-resize`, `argv-e-colagem` |
+| 36 sessions e 24 projetos navegados pelo teclado, aguardando o board do projeto apos repintura | `e2e/daemon-playwright.mjs`, `e2e-daemon-sincronizacao.test.ts`, `board-sessoes.test.ts` |
+| Comparacao visual determinista capaz de reprovar uma sobreposicao induzida | `e2e/visual.mjs`, `e2e/baselines/config-*.png` |
+| Relatorio parcial apos falha de etapa ou Chromium, movido e aberto por HTTP | `e2e/relatorio-playwright.mjs`, `e2e-relatorio.test.ts` |
+
+As classes de falha conservam a politica do motor: troca automatica por cota,
+espera/retentativa ou parada nas demais classes. Os testes nao prometem fallback
+automatico de toda falha. O diagnostico completo redigido fica no caminho
+`cards/diagnosticos/<tarefa>-<uuid>.diagnostico.json` indicado pelo log.
+
+O gate `bun run test:tui:e2e /tmp/hii-tui-gates-nova-rodada` executa **tres
+rodadas consecutivas**, cada uma com fixtures e destinos novos, mais as falhas
+induzidas do relatorio. Na segunda, um daemon externo privado permanece vivo:
+o teste confere PID/root, lock e log intactos e nenhuma tarefa criada nele.
+Um diretorio com evidencias antigas e recusado. O JSON
+`gates.json` informa o resultado de cada percurso; cada subdiretorio tem
+`manifesto.json` com commit, runtime, dimensoes, etapa e resultado. O manifesto
+identifica o commit base quando as alteracoes ainda nao foram commitadas.
+
+Para servir o pacote, mantendo links e imagens depois de move-lo:
+
+```bash
+python3 -m http.server 8765 --bind 127.0.0.1 --directory /tmp/hii-tui-gates-nova-rodada
+# Abra /rodada-1/tui/processo-orquestracao.html ou /rodada-1/daemon/processo-orquestracao.html
+```
+
+Os screenshots de referencia usam DejaVu Sans Mono e Chromium do lockfile.
+A fixture fixa a paleta de 256 cores independentemente de `NO_COLOR` e do
+terminal hospedeiro; Chromium desativa antialiasing LCD dependente do sistema.
+O comparador mascara apenas valores volateis (tempo, PID e tamanho em bytes),
+limita a divergencia a 0,3% dos pixels e inclui uma sobreposicao proposital que
+deve reprovar. Para atualizar referencias, gere explicitamente e revise as
+imagens; o CI nunca atualiza baselines:
+
+```bash
+HII_ATUALIZAR_BASELINES=1 node test/mirante/e2e/tui-playwright.mjs /tmp/hii-baselines-novas
+```
+
 ## Camadas de prova
 
 | Camada | O que a prova observa | Testes |
@@ -48,7 +106,7 @@ depois da conclusao, em terminais de 48 e 100 colunas.
 - Daemon offline e anunciado; a tarefa fica enfileirada, nao e dada como executada.
 - Sair restaura o terminal e descarta comandos ainda nao iniciados na fila da TUI.
 
-## Falhas corrigidas nesta auditoria
+## Historico: 13 falhas corrigidas no PR #52
 
 1. **Pendencia de exclusao atravessava `/new`.** Texto da conversa nova podia
    confirmar a remocao antiga. Trocar de tarefa ou sair dela agora limpa as
@@ -101,12 +159,12 @@ persistido entre processos. Nao usa pausas fixas para adivinhar quando a tela
 ficou pronta. Os controles de liberacao do harness simulado permitem observar
 streaming e fallback antes da conclusao.
 
-Dois percursos completos, em **48x36 e 100x36**, capturam 12 etapas cada:
+O percurso integrado parte de **48x36 e 100x36**, cobrindo:
 inicio, streaming Codex, falha e troca, conclusao, `/ask`, pergunta, interrupcao,
 confirmacao final, session fechada, modelos, IAs e configuracao. Incluem teclas
 numericas sem Enter, Ctrl+C, retomada, Shift+Tab, Esc e saida limpa.
 
-Artefatos no destino escolhido:
+Artefatos em `rodada-N/tui/` e `rodada-N/daemon/` dentro do destino escolhido:
 
 - `processo-orquestracao.html`: o **visualizador existente**, com as capturas
   incorporadas na aba TUI / E2E, navegacao por etapa e transcript.
@@ -114,23 +172,29 @@ Artefatos no destino escolhido:
 - `*.png` e `*.txt`: imagem e texto de cada etapa, incluindo a tela da falha
   quando uma assercao reprovar; `terminal-*.ansi`: stream bruto para diagnostico.
 - `trace-48.zip` e `trace-100.zip`: traces do Playwright, abrindo com
-  `bunx playwright show-trace /tmp/hii-tui-visual/trace-48.zip`.
+  `bunx playwright show-trace /tmp/hii-tui-visual/rodada-1/tui/trace-48.zip`.
 
 O replay tambem e testado em 390 e 1365 pixels: navegacao, importacao, texto
 literal sem injecao HTML, rejeicao de URLs externas, imagens nao vazias por
-leitura de pixels e ausencia de overflow horizontal. Sao **24 screenshots**
-do terminal mais duas do replay. Nao ha baseline de comparacao pixel a pixel:
-timestamps e indicadores variam; assercoes comportamentais e revisao das
-capturas complementam os checks geometricos. Use um destino novo por rodada
+leitura de pixels e ausencia de overflow horizontal. Sao **47 capturas** por
+percurso integrado, alem das capturas do daemon e das referencias visuais.
+O gate inclui resize, colagem e configuracao nas tres dimensoes. Use um destino novo por rodada
 para nao confundir artefatos antigos com o resultado atual.
 
 O job `tui-visual` do CI executa esse gate separadamente e publica os artefatos
-por sete dias, inclusive quando falha. O teste requer Linux, Node 24, `script`,
-`stty` e Chromium; xterm.js e apenas dependencia de desenvolvimento.
+por 30 dias, inclusive quando falha. O teste requer Linux, Node 24, `script`,
+`stty`, DejaVu Sans Mono e Chromium; xterm.js e apenas dependencia de desenvolvimento.
 
 ## Reproduzir
 
-Resultado desta rodada: **3.147 testes aprovados no Bun (311 arquivos)** e
+Na #53, a amostra dirigida de cobertura executa 113 testes: diagnostico e
+registro de troca atingem 100% das linhas; gateway 95,83%; stream Claude
+95,03%; Codex 99,42%; paineis de configuracao 98,08%, com quebra de linhas
+em 100%. Estes numeros sao dos modulos exercitados pela amostra, nao cobertura
+global nem garantia de ausencia de defeitos. O CI executa a suite completa
+nos dois runtimes e publica o gate visual de tres rodadas.
+
+Resultado historico do PR #52: **3.147 testes aprovados no Bun (311 arquivos)** e
 **3.141 no Node (3.111 na etapa principal + 30 isolados)**, sem falhas.
 Foram adicionados 17 testes. Typecheck, lint de tipos, lint de clone e verificacao
 de whitespace tambem passaram. As duas trilhas executam a regressao PTY.
@@ -165,9 +229,10 @@ de estado isolados e nao deve ser usada como entrada operacional do motor.
 - O teste integrado conduz o gateway diretamente; o daemon e a recuperacao de
   subprocessos possuem suas proprias suites. Nao se afirma uma execucao paga
   ponta a ponta em producao.
-- O E2E visual tambem usa agendamento controlado e harnesses simulados. Cobrir
-  o terminal com Playwright nao valida autenticacao externa, o daemon completo
-  nem todos os emuladores de terminal. O fechamento do PR e apenas uma transicao
+- O percurso visual integrado usa agendamento controlado; o percurso separado
+  `daemon-playwright.mjs` executa bootstrap e daemon reais com CLIs falsos.
+  Nenhum dos dois valida autenticacao externa nem todos os emuladores de terminal.
+  O fechamento do PR e apenas uma transicao
   local no teste, sem publicar PR em nome de uma tarefa simulada.
 - O fechamento da session usa o mecanismo existente, disponivel pelo CLI
   `hii pipeline close <session> --repo <owner/nome>`; nao foi criado `/close`.

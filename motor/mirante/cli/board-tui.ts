@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { reposFile } from '../../cordel/alicerce/config.ts'
 import { repoPath, repoRegistered, readCard } from '../../cordel/store.ts'
 import { listarSessoesHii, lerSessaoHii } from '../../euclides/sessoes.ts'
-import { truncVisible } from '../tui/layout.ts'
+import { stripAnsi, truncVisible } from '../tui/layout.ts'
 import { chaveDaSessao, historicoDeSessoes, repoDoCard, sessaoPorChave } from '../historico.ts'
 import { avisoDeEstadoVazio, lerEstadoVazio } from '../estado-vazio.ts'
 import { renderHistorico } from '../render/historico.ts'
@@ -78,28 +78,36 @@ function avisoDeProjetoSemSessao(repo: string): string[] {
   return [`nenhuma sessao de ${repo} nesta janela — /repo troca de projeto, o historico dos outros continua intacto`]
 }
 
+function janelaDoHistorico(linhas: string[], altura: number): string[] {
+  if (altura <= 0) return linhas
+  const marcada = linhas.findIndex(linha => /^(?:> #|▸)/.test(stripAnsi(linha).trimStart()))
+  const inicio = Math.max(0, marcada - Math.max(0, altura - 3))
+  return linhas.slice(inicio, inicio + altura)
+}
+
 export function historicoDaTela(altura = 0, repo = ''): string[] {
-  const h = historicoDeSessoes(altura > 0 ? Math.max(1, altura - 2) : 0, undefined, undefined, repo)
-  const conversas = listarSessoesHii(repo).sort((a, b) => Number(b.id) - Number(a.id)).slice(0, altura > 0 ? Math.max(1, altura - 3) : 30)
+  const h = historicoDeSessoes(0, undefined, undefined, repo)
+  const conversas = listarSessoesHii(repo).sort((a, b) => Number(b.id) - Number(a.id))
   h.sessoes = h.sessoes.filter(s => !readCard(s.card)?.fm.sessao_id)
+  // A ordem navegavel inclui a lista inteira; somente as linhas pintadas recebem janela.
   definirSessoesVisiveis([...conversas.map(s => `session:${s.id}`), ...h.sessoes.map(chaveDaSessao)])
   if (conversas.length) {
     const w = Number(process.stdout.columns) || 78
-    return ['  SESSIONS', ...conversas.map(s => {
+    return janelaDoHistorico(['  SESSIONS', ...conversas.map(s => {
       const ultima = s.execucoes.at(-1)
       const estado = s.estado === 'fechada' ? 'closed' : ultima ? readCard(ultima.id)?.fm.status ?? 'ausente' : 'aberta'
       const marca = selecionado() === `session:${s.id}` ? '> ' : '  '
       return truncVisible(`${marca}#${s.id} ${estado} | ${s.titulo} | ${s.execucoes.length} execucoes`, w)
-    }), ...renderHistorico(h, { color, width: w, selecionado: selecionado(), avisoDeVazio: [] })]
+    }), ...renderHistorico(h, { color, width: w, selecionado: selecionado(), avisoDeVazio: [] })], altura)
   }
   const vazio = lerEstadoVazio()
   const avisoDeVazio = h.sessoes.length
     ? []
     : (vazio.vazio ? avisoDeEstadoVazio(vazio) : avisoDeProjetoSemSessao(repo))
-  return renderHistorico(h, {
+  return janelaDoHistorico(renderHistorico(h, {
     color, width: Number(process.stdout.columns) || 78, selecionado: selecionado(),
     avisoDeVazio,
-  })
+  }), altura)
 }
 
 export function avisoRepos(state: SessionState): void {
