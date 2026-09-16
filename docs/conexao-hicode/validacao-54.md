@@ -59,6 +59,21 @@ No Hicode, execute `bun run test` e
 `HII_TEST_CHECKOUT=/caminho/checkout-hii node scripts/test-hii-observabilidade.mjs`.
 As imagens de verificacao sao geradas em `/tmp/hicode-54-visual/`.
 
+## Correcao das esperas E2E
+
+A verificacao local posterior encontrou duas corridas no teste de navegador:
+o echo do pedido podia aparecer antes de sua execucao ser persistida, e a
+borda existente podia satisfazer a espera de resize antes do redesenho novo.
+O teste agora espera o ID persistido da segunda execucao e reconhece no parser
+do xterm os delimitadores HIDE/SHOW e HOME emitidos por `openScreen`. A espera
+de resize exige um novo quadro completo; capturas aguardam o fim da pintura
+e a renderizacao do navegador. CSI fragmentado pelo PTY continua reconhecido.
+Baselines e tolerancia de pixels permanecem iguais, incluindo a verificacao
+negativa que introduz um corte visual e exige sua rejeicao.
+Validacao apos a correcao: tres rodadas completas de `test:tui:e2e` aprovadas,
+incluindo relatorio de falhas, replay portavel e fixtures de reinicio/reconexao;
+typecheck e lints aprovados. Evidencias locais: `/tmp/hii-54-sync-fix/`.
+
 ## Overhead
 
 Limites fixados antes da medicao: p95 <100 ms e arquivo <16 MiB em 2.100

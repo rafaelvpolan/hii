@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import assert from 'node:assert/strict'
+import { setTimeout as aguardar } from 'node:timers/promises'
 import { ambienteTui } from './ambiente-tui.ts'
 import { allCards, patchCard, readCard } from '../../../motor/cordel/store.ts'
 import { lerSessaoHii, fecharSessaoHii } from '../../../motor/euclides/sessoes.ts'
@@ -25,6 +26,15 @@ const relatar = () => gravarRelatorio(destino, capturas, manifesto)
 relatar()
 let browser
 const quote = s => `'${s.replaceAll("'", "'\\''")}'`
+async function esperarExecucao(sessao, indice) {
+  const prazo = performance.now() + 12000
+  do {
+    const id = lerSessaoHii(sessao)?.execucoes[indice]?.id
+    if (id) return id
+    await aguardar(20)
+  } while (performance.now() < prazo)
+  assert.fail(`Session ${sessao} nao persistiu execucao ${indice}: ${JSON.stringify(lerSessaoHii(sessao))}`)
+}
 try {
   // Antialiasing RGB do host muda pixels mesmo com a mesma fonte e geometria.
   browser = await chromium.launch({ headless: true, args: ['--disable-lcd-text'] })
@@ -58,6 +68,26 @@ try {
         term.onData(data => window.entradaPty(data))
         term.focus()
         window.term = term
+        // openScreen delimita cada pintura com HIDE/SHOW e usa HOME no
+        // redesenho completo. O parser reconhece inclusive CSI partido no PTY.
+        window.pintando = false
+        window.redesenhos = 0
+        let completo = false
+        term.parser.registerCsiHandler({ prefix: '?', final: 'l' }, params => {
+          if (params.includes(25)) { window.pintando = true; completo = false }
+          return false
+        })
+        term.parser.registerCsiHandler({ final: 'H' }, params => {
+          if (window.pintando && params.every(p => p === 0)) completo = true
+          return false
+        })
+        term.parser.registerCsiHandler({ prefix: '?', final: 'h' }, params => {
+          if (params.includes(25)) {
+            if (completo) window.redesenhos++
+            window.pintando = false; completo = false
+          }
+          return false
+        })
         window.tela = () => Array.from({ length: term.rows }, (_, i) => term.buffer.active.getLine(term.buffer.active.viewportY + i)?.translateToString(true, 0, term.cols) || '').join('\n')
       }, cols)
       filho = spawn('script', ['-qefc', `stty cols ${cols} rows 36; tty > ${quote(join(base, 'pty'))}; exec ${quote(process.execPath)} ${quote(resolve('test/mirante/e2e/tui-filho.ts'))} ${quote(base)}`, '/dev/null'], {
@@ -75,14 +105,18 @@ try {
       }
       filho.stdout.on('data', encaminhar)
       filho.stderr.on('data', encaminhar)
-      const ver = texto => page.waitForFunction(texto => window.tela().includes(texto), texto, { timeout: 12000 })
+      const ver = texto => page.waitForFunction(texto => !window.pintando && window.tela().includes(texto), texto, { timeout: 12000 })
       const redimensionar = async (cols, rows) => {
+        await bomba
+        const anterior = await page.evaluate(() => window.redesenhos)
+        const mudou = cols !== dimensoes.cols || rows !== dimensoes.rows
         await page.setViewportSize({ width: Math.max(390, cols * 8 + 24), height: 900 })
         await page.evaluate(({ cols, rows }) => window.term.resize(cols, rows), { cols, rows })
         execFileSync('stty', ['-F', readFileSync(join(base, 'pty'), 'utf8').trim(), 'cols', String(cols), 'rows', String(rows)])
         dimensoes = { cols, rows }
         Object.assign(manifesto, { colunas: cols, linhas: rows })
-        await page.waitForFunction(cols => window.tela().split('\n')[1]?.includes('─'.repeat(cols)), cols)
+        await page.waitForFunction(({ cols, anterior, mudou }) => !window.pintando &&
+          (!mudou || window.redesenhos > anterior) && window.tela().split('\n')[1]?.includes('─'.repeat(cols)), { cols, anterior, mudou })
       }
       const comando = async texto => {
         manifesto.etapa = texto.startsWith('/') ? texto.split(' ')[0] : 'enviar-pedido'
@@ -93,6 +127,7 @@ try {
       }
       const capturar = async nome => {
         await bomba
+        await page.waitForFunction(() => !window.pintando)
         await page.evaluate(() => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res))))
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow: ${nome}/${cols}`)
         const texto = await page.evaluate(() => window.tela())
@@ -142,7 +177,7 @@ try {
       await capturar('ask')
       await comando('Ajuste a interface')
       await ver('Ajuste a interface')
-      const pendente = lerSessaoHii(sessao).execucoes[1].id
+      const pendente = await esperarExecucao(sessao, 1)
       writeClarify(pendente, [{ q: 'Qual cor aplicar?', options: ['azul', 'verde'], recommended: 'azul' }])
       patchCard(pendente, { status: 'CLARIFY' })
       await ver('Qual cor aplicar?')

@@ -4,6 +4,9 @@ import assert from 'node:assert/strict'
 
 export async function conferirVisual(page, nome, destino, sufixo = 'atual') {
   const arquivo = resolve('test/mirante/e2e/baselines', `${nome}.png`)
+  await page.waitForFunction(() => !window.pintando)
+  // O buffer do xterm e atualizado antes de sua pintura no navegador.
+  await page.evaluate(() => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res))))
   // So valores volateis: bytes de disco e idade de atividade; nunca paineis inteiros.
   await page.evaluate(() => {
     const term = window.term
