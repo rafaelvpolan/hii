@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os'
 import type { AgentRequest } from '../../motor/tomada/tipos.ts'
 import { parseLog } from '../../motor/mirante/atividade.ts'
 import { renderExecucao } from '../../motor/mirante/render/execucao.ts'
+import { chamadasEmVoo, linhaDoTempo } from '../../motor/euclides/linha-do-tempo.ts'
+import { renderLinhaDoTempo } from '../../motor/mirante/render/execucao.ts'
+import { classifyFailure } from '../../motor/ciclo/reprise/classe-de-falha.ts'
 
 const base = mkdtempSync(join(tmpdir(), 'hicode-codex-live-'))
 const bin = join(base, 'bin')
@@ -52,4 +55,26 @@ test('Codex grava eventos no live.log antes de a execucao terminar e a tela os e
   const final = readFileSync(log, 'utf8')
   expect(final).toContain('— concluido —')
   expect(renderExecucao(parseLog(final), { color: false, largura: 80 })).toContain('● Bash(npm test)')
+})
+
+for (const exitCode of [0, 1]) test(`turn.failed aninhado com exit=${exitCode} preserva cota e encerra a raia como falha`, async () => {
+  writeFileSync(join(bin, 'codex'), `#!/bin/sh
+printf '%s\\n' '{"type":"item.completed","item":{"type":"agent_message","text":"trabalho parcial"}}'
+printf '%s\\n' '{"type":"turn.failed","error":{"message":"usage limit reached: weekly limit"}}'
+exit ${exitCode}
+`)
+  const caminho = join(base, `falha-${exitCode}.log`)
+  const provider = new CodexProvider()
+  const resultado = await provider.run({ ...pedido(), liveLog: caminho, raia: 'teste 1/2' })
+  expect(resultado.ok).toBe(false)
+  expect(resultado.text).toContain('weekly limit')
+  expect(classifyFailure(provider, resultado).failureClass).toBe('quota')
+  const marcos = linhaDoTempo({ eventos: [], chamadas: [], atividades: parseLog(readFileSync(caminho, 'utf8')) })
+  expect(chamadasEmVoo(marcos)).toEqual([])
+  expect(marcos.length).toBe(1)
+  const tela = renderLinhaDoTempo(marcos).join('\n')
+  expect(tela).toContain('[teste 1/2]')
+  expect(tela).toContain('weekly limit')
+  expect(tela).toContain('falhou')
+  expect(tela).not.toContain('concluido')
 })

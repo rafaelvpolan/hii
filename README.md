@@ -388,6 +388,11 @@ No fluxo passivo, o PR é consultado no remoto antes de criar e sua seção gere
 sem substituir notas humanas. O merge continua humano.
 
 Contratos e limites desta entrega: [processo de orquestração](docs/orquestracao-passiva.md).
+
+Testes do motor independente pelo terminal: [validacao do TUI](docs/validacao-tui.md),
+com teclado, frames ANSI, pseudoterminal Linux, troca de IA e limites da cobertura.
+E2E visual: `bun run test:tui:e2e` usa Playwright + xterm.js + PTY, sem IA paga,
+e gera screenshots, traces e replay no HTML existente. Requer Chromium instalado.
 Visualizador local: [processo-orquestracao.html](docs/processo-orquestracao.html).
 
 ### Referências de imagem

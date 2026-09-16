@@ -54,6 +54,15 @@ export function pendenciaDoStatus(status: string, id: string, temPerguntaDoCrivo
           { tecla: '1 2 3', texto: 'aprova · refaz do zero · diz o que ajustar' },
         ],
       }
+    case 'CONFIRM':
+      return {
+        titulo: 'resolveu o problema? posso encerrar?',
+        urgente: true,
+        acoes: [
+          { tecla: '1', texto: 'encerrar e abrir o PR' },
+          { tecla: '2', texto: 'dizer o que ainda falta' },
+        ],
+      }
     case 'INBOX':
     case 'READY':
     case 'SPECCED':

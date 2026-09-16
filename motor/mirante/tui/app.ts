@@ -61,7 +61,7 @@ export interface AppHooks {
 
 export interface App {
   run: () => Promise<void>
-  log: (linha: string) => void
+  log: (linha: string, aposCorpo?: boolean) => void
   abrirBoard: () => void
   limparLog: () => void
   encerrar: () => void
@@ -89,7 +89,7 @@ const PADRAO = {
 
 export function createApp(term: Terminal, dados: AppHooks): App {
   const hooks = { ...PADRAO, ...dados }
-  const extras: string[] = []
+  const extras: { linha: string; aposCorpo: boolean }[] = []
   let sugestoes: string[] = []
   let sugIdx = -1
   let sujo = true
@@ -125,6 +125,7 @@ export function createApp(term: Terminal, dados: AppHooks): App {
   })
 
   const desenhar = (): void => {
+    if (sair) return
     const sugAnterior = sugestoes.join('\n')
     sugestoes = input.buffer.startsWith('/') && !input.buffer.includes('\n')
       ? hooks.onComplete(input.buffer)
@@ -145,7 +146,9 @@ export function createApp(term: Terminal, dados: AppHooks): App {
       const emTelaPropria = hooks.telaPropria(ctx)
       const rolante = ctx.navegando === 'board' || emTelaPropria
         ? corpo
-        : (hooks.logPrimeiro(ctx) ? [...extras, ...corpo] : [...corpo, ...extras])
+        : (hooks.logPrimeiro(ctx)
+          ? [...extras.filter(l => !l.aposCorpo).map(l => l.linha), ...corpo, ...extras.filter(l => l.aposCorpo).map(l => l.linha)]
+          : [...corpo, ...extras.map(l => l.linha)])
             .flatMap(l => quebrarEmLargura(l, interno))
       const janela = emTelaPropria ? janelaDoTopo : janelaRolada
       const altura = emTelaPropria
@@ -180,9 +183,10 @@ export function createApp(term: Terminal, dados: AppHooks): App {
     })
   }
 
-  const log = (linha: string): void => {
+  const log = (linha: string, aposCorpo = false): void => {
+    if (sair) return
     rolagem = 0
-    for (const l of linha.split('\n')) extras.push(linkificar(l))
+    for (const l of linha.split('\n')) extras.push({ linha: linkificar(l), aposCorpo })
     if (extras.length > 500) extras.splice(0, extras.length - 500)
     sujo = true
     if (!emLote) desenhar()
@@ -297,9 +301,9 @@ export function createApp(term: Terminal, dados: AppHooks): App {
         log(`${hooks.prompt()}${exibido}`)
         const linha = a.line
         fila = fila
-          .then(() => hooks.onLine(linha))
-          .catch((e: ErroLancado) => { log(`  erro: ${mensagemDoErro(e)}`) })
-          .then(desenhar)
+          .then(() => { if (!sair) return hooks.onLine(linha) })
+          .catch((e: ErroLancado) => { log(`  erro: ${mensagemDoErro(e)}`, true) })
+          .then(() => { sujo = true; desenhar() })
         void fila
       }
       return true

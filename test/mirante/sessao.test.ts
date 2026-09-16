@@ -86,7 +86,10 @@ test('comando desconhecido nao vira tarefa', () => {
 })
 
 test('comando nao aprova plano pendente por acidente', () => {
-  expect(handle('/historico', planShown(base, '042')).state.pendingPlan).toBe('042')
+  const r = handle('/historico', planShown(base, '042'))
+  expect(r.effect.kind).toBe('historico')
+  expect(r.state.pendingPlan).toBe('')
+  expect(handle('', r.state).effect.kind).toBe('none')
 })
 
 test('REGRESSAO numero puro MOSTRA o card, nao cria tarefa chamada "20"', () => {

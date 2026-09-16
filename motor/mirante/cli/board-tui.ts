@@ -55,7 +55,7 @@ export function ordemDoRodape(state: SessionState, modo: ModoNavegacao = 'rodape
   // com pergunta aberta nao havia como descer para outra tarefa — a pessoa ficava
   // presa naquele card. Descer alem da ultima opcao agora entra nas tarefas, e subir
   // acima da primeira volta para o prompt, como em qualquer lista daqui.
-  if (state.aprovando) return ['op:1', 'op:2', 'op:3', ...tarefas]
+  if (state.aprovando) return [...(readCard(state.aprovando)?.fm.status === 'CONFIRM' ? ['op:1', 'op:2'] : ['op:1', 'op:2', 'op:3']), ...tarefas]
   if (state.perguntando) {
     const p = pendencia(state.perguntando)
     if (p) return [...p.atual.options.map((_, i) => `op:${i + 1}`), ...tarefas]
@@ -142,8 +142,8 @@ export function completer(line: string, repo = ''): [string[], string] {
 export function navegarConfig(dir: -1 | 1): boolean {
   const ordem = ordemDaConfig()
   if (!ordem.length) return false
-  const atual = ordem.indexOf(selecionado())
-  const proximo = atual < 0 ? 0 : atual + dir
+  const atual = Math.max(0, ordem.indexOf(selecionado()))
+  const proximo = atual + dir
   if (proximo < 0) { selecionar(''); return false }
   selecionar(ordem[Math.min(proximo, ordem.length - 1)] ?? '')
   return true

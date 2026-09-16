@@ -7,6 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  tui-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:tui:e2e /tmp/hii-tui-visual
+      - run: node scripts/validar-visualizador.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tui-visual
+          path: |
+            /tmp/hii-tui-visual
+            /tmp/hii-visualizador
+          retention-days: 7
   motor:
     runs-on: ubuntu-latest
     steps:

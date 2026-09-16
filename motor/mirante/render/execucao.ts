@@ -89,6 +89,7 @@ function horaDe(ts: string): string {
 
 function marco(a: Atividade, o: OpcoesExecucao): string[] {
   if (a.nome === 'timeout') return [separador(FALHA_DE_BLOCO, 'TIMEOUT — a IA foi encerrada', o.largura, VERMELHO, o)]
+  if (a.tipo === 'fim' && a.nome === 'falhou') return [separador(FALHA_DE_BLOCO, 'falhou', o.largura, VERMELHO, o)]
   if (a.tipo === 'sessao') {
     const partes = ['IA', a.args || '', a.alvo || 'sessao iniciada', horaDe(a.ts)].filter(Boolean)
     return ['', separador(INICIO_DE_BLOCO, partes.join(' · '), o.largura, CIANO, o)]
@@ -133,12 +134,12 @@ function duracao(s: number): string {
 function rodapeDaChamada(c: ChamadaNaLinha, o: OpcoesExecucao): string[] {
   if (!c.concluida) return []
   if (c.custoAnunciado === 'TIMEOUT') return [separador(FALHA_DE_BLOCO, 'TIMEOUT — a IA foi encerrada', o.largura, VERMELHO, o)]
-  const falhou = c.ledger ? !c.ledger.ok : false
+  const falhou = c.custoAnunciado === 'FALHA' || (c.ledger ? !c.ledger.ok : false)
   const partes = [falhou ? `falhou${c.ledger?.classeDeFalha ? ` (${c.ledger.classeDeFalha})` : ''}` : 'concluido']
   if (c.ledger) {
     partes.push(`US$${c.ledger.custoUsd.toFixed(4)}`, `${c.ledger.tokens.toLocaleString('pt-BR')} tokens`, duracao(c.ledger.duracaoS))
     if (c.ledger.modelo || c.ledger.provedor) partes.push(c.ledger.modelo || c.ledger.provedor)
-  } else if (c.custoAnunciado) {
+  } else if (c.custoAnunciado && c.custoAnunciado !== 'FALHA') {
     partes.push(c.custoAnunciado)
   }
   return [separador(falhou ? FALHA_DE_BLOCO : FIM_DE_BLOCO, partes.join(' · '), o.largura, falhou ? VERMELHO : VERDE, o)]

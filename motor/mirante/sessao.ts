@@ -124,7 +124,10 @@ function ocupado(state: SessionState): boolean {
 }
 
 export function sincronizarAprovacao(state: SessionState, status: string): SessionState {
-  if (!state.seguindo || status !== 'URL' || ocupado(state)) return state
+  if (!['URL', 'CONFIRM'].includes(status)) {
+    return state.aprovando === state.seguindo ? { ...state, aprovando: '' } : state
+  }
+  if (!state.seguindo || ocupado(state)) return state
   return aprovando(state, state.seguindo)
 }
 
@@ -165,11 +168,11 @@ export function seguir(state: SessionState, id: string): SessionState {
   // `perguntando` continuava apontando para o card antigo e a navegacao seguia
   // presa nele mesmo depois de trocar de tarefa.
   if (id === state.seguindo) return { ...state, seguindo: id }
-  return { ...state, seguindo: id, perguntando: '', perguntaVista: '' }
+  return { ...newSession(state.repo), seguindo: id }
 }
 
 export function foraDaTarefa(state: SessionState): SessionState {
-  return { ...state, seguindo: '', aprovando: '', comentando: '' }
+  return { ...newSession(state.repo), conversa: state.conversa }
 }
 
 function reply(effect: Effect, state: SessionState): Reply {

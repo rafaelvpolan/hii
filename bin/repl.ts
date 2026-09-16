@@ -1,11 +1,11 @@
 import { createInterface } from 'node:readline'
+import { pathToFileURL } from 'node:url'
 import { readCard, repoPath } from '../motor/cordel/store.ts'
 import { dispatch, rotuloDoBloqueio } from '../motor/mirante/despacho.ts'
 import type { DispatchIO, SituacaoDeEnvio } from '../motor/mirante/despacho.ts'
 import { provedoresDisponiveis } from '../motor/tomada/disponibilidade.ts'
 import { providerNameFor } from '../motor/tomada/registro.ts'
-import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta, respondido } from '../motor/mirante/sessao.ts'
-import { perguntasDoCrivo } from '../motor/ciclo/crivo/perguntas-do-crivo.ts'
+import { handle, newSession, seguir, perguntando, retomando, sincronizarAprovacao, sincronizarPergunta, respondido, foraDaTarefa } from '../motor/mirante/sessao.ts'
 import type { SessionState } from '../motor/mirante/sessao.ts'
 import { daemonPid, daemonStatus } from '../motor/oswaldo/mutirao/daemon.ts'
 import { pendencia } from '../motor/mirante/responder.ts'
@@ -17,6 +17,7 @@ import { emExecucao } from '../motor/mirante/render/rodape.ts'
 import { floorProviders, formatProviders } from '../motor/euclides/tesouro/lacuna.ts'
 import { createApp } from '../motor/mirante/tui/app.ts'
 import { nodeTerminal } from '../motor/mirante/tui/screen.ts'
+import type { Terminal } from '../motor/mirante/tui/screen.ts'
 import { esmaecer, pintar } from '../motor/mirante/tui/paleta.ts'
 import { ACC, RESET, color, dim, say, escolherProjeto } from '../motor/mirante/cli/saida.ts'
 import { larguraUtil, reposRegistrados, todosOsCards } from '../motor/mirante/cli/dados.ts'
@@ -71,20 +72,23 @@ function ioDo(app: { log: (s: string) => void }, diga: (s: string) => void, repo
   }
 }
 
-async function tui(state0: SessionState): Promise<void> {
+export async function tui(state0: SessionState, term: Terminal = nodeTerminal(), criarIO = ioDo): Promise<void> {
   let state = state0
-  const term = nodeTerminal()
   let sairPedido = false
   async function processar(linha: string): Promise<void> {
     const { effect, state: next } = handle(linha, state)
     state = next
-    const diga = (s: string): void => app.log('  ' + s)
+    const saida = { log: (s: string): void => app.log(s, effect.kind === 'consultar') }
+    const diga = (s: string): void => saida.log('  ' + s)
     if (effect.kind === 'quit') { sairPedido = true; app.encerrar(); return }
     const repoAntes = state.repo
-    const r = await dispatch(effect, state, ioDo(app, diga, state.repo))
+    const r = await dispatch(effect, state, criarIO(saida, diga, state.repo))
     state = r.state
     if (state.repo !== repoAntes) selecionar('')
-    if (!r.tratado && effect.kind === 'historico') state = { ...state, seguindo: '' }
+    if (!r.tratado && effect.kind === 'historico') {
+      state = { ...state, seguindo: '' }
+      app.limparLog()
+    }
   }
 
   const indiceDoRepo = (): number => reposRegistrados().findIndex(r => r.name === state.repo)
@@ -99,21 +103,17 @@ async function tui(state0: SessionState): Promise<void> {
     telaPropria: () => state.tela === 'config',
     sairDaTela: () => { state = { ...state, tela: '' } },
     acima: () => {
+      if (state.seguindo) {
+        const aberta = pendencia(state.seguindo)
+        if (!aberta && state.perguntando === state.seguindo) state = respondido(state)
+        state = sincronizarPergunta(state, aberta ? `${state.seguindo}:${aberta.origem}:${aberta.indice}:${aberta.atual.q}` : '')
+        state = sincronizarAprovacao(state, String(readCard(state.seguindo)?.fm.status ?? ''))
+      }
       if (state.removendo) return confirmacaoDeRemocao(state.removendo, { color, width: larguraUtil() })
       if (state.comentando) return renderAprovacao(state.comentando, { color, comentando: true, width: larguraUtil() })
       if (state.perguntando) {
         const p = pendencia(state.perguntando)
         if (p) return renderOpcoesRodape(p, { color, width: larguraUtil(), selecionado: selecionado() })
-      }
-      if (state.seguindo) {
-        const card = readCard(state.seguindo)
-        // A pergunta vem ANTES da aprovacao: se o crivo perguntou, decidir sobre a
-        // URL sem responder e decidir sem a informacao que o proprio motor pediu.
-        // A chave identifica a PERGUNTA, e nao so "ha pergunta": pergunta nova
-        // (texto diferente) volta a chamar; a mesma, ja dispensada, nao.
-        const aberta = card ? perguntasDoCrivo(card.fm, state.seguindo).find(q => !q.answer) : undefined
-        state = sincronizarPergunta(state, aberta ? `${state.seguindo}:${aberta.q}` : '')
-        state = sincronizarAprovacao(state, String(card?.fm.status ?? ''))
       }
       if (!state.aprovando) return []
       const cardEmAprovacao = readCard(state.aprovando)
@@ -123,6 +123,7 @@ async function tui(state0: SessionState): Promise<void> {
         selecionado: selecionado(),
         url: String(cardEmAprovacao?.fm.url ?? ''),
         verificacao: verificacaoDoCard(String(cardEmAprovacao?.fm.verify ?? '')),
+        confirmando: cardEmAprovacao?.fm.status === 'CONFIRM',
       })
     },
     dica: (ctx) => esmaecer(dicaDaNavegacao(ctx, state), { color }),
@@ -189,7 +190,8 @@ async function tui(state0: SessionState): Promise<void> {
       if (nomes.length < 2) return
       const i = nomes.indexOf(state.repo)
       const proximo = nomes[(i + dir + nomes.length) % nomes.length] ?? state.repo
-      state = { ...state, repo: proximo }
+      state = newSession(proximo)
+      app.limparLog()
       selecionar('')
     },
     podeLimpar: () => {
@@ -205,8 +207,10 @@ async function tui(state0: SessionState): Promise<void> {
     // continua no cabecalho da tarefa — dispensar tira o modo do caminho, nao
     // esconde que ha pergunta. Escolher a tarefa de novo no quadro reabre.
     onDispensar: () => {
-      if (!state.perguntando) return false
-      state = respondido(state)
+      if (modoAtual()) return false
+      if (state.perguntando) state = respondido(state)
+      else if (state.seguindo) state = foraDaTarefa(state)
+      else return false
       selecionar('')
       return true
     },
@@ -218,7 +222,7 @@ async function tui(state0: SessionState): Promise<void> {
       // `comentando` fica de fora de proposito: ali se escreve texto livre, e um "1"
       // no comeco do comentario e o caractere 1.
       const quantas = state.comentando ? 0
-        : state.aprovando ? OPCOES_DE_APROVACAO
+        : state.aprovando ? (readCard(state.aprovando)?.fm.status === 'CONFIRM' ? 2 : OPCOES_DE_APROVACAO)
         : state.perguntando ? (pendencia(state.perguntando)?.atual.options.length ?? 0)
         : 0
       if (Number(n) > quantas) return false
@@ -307,4 +311,4 @@ async function main(): Promise<void> {
   say(dim('  sessao encerrada — os cards seguem rodando'))
 }
 
-await main()
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) await main()

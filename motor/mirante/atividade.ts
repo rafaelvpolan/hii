@@ -125,6 +125,7 @@ function parseLinhaSemRaia(linha: string, ts = ''): Atividade | null {
   const fim = linha.match(RE_FIM)
   if (fim) return { tipo: 'fim', nome: 'concluido', alvo: fim[1] ? `US$${fim[1]}` : '', ts }
   if (RE_TIMEOUT.test(linha)) return { tipo: 'fim', nome: 'timeout', alvo: '', ts }
+  if (/^—\s*encerrado com falha\s*—?$/.test(linha)) return { tipo: 'fim', nome: 'falhou', alvo: '', ts }
   const tool = linha.match(RE_TOOL)
   if (tool?.[1]) {
     const bruto = (tool[2] ?? '').replace(/\)\s*$/, '')

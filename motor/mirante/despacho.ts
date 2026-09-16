@@ -20,7 +20,7 @@ import { renderPergunta } from './render/clarify.ts'
 import { instruir, TERMINAIS } from './instruir.ts'
 import { renderHelp } from './render/help.ts'
 import { esperandoVoce } from './render/rodape.ts'
-import { seguir, foraDaTarefa, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa } from './sessao.ts'
+import { seguir, planShown, removendo, respondido, escolhendoRepo, aprovando, comentando, semAprovacao, comConversa, perguntando, newSession } from './sessao.ts'
 import { alvoDeRef, comandoRef } from './refs-comando.ts'
 import { migrarRefsDaSessao } from '../quilombo/alfandega/anexo.ts'
 import { sessaoAtual } from '../euclides/sessao.ts'
@@ -144,6 +144,11 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     case 'plan': {
       const card = readCard(id)
       if (!card) { io.log(`card #${id} nao encontrado`); return state }
+      const pergunta = pendencia(normalizeId(id))
+      if (pergunta) {
+        for (const l of renderPergunta(pergunta, { color: io.color })) io.log(l)
+        return perguntando(seguir(state, normalizeId(id)), normalizeId(id))
+      }
       const st = card.fm.status ?? 'INBOX'
       if (st === 'URL') {
         const alvo = card.fm.id ?? id
@@ -274,7 +279,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         return state
       }
       io.log(`projeto agora e ${alvo}`)
-      return { ...foraDaTarefa(state), repo: alvo, perguntando: '', removendo: '', retomando: '' }
+      return newSession(alvo)
     }
     case 'aprovacao': {
       const emConfirmacao = readCard(id)?.fm.status === 'CONFIRM'
@@ -451,7 +456,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         desc: texto.trim() || 'sessao de conversa do projeto',
       })
       io.log(`session #${idNovo} criada em ${state.repo}`)
-      return seguir({ ...state, tela: '', perguntando: '', aprovando: '', comentando: '', pendingPlan: '' }, idNovo)
+      return seguir(state, idNovo)
     }
     case 'ref': {
       const r = await comandoRef(texto, alvoDeRef(state.seguindo || state.pendingPlan))
@@ -517,7 +522,7 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         if (proxima) for (const l of renderPergunta(proxima, { color: io.color })) io.log(l)
         return state
       }
-      io.log(`#${id} retomado — seguindo a execucao (/historico sai)`)
+      io.log(r.retomou ? `#${id} retomado — seguindo a execucao (/historico sai)` : `#${id} respondido — o estado da tarefa foi preservado`)
       return seguir(respondido(state), id)
     }
     default:

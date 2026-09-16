@@ -25,6 +25,11 @@ export const OPCOES_DA_URL: OpcaoAprovacao[] = [
   { chave: '3', texto: 'nao abriu / falta algo — dizer o que ajustar', cor: 'nao' },
 ]
 
+const OPCOES_DE_FECHO: OpcaoAprovacao[] = [
+  { chave: '1', texto: 'encerrar e abrir o PR', cor: 'sim' },
+  { chave: '2', texto: 'dizer o que ainda falta', cor: 'nao' },
+]
+
 export type Verificacao = 'ok' | 'falhou' | 'inconclusivo' | ''
 
 const PERGUNTA_POR_VERIFICACAO: Record<Verificacao, string> = {
@@ -48,9 +53,10 @@ export interface AprovacaoOptions {
   url: string
   verificacao: Verificacao
   comentando: boolean
+  confirmando: boolean
 }
 
-const PADRAO: AprovacaoOptions = { color: false, width: 78, selecionado: '', url: '', verificacao: '', comentando: false }
+const PADRAO: AprovacaoOptions = { color: false, width: 78, selecionado: '', url: '', verificacao: '', comentando: false, confirmando: false }
 
 function paint(s: string, cor: string, o: AprovacaoOptions): string {
   return o.color ? `${cor}${s}${RESET}` : s
@@ -67,14 +73,14 @@ export function renderAprovacao(id: string, opts: Partial<AprovacaoOptions> = {}
       `  ${paint('✎', CYAN, o)} ${paint(`#${id} — escreva o que ajustar`, BOLD, o)}${paint('  ·  enter vazio desiste', DIM, o)}`,
     ].map(l => truncVisible(l, o.width))
   }
-  const pergunta = o.url ? PERGUNTA_POR_VERIFICACAO[o.verificacao] : 'a funcionalidade esta certa?'
+  const pergunta = o.confirmando ? 'resolveu o problema? posso encerrar?' : o.url ? PERGUNTA_POR_VERIFICACAO[o.verificacao] : 'a funcionalidade esta certa?'
   const semUrl = o.url ? '' : paint('  ·  sem url — confira pelo que a tarefa mudou', DIM, o)
   const cabecalho = `  ${paint('◎', CYAN, o)} ${paint(`#${id} ${pergunta}`, BOLD, o)}${semUrl}`
   const veredito = VEREDITO_DA_MAQUINA[o.verificacao]
   const alvo = o.url
     ? [`    ${paint(o.url, CYAN, o)}${veredito ? paint(`   ${veredito}`, o.verificacao === 'falhou' ? RED : DIM, o) : ''}`]
     : []
-  const linhas = (o.url ? OPCOES_DA_URL : OPCOES_APROVACAO).map((op) => {
+  const linhas = (o.confirmando ? OPCOES_DE_FECHO : o.url ? OPCOES_DA_URL : OPCOES_APROVACAO).map((op) => {
     const marcada = o.selecionado === `op:${op.chave}`
     const marca = marcada ? paint('›', CYAN, o) : ' '
     const numero = paint(op.chave, corDa(op), o)
