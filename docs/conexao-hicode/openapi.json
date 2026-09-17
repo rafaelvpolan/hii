@@ -3,7 +3,7 @@
   "info": {
     "title": "HII Motor API",
     "version": "1.1.0",
-    "description": "API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Nao inicia o daemon nem faz merge."
+    "description": "API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge."
   },
   "security": [
     {
