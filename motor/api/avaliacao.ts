@@ -6,24 +6,12 @@ import { arquivoDeEvidencias, fingerprintDoTrabalho, ocultarSegredos } from '../
 import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.ts'
 import type { RevisaoDePlano } from '../oswaldo/orquestracao/planos.ts'
 import type { AvaliacaoDeExecucao } from './avaliacao-contrato.ts'
+import { lerEntrega, conferirEntrega } from '../oswaldo/orquestracao/entrega.ts'
+import { relatorioConsistente } from '../oswaldo/orquestracao/validacao-evidencias.ts'
+import { run } from '../quilombo/git.ts'
 import { ErroApi } from './contrato.ts'
 
-function consistente(r: RelatorioDeEvidencias, p: RevisaoDePlano): boolean {
-  if (!r || typeof r.instante !== 'string' || !Number.isFinite(Date.parse(r.instante)) || r.versao !== 1 || r.plano !== p.plano.id || r.revisao !== p.revisao ||
-    !/^[a-f0-9]{64}$/.test(r.fingerprint) || !Array.isArray(r.evidencias) ||
-    r.evidencias.length !== p.plano.criterios.length || new Set(r.evidencias.map(e => e?.criterio)).size !== r.evidencias.length) return false
-  return p.plano.criterios.every(c => {
-    const e = r.evidencias.find(e => e?.criterio === c.id)
-    if (!e || e.obrigatorio !== c.obrigatorio || !['aprovado', 'reprovado', 'inconclusivo', 'nao-aplicavel'].includes(e.estado) ||
-      !Array.isArray(e.comando) || !e.comando.every(a => typeof a === 'string') || typeof e.saida !== 'string' ||
-      (e.exitCode !== null && !Number.isSafeInteger(e.exitCode)) || typeof e.timeout !== 'boolean' || !Number.isFinite(e.duracaoMs) || e.duracaoMs < 0) return false
-    if (e.estado === 'nao-aplicavel') return !c.obrigatorio && !!c.naoAplicavel
-    if (e.estado === 'aprovado') return !!c.comando && e.exitCode === 0 && !e.timeout &&
-      JSON.stringify(e.comando) === JSON.stringify([c.comando.binario, ...c.comando.argumentos].map(ocultarSegredos))
-    return true
-  })
-}
-export async function avaliarExecucao(id: string): Promise<AvaliacaoDeExecucao> {
+export async function avaliarExecucao(id: string, executar: typeof run = run): Promise<AvaliacaoDeExecucao> {
   const card = readCard(id)
   if (!card) throw new ErroApi(404, 'tarefa_ausente', 'tarefa nao encontrada')
   const etag = etagDe(card)
@@ -43,13 +31,20 @@ export async function avaliarExecucao(id: string): Promise<AvaliacaoDeExecucao> 
   a.criterios = p.plano.criterios.map(c => ({ id: c.id, descricao: c.descricao, obrigatorio: c.obrigatorio,
     estado: 'inconclusivo', resultadoRegistrado: null, comando: [], exitCode: null, timeout: false, duracaoMs: null, saida: 'Verificacao ainda nao registrada.' }))
   const arquivo = arquivoDeEvidencias(id, rev)
-  if (!existsSync(arquivo)) return { ...a, motivo: 'Nenhuma evidencia registrada para a revisao fixada.' }
-  let fonte: string
+  const arquivada = !!card.fm.entrega_evidencia && ['PR_OPEN', 'MERGED', 'DEPLOYED'].includes(a.status)
+  if (!arquivada && !existsSync(arquivo)) return { ...a, motivo: 'Nenhuma evidencia registrada para a revisao fixada.' }
+  let fonte = ''
+  let entrega: ReturnType<typeof lerEntrega> | null = null
   let r: RelatorioDeEvidencias
   try {
-    fonte = readFileSync(arquivo, 'utf8')
-    r = JSON.parse(fonte) as RelatorioDeEvidencias
-    if (!consistente(r, p)) throw new Error('relatorio inconsistente')
+    if (arquivada) {
+      entrega = lerEntrega(card.fm, p)
+      r = entrega.relatorio
+    } else {
+      fonte = readFileSync(arquivo, 'utf8')
+      r = JSON.parse(fonte) as RelatorioDeEvidencias
+    }
+    if (!relatorioConsistente(r, p)) throw new Error('relatorio inconsistente')
   } catch { return { ...a, atualidade: 'inconsistente', motivo: 'Relatorio incompleto ou divergente dos criterios do plano.' } }
   a.evidenciaEm = r.instante || null
   a.tentativa = r.tentativa || null
@@ -58,17 +53,29 @@ export async function avaliarExecucao(id: string): Promise<AvaliacaoDeExecucao> 
     return { ...c, resultadoRegistrado: e.estado, comando: e.comando, exitCode: e.exitCode, timeout: e.timeout,
       duracaoMs: e.duracaoMs, saida: ocultarSegredos(e.saida).slice(-32000) }
   })
-  if (!card.fm.worktree || !existsSync(card.fm.worktree)) return { ...a, atualidade: 'indisponivel', motivo: 'Worktree indisponivel; evidencia historica nao confirma o trabalho atual.' }
-  try {
-    const antes = await fingerprintDoTrabalho(card.fm.worktree)
-    const depois = await fingerprintDoTrabalho(card.fm.worktree)
-    const atual = readCard(id)
-    if (antes !== r.fingerprint || depois !== antes || !atual || etagDe(atual) !== etag || readFileSync(arquivo, 'utf8') !== fonte) {
-      return { ...a, atualidade: 'desatualizada', motivo: 'Trabalho, card ou evidencia mudou; consulte novamente apos nova verificacao.' }
+  if (entrega) {
+    try {
+      a.entrega = await conferirEntrega(entrega, a.status, executar)
+      const atual = readCard(id)
+      if (!atual || etagDe(atual) !== etag || JSON.stringify(lerEntrega(atual.fm, p)) !== JSON.stringify(entrega)) {
+        return { ...a, entrega: undefined, atualidade: 'desatualizada', motivo: 'Card ou certificado mudou durante a consulta.' }
+      }
+    } catch {
+      return { ...a, entrega: undefined, atualidade: 'indisponivel', motivo: 'Entrega remota indisponivel ou divergente do commit validado; evidencia historica nao aprova.' }
     }
-  } catch { return { ...a, atualidade: 'indisponivel', motivo: 'Nao foi possivel conferir o Git; nenhum criterio foi promovido a aprovado.' } }
+  } else {
+    if (!card.fm.worktree || !existsSync(card.fm.worktree)) return { ...a, atualidade: 'indisponivel', motivo: 'Worktree indisponivel; evidencia historica nao confirma o trabalho atual.' }
+    try {
+      const antes = await fingerprintDoTrabalho(card.fm.worktree)
+      const depois = await fingerprintDoTrabalho(card.fm.worktree)
+      const atual = readCard(id)
+      if (antes !== r.fingerprint || depois !== antes || !atual || etagDe(atual) !== etag || readFileSync(arquivo, 'utf8') !== fonte) {
+        return { ...a, atualidade: 'desatualizada', motivo: 'Trabalho, card ou evidencia mudou; consulte novamente apos nova verificacao.' }
+      }
+    } catch { return { ...a, atualidade: 'indisponivel', motivo: 'Nao foi possivel conferir o Git; nenhum criterio foi promovido a aprovado.' } }
+  }
   a.atualidade = 'atual'
-  a.motivo = 'Evidencias conferidas contra a revisao fixada e o trabalho no instante da consulta.'
+  a.motivo = a.entrega ? 'Evidencias conferidas contra o commit do PR e, quando integrado, a arvore do merge no instante da consulta.' : 'Evidencias conferidas contra a revisao fixada e o trabalho no instante da consulta.'
   a.criterios = a.criterios.map(c => ({ ...c, estado: c.resultadoRegistrado! }))
   const obrigatorios = a.criterios.filter(c => c.obrigatorio)
   a.criteriosAprovados = a.modo === 'passivo' && obrigatorios.length > 0 && obrigatorios.every(c => c.estado === 'aprovado')

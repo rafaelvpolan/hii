@@ -14,6 +14,8 @@ writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'fixture/app',
 writeFileSync(join(dir, 'repo/package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }))
 const { ensureContract } = await import('../../motor/cordel/bussola/armazenar.ts')
 ensureContract(join(dir, 'repo'), new Date().toISOString())
+const { controlarEntregas } = await import('./api-entrega-fixture.ts')
+controlarEntregas(dir)
 const { criarServidorApi } = await import('../../motor/api/servidor.ts')
 const { iniciar, recurso, atualizar, saida } = await import('../../motor/observabilidade/registro.ts')
 const { emptyUsage } = await import('../../motor/tomada/uso.ts')

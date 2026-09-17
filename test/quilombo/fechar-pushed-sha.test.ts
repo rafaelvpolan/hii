@@ -126,3 +126,43 @@ test('REGRESSAO: pushed_sha gravado pelo push anterior DESTE card ancora o push 
   expect(existsSync(join(checkout, 'mudanca1.txt'))).toBe(false)
   expect(git(checkout, ['rev-parse', 'HEAD'])).toBe(segundoPushedSha)
 }, TEMPO_COM_GIT_MS)
+
+test('fecho passivo preserva certificado antes de remover worktree; falha preserva PR e trabalho', async () => {
+  const { planoOrquestrado } = await import('../fixtures/plano-orquestrado.ts')
+  const { salvarPlano } = await import('../../motor/oswaldo/orquestracao/planos.ts')
+  const { avaliarExecucao } = await import('../../motor/api/avaliacao.ts')
+  writeFileSync(ghFalso, '#!/bin/sh\nif [ "$1" = pr ] && [ "$2" = list ]; then echo "[]"; exit 0; fi\nif [ "$1" = pr ] && [ "$2" = create ]; then\nif [ "$HII_TEST_DIRTY_PR" = 1 ]; then echo mudanca > depois-do-push.txt; fi\necho "' + PR_FALSO + '"; exit 0; fi\nexit 1\n')
+  try {
+    for (const cenario of ['normal', 'sujo', 'parada']) {
+      const sujo = cenario === 'sujo'
+      process.env.HII_TEST_DIRTY_PR = sujo ? '1' : '0'
+      const wt = worktreeParaTeste()
+      const id = createCard({ title: 'entrega passiva', status: 'URL_OK', repo: 'org/repo', surface: 'none',
+        clarified: 'true', steps: 'nada', slug: 'entrega', worktree: wt, pipeline: 'auto', motor_modo: 'passivo' }, '## Objetivo\nentrega com prova\n')
+      const p = salvarPlano({ ...planoOrquestrado(), id, sessaoId: id, repo: 'org/repo' }, 0, 'entrega')
+      patchCard(id, { plano_revisao: '1', plano_hash: p.hash })
+      await realGit.ensureWorktree(clone, wt, 'hicode/' + id + '-entrega', 'main')
+      commitar(wt, 'entrega.txt', 'resultado\n', 'feat: entrega')
+      await handleFinish(id, { ...agenteFinish, certificarEntrega: async (...args) => {
+        const { certificarEntrega } = await import('../../motor/oswaldo/orquestracao/entrega.ts')
+        const digest = await certificarEntrega(...args)
+        if (cenario === 'parada') patchCard(id, { status: 'HALTED', halt_class: 'humano' })
+        return digest
+      } })
+      const c = readCard(id)!
+      expect(c.fm.pr_url).toBe(PR_FALSO)
+      if (sujo || cenario === 'parada') {
+        if (cenario === 'parada') expect(c.fm.halt_class).toBe('humano')
+        expect(c.fm.status).toBe('HALTED')
+        expect(existsSync(wt)).toBe(true)
+        expect(c.fm.entrega_evidencia || '').toBe('')
+      } else {
+        expect(c.fm.status).toBe('PR_OPEN')
+        expect(c.fm.entrega_evidencia).toHaveLength(64)
+        expect(existsSync(wt)).toBe(false)
+        const a = await avaliarExecucao(id, async () => ({ stdout: JSON.stringify({ url: PR_FALSO, state: 'OPEN', headRefOid: c.fm.pushed_sha, mergeCommit: null }), stderr: '', err: null }))
+        expect(a.criteriosAprovados).toBe(true)
+      }
+    }
+  } finally { delete process.env.HII_TEST_DIRTY_PR }
+}, TEMPO_COM_GIT_MS)

@@ -1772,6 +1772,33 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "entrega": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "head": {
+                "type": "string"
+              },
+              "tree": {
+                "type": "string"
+              },
+              "pr": {
+                "type": "string"
+              },
+              "merge": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "head",
+              "tree",
+              "pr",
+              "merge"
+            ]
+          },
           "versao": {
             "const": 1
           },
