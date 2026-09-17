@@ -1,3 +1,4 @@
+import { despacharTecnico } from './tecnico.ts'
 import { readCard, repoRegistered, listRepos, patchCard } from '../cordel/store.ts'
 import { criarExecucao } from '../mirante/criar-execucao.ts'
 import * as acoes from '../mirante/acoes.ts'
@@ -53,13 +54,17 @@ function pedido(b: Objeto): { titulo: string; descricao: string } {
 }
 
 export function novoPedido(id: string, b: Objeto): RespostaApi {
-  campos(b, ['modo', 'texto', 'spec'])
+  campos(b, ['modo', 'texto', 'spec', 'tecnico'])
   const s = sessao(id)
   if (s.estado !== 'aberta') throw new ErroApi(409, 'sessao_fechada', 'abra outra session')
   if (!repoRegistered(s.repo)) throw new ErroApi(409, 'repo_ausente', 'projeto nao esta mais registrado')
   const modo = texto(b, 'modo')
   if (!['gateway', 'orquestrador'].includes(modo)) throw new ErroApi(400, 'modo_invalido', 'modo: gateway ou orquestrador')
   if (modo === 'gateway' && b.spec !== undefined) throw new ErroApi(400, 'modo_invalido', 'spec exige modo orquestrador')
+  if (b.tecnico !== undefined) {
+    if (modo !== 'orquestrador' || b.texto !== undefined || b.spec !== undefined || typeof b.tecnico !== 'string') throw new ErroApi(400, 'entrada_invalida', 'tecnico exige orquestrador e documento exclusivo')
+    return despacharTecnico(id, s.repo, b.tecnico)
+  }
   const p = pedido(b)
   const execucao = criarExecucao(s.repo, id, p.titulo, modo === 'orquestrador' ? 'passivo' : 'gateway', { desc: p.descricao })
   const aprovado = acoes.approvePlan(execucao.id)

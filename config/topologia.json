@@ -8,6 +8,7 @@
   ],
   "transicoes": [
     ["INBOX", "READY"],
+    ["INBOX", "EXECUTING"],
     ["READY", "EXECUTING"],
     ["READY", "CLARIFY"],
     ["CLARIFY", "EXECUTING"],
@@ -83,7 +84,7 @@
   "checkpointsHumanos": ["URL", "CLARIFY", "PAUSED", "CONFIRM", "PR_OPEN"],
   "semEscritaNoMotor": {
     "sobre": "Estados declarados em STATUSES que nenhum arquivo de motor/ escreve hoje. Ficam listados de proposito: deriva declarada e deriva visivel.",
-    "estados": ["INBOX", "PLAN_APPROVED", "EXECUTED", "DEPLOYED", "REVIEWED"],
+    "estados": ["PLAN_APPROVED", "EXECUTED", "DEPLOYED", "REVIEWED"],
     "nota": "EXECUTED e LIDO por motor/oswaldo/mutirao/estado-da-fila.ts para retomar o card, mas nenhum codigo do motor o escreve — quem escreve e o painel. REVIEWED era o estado do step `review` do pipeline, removido: o crivo do fecho (runCodefoxGate) ja faz a revisao adversarial LENDO o diff, e o veredito do step nunca era lido. O no fica declarado porque card antigo em disco pode estar nele e a fila precisa reconcilia-lo."
   }
 }
