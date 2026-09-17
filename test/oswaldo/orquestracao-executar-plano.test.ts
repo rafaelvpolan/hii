@@ -142,3 +142,31 @@ test('base sem merge predecessor nao chama IA; integrar o commit libera o plano'
   expect((await executarPlano(readCard(id)!, dir, implementar, false)).ok).toBe(true)
   expect(chamadas).toBe(4)
 })
+
+test('parada na ultima microtask conserva resultado e custo sem anunciar sucesso do plano', async () => {
+  const { patchCard, updateCardPorAcaoHumana } = await import('../../motor/cordel/store.ts')
+  const id = submit({ title: 'Parada final', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  const plano = { ...planoOrquestrado(), id, sessaoId: id }
+  plano.microtasks = plano.microtasks.slice(0, 1)
+  salvarPlano(plano, 0, 'parada-final')
+  let chamadas = 0
+  const implementar: Parameters<typeof executarPlano>[2] = async () => {
+    chamadas++
+    writeFileSync(join(dir, 'feito.txt'), 'efeito confirmado')
+    patchCard(id, { status: 'HALTED', halt_class: 'humano', halt_reason: 'parar agora' })
+    return { ok: true, cost: '0.25', costMeasured: true }
+  }
+  const r = await executarPlano(readCard(id)!, dir, implementar, false)
+  expect(r.ok).toBe(false)
+  expect(r.cost).toBe('0.25')
+  expect(r.costMeasured).toBe(true)
+  expect((await executarPlano(readCard(id)!, dir, implementar, false)).ok).toBe(false)
+  expect(chamadas).toBe(1)
+  updateCardPorAcaoHumana(id, { fields: { status: 'EXECUTING' } })
+  const retomada = await executarPlano(readCard(id)!, dir, implementar, false)
+  expect(retomada.ok).toBe(true)
+  expect(retomada.cost).toBe('0')
+  expect(chamadas).toBe(1)
+  expect(readFileSync(join(dir, 'feito.txt'), 'utf8')).toBe('efeito confirmado')
+})

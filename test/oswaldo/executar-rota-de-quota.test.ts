@@ -46,7 +46,7 @@ git(clone, ['config', 'user.name', 't'])
 process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
 writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
 
-const { createCard, readCard } = await import('../../motor/cordel/store.ts')
+const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
 const { handleExecute } = await import('../../motor/oswaldo/executar.ts')
 
 const ESCADA = ['claude', 'codex', 'kimi']
@@ -160,3 +160,46 @@ test('com HII_QUOTA_FALLBACK=off a primeira quota ja e HALTED — o opt-out do o
   expect(c?.fm.halt_class).toBe('quota')
   expect(c?.fm.provider_override_implement ?? '').toBe('')
 }, TEMPO_COM_GIT_MS)
+
+for (const status of ['HALTED', 'PAUSED']) {
+  for (const ok of [true, false]) {
+    test('parada ' + status + ' prevalece sobre resposta tardia ' + (ok ? 'bem-sucedida' : 'de cota'), async () => {
+      if (!ok && status === 'PAUSED') process.env.HII_QUOTA_FALLBACK = 'off'
+      const id = cardExecutando()
+      patchCard(id, { motor_modo: 'passivo' })
+      const { salvarPlano } = await import('../../motor/oswaldo/orquestracao/planos.ts')
+      const { planoOrquestrado } = await import('../fixtures/plano-orquestrado.ts')
+      const plano = { ...planoOrquestrado(), id, sessaoId: id, repo: 'org/repo' }
+      plano.microtasks = plano.microtasks.slice(0, 1)
+      salvarPlano(plano, 0, 'parada')
+      let chamadas = 0
+      let rotas = 0
+      let head = ''
+      const motivo = 'operador interrompeu esta execucao'
+      await handleExecute(id, {
+        ...depsQueEstouram(),
+        rota: () => { rotas++; return { acao: 'trocar', para: 'codex', motivo: 'nao deveria consultar' } },
+        implement: async (_card, wt) => {
+          chamadas++
+          head = git(wt, ['rev-parse', 'HEAD'])
+          writeFileSync(join(wt, 'efeito-preservado.txt'), 'trabalho parcial')
+          patchCard(id, { status, halt_class: 'humano', halt_reason: motivo, halt_at: '2026-09-17T00:00:00Z' })
+          return { ...quotaEstourada('claude'), ok, costMeasured: true }
+        },
+      })
+      const c = readCard(id)!
+      expect(c.fm.status).toBe(status)
+      expect(c.fm.halt_class).toBe('humano')
+      expect(c.fm.halt_reason).toBe(motivo)
+      expect(c.fm.halt_at).toBe('2026-09-17T00:00:00Z')
+      expect(c.fm.cost_usd).toBe('0.0100')
+      expect(c.fm.tokens_total).toBe('2')
+      expect(chamadas).toBe(1)
+      expect(rotas).toBe(0)
+      expect(readFileSync(join(c.fm.worktree!, 'efeito-preservado.txt'), 'utf8')).toBe('trabalho parcial')
+      expect(git(c.fm.worktree!, ['rev-parse', 'HEAD'])).toBe(head)
+      expect(git(c.fm.worktree!, ['diff', '--cached', '--name-only'])).toBe('')
+      expect(c.fm.url ?? '').toBe('')
+    }, TEMPO_COM_GIT_MS)
+  }
+}
