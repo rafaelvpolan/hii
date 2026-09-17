@@ -32,6 +32,7 @@ export interface PlanoDeExecucao {
   objetivo: string
   epicoId?: string
   produtoId?: string
+  origemTecnica?: { id: string; documento: string; sha256: string; planejamento: string; revisao: number }
   risco: 'low' | 'high'
   criterios: CriterioDoPlano[]
   microtasks: Microtask[]

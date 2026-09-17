@@ -2367,6 +2367,25 @@
             "additionalProperties": false,
             "properties": {
               "modo": {
+                "const": "orquestrador"
+              },
+              "tecnico": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200000,
+                "description": "JSON tecnico v1 integral; ate 500 linhas, incluindo metadados e linhas vazias."
+              }
+            },
+            "required": [
+              "modo",
+              "tecnico"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "modo": {
                 "enum": [
                   "gateway",
                   "orquestrador"

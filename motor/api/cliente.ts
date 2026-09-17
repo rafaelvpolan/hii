@@ -7,7 +7,8 @@ import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.t
 import type { Escopo, Evento, Snapshot, Recurso as RecursoObservavel } from '../observabilidade/contrato.ts'
 import { Projecao } from '../observabilidade/projecao.ts'
 
-export type PedidoHicode = { modo: 'gateway' | 'orquestrador'; texto: string }
+export type PedidoHicode = { modo: 'orquestrador'; tecnico: string }
+  | { modo: 'gateway' | 'orquestrador'; texto: string }
   | { modo: 'orquestrador'; spec: { nome: string; conteudo: string } }
 export interface PedidoCriado { id: string; sessao: string; modo: 'gateway' | 'orquestrador'; status: string; enfileirada: boolean; mensagem: string }
 export interface Recurso<T> { valor: T; etag: string }

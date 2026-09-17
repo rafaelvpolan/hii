@@ -33,7 +33,7 @@ export type EstadoDoMotor = 'tick-falhando' | 'cota-esgotada' | 'orcamento-esgot
 // declara ["URL","CONFIRM","PR_OPEN"] — inclui PR_OPEN, que tem consumidor, e omite
 // READY, CLARIFY e PAUSED, que nao tem. Corrigi-la mexe no invariante de
 // test/niemeyer/topologia.test.ts:126, e e item proprio em PENDENCIAS.md.
-export const SEM_CONSUMIDOR_AUTOMATICO: readonly string[] = ['READY', 'CLARIFY', 'PAUSED', 'CONFIRM', 'URL']
+export const SEM_CONSUMIDOR_AUTOMATICO: readonly string[] = ['INBOX', 'READY', 'CLARIFY', 'PAUSED', 'CONFIRM', 'URL']
 
 export interface EsperaPorFalha {
   card: string

@@ -118,6 +118,7 @@ function consulta(url: URL, opcoes: OpcoesApi): RespostaApi {
   if (url.pathname === '/v1/capacidades') return resposta(200, {
     protocolo: 'hii-http', versao: 1, transporte: 'http-json+sse', statuses: STATUSES,
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
+    tecnico: { versoes: [1], limiteLinhas: 500 },
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
     configuracao: { versoes: [1], leitura: !opcoes.repos, escrita: opcoes.admin === true && !opcoes.repos },
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,

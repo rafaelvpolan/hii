@@ -12,6 +12,7 @@ import { encerrarHarnessDoCard, motivoParaEsperarHarness } from '../tomada/harne
 import { criarSessaoHii } from '../euclides/sessoes.ts'
 
 export interface NewCardInput {
+  statusInicial?: 'INBOX'
   title: string
   repo?: string
   risk?: string
@@ -43,11 +44,12 @@ function optional(fields: Record<string, string | undefined>): Fields {
 
 export function submit(input: NewCardInput): string {
   const objetivo = (input.desc ?? '').trim() || input.title
-  const body = `## Objetivo\n${objetivo}\n\n## Log de Estado\n${isoNow()} CREATED status=READY`
+  const status = input.statusInicial ?? 'READY'
+  const body = `## Objetivo\n${objetivo}\n\n## Log de Estado\n${isoNow()} CREATED status=${status}`
   return createCard({
     slug: slugify(tituloDe(input.title)),
     title: tituloDe(input.title),
-    status: 'READY',
+    status,
     risk: input.risk === 'high' ? 'high' : 'low',
     repo: input.repo ?? '',
     created: isoNow(),

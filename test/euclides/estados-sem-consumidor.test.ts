@@ -118,8 +118,9 @@ test('os estados do pipeline de polimento NAO estao orfaos: reconcileStranded os
   }
 })
 
-test('INBOX e PLAN_APPROVED nao estao orfaos: a topologia declara que o motor nunca os escreve', () => {
+test('INBOX aguarda reconciliacao de despacho; PLAN_APPROVED nao e escrito pelo motor', () => {
   const nunca = new Set(topologia().semEscritaNoMotor.estados)
-  expect(nunca.has('INBOX')).toBe(true)
+  expect(nunca.has('INBOX')).toBe(false)
+  expect(SEM_CONSUMIDOR_AUTOMATICO).toContain('INBOX')
   expect(nunca.has('PLAN_APPROVED')).toBe(true)
 })
