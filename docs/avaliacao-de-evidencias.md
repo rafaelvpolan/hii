@@ -36,9 +36,9 @@ migracao e necessaria; desativar a extensao preserva o historico existente.
 ## Limites operacionais
 
 Esta consulta e uma observacao datada, nao reserva o worktree contra mudancas
-futuras. Evidencia historica de worktree removido nao e certificacao portavel do
-merge. Essa verificacao de entrega arquivada permanece pendente; o painel deve
-mostrar inconclusao. A leitura nao libera dependencias de produto para despacho.
+futuras. Execucoes sem certificado e sem worktree permanecem inconclusivas. O fecho
+passivo pode preservar [evidencia de entrega](evidencia-de-entrega.md), conferida
+contra o commit do PR e a arvore integrada em cada consulta. A leitura nao libera dependencias de produto para despacho.
 
 Validacao usa Git e comando de teste reais em diretorios temporarios, transporte
 HTTP e consumidor Hicode. Nao utiliza inferencia paga, daemon ou fila do operador.

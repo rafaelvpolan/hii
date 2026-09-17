@@ -8,11 +8,12 @@ import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { instrucaoDeRed, lerRelatoDeRed, registrarRed } from '../../agentes/chagas/red-primeiro.ts'
 import { registrarTier, tierDoCard } from '../../oswaldo/rui.ts'
 import { appendProjectMemory } from '../../cascudo/memoria.ts'
-import { readCard, patchCard, repoPath, repoBase } from '../../cordel/store.ts'
+import { readCard, patchCard, patchCardWith, repoPath, repoBase } from '../../cordel/store.ts'
 import { warnBudgetWithoutGuarantee } from '../../euclides/tesouro/confianca.ts'
 import { pushOwnedBranch, removeWorktree, runGit, stageAll, worktreePath } from '../git.ts'
 import { abrirPrUmaVez, pularCriacaoDePr } from './pr.ts'
 import { lerPlano } from '../../oswaldo/orquestracao/planos.ts'
+import { certificarEntrega } from '../../oswaldo/orquestracao/entrega.ts'
 import { coletarEvidencias, evidenciaAtual } from '../../oswaldo/orquestracao/evidencias.ts'
 import type { PushResult } from '../git.ts'
 import { stopUrl } from '../../ciclo/crivo/url-viva.ts'
@@ -45,6 +46,7 @@ export interface FinishDeps {
   runStep: typeof runStep
   runCodefoxGate: typeof runCodefoxGate
   coletarEvidencias?: typeof coletarEvidencias
+  certificarEntrega?: typeof certificarEntrega
 }
 
 async function commitAll(wt: string, message: string): Promise<void> {
@@ -486,9 +488,26 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     patchCard(id, { status: 'HALTED', halt_class: 'terminal', pipeline_liberado: '', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
     return
   }
-  stopUrl(card.fm.url_pid)
-  await removeWorktree(target, wt)
-  patchCard(id, {
+  patchCard(id, { pr_url: url })
+  let entregaDigest = ''
+  if (card.fm.motor_modo === 'passivo') {
+    if (['HALTED', 'PAUSED'].includes(readCard(id)?.fm.status ?? '')) return
+    try {
+      entregaDigest = await (deps.certificarEntrega ?? certificarEntrega)(id, wt, push.pushedSha, url)
+    } catch {
+      if (['HALTED', 'PAUSED'].includes(readCard(id)?.fm.status ?? '')) return
+      haltForInspection(id, card, fsteps, isoNow() + ' ' + statusAtual + '->HALTED nao foi possivel certificar o commit enviado; PR ' + url + ' e worktree preservados', RESUME_POST_STEPS, 'escopo')
+      patchCard(id, { pr_url: url })
+      return
+    }
+  }
+  let entregue = false
+  patchCardWith(id, fm => {
+    if (['HALTED', 'PAUSED'].includes(fm.status || '') || fm.pushed_sha !== push.pushedSha ||
+      fm.plano_hash !== card.fm.plano_hash || fm.plano_revisao !== card.fm.plano_revisao) return {}
+    entregue = true
+    return {
+    ...(entregaDigest ? { entrega_evidencia: entregaDigest } : {}),
     status: 'PR_OPEN',
     pr_url: url,
     wait_attempts: '',
@@ -504,7 +523,11 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     rota_tentados: '',
     rota_contexto: '',
     ...totalsFields,
-  }, `${isoNow()} ${statusAtual}->PR_OPEN ${url} (merge e do humano)`)
+  } }, () => entregue ? `${isoNow()} ${statusAtual}->PR_OPEN ${url} (merge e do humano)` : '')
+  if (!entregue) return
+  stopUrl(card.fm.url_pid)
+  // Persistir PR_OPEN antes da limpeza evita reexecutar um fecho entregue apos crash.
+  await removeWorktree(target, wt)
   if (PROJECT_MEMORY) appendProjectMemory(target, `#${id} "${(desc ?? '').slice(0, 80)}" -> PR aberto (${url})`)
   process.stdout.write(`[runner] #${id}: PR_OPEN ${url}\n`)
 }

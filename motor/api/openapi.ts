@@ -67,6 +67,7 @@ export const openapi = {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } },
     schemas: {
       AvaliacaoDeExecucao: objeto({
+        entrega: objeto({ head: str, tree: str, pr: str, merge: { type: ['string', 'null'] } }, ['head', 'tree', 'pr', 'merge']),
         versao: { const: 1 }, execucao: id, repo: str, sessao: str, status: str, modo: str,
         plano: { oneOf: [{ type: 'null' }, objeto({ revisao: { type: 'integer', minimum: 1 }, hash: str, produto: str, planejamento: str, origemRevisao: { type: 'integer', minimum: 0 }, tecnicoHash: str }, ['revisao', 'hash', 'produto', 'planejamento', 'origemRevisao', 'tecnicoHash'])] },
         atualidade: { enum: ['ausente', 'atual', 'desatualizada', 'indisponivel', 'inconsistente'] },
