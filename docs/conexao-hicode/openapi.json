@@ -11,6 +11,132 @@
     }
   ],
   "paths": {
+    "/v1/motor/iniciar": {
+      "post": {
+        "operationId": "iniciarMotor",
+        "description": "Opt-in HII_API_AUTOSTART=1 e API administrativa. Sem argumentos de processo. Serializa e limita tentativas; nao retoma cards pausados.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/motor/status": {
+      "get": {
+        "operationId": "estadoMotor",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "protocolo": {
+                      "const": 1
+                    },
+                    "estado": {
+                      "enum": [
+                        "ligado",
+                        "desligado",
+                        "degradado",
+                        "desconhecido"
+                      ]
+                    },
+                    "versao": {
+                      "type": "string"
+                    },
+                    "versaoEmExecucao": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "fila": {
+                      "type": "string"
+                    },
+                    "consultadoEm": {
+                      "type": "string"
+                    },
+                    "motivo": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "protocolo",
+                    "estado",
+                    "versao",
+                    "versaoEmExecucao",
+                    "fila",
+                    "consultadoEm",
+                    "motivo"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/observabilidade/snapshot": {
       "get": {
         "operationId": "snapshotObservabilidade",
@@ -1461,6 +1587,7 @@
                 "properties": {
                   "acao": {
                     "enum": [
+                      "iniciar",
                       "aprovar-plano",
                       "aprovar-url",
                       "recusar",
@@ -2412,6 +2539,7 @@
             "type": "array",
             "items": {
               "enum": [
+                "iniciar",
                 "aprovar-plano",
                 "aprovar-url",
                 "recusar",

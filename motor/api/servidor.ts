@@ -1,3 +1,5 @@
+import { iniciarMotor } from './iniciar-motor.ts'
+import { estadoMotor } from './estado-motor.ts'
 import { prepararDependencias } from './dependencias-produto.ts'
 import { avaliarExecucao } from './avaliacao.ts'
 import { createServer } from 'node:http'
@@ -127,6 +129,7 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
     observabilidade: { versoes: [1], snapshot: '/v1/observabilidade/snapshot', eventos: '/v1/observabilidade/eventos', recursos: '/v1/observabilidade/recursos', autorizacao: 'mesmo operador do bearer; filtros nao sao autorizacao' },
   })
+  if (url.pathname === '/v1/motor/status') return resposta(200, estadoMotor())
   if (url.pathname === '/v1/openapi.json') return resposta(200, openapi)
   if (url.pathname === '/v1/configuracao') return configuracao()
   const consultaId = url.pathname.match(/^\/v1\/consultas\/([a-f0-9-]{36})$/)?.[1]
@@ -186,6 +189,11 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
   let b: Json
   try { b = JSON.parse(bruto) as Json } catch { throw new ErroApi(400, 'json_invalido', 'JSON invalido') }
   const entrada = objeto(b)
+  if (url.pathname === '/v1/motor/iniciar') {
+    if (opcoes.admin !== true || opcoes.repos || process.env.HII_API_AUTOSTART !== '1') throw new ErroApi(403, 'arranque_nao_autorizado', 'Partida exige API administrativa e HII_API_AUTOSTART=1.')
+    if (url.search || Object.keys(entrada).length) throw new ErroApi(400, 'pedido_invalido', 'Partida aceita apenas corpo vazio; configuracao pertence ao operador.')
+    return resposta(200, await iniciarMotor())
+  }
   if (opcoes.repos && ['/v1/sessoes', '/v1/ask'].includes(url.pathname)) autorizarRepo(typeof entrada.repo === 'string' ? entrada.repo : '', opcoes)
   if (url.pathname === '/v1/configuracao' && opcoes.admin !== true) throw new ErroApi(403, 'administrador_obrigatorio', 'configuracao exige API administrativa explicita')
   const m = url.pathname.match(/^\/v1\/(sessoes|tarefas)\/(\d{3,12})\/(pedidos|fechar|acoes)$/)
@@ -217,7 +225,7 @@ function autorizarRepo(repo: string, opcoes: OpcoesApi): void {
 }
 function autorizarUrl(url: URL, opcoes: OpcoesApi, metodo: string): void {
   if (!opcoes.repos) return
-  if (['/v1/capacidades', '/v1/openapi.json', '/v1/provedores'].includes(url.pathname)) return
+  if (['/v1/capacidades', '/v1/openapi.json', '/v1/provedores', '/v1/motor/status'].includes(url.pathname)) return
   if (metodo === 'POST' && ['/v1/sessoes', '/v1/ask'].includes(url.pathname)) return // corpo validado antes do efeito
   const tarefaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})(?:\/|$)/)?.[1]
   if (tarefaId) return autorizarRepo(tarefa(tarefaId).campos.repo ?? '', opcoes)

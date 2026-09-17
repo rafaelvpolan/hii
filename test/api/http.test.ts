@@ -338,3 +338,33 @@ test('catalogo anuncia capacidade real do Ollama sem conceder agentividade', asy
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
 })
+
+test('estado do daemon vem por HTTP autenticado com versao; API viva nao significa motor ligado', async () => {
+  process.env.HII_RUNNER_LOCK = join(base, 'runner.lock')
+  const r = await fetch(url + '/v1/motor/status', { headers: { authorization: 'Bearer ' + token } })
+  expect(r.status).toBe(200)
+  const s = await r.json() as { estado: string; versao: string }
+  expect(s.estado).toBe('desligado')
+  expect(s.versao).toMatch(/^\d+\.\d+\.\d+/)
+  expect((await fetch(url + '/v1/motor/status')).status).toBe(401)
+  expect((await post('/v1/motor/iniciar', {})).status).toBe(403)
+  expect(allCards()).toEqual([])
+})
+
+test('iniciar por API exige motor ligado, usa ETag e chave idempotente e respeita pausa humana', async () => {
+  process.env.HII_RUNNER_LOCK = join(base, 'runner.lock')
+  writeFileSync(join(process.env.HII_CARDS_DIR!, '025-fixture.md'), '---\nid: 025\nstatus: READY\nrepo: org/app\ntitle: Fixture\n---\n## Objetivo\nSem IA.\n')
+  const revisao = (await cliente.tarefa('025')).etag
+  expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, { 'if-match': revisao })).status).toBe(503)
+  expect(readCard('025')?.fm.status).toBe('READY')
+  writeFileSync(process.env.HII_RUNNER_LOCK, String(process.pid))
+  const { publicarPresenca } = await import('../../motor/api/estado-motor.ts')
+  publicarPresenca()
+  const headers = { 'if-match': revisao, 'idempotency-key': chave() }
+  expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, headers)).status).toBe(200)
+  expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, headers)).status).toBe(200)
+  expect(readCard('025')?.fm.status).toBe('EXECUTING')
+  patchCard('025', { status: 'PAUSED' })
+  expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, { 'if-match': (await cliente.tarefa('025')).etag })).status).toBe(409)
+  expect(readCard('025')?.fm.status).toBe('PAUSED')
+})
