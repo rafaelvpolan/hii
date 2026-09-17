@@ -136,3 +136,78 @@ test('terminal de gateway nao comprova criterio e credencial restrita nao le out
     await new Promise<void>(r => restrito.close(() => r()))
   }
 })
+
+test('dependencia exige entrega da revisao; retry e concorrencia nao duplicam execucao', async () => {
+  const { certificarEntrega } = await import('../../motor/oswaldo/orquestracao/entrega.ts')
+  const repo = join(raiz, 'repo')
+  writeFileSync(join(repo, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }))
+  execFileSync('git', ['init', '-q'], { cwd: repo })
+  execFileSync('git', ['add', '.'], { cwd: repo })
+  execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture'], { cwd: repo })
+  ensureContract(repo, new Date().toISOString())
+  // O contrato criado tambem pertence ao commit comprovado.
+  execFileSync('git', ['add', '.'], { cwd: repo })
+  execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-qm', 'contrato'], { cwd: repo })
+  const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim()
+  const tree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: repo, encoding: 'utf8' }).trim()
+  const cliente = clienteHii(url, token)
+  const sessao = (await cliente.novaSessao('org/app', 'Dependencias', 'sessao-dependencias-001')).valor
+  const fonte = serializarTecnico(documentoTecnico())
+  const anterior = (await cliente.pedido(sessao.id, { modo: 'orquestrador', tecnico: fonte }, 'predecessora-001')).valor
+  const plano = lerPlano('org/app', anterior.id)!
+  const sucessor = { ...documentoTecnico(), id: 'tecnico-sucessor', produtoId: 'sucessor', dependencias: ['triagem'] }
+  const refs = [{ produto: 'triagem', execucao: anterior.id, tecnicoHash: plano.plano.origemTecnica!.sha256 }]
+  const pedido = { modo: 'orquestrador' as const, tecnico: serializarTecnico(sucessor), dependencias: refs }
+  const quantidade = allCards().length
+  await assert.rejects(() => cliente.pedido(sessao.id, pedido, 'dependente-retry-001'), /409/)
+  assert.equal(allCards().length, quantidade)
+  patchCard(anterior.id, { worktree: repo, pushed_sha: head })
+  await coletarEvidencias(plano.plano, 1, repo)
+  const pr = 'https://github.com/org/app/pull/7'
+  const digest = await certificarEntrega(anterior.id, repo, head, pr)
+  patchCard(anterior.id, { entrega_evidencia: digest, pr_url: pr, status: 'PR_OPEN' })
+  patchCard(anterior.id, { status: 'MERGED' })
+  const bin = join(raiz, 'bin'); mkdirSync(bin)
+  const resposta = join(raiz, 'remoto.json')
+  const remoto = { url: pr, state: 'MERGED', headRefOid: head, mergeCommit: { oid: head }, tree }
+  writeFileSync(resposta, JSON.stringify(remoto))
+  writeFileSync(join(bin, 'gh'), '#!/usr/bin/env node\nvoid (async()=>{ const fs = await import("node:fs"); const p=JSON.parse(fs.readFileSync(' + JSON.stringify(resposta) + ',"utf8")); console.log(JSON.stringify(process.argv[2]==="pr" ? p : {sha:p.mergeCommit.oid,tree:{sha:p.tree}})); })();\n', { mode: 0o755 })
+  const path = process.env.PATH
+  process.env.PATH = bin + ':' + path
+  try {
+    for (const errado of [
+      { ...pedido, dependencias: [] },
+      { ...pedido, dependencias: [{ ...refs[0]!, tecnicoHash: 'b'.repeat(64) }] },
+      { ...pedido, dependencias: [{ ...refs[0]!, produto: 'outra' }] },
+      { ...pedido, tecnico: serializarTecnico({ ...sucessor, origem: { ...sucessor.origem, revisao: 2 } }) },
+    ]) await assert.rejects(() => cliente.pedido(sessao.id, errado, 'invalido-' + Math.random().toString(16).slice(2)), /409/)
+    assert.equal(allCards().length, quantidade)
+    const [a, b] = await Promise.all([cliente.pedido(sessao.id, pedido, 'dependente-retry-001'), cliente.pedido(sessao.id, pedido, 'dependente-retry-001')])
+    assert.equal(a.valor.id, b.valor.id)
+    assert.equal(allCards().length, quantidade + 1)
+    assert.equal(lerPlano('org/app', a.valor.id)?.plano.dependenciasProduto?.[0]?.merge, head)
+    writeFileSync(resposta, JSON.stringify({ ...remoto, headRefOid: 'b'.repeat(40) }))
+    assert.equal((await cliente.pedido(sessao.id, pedido, 'dependente-retry-001')).valor.id, a.valor.id, 'replay confirmado nao reconsulta precondicoes')
+    await assert.rejects(() => cliente.pedido(sessao.id, pedido, 'novo-dependente-002'), /409/)
+    assert.equal(allCards().length, quantidade + 1)
+  } finally { process.env.PATH = path }
+})
+
+test('precondicao alterada nao fixa recusa na chave; efeito confirmado nao refaz preparo', async () => {
+  const { umaVezPreparada, resposta } = await import('../../motor/api/idempotencia.ts')
+  const { ErroApi } = await import('../../motor/api/contrato.ts')
+  let mudou = true, efeitos = 0, preparos = 0
+  const preparar = async () => { preparos++; return 'prova' }
+  const executar = () => { efeitos++; return resposta(201, { execucao: 'fixture' }) }
+  const conferir = () => { if (mudou) throw new ErroApi(409, 'mudou', 'dependencia mudou') }
+  await assert.rejects(() => umaVezPreparada('preparo-dependencia-001', 'pedido', preparar, executar, conferir))
+  assert.equal(efeitos, 0)
+  mudou = false
+  const [a, b] = await Promise.all([umaVezPreparada('preparo-dependencia-001', 'pedido', preparar, executar, conferir), umaVezPreparada('preparo-dependencia-001', 'pedido', preparar, executar, conferir)])
+  assert.equal(a.corpo, b.corpo)
+  assert.equal(efeitos, 1)
+  const antes = preparos
+  mudou = true
+  assert.equal((await umaVezPreparada('preparo-dependencia-001', 'pedido', preparar, executar, conferir)).status, 201)
+  assert.equal(preparos, antes)
+})

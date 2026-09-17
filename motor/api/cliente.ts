@@ -8,7 +8,7 @@ import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.t
 import type { Escopo, Evento, Snapshot, Recurso as RecursoObservavel } from '../observabilidade/contrato.ts'
 import { Projecao } from '../observabilidade/projecao.ts'
 
-export type PedidoHicode = { modo: 'orquestrador'; tecnico: string }
+export type PedidoHicode = { modo: 'orquestrador'; tecnico: string; dependencias?: { produto: string; execucao: string; tecnicoHash: string }[] }
   | { modo: 'gateway' | 'orquestrador'; texto: string }
   | { modo: 'orquestrador'; spec: { nome: string; conteudo: string } }
 export interface PedidoCriado { id: string; sessao: string; modo: 'gateway' | 'orquestrador'; status: string; enfileirada: boolean; mensagem: string }
@@ -122,7 +122,7 @@ export function clienteHii(base: string, token: string) {
     artefato: (id: string) => get<{ id: string; nome: string; tipo: string; tamanho: number; sha256: string; conteudo: string }>(`/v1/artefatos/${encodeURIComponent(id)}`),
     perguntas: (id: string) => get<{ perguntaId: string | null; pendencia: { origem: string; indice: number; atual: { q: string; options: string[]; recommended?: string } } | null }>(`/v1/tarefas/${idSeguro(id)}/perguntas`),
     responderPergunta: (id: string, perguntaId: string, texto: string, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/respostas`, { perguntaId, texto }, chave, etag),
-    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[]; observabilidade?: { versoes: number[] }; avaliacao?: { versoes: number[] }; tecnico?: { versoes: number[]; limiteLinhas: number } }>('/v1/capacidades'),
+    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[]; observabilidade?: { versoes: number[] }; avaliacao?: { versoes: number[] }; tecnico?: { versoes: number[]; limiteLinhas: number; dependenciasProduto?: number } }>('/v1/capacidades'),
     provedores: () => get<{ provedores: (ProvedorDisponivel & { modelos: string[] })[] }>('/v1/provedores'),
     estado: (repo = '') => get<SnapshotDoMotor & { cursor: string }>(`/v1/estado?repo=${encodeURIComponent(repo)}`),
     novaSessao: (repo: string, titulo: string, chave: string) => post<SessaoHii>('/v1/sessoes', { repo, titulo }, chave),

@@ -118,3 +118,27 @@ test('excecao depois de efeito preserva trabalho e bloqueia repeticao cega na re
   expect(chamadas).toBe(1)
   expect(readFileSync(join(dir, 'efeito.txt'), 'utf8')).toBe('efeito confirmado no disco')
 })
+
+test('base sem merge predecessor nao chama IA; integrar o commit libera o plano', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  const base = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim()
+  writeFileSync(join(dir, 'predecessora.txt'), 'entrega')
+  execFileSync('git', ['add', '.'], { cwd: dir })
+  execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'predecessora'], { cwd: dir })
+  const merge = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim()
+  execFileSync('git', ['checkout', '--detach', base], { cwd: dir, stdio: 'ignore' })
+  const id = submit({ title: 'Dependente', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  const plano = { ...planoOrquestrado(), id, sessaoId: id, produtoId: 'sucessora',
+    dependenciasProduto: [{ produto: 'anterior', execucao: '099', tecnicoHash: 'a'.repeat(64), certificado: 'b'.repeat(64), merge }] }
+  salvarPlano(plano, 0, 'dependencia')
+  let chamadas = 0
+  const implementar: Parameters<typeof executarPlano>[2] = async () => { chamadas++; return { ok: true, cost: '0', costMeasured: true } }
+  const bloqueado = await executarPlano(readCard(id)!, dir, implementar, false)
+  expect(bloqueado.ok).toBe(false)
+  expect(chamadas).toBe(0)
+  expect(bloqueado.reason).toContain('anterior')
+  execFileSync('git', ['merge', '--ff-only', merge], { cwd: dir, stdio: 'ignore' })
+  expect((await executarPlano(readCard(id)!, dir, implementar, false)).ok).toBe(true)
+  expect(chamadas).toBe(4)
+})

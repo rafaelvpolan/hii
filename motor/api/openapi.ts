@@ -101,7 +101,7 @@ export const openapi = {
       Subsessao: objeto({ id: str, execucao: id, provedor: str, modelo: str, papel: str, nativa: { type: ['string', 'null'] }, inicio: str, fim: str, estado: { enum: ['executando', 'concluida', 'falhou', 'interrompida'] } }, ['id', 'execucao', 'provedor', 'modelo', 'papel', 'nativa', 'inicio', 'fim', 'estado']),
       Pedido: {
         oneOf: [
-          objeto({ modo: { const: 'orquestrador' }, tecnico: { ...str, minLength: 1, maxLength: 200000, description: 'JSON tecnico v1 integral; ate 500 linhas, incluindo metadados e linhas vazias.' } }, ['modo', 'tecnico']),
+          objeto({ modo: { const: 'orquestrador' }, dependencias: { type: 'array', maxItems: 8, items: objeto({ produto: str, execucao: id, tecnicoHash: { ...str, pattern: '^[a-f0-9]{64}$' } }, ['produto', 'execucao', 'tecnicoHash']) }, tecnico: { ...str, minLength: 1, maxLength: 200000, description: 'JSON tecnico v1 integral; ate 500 linhas, incluindo metadados e linhas vazias.' } }, ['modo', 'tecnico']),
           objeto({ modo: { enum: ['gateway', 'orquestrador'] }, texto: { ...str, minLength: 1, maxLength: 1048576 } }, ['modo', 'texto']),
           objeto({ modo: { const: 'orquestrador' }, spec: objeto({ nome: { ...str, pattern: '^[^/\\\\]+\\.spec(?:\\.md)?$', maxLength: 200 }, conteudo: { ...str, minLength: 1, maxLength: 1048576 } }, ['nome', 'conteudo']) }, ['modo', 'spec']),
         ],

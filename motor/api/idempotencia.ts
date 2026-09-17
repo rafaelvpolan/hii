@@ -12,7 +12,7 @@ export function resposta(status: number, corpo: object, etag?: string): Resposta
 export function hash(texto: string): string { return createHash('sha256').update(texto).digest('hex') }
 interface Registro { hash: string; resposta?: RespostaApi }
 
-export function umaVez(chave: string, pedido: string, executar: () => RespostaApi): RespostaApi {
+export function umaVez(chave: string, pedido: string, executar: () => RespostaApi, conferir: () => void = () => {}): RespostaApi {
   if (!/^[A-Za-z0-9._:-]{8,128}$/.test(chave)) throw new ErroApi(400, 'idempotencia_obrigatoria', 'envie Idempotency-Key com 8-128 caracteres')
   const dir = join(cardsDir(), 'ponte', 'pedidos')
   mkdirSync(dir, { recursive: true })
@@ -25,6 +25,7 @@ export function umaVez(chave: string, pedido: string, executar: () => RespostaAp
       if (!anterior.resposta) throw new ErroApi(409, 'resultado_incerto', 'pedido interrompido; reconcilie o estado antes de tentar novamente')
       return anterior.resposta
     }
+    conferir()
     // O marcador vem antes do efeito: apos crash nao se repete uma acao paga.
     writeFileAtomic(arquivo, JSON.stringify({ hash: fingerprint }))
     let r: RespostaApi
@@ -35,4 +36,23 @@ export function umaVez(chave: string, pedido: string, executar: () => RespostaAp
     writeFileAtomic(arquivo, JSON.stringify({ hash: fingerprint, resposta: r }))
     return r
   })
+}
+
+export async function umaVezPreparada<T>(chave: string, pedido: string, preparar: () => Promise<T>, executar: (preparo: T) => RespostaApi, conferir?: (preparo: T) => void): Promise<RespostaApi> {
+  if (!/^[A-Za-z0-9._:-]{8,128}$/.test(chave)) throw new ErroApi(400, 'idempotencia_obrigatoria', 'envie Idempotency-Key com 8-128 caracteres')
+  const dir = join(cardsDir(), 'ponte', 'pedidos')
+  mkdirSync(dir, { recursive: true })
+  const arquivo = join(dir, hash(chave) + '.json')
+  const anterior = withFileLock(arquivo, () => {
+    if (!existsSync(arquivo)) return null
+    const r = JSON.parse(readFileSync(arquivo, 'utf8')) as Registro
+    if (r.hash !== hash(pedido)) throw new ErroApi(409, 'chave_reutilizada', 'chave ja usada com outro pedido')
+    if (!r.resposta) throw new ErroApi(409, 'resultado_incerto', 'pedido interrompido; reconcilie o estado antes de tentar novamente')
+    return r.resposta
+  })
+  if (anterior) return anterior
+  // Pre-condicao somente leitura nao fixa uma recusa transitoria na chave.
+  // O efeito continua sincrono e protegido pela mesma trava de umaVez.
+  const preparo = await preparar()
+  return umaVez(chave, pedido, () => executar(preparo), () => conferir?.(preparo))
 }

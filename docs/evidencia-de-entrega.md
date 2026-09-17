@@ -44,8 +44,8 @@ negocio. Execucoes antigas sem certificado continuam usando a regra anterior:
 worktree ausente significa inconclusao. Nao ha backfill que invente prova.
 
 O Hicode mostra os commits e a arvore, e pode concluir produto apenas quando os
-vinculos e criterios ja exigidos tambem forem satisfeitos. Dependencias ainda
-nao sao desbloqueadas para despacho por esta leitura.
+vinculos e criterios ja exigidos tambem forem satisfeitos. Consultar progresso nao despacha tarefas. O despacho explicito pode
+[comprovar dependencias de produto](dependencias-de-produto.md) antes de criar a execucao.
 
 Rollback para o consumidor anterior ignora o campo opcional. Rollback do motor
 mantem os arquivos, mas volta a exigir worktree; perde disponibilidade da prova,
