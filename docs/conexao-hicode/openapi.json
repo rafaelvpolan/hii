@@ -2628,6 +2628,32 @@
               "modo": {
                 "const": "orquestrador"
               },
+              "dependencias": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "produto": {
+                      "type": "string"
+                    },
+                    "execucao": {
+                      "type": "string",
+                      "pattern": "^\\d{3,12}$"
+                    },
+                    "tecnicoHash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "produto",
+                    "execucao",
+                    "tecnicoHash"
+                  ]
+                }
+              },
               "tecnico": {
                 "type": "string",
                 "minLength": 1,

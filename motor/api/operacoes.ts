@@ -1,3 +1,4 @@
+import type { DependenciaDeProduto } from '../oswaldo/orquestracao/contrato.ts'
 import { despacharTecnico } from './tecnico.ts'
 import { readCard, repoRegistered, listRepos, patchCard } from '../cordel/store.ts'
 import { criarExecucao } from '../mirante/criar-execucao.ts'
@@ -53,8 +54,8 @@ function pedido(b: Objeto): { titulo: string; descricao: string } {
   return { titulo: t, descricao: t.replace(/^##(?=\s|$)/gm, '> ##') }
 }
 
-export function novoPedido(id: string, b: Objeto): RespostaApi {
-  campos(b, ['modo', 'texto', 'spec', 'tecnico'])
+export function novoPedido(id: string, b: Objeto, dependencias: DependenciaDeProduto[] = []): RespostaApi {
+  campos(b, ['modo', 'texto', 'spec', 'tecnico', 'dependencias'])
   const s = sessao(id)
   if (s.estado !== 'aberta') throw new ErroApi(409, 'sessao_fechada', 'abra outra session')
   if (!repoRegistered(s.repo)) throw new ErroApi(409, 'repo_ausente', 'projeto nao esta mais registrado')
@@ -63,7 +64,7 @@ export function novoPedido(id: string, b: Objeto): RespostaApi {
   if (modo === 'gateway' && b.spec !== undefined) throw new ErroApi(400, 'modo_invalido', 'spec exige modo orquestrador')
   if (b.tecnico !== undefined) {
     if (modo !== 'orquestrador' || b.texto !== undefined || b.spec !== undefined || typeof b.tecnico !== 'string') throw new ErroApi(400, 'entrada_invalida', 'tecnico exige orquestrador e documento exclusivo')
-    return despacharTecnico(id, s.repo, b.tecnico)
+    return despacharTecnico(id, s.repo, b.tecnico, dependencias)
   }
   const p = pedido(b)
   const execucao = criarExecucao(s.repo, id, p.titulo, modo === 'orquestrador' ? 'passivo' : 'gateway', { desc: p.descricao })

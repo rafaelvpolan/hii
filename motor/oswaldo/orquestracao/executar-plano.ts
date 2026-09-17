@@ -1,3 +1,4 @@
+import { runGit } from '../../quilombo/git.ts'
 import { harnessPorNome } from '../../tomada/registro.ts'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -45,6 +46,10 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   if (!r && revisao !== undefined) throw new Error('revisao fixada do plano nao existe')
   r ??= salvarPlano(planoInicial(card, wt), 0, `inicial-${id}`)
   if (r.plano.sessaoId !== (card.fm.sessao_id || id)) throw new Error('plano pertence a outra session')
+  for (const dep of r.plano.dependenciasProduto ?? []) {
+    const integrado = await runGit(wt, ['merge-base', '--is-ancestor', dep.merge, 'HEAD'])
+    if (integrado.err) return { ok: false, reason: 'dependencia ' + dep.produto + ' ainda nao integra a base deste worktree (' + dep.merge + ')', failureClass: 'terminal', failureReason: 'base sem entrega predecessora', cost: '', costMeasured: false }
+  }
   // Uma atribuicao invalida nao pode produzir efeitos nas tarefas anteriores.
   for (const m of r.plano.microtasks) {
     if (m.ia && !harnessPorNome(m.ia.provedor).agentic) throw new Error(`microtask ${m.id}: provedor ${m.ia.provedor} nao edita arquivos`)

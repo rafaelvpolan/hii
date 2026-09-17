@@ -1,3 +1,4 @@
+import { prepararDependencias } from './dependencias-produto.ts'
 import { avaliarExecucao } from './avaliacao.ts'
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
@@ -17,7 +18,7 @@ import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.t
 import { existsSync, readFileSync } from 'node:fs'
 import { ACOES, ErroApi, objeto, idValido } from './contrato.ts'
 import type { Json } from './contrato.ts'
-import { resposta, umaVez } from './idempotencia.ts'
+import { resposta, umaVezPreparada } from './idempotencia.ts'
 import type { RespostaApi } from './idempotencia.ts'
 import { agir, tarefa, sessao, etagDaSessao, novaSessao, novoPedido, fecharSessao, projetos } from './operacoes.ts'
 import { lerLog } from './log.ts'
@@ -119,7 +120,7 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   if (url.pathname === '/v1/capacidades') return resposta(200, {
     protocolo: 'hii-http', versao: 1, transporte: 'http-json+sse', statuses: STATUSES,
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
-    tecnico: { versoes: [1], limiteLinhas: 500 },
+    tecnico: { versoes: [1], limiteLinhas: 500, dependenciasProduto: 1 },
     avaliacao: { versoes: [1], atualidade: 'git-no-instante-da-consulta' },
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
     configuracao: { versoes: [1], leitura: !opcoes.repos, escrita: opcoes.admin === true && !opcoes.repos },
@@ -194,17 +195,20 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
     (m[1] === 'sessoes' && ['pedidos', 'fechar'].includes(m[3] ?? '')) || (m[1] === 'tarefas' && m[3] === 'acoes')))
   if (!rotaValida || url.search) throw new ErroApi(404, 'rota_ausente', 'rota nao encontrada')
   const esperado = cabecalho(req, 'if-match')
-  return umaVez(cabecalho(req, 'idempotency-key'), JSON.stringify([url.pathname, esperado, entrada]), () => {
+  return umaVezPreparada(cabecalho(req, 'idempotency-key'), JSON.stringify([url.pathname, esperado, entrada]), async () => {
+    if (m?.[3] === 'pedidos') return prepararDependencias(sessao(m[2] || '').repo, entrada)
+    return null
+  }, preparo => {
     if (url.pathname === '/v1/configuracao') return configurar(entrada, esperado)
     if (url.pathname === '/v1/ask') return criarConsulta(entrada, opcoes.executarConsulta)
     if (planoId) return revisarPlano(planoId, entrada, esperado, cabecalho(req, 'idempotency-key'))
     if (respostaId) return responderPergunta(respostaId, entrada, esperado)
     if (url.pathname === '/v1/sessoes') return novaSessao(entrada)
     const id = m?.[2] ?? ''
-    if (m?.[3] === 'pedidos') return novoPedido(id, entrada)
+    if (m?.[3] === 'pedidos') return novoPedido(id, entrada, preparo?.provas)
     if (m?.[3] === 'fechar') return fecharSessao(id, esperado, entrada)
     return agir(id, entrada, esperado)
-  })
+  }, preparo => preparo?.conferir())
 }
 
 export interface OpcoesApi { admin?: boolean; repos?: readonly string[]; executarConsulta?: typeof runProvider }

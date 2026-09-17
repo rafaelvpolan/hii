@@ -24,7 +24,10 @@ export interface Microtask {
   criterios: string[]
 }
 
+export interface DependenciaDeProduto { produto: string; execucao: string; tecnicoHash: string; merge: string; certificado: string }
+
 export interface PlanoDeExecucao {
+  dependenciasProduto?: DependenciaDeProduto[]
   versao: 1
   id: string
   repo: string
@@ -97,6 +100,16 @@ export function validarPlano(plano: PlanoDeExecucao): PlanoDeExecucao {
   exigir(texto(plano.repo) && /^[^\s/]+\/[^\s/]+(?:\/[^\s/]+)?$/.test(plano.repo), 'repo', 'use owner/repo')
   exigir(texto(plano.objetivo), 'objetivo', 'obrigatorio')
   exigir(plano.risco === 'low' || plano.risco === 'high', 'risco', 'use low ou high')
+  if (plano.dependenciasProduto !== undefined) {
+    const deps = plano.dependenciasProduto
+    exigir(Array.isArray(deps) && deps.length <= 8, 'dependenciasProduto', 'lista com maximo 8')
+    const produtos = new Set<string>()
+    for (const d of deps) {
+      exigir(!!d && idValido(d.produto) && d.produto !== plano.produtoId && !produtos.has(d.produto), 'dependenciasProduto', 'produto invalido ou duplicado')
+      produtos.add(d.produto)
+      exigir(/^\d{3,12}$/.test(d.execucao) && /^[a-f0-9]{40}$/.test(d.merge) && /^[a-f0-9]{64}$/.test(d.tecnicoHash) && /^[a-f0-9]{64}$/.test(d.certificado), 'dependenciasProduto', 'prova de entrega invalida')
+    }
+  }
   exigir(Array.isArray(plano.criterios) && plano.criterios.length > 0, 'criterios', 'ao menos um criterio')
   const criterios = new Set<string>()
   for (const c of plano.criterios) {
