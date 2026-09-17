@@ -81,13 +81,13 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   let ultimo: ImplementResult = { ok: true, cost: '0', costMeasured: true, resultText: 'microtasks ja concluidas' }
   for (const onda of ondasEstritas(r.plano.microtasks)) {
     for (const m of onda) {
+      if (readCard(id)?.fm.status !== 'EXECUTING') return { ...ultimo, ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       if (checkpoint.feitas.includes(m.id)) {
         const pulada = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { checkpoint: r.hash })
         atualizar(pulada, a => { a.microtask = m.id; a.planoRevisao = r.revisao })
         terminar(pulada, 'skipped', 'microtask ja concluida; fingerprint do checkpoint conferido')
         continue
       }
-      if (readCard(id)?.fm.status !== 'EXECUTING') return { ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       const gasto = gastoDoCard(card.fm.cost_usd)
       if (gasto === null || gasto + custo >= tetoDoCard()) return { ok: false, reason: 'orcamento atingido entre microtasks', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       patchCard(id, { microtask_atual: m.id }, `${isoNow()} microtask ${m.id}: ${m.titulo} | agente ${m.agente}`)
@@ -124,6 +124,8 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       custo += Number(ultimo.cost) || 0
       medido &&= ultimo.costMeasured === true
       for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += ultimo.usage?.[k] ?? 0
+      // Uma resposta tardia nao autoriza continuar apos a parada, inclusive na ultima etapa.
+      if (readCard(id)?.fm.status !== 'EXECUTING') return { ...ultimo, ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       if (!ultimo.ok) return { ...ultimo, cost: String(custo), costMeasured: medido, usage }
     }
   }

@@ -9,7 +9,7 @@ import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clarice/cla
 import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
 import { decisaoDoEval, evaluate } from '../ciclo/crivo/avaliar.ts'
-import { readCard, patchCard, repoPath, repoBase } from '../cordel/store.ts'
+import { readCard, patchCard, repoPath, repoBase, PARADAS_HUMANAS } from '../cordel/store.ts'
 import { descreverOrigem, ensureWorktree, runGit, settleWorktree, stageAll, worktreeOnBranch, worktreePath } from '../quilombo/git.ts'
 import type { WorktreeFate } from '../quilombo/git.ts'
 import { ensureUrl, hasDevServer, inspectUrl, urlPort, stopUrl } from '../ciclo/crivo/url-viva.ts'
@@ -309,6 +309,19 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
   steps.Executando.time += toSeconds(Date.now() - tx)
   steps.Executando.cost += parseFloat(res.cost) || 0
   steps.Executando.tokens += tokensOf(res.usage)
+  // Registra a chamada que terminou, sem iniciar commit, URL, gates ou fallback
+  // depois de /stop. A guarda do store protege o status, nao esses efeitos.
+  if (PARADAS_HUMANAS.includes(readCard(id)?.fm.status ?? '')) {
+    const rec = writeRun(id, { ...res, ok: false, failureClass: 'terminal',
+      failureReason: 'execucao interrompida pelo operador; resultado tardio preservado' },
+    toSeconds(Date.now() - t0), asStepMap(steps))
+    patchCard(id, {
+      cost_usd: (baseCost + auxCost + steps.Executando.cost).toFixed(4),
+      tokens_total: String(baseTokens + auxTokens + rec.tokens_total),
+      tempo_s: tempoAcumulado(),
+    }, isoNow() + ' resultado recebido apos parada; trabalho e custo preservados, sem continuar o pipeline')
+    return
+  }
   if (!res.ok) {
     const elapsed = toSeconds(Date.now() - t0)
     const { failureClass, failureReason } = resolvedFailure(res)
