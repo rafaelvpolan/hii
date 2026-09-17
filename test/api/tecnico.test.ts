@@ -1,14 +1,16 @@
 import { test, beforeEach, afterEach } from '../apoio/runner.ts'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Server } from 'node:http'
 import { criarServidorApi } from '../../motor/api/servidor.ts'
 import { clienteHii } from '../../motor/api/cliente.ts'
-import { allCards } from '../../motor/cordel/store.ts'
+import { execFileSync } from 'node:child_process'
+import { coletarEvidencias, arquivoDeEvidencias } from '../../motor/oswaldo/orquestracao/evidencias.ts'
+import { allCards, patchCard } from '../../motor/cordel/store.ts'
 import { ensureContract } from '../../motor/cordel/bussola/armazenar.ts'
-import { lerPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
+import { lerPlano, salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { analisarTecnico, serializarTecnico, contarLinhasTecnicas } from '../../motor/oswaldo/orquestracao/tecnico.ts'
 import { documentoTecnico } from '../fixtures/documento-tecnico.ts'
 let raiz = '', url = ''
@@ -77,5 +79,60 @@ test('entrada invalida, dependencia, escopo e verificador ausente nao criam exec
   for (const [i, d] of entradas.entries()) {
     await assert.rejects(() => cliente.pedido(sessao.id, { modo: 'orquestrador', tecnico: serializarTecnico(d) }, `recusa-tecnica-${i}`))
     assert.equal(allCards().length, antes)
+  }
+})
+
+test('avaliacao usa a revisao fixada e confere evidencia no Git sem executar verificadores', async () => {
+  const repo = join(raiz, 'repo')
+  writeFileSync(join(repo, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.stdout.write(\'criterio verificado\')"' } }))
+  execFileSync('git', ['init', '-b', 'main'], { cwd: repo, stdio: 'ignore' })
+  execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'add', 'package.json'], { cwd: repo })
+  execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'], { cwd: repo, stdio: 'ignore' })
+  ensureContract(repo, new Date().toISOString())
+  const cliente = clienteHii(url, token)
+  const sessao = (await cliente.novaSessao('org/app', 'Triagem', 'sessao-avaliacao-001')).valor
+  const pedido = (await cliente.pedido(sessao.id, { modo: 'orquestrador', tecnico: serializarTecnico(documentoTecnico()) }, 'pedido-avaliacao-001')).valor
+  const plano = lerPlano('org/app', pedido.id)!
+  patchCard(pedido.id, { worktree: repo })
+  assert.equal((await cliente.avaliacao(pedido.id)).valor.atualidade, 'ausente')
+  const prova = await coletarEvidencias(plano.plano, plano.revisao, repo)
+  assert.equal(prova.aprovado, true)
+  const arquivo = arquivoDeEvidencias(pedido.id, plano.revisao)
+  const antes = readFileSync(arquivo, 'utf8')
+  const atual = (await cliente.avaliacao(pedido.id)).valor
+  assert.equal(atual.criteriosAprovados, true)
+  assert.equal(atual.criterios[0]?.estado, 'aprovado')
+  assert.equal(readFileSync(arquivo, 'utf8'), antes, 'GET nao reexecuta nem regrava evidencia')
+  salvarPlano({ ...plano.plano, objetivo: 'Outra proposta ainda nao fixada no card' }, plano.revisao, 'proposta-avaliacao-002')
+  assert.equal((await cliente.avaliacao(pedido.id)).valor.plano?.revisao, 1)
+  writeFileSync(join(repo, 'novo.ts'), 'mudanca posterior')
+  const velha = (await cliente.avaliacao(pedido.id)).valor
+  assert.equal(velha.atualidade, 'desatualizada')
+  assert.equal(velha.criteriosAprovados, false)
+  assert.equal(velha.criterios[0]?.estado, 'inconclusivo')
+  assert.equal(velha.criterios[0]?.resultadoRegistrado, 'aprovado')
+  rmSync(join(repo, 'novo.ts'))
+  writeFileSync(arquivo, JSON.stringify({ ...prova, evidencias: [] }))
+  assert.equal((await cliente.avaliacao(pedido.id)).valor.atualidade, 'inconsistente')
+  writeFileSync(arquivo, antes)
+  patchCard(pedido.id, { worktree: join(raiz, 'ausente') })
+  assert.equal((await cliente.avaliacao(pedido.id)).valor.atualidade, 'indisponivel')
+})
+
+test('terminal de gateway nao comprova criterio e credencial restrita nao le outro projeto', async () => {
+  const cliente = clienteHii(url, token)
+  const sessao = (await cliente.novaSessao('org/app', 'Consulta', 'sessao-gateway-001')).valor
+  const pedido = (await cliente.pedido(sessao.id, { modo: 'gateway', texto: 'Consultar fixture' }, 'pedido-gateway-001')).valor
+  patchCard(pedido.id, { status: 'COMPLETED' })
+  assert.equal((await cliente.avaliacao(pedido.id)).valor.criteriosAprovados, false)
+  const restrito = criarServidorApi(token, { repos: ['outra/app'] })
+  await new Promise<void>(r => restrito.listen(0, '127.0.0.1', r))
+  try {
+    const endereco = restrito.address(); assert.ok(endereco && typeof endereco !== 'string')
+    const r = await fetch(`http://127.0.0.1:${endereco.port}/v1/tarefas/${pedido.id}/avaliacao`, { headers: { authorization: `Bearer ${token}` } })
+    assert.equal(r.status, 403)
+  } finally {
+    restrito.closeAllConnections()
+    await new Promise<void>(r => restrito.close(() => r()))
   }
 })

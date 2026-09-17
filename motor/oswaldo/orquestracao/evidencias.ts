@@ -44,12 +44,13 @@ export function ocultarSegredos(texto: string): string {
 
 export async function fingerprintDoTrabalho(wt: string): Promise<string> {
   const hash = createHash('sha256')
-  for (const args of [['rev-parse', 'HEAD'], ['diff', '--binary', 'HEAD']]) {
-    const r = await runGit(wt, args)
+  const lerGit = (args: string[]) => runGit(wt, ['--no-optional-locks', '-c', 'core.fsmonitor=false', ...args])
+  for (const args of [['rev-parse', 'HEAD'], ['diff', '--no-ext-diff', '--no-textconv', '--binary', 'HEAD']]) {
+    const r = await lerGit(args)
     if (r.err) throw new Error(`nao foi possivel vincular evidencia ao git: ${r.err.message}`)
     hash.update(r.stdout)
   }
-  const novos = await runGit(wt, ['ls-files', '--others', '--exclude-standard', '-z'])
+  const novos = await lerGit(['ls-files', '--others', '--exclude-standard', '-z'])
   if (novos.err) throw new Error('nao foi possivel listar arquivos novos')
   for (const nome of novos.stdout.split('\0').filter(Boolean).sort()) {
     const caminho = dentroDoWorktree(wt, nome)
@@ -83,7 +84,7 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
       const e: Evidencia = { criterio: c.id, obrigatorio: c.obrigatorio, estado: 'inconclusivo', comando: [], exitCode: null, sinal: '', timeout: false, duracaoMs: 0, saida: 'sem comando verificavel' }
       if (c.naoAplicavel && !c.obrigatorio) { e.estado = 'nao-aplicavel'; e.saida = c.naoAplicavel }
       else if (c.comando) {
-        const inicio = Date.now()
+        const inicio = performance.now()
         const cmd = c.comando
         e.comando = [cmd.binario, ...cmd.argumentos].map(ocultarSegredos)
         try {
@@ -94,7 +95,7 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
           e.estado = !r.err && !e.timeout ? 'aprovado' : e.timeout || e.exitCode === null ? 'inconclusivo' : 'reprovado'
           e.saida = ocultarSegredos([r.stdout, r.stderr, r.err?.message ?? ''].filter(Boolean).join('\n')).slice(-32000)
         } catch (erro) { e.saida = ocultarSegredos((erro as Error).message) }
-        e.duracaoMs = Date.now() - inicio
+        e.duracaoMs = performance.now() - inicio
       }
       evidencias.push(e)
       saida(atividade, e.estado === 'aprovado' ? 'stdout' : 'error', e.saida)

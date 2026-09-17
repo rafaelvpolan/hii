@@ -452,6 +452,52 @@
         }
       }
     },
+    "/v1/tarefas/{id}/avaliacao": {
+      "get": {
+        "operationId": "avaliarExecucao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvaliacaoDeExecucao"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tarefas/{id}/artefatos": {
       "get": {
         "operationId": "listarArtefatos",
@@ -1722,6 +1768,192 @@
       }
     },
     "schemas": {
+      "AvaliacaoDeExecucao": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "versao": {
+            "const": 1
+          },
+          "execucao": {
+            "type": "string",
+            "pattern": "^\\d{3,12}$"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "sessao": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string"
+          },
+          "plano": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "revisao": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "hash": {
+                    "type": "string"
+                  },
+                  "produto": {
+                    "type": "string"
+                  },
+                  "planejamento": {
+                    "type": "string"
+                  },
+                  "origemRevisao": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "tecnicoHash": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "revisao",
+                  "hash",
+                  "produto",
+                  "planejamento",
+                  "origemRevisao",
+                  "tecnicoHash"
+                ]
+              }
+            ]
+          },
+          "atualidade": {
+            "enum": [
+              "ausente",
+              "atual",
+              "desatualizada",
+              "indisponivel",
+              "inconsistente"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "consultadaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenciaEm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tentativa": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteriosAprovados": {
+            "type": "boolean"
+          },
+          "criterios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "descricao": {
+                  "type": "string"
+                },
+                "obrigatorio": {
+                  "type": "boolean"
+                },
+                "estado": {
+                  "enum": [
+                    "aprovado",
+                    "reprovado",
+                    "inconclusivo",
+                    "nao-aplicavel"
+                  ]
+                },
+                "resultadoRegistrado": {
+                  "enum": [
+                    "aprovado",
+                    "reprovado",
+                    "inconclusivo",
+                    "nao-aplicavel",
+                    null
+                  ]
+                },
+                "comando": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "timeout": {
+                  "type": "boolean"
+                },
+                "duracaoMs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "saida": {
+                  "type": "string",
+                  "maxLength": 32000
+                }
+              },
+              "required": [
+                "id",
+                "descricao",
+                "obrigatorio",
+                "estado",
+                "resultadoRegistrado",
+                "comando",
+                "exitCode",
+                "timeout",
+                "duracaoMs",
+                "saida"
+              ]
+            }
+          }
+        },
+        "required": [
+          "versao",
+          "execucao",
+          "repo",
+          "sessao",
+          "status",
+          "modo",
+          "plano",
+          "atualidade",
+          "motivo",
+          "consultadaEm",
+          "evidenciaEm",
+          "tentativa",
+          "criteriosAprovados",
+          "criterios"
+        ]
+      },
       "RecursoObservavel": {
         "type": "object",
         "additionalProperties": false,

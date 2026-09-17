@@ -180,8 +180,8 @@ export function identidadeProvada(registro: HarnessRegistrado, worktree: string)
 }
 
 async function esperarMorte(pid: number, tetoMs: number): Promise<boolean> {
-  const limite = Date.now() + tetoMs
-  while (Date.now() < limite) {
+  const limite = performance.now() + tetoMs
+  while (performance.now() < limite) {
     if (!pidVivo(pid)) return true
     await dormir(PASSO_MS)
   }

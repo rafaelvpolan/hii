@@ -1,3 +1,4 @@
+import { avaliarExecucao } from './avaliacao.ts'
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { timingSafeEqual, createHash } from 'node:crypto'
@@ -110,7 +111,7 @@ function stream(req: IncomingMessage, res: ServerResponse, aoFechar: () => void)
   ler()
 }
 
-function consulta(url: URL, opcoes: OpcoesApi): RespostaApi {
+async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   const observacao = consultarObservabilidade(url)
   if (observacao) return observacao
   const repo = url.searchParams.get('repo') ?? ''
@@ -119,6 +120,7 @@ function consulta(url: URL, opcoes: OpcoesApi): RespostaApi {
     protocolo: 'hii-http', versao: 1, transporte: 'http-json+sse', statuses: STATUSES,
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
     tecnico: { versoes: [1], limiteLinhas: 500 },
+    avaliacao: { versoes: [1], atualidade: 'git-no-instante-da-consulta' },
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
     configuracao: { versoes: [1], leitura: !opcoes.repos, escrita: opcoes.admin === true && !opcoes.repos },
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
@@ -134,6 +136,8 @@ function consulta(url: URL, opcoes: OpcoesApi): RespostaApi {
     if (!a) throw new ErroApi(404, 'artefato_ausente', 'artefato ausente ou expirado')
     return { ...resposta(200, a), artefatoVerificado: true }
   }
+  const avaliacaoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/avaliacao$/)?.[1]
+  if (avaliacaoId) return resposta(200, await avaliarExecucao(avaliacaoId))
   const artefatosDaTarefa = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/artefatos$/)?.[1]
   if (artefatosDaTarefa) { tarefa(artefatosDaTarefa); return resposta(200, { artefatos: listarArtefatos(artefatosDaTarefa) }) }
   const historicoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/historico$/)?.[1]
@@ -237,7 +241,7 @@ export function criarServidorApi(token: string, opcoes: OpcoesApi = {}): Server 
         if (url.pathname === '/v1/observabilidade/eventos') streamObservabilidade(req, res, url, () => { streams-- })
         else stream(req, res, () => { streams-- })
         streams++
-      } else if (req.method === 'GET') enviar(res, consulta(url, opcoes))
+      } else if (req.method === 'GET') enviar(res, await consulta(url, opcoes))
       else if (req.method === 'POST') enviar(res, await mutacao(req, url, opcoes))
       else throw new ErroApi(405, 'metodo_invalido', 'use GET ou POST')
     })().catch((e: Error) => {

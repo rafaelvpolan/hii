@@ -1,3 +1,4 @@
+import type { AvaliacaoDeExecucao } from './avaliacao-contrato.ts'
 import type { SessaoHii } from '../euclides/sessoes.ts'
 import type { SnapshotDoMotor } from '../mirante/estado-json.ts'
 import type { AcaoApi, Json } from './contrato.ts'
@@ -121,13 +122,14 @@ export function clienteHii(base: string, token: string) {
     artefato: (id: string) => get<{ id: string; nome: string; tipo: string; tamanho: number; sha256: string; conteudo: string }>(`/v1/artefatos/${encodeURIComponent(id)}`),
     perguntas: (id: string) => get<{ perguntaId: string | null; pendencia: { origem: string; indice: number; atual: { q: string; options: string[]; recommended?: string } } | null }>(`/v1/tarefas/${idSeguro(id)}/perguntas`),
     responderPergunta: (id: string, perguntaId: string, texto: string, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/respostas`, { perguntaId, texto }, chave, etag),
-    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[]; observabilidade?: { versoes: number[] } }>('/v1/capacidades'),
+    capacidades: () => get<{ protocolo: string; versao: number; statuses: string[]; acoes: string[]; eventos: string[]; observabilidade?: { versoes: number[] }; avaliacao?: { versoes: number[] }; tecnico?: { versoes: number[]; limiteLinhas: number } }>('/v1/capacidades'),
     provedores: () => get<{ provedores: (ProvedorDisponivel & { modelos: string[] })[] }>('/v1/provedores'),
     estado: (repo = '') => get<SnapshotDoMotor & { cursor: string }>(`/v1/estado?repo=${encodeURIComponent(repo)}`),
     novaSessao: (repo: string, titulo: string, chave: string) => post<SessaoHii>('/v1/sessoes', { repo, titulo }, chave),
     sessao: (id: string) => get<SessaoHii>(`/v1/sessoes/${idSeguro(id)}`),
     pedido: (id: string, pedido: PedidoHicode, chave: string) => post<PedidoCriado>(`/v1/sessoes/${idSeguro(id)}/pedidos`, pedido, chave),
     tarefa: (id: string) => get<{ etag: string; campos: Record<string, string>; objetivo: string }>(`/v1/tarefas/${idSeguro(id)}`),
+    avaliacao: (id: string) => get<AvaliacaoDeExecucao>(`/v1/tarefas/${idSeguro(id)}/avaliacao`),
     plano: (id: string) => get<{ plano: RevisaoDePlano | null; evidencias: RelatorioDeEvidencias | null; atualidadeVerificada: false }>(`/v1/tarefas/${idSeguro(id)}/plano`),
     agir: (id: string, acao: AcaoApi, texto: string, chave: string, etag: string) => post<Json>(`/v1/tarefas/${idSeguro(id)}/acoes`, { acao, ...(texto ? { texto } : {}) }, chave, etag),
     fechar: (id: string, chave: string, etag: string) => post<SessaoHii>(`/v1/sessoes/${idSeguro(id)}/fechar`, {}, chave, etag),

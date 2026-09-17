@@ -75,8 +75,8 @@ function terminal(cols = 100) {
 }
 
 async function ate(condicao: () => boolean, detalhe: () => string): Promise<void> {
-  const prazo = Date.now() + 4000
-  while (!condicao() && Date.now() < prazo) await new Promise(r => setTimeout(r, 20))
+  const prazo = performance.now() + 4000
+  while (!condicao() && performance.now() < prazo) await new Promise(r => setTimeout(r, 20))
   expect(condicao(), detalhe()).toBe(true)
 }
 

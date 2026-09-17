@@ -1,9 +1,9 @@
 import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync, symlinkSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, symlinkSync, readdirSync, readFileSync, chmodSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { coletarEvidencias, evidenciaAtual } from '../../motor/oswaldo/orquestracao/evidencias.ts'
+import { coletarEvidencias, evidenciaAtual, fingerprintDoTrabalho } from '../../motor/oswaldo/orquestracao/evidencias.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
 
 let dir = ''
@@ -71,4 +71,35 @@ test('retry preserva evidencia anterior em vez de sobrescrever a falha', async (
   const historico = readdirSync(join(process.env.HII_CARDS_DIR!, 'evidencias')).filter(n => n !== `${plano.id}-1.json`)
   expect(historico.length).toBe(2)
   expect(historico.some(n => readFileSync(join(process.env.HII_CARDS_DIR!, 'evidencias', n), 'utf8').includes('"reprovado"'))).toBe(true)
+})
+
+test('fingerprint ignora diff externo e textconv configurados pelo projeto', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  execFileSync('git', ['-C', dir, 'add', 'arquivo.txt'])
+  execFileSync('git', ['-C', dir, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'arquivo'])
+  const script = join(dir, '.git', 'efeito.sh')
+  const marcador = join(dir, '.git', 'efeito')
+  writeFileSync(script, '#!/bin/sh\nprintf efeito > "' + marcador + '"\n')
+  chmodSync(script, 0o755)
+  execFileSync('git', ['-C', dir, 'config', 'diff.external', script])
+  execFileSync('git', ['-C', dir, 'config', 'diff.fixture.textconv', script])
+  execFileSync('git', ['-C', dir, 'config', 'core.fsmonitor', script])
+  writeFileSync(join(dir, '.gitattributes'), '*.txt diff=fixture\n')
+  writeFileSync(join(dir, 'arquivo.txt'), 'depois')
+  const antes = await fingerprintDoTrabalho(dir)
+  expect(existsSync(marcador)).toBe(false)
+  writeFileSync(join(dir, 'arquivo.txt'), 'outra mudanca')
+  expect(await fingerprintDoTrabalho(dir)).not.toBe(antes)
+  expect(existsSync(marcador)).toBe(false)
+})
+
+test('duracao da evidencia nao fica negativa quando o relogio civil recua', async () => {
+  const data = Date.now
+  try {
+    const r = await coletarEvidencias(planoOrquestrado(), 1, dir, async () => {
+      Date.now = () => data() - 60000
+      return { stdout: 'comando simulado para medir duracao', stderr: '', err: null }
+    })
+    expect(r.evidencias[0]!.duracaoMs >= 0).toBe(true)
+  } finally { Date.now = data }
 })
