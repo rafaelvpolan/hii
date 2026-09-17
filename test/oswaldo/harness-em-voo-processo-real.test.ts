@@ -48,8 +48,8 @@ function card(status: string, worktree = WT): string {
 }
 
 async function esperarMorte(pid: number, tetoMs: number): Promise<boolean> {
-  const limite = Date.now() + tetoMs
-  while (Date.now() < limite) {
+  const limite = performance.now() + tetoMs
+  while (performance.now() < limite) {
     if (!vivo.pidVivo(pid)) return true
     await dormir(50)
   }
@@ -245,4 +245,18 @@ test('REGRESSAO janela pos-halt: enquanto o harness do card HALTED respira, reto
   expect(await esperarMorte(pid, 2000)).toBe(true)
   expect(vivo.motivoParaEsperarHarness(id)).toBe('')
   expect(A.transition(id, 'EXECUTING', 'retomado pelo humano')?.status).toBe('EXECUTING')
+}, TEMPO_COM_GIT_MS)
+
+test('escalada respeita tempo decorrido mesmo quando o relogio civil salta', async () => {
+  const pid = teimoso(WT)
+  await dormir(150)
+  const data = Date.now
+  let saltos = 0
+  Date.now = () => data() + (++saltos * 60000)
+  const inicio = performance.now()
+  try {
+    const resultado = await vivo.matarComEscalada({ pid, papel: 'implement', iniciadoEm: new Date().toISOString(), inicioNoKernel: vivo.inicioNoKernel(pid) })
+    expect(resultado).toBe('SIGKILL')
+    expect(performance.now() - inicio >= vivo.ESPERA_SIGTERM_MS, 'salto no relogio nao pode antecipar SIGKILL').toBe(true)
+  } finally { Date.now = data; try { process.kill(pid, 'SIGKILL') } catch { /* fixture ja encerrada */ } }
 }, TEMPO_COM_GIT_MS)

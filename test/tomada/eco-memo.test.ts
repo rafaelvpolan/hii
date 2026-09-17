@@ -74,3 +74,17 @@ test('memoChave recalcula quando a chave muda', () => {
   chave = 'b'
   expect(f()).toBe(2)
 })
+
+test('memoTempo expira mesmo quando o relogio civil recua', async () => {
+  const original = Date.now
+  let civil = 60000
+  Date.now = () => civil
+  try {
+    let n = 0
+    const f = memoTempo(() => ++n, 20)
+    expect(f()).toBe(1)
+    civil = 0
+    await new Promise(r => setTimeout(r, 40))
+    expect(f()).toBe(2)
+  } finally { Date.now = original }
+})

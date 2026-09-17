@@ -34,6 +34,7 @@ export const openapi = {
     '/v1/ask': { post: post('perguntar', objeto({ repo: str, pergunta: { ...str, maxLength: 16000 } }, ['repo', 'pergunta']), ref('Consulta'), '202') },
     '/v1/consultas/{consultaId}': { get: get('consultarResposta', ref('Consulta'), [{ name: 'consultaId', in: 'path', required: true, schema: { ...str, format: 'uuid' } }]) },
     '/v1/configuracao': { get: get('configuracao', { type: 'object' }), post: post('configurar', objeto({ versao: { const: 1 }, papel: { enum: ['implement', 'verify', 'gate', 'step'] }, provider: str, model: str, effort: { enum: ['low', 'medium', 'high', 'xhigh', 'max'] }, modo: str, gauntlet: { type: 'boolean' } }, ['versao', 'papel']), { type: 'object' }, '200', [revisao]) },
+    '/v1/tarefas/{id}/avaliacao': { get: get('avaliarExecucao', ref('AvaliacaoDeExecucao'), [idParam]) },
     '/v1/tarefas/{id}/artefatos': { get: get('listarArtefatos', { type: 'object', properties: { artefatos: { type: 'array', items: ref('Artefato') } } }, [idParam]) },
     '/v1/tarefas/{id}/historico': { get: get('historicoDaExecucao', { type: 'object' }, [idParam, { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 } }]) },
     '/v1/tarefas/{id}/perguntas': { get: get('perguntas', { type: 'object', properties: { perguntaId: { type: ['string', 'null'] }, pendencia: { type: ['object', 'null'] } } }, [idParam]) },
@@ -65,6 +66,18 @@ export const openapi = {
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } },
     schemas: {
+      AvaliacaoDeExecucao: objeto({
+        versao: { const: 1 }, execucao: id, repo: str, sessao: str, status: str, modo: str,
+        plano: { oneOf: [{ type: 'null' }, objeto({ revisao: { type: 'integer', minimum: 1 }, hash: str, produto: str, planejamento: str, origemRevisao: { type: 'integer', minimum: 0 }, tecnicoHash: str }, ['revisao', 'hash', 'produto', 'planejamento', 'origemRevisao', 'tecnicoHash'])] },
+        atualidade: { enum: ['ausente', 'atual', 'desatualizada', 'indisponivel', 'inconsistente'] },
+        motivo: str, consultadaEm: { ...str, format: 'date-time' }, evidenciaEm: { type: ['string', 'null'] }, tentativa: { type: ['string', 'null'] }, criteriosAprovados: { type: 'boolean' },
+        criterios: { type: 'array', items: objeto({ id: str, descricao: str, obrigatorio: { type: 'boolean' },
+          estado: { enum: ['aprovado', 'reprovado', 'inconclusivo', 'nao-aplicavel'] },
+          resultadoRegistrado: { enum: ['aprovado', 'reprovado', 'inconclusivo', 'nao-aplicavel', null] },
+          comando: { type: 'array', items: str }, exitCode: { type: ['integer', 'null'] }, timeout: { type: 'boolean' },
+          duracaoMs: { type: ['number', 'null'], minimum: 0 }, saida: { ...str, maxLength: 32000 },
+        }, ['id', 'descricao', 'obrigatorio', 'estado', 'resultadoRegistrado', 'comando', 'exitCode', 'timeout', 'duracaoMs', 'saida']) },
+      }, ['versao', 'execucao', 'repo', 'sessao', 'status', 'modo', 'plano', 'atualidade', 'motivo', 'consultadaEm', 'evidenciaEm', 'tentativa', 'criteriosAprovados', 'criterios']),
       RecursoObservavel: objeto({ id: str, namespace: str, nome: str, tipo: { enum: ['orchestrator', 'agent', 'harness', 'skill', 'loop', 'validation'] }, origem: str, versao: { type: ['string', 'null'] }, capacidades: { type: 'array', items: str }, observabilidade: { enum: ['instrumented', 'partial', 'unobservable'] } }, ['id', 'namespace', 'nome', 'tipo', 'origem', 'versao', 'capacidades', 'observabilidade']),
       Medida: objeto({ valor: { type: ['number', 'null'] }, fonte: str, instante: { ...str, format: 'date-time' }, qualidade: { enum: ['measured', 'unknown', 'lower_bound'] } }, ['valor', 'fonte', 'instante', 'qualidade']),
       Saida: objeto({ sequencia: { type: 'integer', minimum: 1 }, canal: { enum: ['stdout', 'stderr', 'assistant', 'error'] }, texto: str, instante: str }, ['sequencia', 'canal', 'texto', 'instante']),

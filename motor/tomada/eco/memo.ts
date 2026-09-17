@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs'
 
-export function memoTempo<T>(fn: () => T, ms: number, agora: () => number = Date.now): () => T {
+export function memoTempo<T>(fn: () => T, ms: number, agora: () => number = () => performance.now()): () => T {
   let valor: T | undefined
   let quando = -Infinity
   return (): T => {

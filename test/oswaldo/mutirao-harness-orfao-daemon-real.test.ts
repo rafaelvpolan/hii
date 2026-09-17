@@ -16,7 +16,10 @@ process.env.HII_CARDS_DIR = CARDS
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 
 const filhos: ChildProcess[] = []
-afterAll(() => {
+const processos: ReturnType<typeof rodar>[] = []
+afterAll(async () => {
+  for (const p of processos) p.kill('SIGKILL')
+  await Promise.allSettled(processos.map(p => p.encerrou))
   for (const f of filhos) { try { f.kill('SIGKILL') } catch { void 0 } }
   rmSync(BASE, { recursive: true, force: true })
 })
@@ -53,8 +56,8 @@ function ambiente(): Record<string, string> {
 }
 
 async function esperar(cond: () => boolean, tetoMs: number): Promise<boolean> {
-  const limite = Date.now() + tetoMs
-  while (Date.now() < limite) {
+  const limite = performance.now() + tetoMs
+  while (performance.now() < limite) {
     if (cond()) return true
     await dormir(50)
   }
@@ -71,6 +74,7 @@ test('REGRESSAO daemon real: arranque encerra harness orfao de card HALTED; SIGT
   registrar(pausado, pidPausado)
 
   const proc = rodar(['bun', 'runner.ts'], { cwd: REPO, env: ambiente() })
+  processos.push(proc)
   const log = (): string => proc.saidaPadrao()
   const subiu = await esperar(() => log().includes('runner ativo'), 20_000)
   expect(subiu, `daemon nao subiu. log:\n${log()}`).toBe(true)

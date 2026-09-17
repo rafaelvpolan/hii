@@ -25,8 +25,8 @@ test('fixture real de uso atualiza leitores e comandos apos cache: conhecido, es
   writeFileSync(join(base, 'repos.json'), '[]')
   aplicar({ papeis: ['implement'], provider: 'codex', model: 'modelo-teste' })
   const aguardar = async (pronto: () => boolean) => {
-    const prazo = Date.now() + 6000
-    while (!pronto() && Date.now() < prazo) await new Promise(resolve => setTimeout(resolve, 400))
+    const prazo = performance.now() + 6000
+    while (!pronto() && performance.now() < prazo) await new Promise(resolve => setTimeout(resolve, 400))
     expect(pronto()).toBe(true)
   }
   const textoConfig = () => renderConfig(lerConfig('', 'codex'), { color: false, largura: 80, altura: 24 }).join('\n')
