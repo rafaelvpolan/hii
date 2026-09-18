@@ -11,6 +11,7 @@ export type AgentMode = 'edit' | 'readonly'
 
 export interface AgentRequest {
   consultaId?: string
+  microtask?: string
   prompt: string
   cwd: string
   dirs: string[]

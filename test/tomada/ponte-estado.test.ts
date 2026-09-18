@@ -146,3 +146,14 @@ test('INVARIANTE conectorExterno resolve a lista ANTES de limpar o cache', async
   expect(fonte, 'o closure tem de devolver o valor resolvido, nao a variavel de modulo').toContain('servidores: () => Promise.resolve(lista)')
   expect(fonte).not.toContain('estadoCache as Promise')
 })
+
+test('Disconnected e Not connected nao comprovam conexao MCP', () => {
+  expect(lerLinhaDeServidor('database: Disconnected')?.estado).toBe('desconhecido')
+  expect(lerLinhaDeServidor('database: Not connected')?.estado).toBe('desconhecido')
+})
+test('MCP com estado desconhecido pede nova sonda, sem inventar falta de OAuth', async () => {
+  const r = await disponibilidadeExterna('database', consulta([{ nome: 'database', estado: 'desconhecido' }]))
+  expect(r.usavel).toBe(false)
+  expect(r.transitorio).toBe(true)
+  expect(r.motivo).not.toContain('pede autenticacao')
+})

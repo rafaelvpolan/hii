@@ -306,3 +306,21 @@ test('ask vincula consulta a sessao, preserva idempotencia e recusa projeto inco
   assert.equal((await post('/v1/ask', { ...b, sessao: outra }, 'consulta-fora-do-repo')).status, 403)
   assert.equal(chamadas, 1)
 })
+
+test('chamadas simultaneas conservam microtask explicita em vez do campo compartilhado', async () => {
+  const { submit } = await import('../../motor/mirante/acoes.ts')
+  const id = submit({ title: 'Ramos', repo: 'org/app' })
+  patchCard(id, { microtask_atual: 'A', plano_revisao: '3' })
+  const provider = providerFor('verify')
+  const falso = { ...provider, capabilities: () => provider.capabilities(), run: async () => ({
+    ok: true, failed: false, timedOut: false, isError: false, text: 'fixture', detail: '', cost: 0, costMeasured: true,
+    usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 },
+  }) }
+  Object.setPrototypeOf(falso, provider)
+  await Promise.all(['B', 'C'].map(microtask => runProvider(id, falso, {
+    microtask, prompt: 'fixture', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000,
+  })))
+  const atividades = snapshot({ execucao: id }).atividades.filter(a => a.recurso.tipo === 'harness')
+  assert.deepEqual(atividades.map(a => a.microtask).sort(), ['B', 'C'])
+  assert.ok(atividades.every(a => a.planoRevisao === 3))
+})

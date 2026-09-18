@@ -368,3 +368,23 @@ test('REGRESSAO: o caminho de live-log carrega --effort e --agents como o de jso
   expect(argvDoDisco()[argvDoDisco().indexOf('--effort') + 1]).toBe('high')
   expect(argvDoDisco()).toContain('--agents')
 })
+
+test('microtask serial conserva live log do card; ramos paralelos usam logs separados', async () => {
+  const { execFileSync } = await import('node:child_process')
+  execFileSync('git', ['init', '-q', WT])
+  execFileSync('git', ['-C', WT, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '--allow-empty', '-qm', 'fixture'])
+  const { submit } = await import('../../motor/mirante/acoes.ts')
+  const { readCard } = await import('../../motor/cordel/store.ts')
+  writeFileSync(process.env.HII_REPOS_FILE!, JSON.stringify([{ name: 'org/app', path: WT }]))
+  const id = submit({ title: 'Log de implementacao', repo: 'org/app' })
+  const card = readCard(id)!
+  const serial = { ...card, fm: { ...card.fm, orq_microtask: 'A' } }
+  await implement(serial, WT)
+  const log = join(process.env.HII_CARDS_DIR!, 'runs', id + '.live.log')
+  expect(existsSync(log)).toBe(true)
+  const anterior = readFileSync(log, 'utf8')
+  const ramo = { ...card, fm: { ...card.fm, orq_microtask: 'B', orq_ramo: 'true' } }
+  await implement(ramo, WT)
+  expect(readFileSync(log, 'utf8')).toBe(anterior)
+  expect(readFileSync(join(process.env.HII_CARDS_DIR!, 'runs', id + '-B.live.log'), 'utf8')).toContain('feito')
+})

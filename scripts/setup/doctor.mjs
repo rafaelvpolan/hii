@@ -21,6 +21,13 @@ function linha(c) {
   if (c.conserto) out(`       ${paint('→ ' + c.conserto, DIM)}`)
 }
 
+if (process.argv.includes('--json')) {
+  const { coletarDoctor } = await import('../../motor/euclides/radar/doctor-estruturado.ts')
+  const diagnostico = coletarDoctor()
+  out(JSON.stringify(diagnostico))
+  process.exit(diagnostico.pior === 'erro' ? 1 : 0)
+}
+
 const r = runDoctor()
 
 out('')

@@ -660,7 +660,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | Variável | Padrão no código | Contrato motor/painel | Lida em |
 |---|---|---|---|
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HII_AI_PROVIDER` | — | — | `motor/euclides/radar/doctor-estruturado.ts`, `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
 | `HII_API_ADMIN` | — | — | `motor/api/servidor.ts` |
 | `HII_API_AUTOSTART` | — | — | `motor/api/openapi.ts`, `motor/api/servidor.ts` |
 | `HII_API_HOST` | `'127.0.0.1'` | — | `motor/api/servidor.ts` |

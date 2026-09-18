@@ -31,3 +31,26 @@ implementadas diretamente pela IA em worktree, com fixtures de validação.
 Se ECC estiver disponível e fizer sentido para o pedido, aproveite orientações
 de TDD/revisão dentro da etapa atual. Esta skill não exige ECC instalado, não
 ativa workers tmux nem delega autoridade de fila, orçamento ou PR a outra camada.
+
+## Provar a entrega
+
+Antes de implementar um conjunto de issues, registre uma matriz com criterio,
+ponto do codigo, teste observavel e resultado. Separe o que ja estava na base do
+que foi acrescentado. Uma issue so esta atendida quando seus criterios obrigatorios
+estao comprovados; PR aberto ou suite parcial verde nao encerram o escopo.
+
+Para defeito reproduzivel, execute a regressao antes da correcao e guarde a falha.
+Depois, execute o mesmo teste corrigido sem remover a assercao que revelou o
+defeito. Nos caminhos de orquestracao, inclua um agente falso que declara sucesso
+com comando de teste falho ou criterio sem evidencia: nenhuma sucessora nem
+entrega pode ser liberada por esse texto.
+
+Mudancas Hicode–HII exigem pelo menos uma prova com processos e filas separados.
+Cubra resposta perdida apos persistencia, repeticao da mesma intencao, ID numerico
+duplicado, revisao antiga e parada humana. Asserte arquivos e efeitos, nao apenas
+codigo HTTP ou presenca de texto na tela. O teste de browser deve verificar a
+retomada apos reload e o erro junto ao card, inclusive sem SSE.
+
+Relate separadamente: simulacao de harness/daemon, teste integrado real e piloto
+com modelo real. Identifique versao/digest, limites e comandos quando medidos.
+Nao apresente fixture deterministica como benchmark de qualidade de uma IA.

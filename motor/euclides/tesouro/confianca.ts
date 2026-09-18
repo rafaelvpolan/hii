@@ -173,7 +173,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       papel, modo: req.mode, permissao: req.modo ?? null, esforco: req.effort ?? null,
       agentesSolicitados: req.useAgents, ferramentasInternas: 'nao observaveis por este contrato',
       saidaIncremental: provider.saidaIncremental?.(req) ?? false })
-  atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
+  atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = req.microtask || fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
   let terminou = false
   const pulso = setInterval(() => heartbeat(atividade), 15000)
   pulso.unref()

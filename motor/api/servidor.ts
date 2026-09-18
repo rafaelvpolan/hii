@@ -1,3 +1,8 @@
+import { diagnosticoDoMotor } from './diagnostico.ts'
+import { diagnosticarRecuperacao, confirmarPreparacao } from './diagnostico-recuperacao.ts'
+import { validarPacote, previaRecuperacao, aplicarRecuperacao } from './recuperacao.ts'
+import { snapshotsDaExecucao, restaurarConfiguracao } from '../euclides/snapshot-execucao.ts'
+import { comRevisao, RevisaoAlterada } from '../cordel/revisao.ts'
 import { iniciarMotor } from './iniciar-motor.ts'
 import { estadoMotor } from './estado-motor.ts'
 import { prepararDependencias } from './dependencias-produto.ts'
@@ -18,9 +23,9 @@ import { lerPlano } from '../oswaldo/orquestracao/planos.ts'
 import { arquivoDeEvidencias } from '../oswaldo/orquestracao/evidencias.ts'
 import type { RelatorioDeEvidencias } from '../oswaldo/orquestracao/evidencias.ts'
 import { existsSync, readFileSync } from 'node:fs'
-import { ACOES, ErroApi, objeto, idValido } from './contrato.ts'
+import { ACOES, ErroApi, objeto, idValido, campos, texto } from './contrato.ts'
 import type { Json } from './contrato.ts'
-import { resposta, umaVezPreparada } from './idempotencia.ts'
+import { resposta, umaVez, umaVezPreparada } from './idempotencia.ts'
 import type { RespostaApi } from './idempotencia.ts'
 import { agir, tarefa, sessao, etagDaSessao, novaSessao, novoPedido, fecharSessao, projetos } from './operacoes.ts'
 import { lerLog } from './log.ts'
@@ -122,6 +127,7 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   if (url.pathname === '/v1/capacidades') return resposta(200, {
     protocolo: 'hii-http', versao: 1, transporte: 'http-json+sse', statuses: STATUSES,
     acoes: ACOES, eventos: TIPOS_DA_PONTE, modos: ['gateway', 'orquestrador'],
+    recuperacao: { versoes: [1], importacao: 'pausada', limiteBytes: 1048576, snapshots: true },
     tecnico: { versoes: [1], limiteLinhas: 500, dependenciasProduto: 1 },
     avaliacao: { versoes: [1], atualidade: 'git-no-instante-da-consulta' },
     specs: 'conteudo UTF-8, sem leitura de caminhos remotos', idempotencia: true,
@@ -129,6 +135,10 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
     observabilidade: { versoes: [1], snapshot: '/v1/observabilidade/snapshot', eventos: '/v1/observabilidade/eventos', recursos: '/v1/observabilidade/recursos', autorizacao: 'mesmo operador do bearer; filtros nao sao autorizacao' },
   })
+  if (url.pathname === '/v1/diagnostico') {
+    if (opcoes.admin !== true || opcoes.repos) throw new ErroApi(403, 'administrador_obrigatorio', 'diagnostico do host exige API administrativa sem restricao de projetos')
+    return resposta(200, objeto(await diagnosticoDoMotor()))
+  }
   if (url.pathname === '/v1/motor/status') return resposta(200, estadoMotor())
   if (url.pathname === '/v1/openapi.json') return resposta(200, openapi)
   if (url.pathname === '/v1/configuracao') return configuracao()
@@ -140,6 +150,10 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
     if (!a) throw new ErroApi(404, 'artefato_ausente', 'artefato ausente ou expirado')
     return { ...resposta(200, a), artefatoVerificado: true }
   }
+  const recuperacaoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/recuperacao$/)?.[1]
+  if (recuperacaoId) return resposta(200, await diagnosticarRecuperacao(recuperacaoId))
+  const snapshotsId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/snapshots$/)?.[1]
+  if (snapshotsId) { const t = tarefa(snapshotsId); return resposta(200, { snapshots: snapshotsDaExecucao(snapshotsId), ativo: t.campos.recuperacao_config || null }, t.etag) }
   const avaliacaoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/avaliacao$/)?.[1]
   if (avaliacaoId) return resposta(200, await avaliarExecucao(avaliacaoId))
   const artefatosDaTarefa = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/artefatos$/)?.[1]
@@ -189,6 +203,38 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
   let b: Json
   try { b = JSON.parse(bruto) as Json } catch { throw new ErroApi(400, 'json_invalido', 'JSON invalido') }
   const entrada = objeto(b)
+  if (['/v1/recuperacoes/previa', '/v1/recuperacoes/importar'].includes(url.pathname)) {
+    if (url.search) throw new ErroApi(400, 'pedido_invalido', 'recuperacao nao aceita query')
+    const importar = url.pathname.endsWith('/importar')
+    if (importar) campos(entrada, ['pacote', 'hash'])
+    const dados = importar ? objeto(entrada.pacote ?? null) : entrada
+    autorizarRepo(typeof dados.repo === 'string' ? dados.repo : '', opcoes)
+    const pacote = validarPacote(dados)
+    if (!importar) return resposta(200, previaRecuperacao(pacote))
+    const hash = texto(entrada, 'hash', true, 64)
+    const importarUmaOrigem = (): RespostaApi => resposta(200, aplicarRecuperacao(pacote, hash))
+    return umaVez(cabecalho(req, 'idempotency-key'), JSON.stringify([url.pathname, entrada]), importarUmaOrigem,
+      () => {}, importarUmaOrigem)
+  }
+  const prepararId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/preparar-recuperacao$/)?.[1]
+  if (prepararId) {
+    campos(entrada, ['fingerprint'])
+    if (url.search) throw new ErroApi(400, 'pedido_invalido', 'query nao permitida')
+    const esperado = cabecalho(req, 'if-match')
+    if (!esperado) throw new ErroApi(428, 'revisao_obrigatoria', 'envie If-Match')
+    return umaVezPreparada(cabecalho(req, 'idempotency-key'), JSON.stringify([url.pathname, esperado, entrada]), async () => {
+      const d = await diagnosticarRecuperacao(prepararId)
+      if (d.revisao !== esperado || d.fingerprint !== entrada.fingerprint) throw new ErroApi(412, 'previa_alterada', 'card ou worktree mudou; revise a previa novamente')
+      return d
+    }, d => {
+      try { comRevisao(prepararId, esperado, () => confirmarPreparacao(d)) }
+      catch (erro) {
+        if (erro instanceof RevisaoAlterada) throw new ErroApi(412, 'previa_alterada', 'card mudou durante a preparacao')
+        throw erro
+      }
+      return resposta(200, { tarefa: tarefa(prepararId), preparada: true, executando: false })
+    })
+  }
   if (url.pathname === '/v1/motor/iniciar') {
     if (opcoes.admin !== true || opcoes.repos || process.env.HII_API_AUTOSTART !== '1') throw new ErroApi(403, 'arranque_nao_autorizado', 'Partida exige API administrativa e HII_API_AUTOSTART=1.')
     if (url.search || Object.keys(entrada).length) throw new ErroApi(400, 'pedido_invalido', 'Partida aceita apenas corpo vazio; configuracao pertence ao operador.')
@@ -198,8 +244,9 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
   if (url.pathname === '/v1/configuracao' && opcoes.admin !== true) throw new ErroApi(403, 'administrador_obrigatorio', 'configuracao exige API administrativa explicita')
   const m = url.pathname.match(/^\/v1\/(sessoes|tarefas)\/(\d{3,12})\/(pedidos|fechar|acoes)$/)
   const planoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/plano$/)?.[1]
+  const restaurarId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/restaurar-configuracao$/)?.[1]
   const respostaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/respostas$/)?.[1]
-  const rotaValida = ['/v1/sessoes', '/v1/configuracao', '/v1/ask'].includes(url.pathname) || planoId || respostaId || (m && (
+  const rotaValida = ['/v1/sessoes', '/v1/configuracao', '/v1/ask'].includes(url.pathname) || planoId || respostaId || restaurarId || (m && (
     (m[1] === 'sessoes' && ['pedidos', 'fechar'].includes(m[3] ?? '')) || (m[1] === 'tarefas' && m[3] === 'acoes')))
   if (!rotaValida || url.search) throw new ErroApi(404, 'rota_ausente', 'rota nao encontrada')
   const esperado = cabecalho(req, 'if-match')
@@ -209,6 +256,18 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
   }, preparo => {
     if (url.pathname === '/v1/configuracao') return configurar(entrada, esperado)
     if (url.pathname === '/v1/ask') return criarConsulta(entrada, opcoes.executarConsulta)
+    if (restaurarId) {
+      campos(entrada, ['hash'])
+      if (!esperado) throw new ErroApi(428, 'revisao_obrigatoria', 'envie If-Match')
+      if (tarefa(restaurarId).etag !== esperado) throw new ErroApi(412, 'revisao_alterada', 'tarefa mudou; consulte novamente')
+      try {
+        const snapshot = comRevisao(restaurarId, esperado, () => restaurarConfiguracao(restaurarId, texto(entrada, 'hash', true, 64)))
+        return resposta(200, { snapshot, tarefa: tarefa(restaurarId) })
+      } catch (erro) {
+        if (erro instanceof RevisaoAlterada) throw new ErroApi(412, 'revisao_alterada', 'tarefa mudou; consulte novamente')
+        throw new ErroApi(409, 'restauracao_recusada', 'snapshot invalido ou tarefa em execucao; consulte o estado')
+      }
+    }
     if (planoId) return revisarPlano(planoId, entrada, esperado, cabecalho(req, 'idempotency-key'))
     if (respostaId) return responderPergunta(respostaId, entrada, esperado)
     if (url.pathname === '/v1/sessoes') return novaSessao(entrada)
@@ -226,7 +285,7 @@ function autorizarRepo(repo: string, opcoes: OpcoesApi): void {
 function autorizarUrl(url: URL, opcoes: OpcoesApi, metodo: string): void {
   if (!opcoes.repos) return
   if (['/v1/capacidades', '/v1/openapi.json', '/v1/provedores', '/v1/motor/status'].includes(url.pathname)) return
-  if (metodo === 'POST' && ['/v1/sessoes', '/v1/ask'].includes(url.pathname)) return // corpo validado antes do efeito
+  if (metodo === 'POST' && ['/v1/sessoes', '/v1/ask', '/v1/recuperacoes/previa', '/v1/recuperacoes/importar'].includes(url.pathname)) return // corpo validado antes do efeito
   const tarefaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})(?:\/|$)/)?.[1]
   if (tarefaId) return autorizarRepo(tarefa(tarefaId).campos.repo ?? '', opcoes)
   const sessaoId = url.pathname.match(/^\/v1\/sessoes\/(\d{3,12})(?:\/|$)/)?.[1]

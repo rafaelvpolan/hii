@@ -1,3 +1,5 @@
+import { validarPoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
+import type { PoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
 import { aplicar, ler } from '../tomada/escolha-de-ia.ts'
 import { agentRoles, harnessSeExistir, providerFor } from '../tomada/registro.ts'
 import { ehEsforco } from '../tomada/preferencias.ts'
@@ -13,7 +15,7 @@ export function configuracao(): RespostaApi {
   return resposta(200, { versao: 1, preferencias, aplicacao: 'proximos despachos; execucoes em voo mantem snapshot' }, etagDe(preferencias))
 }
 export function configurar(b: Objeto, esperado: string): RespostaApi {
-  campos(b, ['versao', 'papel', 'provider', 'model', 'effort', 'modo', 'gauntlet'])
+  campos(b, ['versao', 'papel', 'provider', 'model', 'effort', 'modo', 'gauntlet', 'revisao'])
   if (b.versao !== 1) throw new ErroApi(400, 'versao_invalida', 'versao: 1 obrigatoria')
   if (!esperado) throw new ErroApi(428, 'revisao_obrigatoria', 'envie If-Match')
   const papel = texto(b, 'papel') as AgentRole
@@ -30,7 +32,18 @@ export function configurar(b: Objeto, esperado: string): RespostaApi {
   const modo = b.modo === undefined ? undefined : texto(b, 'modo')
   if (modo && !h.modos.modos.includes(modo)) throw new ErroApi(400, 'modo_invalido', 'modo nao suportado')
   if (b.gauntlet !== undefined && (typeof b.gauntlet !== 'boolean' || papel !== 'gate')) throw new ErroApi(400, 'gauntlet_invalido', 'gauntlet booleano pertence ao gate')
-  const r = aplicar({ papeis: [papel], provider, model, effort, modo, gauntlet: typeof b.gauntlet === 'boolean' ? b.gauntlet : undefined }, esperado)
+  const revisao = b.revisao as PoliticaDeRevisao | undefined
+  if (revisao !== undefined) {
+    try {
+      if (papel !== 'gate') throw new Error('politica de revisao pertence ao gate')
+      validarPoliticaDeRevisao(revisao)
+      for (const r of revisao.revisores.filter(r => r.ativo)) {
+        const caps = harnessSeExistir(r.provedor)?.capabilities()
+        if (!caps?.isolatesReadonly || !caps.emitsStructuredJson) throw new Error('revisor exige provedor com leitura isolada e JSON')
+      }
+    } catch (e) { throw new ErroApi(400, 'revisao_invalida', String((e as Error).message)) }
+  }
+  const r = aplicar({ papeis: [papel], revisao, provider, model, effort, modo, gauntlet: typeof b.gauntlet === 'boolean' ? b.gauntlet : undefined }, esperado)
   if (!r.ok) throw new ErroApi(r.mensagem === 'revisao_alterada' ? 412 : 409, 'configuracao_recusada', r.mensagem)
   return configuracao()
 }

@@ -13,7 +13,7 @@ import { writeFileAtomic } from '../mutirao/trava-arquivo.ts'
 import { ondasEstritas } from './contrato.ts'
 import type { PlanoDeExecucao, CriterioDoPlano } from './contrato.ts'
 import { lerPlano, salvarPlano } from './planos.ts'
-import { fingerprintDoTrabalho } from './evidencias.ts'
+import { fingerprintDoTrabalho, coletarEvidencias } from './evidencias.ts'
 import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
 
@@ -36,8 +36,9 @@ export function planoInicial(card: Card, wt: string): PlanoDeExecucao {
     rollout: { ativacao: 'PR aprovado pelo humano; sem merge automatico', sucesso: 'criterios obrigatorios aprovados e review liberado', interrupcao: 'falha, evidencia inconclusiva ou parada humana', reversao: 'reverter a mudanca revisada; /stop interrompe a execucao' } }
 }
 
-interface Tentativa { microtask: string; inicio: string; fim: string; provedor: string; modelo: string; estado: 'executando' | 'concluida' | 'falhou' | 'interrompida'; custo: string; motivo: string }
-interface Checkpoint { versao: 1; hash: string; feitas: string[]; fingerprint: string; tentativas?: Tentativa[] }
+import { pedidoDaMicrotask } from './checkpoint.ts'
+import type { Tentativa, Checkpoint } from './checkpoint.ts'
+import { executarOndaParalela, reconciliarIntegracaoParalela } from './paralelo.ts'
 
 export async function executarPlano(card: Card, wt: string, implementar: (card: Card, wt: string, feedback: string, visual: boolean) => Promise<ImplementResult>, visual: boolean): Promise<ImplementResult> {
   const id = card.fm.id ?? ''
@@ -54,14 +55,16 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   for (const m of r.plano.microtasks) {
     if (m.ia && !harnessPorNome(m.ia.provedor).agentic) throw new Error(`microtask ${m.id}: provedor ${m.ia.provedor} nao edita arquivos`)
   }
-  patchCard(id, { plano_revisao: String(r.revisao), plano_hash: r.hash }, `${isoNow()} plano v1 #${id} revisao ${r.revisao}: ${r.plano.microtasks.length} microtask(s), execucao serial`)
+  patchCard(id, { plano_revisao: String(r.revisao), plano_hash: r.hash }, `${isoNow()} plano v1 #${id} revisao ${r.revisao}: ${r.plano.microtasks.length} microtask(s), despacho por dependencias e limites`)
   const dir = join(cardsDir(), 'orquestracao')
   mkdirSync(dir, { recursive: true })
   const arquivo = join(dir, `execucao-${id}-${r.revisao}.json`)
   let checkpoint: Checkpoint = { versao: 1, hash: r.hash, feitas: [], fingerprint: '' }
+  const persistir = () => writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
   if (existsSync(arquivo)) {
     checkpoint = JSON.parse(readFileSync(arquivo, 'utf8')) as Checkpoint
     if (checkpoint.versao !== 1 || checkpoint.hash !== r.hash || !Array.isArray(checkpoint.feitas)) throw new Error('checkpoint incompativel com o plano')
+    await reconciliarIntegracaoParalela(wt, checkpoint, persistir)
     for (const tentativa of checkpoint.tentativas ?? []) {
       if (tentativa.estado !== 'executando') continue
       tentativa.estado = 'interrompida'
@@ -72,17 +75,34 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
       return { ok: false, reason: 'microtask com resultado incerto; reconcilie os efeitos e publique uma revisao do plano antes de retomar', failureClass: 'terminal', failureReason: 'resultado incerto exige reconciliacao', cost: '', costMeasured: false }
     }
+    if (checkpoint.tentativas?.some(t => t.custoMedido === false || !Number.isFinite(Number(t.custo)) || Number(t.custo) < 0)) {
+      return { ok: false, reason: 'custo de tentativa anterior nao confirmado; reconcilie a medicao antes de continuar', failureClass: 'terminal', failureReason: 'custo desconhecido no checkpoint', cost: '', costMeasured: false }
+    }
     // Alteracao externa invalida o cache; o diff nunca e descartado.
-    if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) checkpoint.feitas = []
+    if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) return { ok: false, reason: 'trabalho mudou desde o checkpoint; revalide o plano antes de repetir efeitos', failureClass: 'terminal', failureReason: 'checkpoint desatualizado', cost: '0', costMeasured: true }
   }
   let custo = 0
   let medido = true
   const usage = { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 }
   let ultimo: ImplementResult = { ok: true, cost: '0', costMeasured: true, resultText: 'microtasks ja concluidas' }
   for (const onda of ondasEstritas(r.plano.microtasks)) {
+    const gastoAntesDaOnda = gastoDoCard(card.fm.cost_usd)
+    if (onda.some(m => !checkpoint.feitas.includes(m.id)) && (gastoAntesDaOnda === null || gastoAntesDaOnda + custo >= tetoDoCard())) {
+      return { ok: false, reason: 'orcamento atingido antes da onda', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
+    }
+    const paralelo = await executarOndaParalela({ card, wt, plano: r.plano, revisao: r.revisao, checkpoint, onda, orcamentoDisponivelUsd: tetoDoCard() - (gastoAntesDaOnda ?? 0) - custo, salvar: persistir, implementar, visual })
+    if (paralelo) {
+      custo += Number(paralelo.cost) || 0
+      medido &&= paralelo.costMeasured === true
+      for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += paralelo.usage?.[k] ?? 0
+      ultimo = paralelo
+      if (!paralelo.ok) return { ...paralelo, cost: String(custo), costMeasured: medido, usage }
+    }
     for (const m of onda) {
       if (readCard(id)?.fm.status !== 'EXECUTING') return { ...ultimo, ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       if (checkpoint.feitas.includes(m.id)) {
+        const prova = await coletarEvidencias(r.plano, r.revisao, wt, undefined, m.id)
+        if (!prova.aprovado) return { ok: false, reason: 'criterios do checkpoint ' + m.id + ' nao foram comprovados; nenhum efeito foi repetido', failureClass: 'terminal', failureReason: 'checkpoint sem evidencia atual', cost: String(custo), costMeasured: medido, usage }
         const pulada = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { checkpoint: r.hash })
         atualizar(pulada, a => { a.microtask = m.id; a.planoRevisao = r.revisao })
         terminar(pulada, 'skipped', 'microtask ja concluida; fingerprint do checkpoint conferido')
@@ -91,7 +111,7 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       const gasto = gastoDoCard(card.fm.cost_usd)
       if (gasto === null || gasto + custo >= tetoDoCard()) return { ok: false, reason: 'orcamento atingido entre microtasks', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       patchCard(id, { microtask_atual: m.id }, `${isoNow()} microtask ${m.id}: ${m.titulo} | agente ${m.agente}`)
-      const pedido: Card = { ...card, fm: { ...card.fm, title: m.titulo, orq_agente: m.agente, ...(m.ia ? { provider_override_implement: m.ia.provedor, orq_modelo: m.ia.modelo ?? '' } : {}) }, body: `## Objetivo\n${r.plano.objetivo}\n\nMICROTASK ATUAL (${m.id}):\n${m.instrucao}\nArquivos previstos: ${m.arquivos.join(', ') || 'inspecionar o projeto'}\nCriterios: ${m.criterios.join(', ')}\n` }
+      const pedido = pedidoDaMicrotask(card, r.plano, m)
       const atividade = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { papel: 'microtask', processoSeparado: false })
       atualizar(atividade, a => { a.microtask = m.id; a.planoRevisao = r.revisao; a.etapa = m.titulo })
       checkpoint.tentativas ??= []
@@ -101,9 +121,15 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       let concluida = false
       try {
         ultimo = await dentro(atividade, () => implementar(pedido, wt, '', visual))
+        if (ultimo.ok) {
+          const prova = await coletarEvidencias(r.plano, r.revisao, wt, undefined, m.id)
+          if (!prova.aprovado) ultimo = { ...ultimo, ok: false, reason: 'microtask ' + m.id + ': criterios obrigatorios reprovados ou inconclusivos',
+            failureClass: 'terminal', failureReason: 'evidencia da microtask nao aprovada' }
+        }
         tentativa.provedor = ultimo.provider ?? tentativa.provedor
         tentativa.modelo = ultimo.model ?? tentativa.modelo
         tentativa.custo = ultimo.cost
+        tentativa.custoMedido = ultimo.costMeasured === true && Number.isFinite(Number(ultimo.cost)) && Number(ultimo.cost) >= 0
         tentativa.motivo = ultimo.reason ?? ''
         tentativa.estado = ultimo.ok ? 'concluida' : 'falhou'
         // Atribuicao explicita exige revisao do plano, nao fallback silencioso.
@@ -121,11 +147,13 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
         }
         writeFileAtomic(arquivo, JSON.stringify(checkpoint, null, 2) + '\n')
       }
-      custo += Number(ultimo.cost) || 0
-      medido &&= ultimo.costMeasured === true
+      const valor = Number(ultimo.cost)
+      if (Number.isFinite(valor) && valor >= 0) custo += valor
+      medido &&= tentativa.custoMedido === true
       for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += ultimo.usage?.[k] ?? 0
       // Uma resposta tardia nao autoriza continuar apos a parada, inclusive na ultima etapa.
       if (readCard(id)?.fm.status !== 'EXECUTING') return { ...ultimo, ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
+      if (!medido) return { ...ultimo, ok: false, reason: 'custo da microtask nao confirmado; nenhum novo despacho autorizado', failureClass: 'terminal', failureReason: [ultimo.failureReason, 'custo desconhecido'].filter(Boolean).join('; '), cost: String(custo), costMeasured: false, usage }
       if (!ultimo.ok) return { ...ultimo, cost: String(custo), costMeasured: medido, usage }
     }
   }

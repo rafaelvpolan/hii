@@ -29,3 +29,20 @@ ações operacionais distintas: só execute as que estiverem no escopo solicitad
 Relate: sintoma, causa comprovada ou hipótese, evidência redigida, próximo passo e
 limites da conclusão. Métricas históricas em `PENDENCIAS.md` podem estar vencidas;
 não as apresente como custo atual sem nova medição.
+
+## Incidentes entre painel e motor
+
+Registre uma linha do tempo curta: acao solicitada, revisao enviada, resposta
+recebida (ou timeout), efeito persistido, estado consultado e evento observado.
+Consulte o estado autoritativo mesmo quando SSE falhar. API acessivel, daemon vivo,
+tarefa admitida e harness em execucao sao fatos distintos.
+
+Identifique a tarefa por instalacao/projeto/arquivo ou vinculo persistente, nunca
+apenas pelo numero do card. Detecte duplicidade e compare filas antes de sugerir
+retomada. Nao troque a fila inteira para resolver um unico card.
+
+Para recuperacao, diferencie original, tentativa falha e configuracao comprovada.
+Worktree ausente, snapshot adulterado, efeito externo incerto ou checkpoint
+incompativel sao pendencias explicitas; reiniciar o servico nao as resolve.
+Reproduza a fronteira que falhou em fixtures separadas antes de atribuir a causa
+ao modelo ou afirmar que a correcao esta completa.

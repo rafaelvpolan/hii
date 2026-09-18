@@ -368,3 +368,8 @@ test('iniciar por API exige motor ligado, usa ETag e chave idempotente e respeit
   expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, { 'if-match': (await cliente.tarefa('025')).etag })).status).toBe(409)
   expect(readCard('025')?.fm.status).toBe('PAUSED')
 })
+
+test('diagnostico global exige administrador mesmo com bearer valido', async () => {
+  const r = await fetch(url + '/v1/diagnostico', { headers: { authorization: 'Bearer ' + token } })
+  expect(r.status).toBe(403)
+})

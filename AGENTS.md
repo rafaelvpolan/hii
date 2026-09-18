@@ -37,8 +37,9 @@ Leia o código do caminho afetado: o README também descreve fluxos legados.
 - Pedido comum usa gateway no checkout registrado; `/hii <pedido ou spec>` na
   TUI cria execução orquestrada (`motor_modo: passivo`). `COMPLETED` do gateway
   não comprova que houve worktree, gate ou PR.
-- O plano aceita dependências; `executarPlano` executa microtarefas em série.
-  Não prometa paralelismo interno sem implementar isolamento e integração.
+- O plano aceita dependências; `executarPlano` usa série por padrão e permite
+  ondas independentes opt-in em worktrees Git, com integração e nova evidência.
+  Isolamento Git não equivale a sandbox de ferramentas.
 - Papéis injetados no prompt não são necessariamente processos/subagentes.
   Respeite as capacidades declaradas pelo adaptador usado.
 - Critério obrigatório sem evidência, com timeout ou inconclusivo não aprova.

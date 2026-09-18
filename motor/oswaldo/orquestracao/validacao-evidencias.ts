@@ -3,7 +3,7 @@ import type { RevisaoDePlano } from './planos.ts'
 import { ocultarSegredos } from './evidencias.ts'
 
 export function relatorioConsistente(r: RelatorioDeEvidencias, p: RevisaoDePlano): boolean {
-  if (!r || typeof r.instante !== 'string' || !Number.isFinite(Date.parse(r.instante)) || r.versao !== 1 || r.plano !== p.plano.id || r.revisao !== p.revisao ||
+  if (!r || r.microtask !== undefined || typeof r.instante !== 'string' || !Number.isFinite(Date.parse(r.instante)) || r.versao !== 1 || r.plano !== p.plano.id || r.revisao !== p.revisao ||
     !/^[a-f0-9]{64}$/.test(r.fingerprint) || !Array.isArray(r.evidencias) ||
     r.evidencias.length !== p.plano.criterios.length || new Set(r.evidencias.map(e => e?.criterio)).size !== r.evidencias.length) return false
   return p.plano.criterios.every(c => {

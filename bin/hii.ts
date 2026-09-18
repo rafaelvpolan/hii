@@ -133,7 +133,7 @@ function passoPipeline(extra: string[]): number {
 async function suitePipeline(extra: string[]): Promise<number> {
   const repo = valorDaFlag(extra, '--repo')
   const argumentos = extra.filter(a => !a.startsWith('--') && a !== repo)
-  if (['status', 'doctor', 'setup', 'plan', 'close'].includes(argumentos[0] ?? '')) {
+  if (['status', 'doctor', 'setup', 'plan', 'close', 'microtasks'].includes(argumentos[0] ?? '')) {
     const { comandoDoPipeline } = await import('../motor/oswaldo/orquestracao/comando.ts')
     for (const linha of comandoDoPipeline(repo, argumentos.join(' '))) process.stdout.write(`${linha}\n`)
     return repo ? 0 : 2
@@ -217,7 +217,7 @@ function usage(): void {
     '  repo rm <owner/nome>     remove do registro (o clone local nao e tocado)',
     '  repo ls                  lista os alvos registrados e o estado do clone',
     '  contract [caminho]       redetecta o contrato do alvo (stack, comandos)',
-    '  doctor                   confere gh, IA, daemon, push e contrato',
+    '  doctor [--json]          confere ambiente; JSON v1 inclui origem e duracao',
     '',
     'Arquivo de cards:',
     '  rm <id> [id...] --yes    apaga cards e limpa worktree, url e runs',

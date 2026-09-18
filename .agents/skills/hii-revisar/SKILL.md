@@ -30,3 +30,21 @@ achados, mantenha essas alterações identificáveis e valide o resultado.
 Relate apenas achados acionáveis, com arquivo/linha, condição que dispara o
 problema, impacto e correção sugerida. Separe limitações de cobertura de defeitos
 confirmados; se não encontrar achados, diga isso e registre o que foi verificado.
+
+## Revisao adversarial da entrega consolidada
+
+Confronte cada criterio da matriz de issues com a prova executada no HEAD
+candidato. Procure especificamente: sucesso declarado sem exit code, prova
+parcial substituindo relatorio completo, cache de outra revisao, efeito aplicado
+antes da intencao, timeout seguido de duplicacao e estado EXECUTING escrito pelo
+painel sem confirmacao do motor.
+
+Verifique tambem a falha entre cada par de etapas de persistencia. Uma resposta
+HTTP perdida nao autoriza criar outra tarefa. Historico arquivado nao comprova
+que o checkpoint foi reconciliado. O teste deve demonstrar que o original e os
+outros cards continuam intactos, inclusive diante de IDs iguais.
+
+Revise os chamadores e os testes que deveriam falhar com a versao anterior.
+Registre achados corrigidos e cobertura ainda inconclusiva. Auto-revisao tecnica
+nao equivale a aprovacao independente no GitHub, e nenhuma delas autoriza merge
+sem o pedido humano correspondente.

@@ -12,7 +12,7 @@ export function resposta(status: number, corpo: object, etag?: string): Resposta
 export function hash(texto: string): string { return createHash('sha256').update(texto).digest('hex') }
 interface Registro { hash: string; resposta?: RespostaApi }
 
-export function umaVez(chave: string, pedido: string, executar: () => RespostaApi, conferir: () => void = () => {}): RespostaApi {
+export function umaVez(chave: string, pedido: string, executar: () => RespostaApi, conferir: () => void = () => {}, reconciliar?: () => RespostaApi): RespostaApi {
   if (!/^[A-Za-z0-9._:-]{8,128}$/.test(chave)) throw new ErroApi(400, 'idempotencia_obrigatoria', 'envie Idempotency-Key com 8-128 caracteres')
   const dir = join(cardsDir(), 'ponte', 'pedidos')
   mkdirSync(dir, { recursive: true })
@@ -22,7 +22,14 @@ export function umaVez(chave: string, pedido: string, executar: () => RespostaAp
     if (existsSync(arquivo)) {
       const anterior = JSON.parse(readFileSync(arquivo, 'utf8')) as Registro
       if (anterior.hash !== fingerprint) throw new ErroApi(409, 'chave_reutilizada', 'chave ja usada com outro pedido')
-      if (!anterior.resposta) throw new ErroApi(409, 'resultado_incerto', 'pedido interrompido; reconcilie o estado antes de tentar novamente')
+      if (!anterior.resposta) {
+        if (!reconciliar) throw new ErroApi(409, 'resultado_incerto', 'pedido interrompido; reconcilie o estado antes de tentar novamente')
+        // Somente operacoes com reconciliacao propria comprovada usam este caminho.
+        // Nunca repetir chamada de IA, comando arbitrario ou publicacao por omissao.
+        const recuperada = reconciliar()
+        writeFileAtomic(arquivo, JSON.stringify({ hash: fingerprint, resposta: recuperada }))
+        return recuperada
+      }
       return anterior.resposta
     }
     conferir()
