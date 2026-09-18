@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "HII Motor API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge."
   },
   "security": [
@@ -11,6 +11,377 @@
     }
   ],
   "paths": {
+    "/v1/recuperacoes/previa": {
+      "post": {
+        "operationId": "previaRecuperacao",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PacoteRecuperacao"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recuperacoes/importar": {
+      "post": {
+        "operationId": "importarRecuperacao",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "pacote": {
+                    "$ref": "#/components/schemas/PacoteRecuperacao"
+                  },
+                  "hash": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "pacote",
+                  "hash"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/recuperacao": {
+      "get": {
+        "operationId": "diagnosticarRecuperacao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/preparar-recuperacao": {
+      "post": {
+        "operationId": "prepararRecuperacao",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "fingerprint": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fingerprint"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/snapshots": {
+      "get": {
+        "operationId": "snapshotsExecucao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/restaurar-configuracao": {
+      "post": {
+        "operationId": "restaurarConfiguracao",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "hash"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/motor/iniciar": {
       "post": {
         "operationId": "iniciarMotor",
@@ -1895,6 +2266,62 @@
       }
     },
     "schemas": {
+      "PacoteRecuperacao": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "versao": {
+            "const": 1
+          },
+          "origem": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "arquivo": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "documento": {
+            "type": "string",
+            "maxLength": 1048576
+          },
+          "anexos": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "nome": {
+                  "type": "string"
+                },
+                "conteudo": {
+                  "type": "string",
+                  "contentEncoding": "base64"
+                },
+                "sha256": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nome",
+                "conteudo",
+                "sha256"
+              ]
+            }
+          }
+        },
+        "required": [
+          "versao",
+          "origem",
+          "arquivo",
+          "repo",
+          "documento",
+          "anexos"
+        ]
+      },
       "AvaliacaoDeExecucao": {
         "type": "object",
         "additionalProperties": false,

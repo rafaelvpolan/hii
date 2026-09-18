@@ -120,7 +120,8 @@ export function pending(): Job[] {
   return [...sp, ...ex, ...fi, ...co].filter(j => {
     if (ativos.has(j.id) || aindaEmCooldown(j.id, agoraMs)) return false
     const c = cards.find(c => c.id === j.id)
-    if (c?.tipo === 'session') return false
+    if (c?.tipo === 'session' || c?.recuperacao_pendente === 'true') return false
+    if (cards.filter(outro => outro.id === j.id).length !== 1) return false
     const sessao = c?.sessao_id ? lerSessaoHii(c.sessao_id) : null
     if (sessao) {
       const indice = sessao.execucoes.findIndex(e => e.id === j.id)

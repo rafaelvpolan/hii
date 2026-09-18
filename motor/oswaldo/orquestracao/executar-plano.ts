@@ -13,7 +13,7 @@ import { writeFileAtomic } from '../mutirao/trava-arquivo.ts'
 import { ondasEstritas } from './contrato.ts'
 import type { PlanoDeExecucao, CriterioDoPlano } from './contrato.ts'
 import { lerPlano, salvarPlano } from './planos.ts'
-import { fingerprintDoTrabalho } from './evidencias.ts'
+import { fingerprintDoTrabalho, coletarEvidencias } from './evidencias.ts'
 import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
 
@@ -73,7 +73,7 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       return { ok: false, reason: 'microtask com resultado incerto; reconcilie os efeitos e publique uma revisao do plano antes de retomar', failureClass: 'terminal', failureReason: 'resultado incerto exige reconciliacao', cost: '', costMeasured: false }
     }
     // Alteracao externa invalida o cache; o diff nunca e descartado.
-    if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) checkpoint.feitas = []
+    if (checkpoint.fingerprint !== await fingerprintDoTrabalho(wt)) return { ok: false, reason: 'trabalho mudou desde o checkpoint; revalide o plano antes de repetir efeitos', failureClass: 'terminal', failureReason: 'checkpoint desatualizado', cost: '0', costMeasured: true }
   }
   let custo = 0
   let medido = true
@@ -83,6 +83,8 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
     for (const m of onda) {
       if (readCard(id)?.fm.status !== 'EXECUTING') return { ...ultimo, ok: false, reason: 'execucao interrompida', cost: String(custo), costMeasured: medido, usage }
       if (checkpoint.feitas.includes(m.id)) {
+        const prova = await coletarEvidencias(r.plano, r.revisao, wt, undefined, m.id)
+        if (!prova.aprovado) return { ok: false, reason: 'criterios do checkpoint ' + m.id + ' nao foram comprovados; nenhum efeito foi repetido', failureClass: 'terminal', failureReason: 'checkpoint sem evidencia atual', cost: String(custo), costMeasured: medido, usage }
         const pulada = iniciar({ repo: card.fm.repo ?? '', sessao: card.fm.sessao_id || id, execucao: id }, recurso(m.agente, 'agent'), { checkpoint: r.hash })
         atualizar(pulada, a => { a.microtask = m.id; a.planoRevisao = r.revisao })
         terminar(pulada, 'skipped', 'microtask ja concluida; fingerprint do checkpoint conferido')
@@ -101,6 +103,11 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
       let concluida = false
       try {
         ultimo = await dentro(atividade, () => implementar(pedido, wt, '', visual))
+        if (ultimo.ok) {
+          const prova = await coletarEvidencias(r.plano, r.revisao, wt, undefined, m.id)
+          if (!prova.aprovado) ultimo = { ...ultimo, ok: false, reason: 'microtask ' + m.id + ': criterios obrigatorios reprovados ou inconclusivos',
+            failureClass: 'terminal', failureReason: 'evidencia da microtask nao aprovada' }
+        }
         tentativa.provedor = ultimo.provider ?? tentativa.provedor
         tentativa.modelo = ultimo.model ?? tentativa.modelo
         tentativa.custo = ultimo.cost

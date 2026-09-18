@@ -170,3 +170,56 @@ test('parada na ultima microtask conserva resultado e custo sem anunciar sucesso
   expect(chamadas).toBe(1)
   expect(readFileSync(join(dir, 'feito.txt'), 'utf8')).toBe('efeito confirmado')
 })
+
+test('sucesso declarado pelo agente nao libera sucessoras quando o teste real falha', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  const id = submit({ title: 'Falso sucesso', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  const plano = { ...planoOrquestrado(), id, sessaoId: id }
+  plano.criterios[0]!.comando = { binario: 'node', argumentos: ['-e', 'process.exit(7)'], diretorio: '.', timeoutMs: 3000 }
+  salvarPlano(plano, 0, 'falso-sucesso')
+  const chamadas: string[] = []
+  const resultado = await executarPlano(readCard(id)!, dir, async card => {
+    chamadas.push(card.fm.title || '')
+    return { ok: true, cost: '0.15', costMeasured: true, resultText: 'Tudo passou; pode continuar.' }
+  }, false)
+  expect(resultado.ok).toBe(false)
+  expect(resultado.reason).toContain('criterios')
+  expect(chamadas).toEqual(['A'])
+  expect(resultado.cost).toBe('0.15')
+})
+
+test('criterio obrigatorio sem comando nao e aprovado pelo texto do agente', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  const id = submit({ title: 'Inconclusivo', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  const plano = { ...planoOrquestrado(), id, sessaoId: id }
+  delete plano.criterios[0]!.comando
+  salvarPlano(plano, 0, 'inconclusivo')
+  let chamadas = 0
+  const r = await executarPlano(readCard(id)!, dir, async () => {
+    chamadas++
+    return { ok: true, cost: '0', costMeasured: true }
+  }, false)
+  expect(r.ok).toBe(false)
+  expect(chamadas).toBe(1)
+})
+
+test('alteracao externa invalida checkpoint sem repetir efeitos ja executados', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  const id = submit({ title: 'Checkpoint alterado', repo: 'org/app', motor_modo: 'passivo' })
+  patchCard(id, { status: 'EXECUTING' })
+  salvarPlano({ ...planoOrquestrado(), id, sessaoId: id }, 0, 'checkpoint-alterado')
+  let chamadas = 0
+  const executar: Parameters<typeof executarPlano>[2] = async () => {
+    chamadas++
+    return { ok: true, cost: '0.1', costMeasured: true }
+  }
+  expect((await executarPlano(readCard(id)!, dir, executar, false)).ok).toBe(true)
+  writeFileSync(join(dir, 'alteracao-humana.txt'), 'preservar')
+  const depois = await executarPlano(readCard(id)!, dir, executar, false)
+  expect(depois.ok).toBe(false)
+  expect(depois.reason).toContain('mudou')
+  expect(chamadas).toBe(4)
+  expect(readFileSync(join(dir, 'alteracao-humana.txt'), 'utf8')).toBe('preservar')
+})

@@ -97,6 +97,7 @@ function agirNaRevisao(id: string, b: Objeto, esperado: string): RespostaApi {
   const acao = texto(b, 'acao')
   const argumento = texto(b, 'texto', false)
   if (!acaoValida(acao)) throw new ErroApi(400, 'acao_invalida', 'acao nao suportada')
+  if (['iniciar', 'retomar'].includes(acao) && t.campos.recuperacao_pendente === 'true') throw new ErroApi(409, 'recuperacao_pendente', 'reconcilie configuracao e checkpoint antes de retomar')
   if (acao === 'iniciar') {
     if (t.campos.status !== 'READY') throw new ErroApi(409, 'estado_invalido', 'inicio exige tarefa READY; parada humana exige retomada explicita')
     const motor = estadoMotor()
@@ -106,6 +107,7 @@ function agirNaRevisao(id: string, b: Objeto, esperado: string): RespostaApi {
     return resposta(200, { ok: true, id, status: 'EXECUTING' })
   }
   if (acao === 'retomar') {
+    if (t.campos.recuperacao_origem && estadoMotor().estado !== 'ligado') throw new ErroApi(503, 'motor_indisponivel', 'confirme o motor ligado antes de retomar a tarefa recuperada')
     if (!['HALTED', 'PAUSED'].includes(t.campos.status ?? '')) throw new ErroApi(409, 'estado_invalido', 'tarefa nao esta parada')
     if (motivoParaEsperarHarness(id)) throw new ErroApi(409, 'harness_em_voo', 'aguarde o encerramento do harness')
     if (t.campos.pipeline_pausa === 'manual') {

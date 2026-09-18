@@ -12,9 +12,9 @@ function classeDeEsperaDoCard(fm: Fields): ClasseDeEspera {
   return ehClasseDeEspera(gravada) ? gravada : CLASSE_DE_ESPERA_PADRAO
 }
 
-function isDue(waitUntil: string): boolean {
+function isDue(waitUntil: string, agora: number): boolean {
   const t = Date.parse(waitUntil)
-  return !Number.isFinite(t) || t <= Date.now()
+  return !Number.isFinite(t) || t <= agora
 }
 
 function porQueAcordou(provider: string, sondado: boolean): string {
@@ -81,11 +81,11 @@ let acordando = false
 
 export type SondaDeSaude = (provedor: string) => Promise<boolean>
 
-export async function wakeDueWaiting(sonda: SondaDeSaude = probeProviderHealth, sabeSondar: (p: string) => boolean = sabeSondarProvedor): Promise<void> {
+export async function wakeDueWaiting(sonda: SondaDeSaude = probeProviderHealth, sabeSondar: (p: string) => boolean = sabeSondarProvedor, agora = Date.now()): Promise<void> {
   if (acordando) return
   acordando = true
   try {
-    const due = cardsByStatus('WAITING').filter(c => isDue(c.wait_until ?? ''))
+    const due = cardsByStatus('WAITING').filter(c => isDue(c.wait_until ?? '', agora))
     for (const c of due) {
       const id = c.id ?? ''
       const provider = c.wait_provider ?? ''

@@ -7,8 +7,8 @@ import type { AgentRole } from './tipos.ts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 const fixas = new AsyncLocalStorage<PreferenciasDeIa>()
-export function comPreferenciasFixas<T>(executar: () => Promise<T>): Promise<T> {
-  return fixas.run(structuredClone(preferencias()), executar)
+export function comPreferenciasFixas<T>(executar: () => Promise<T>, configuracao: PreferenciasDeIa = preferencias()): Promise<T> {
+  return fixas.run(structuredClone(configuracao), executar)
 }
 
 export const ESFORCOS = ['low', 'medium', 'high', 'xhigh', 'max'] as const

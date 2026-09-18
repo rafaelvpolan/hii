@@ -25,9 +25,15 @@ function objeto(properties: object, required: string[] = []): object {
 
 export const openapi = {
   openapi: '3.1.1',
-  info: { title: 'HII Motor API', version: '1.1.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge.' },
+  info: { title: 'HII Motor API', version: '1.2.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge.' },
   security: [{ bearer: [] }],
   paths: {
+    '/v1/recuperacoes/previa': { post: { ...post('previaRecuperacao', ref('PacoteRecuperacao'), { type: 'object' }), parameters: [] } },
+    '/v1/recuperacoes/importar': { post: post('importarRecuperacao', objeto({ pacote: ref('PacoteRecuperacao'), hash: str }, ['pacote', 'hash']), { type: 'object' }) },
+    '/v1/tarefas/{id}/recuperacao': { get: get('diagnosticarRecuperacao', { type: 'object' }, [idParam]) },
+    '/v1/tarefas/{id}/preparar-recuperacao': { post: post('prepararRecuperacao', objeto({ fingerprint: str }, ['fingerprint']), { type: 'object' }, '200', [idParam, revisao]) },
+    '/v1/tarefas/{id}/snapshots': { get: get('snapshotsExecucao', { type: 'object' }, [idParam]) },
+    '/v1/tarefas/{id}/restaurar-configuracao': { post: post('restaurarConfiguracao', objeto({ hash: str }, ['hash']), { type: 'object' }, '200', [idParam, revisao]) },
     '/v1/motor/iniciar': { post: { operationId: 'iniciarMotor', description: 'Opt-in HII_API_AUTOSTART=1 e API administrativa. Sem argumentos de processo. Serializa e limita tentativas; nao retoma cards pausados.', requestBody: { required: true, content: json(objeto({})) }, responses: { '200': ok({ type: 'object' }), default: erro } } },
     '/v1/motor/status': { get: get('estadoMotor', objeto({ protocolo: { const: 1 }, estado: { enum: ['ligado', 'desligado', 'degradado', 'desconhecido'] }, versao: str, versaoEmExecucao: { type: ['string', 'null'] }, fila: str, consultadoEm: str, motivo: str }, ['protocolo', 'estado', 'versao', 'versaoEmExecucao', 'fila', 'consultadoEm', 'motivo'])) },
     '/v1/observabilidade/snapshot': { get: get('snapshotObservabilidade', ref('SnapshotObservabilidade'), [...escopo, { name: 'depois', in: 'query', schema: str }, { name: 'limite', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } }]) },
@@ -68,6 +74,9 @@ export const openapi = {
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } },
     schemas: {
+      PacoteRecuperacao: objeto({ versao: { const: 1 }, origem: { ...str, pattern: '^[a-f0-9]{64}$' }, arquivo: str, repo: str,
+        documento: { ...str, maxLength: 1048576 }, anexos: { type: 'array', maxItems: 64, items: objeto({ nome: str, conteudo: { ...str, contentEncoding: 'base64' }, sha256: str }, ['nome', 'conteudo', 'sha256']) } },
+      ['versao', 'origem', 'arquivo', 'repo', 'documento', 'anexos']),
       AvaliacaoDeExecucao: objeto({
         entrega: objeto({ head: str, tree: str, pr: str, merge: { type: ['string', 'null'] } }, ['head', 'tree', 'pr', 'merge']),
         versao: { const: 1 }, execucao: id, repo: str, sessao: str, status: str, modo: str,
