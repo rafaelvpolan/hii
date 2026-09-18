@@ -217,7 +217,7 @@ function usage(): void {
     '  repo rm <owner/nome>     remove do registro (o clone local nao e tocado)',
     '  repo ls                  lista os alvos registrados e o estado do clone',
     '  contract [caminho]       redetecta o contrato do alvo (stack, comandos)',
-    '  doctor                   confere gh, IA, daemon, push e contrato',
+    '  doctor [--json]          confere ambiente; JSON v1 inclui origem e duracao',
     '',
     'Arquivo de cards:',
     '  rm <id> [id...] --yes    apaga cards e limpa worktree, url e runs',

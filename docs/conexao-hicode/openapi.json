@@ -11,6 +11,43 @@
     }
   ],
   "paths": {
+    "/v1/diagnostico": {
+      "get": {
+        "operationId": "diagnosticarMotor",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Diagnostico v1 sem inferencia, somente API administrativa. Checks com estado, escopo, duracao e horario; timeout global de 30 segundos."
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recuperacoes/previa": {
       "post": {
         "operationId": "previaRecuperacao",
@@ -907,6 +944,9 @@
                   },
                   "gauntlet": {
                     "type": "boolean"
+                  },
+                  "revisao": {
+                    "$ref": "#/components/schemas/PoliticaDeRevisao"
                   }
                 },
                 "required": [
@@ -2266,6 +2306,75 @@
       }
     },
     "schemas": {
+      "PoliticaDeRevisao": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "versao": {
+            "const": 1
+          },
+          "revisao": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revisores": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "papel": {
+                  "type": "string"
+                },
+                "provedor": {
+                  "type": "string"
+                },
+                "modelo": {
+                  "type": "string"
+                },
+                "dominio": {
+                  "type": "string"
+                },
+                "obrigatorio": {
+                  "type": "boolean"
+                },
+                "ativo": {
+                  "type": "boolean"
+                },
+                "riscos": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "low",
+                      "high"
+                    ]
+                  }
+                },
+                "extensoes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "papel",
+                "provedor",
+                "dominio",
+                "obrigatorio",
+                "ativo"
+              ]
+            }
+          }
+        },
+        "required": [
+          "versao",
+          "revisao",
+          "revisores"
+        ]
+      },
       "PacoteRecuperacao": {
         "type": "object",
         "additionalProperties": false,

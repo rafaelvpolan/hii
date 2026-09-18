@@ -12,10 +12,10 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | --- | --- | --- |
 | HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico; escopo editorial de hicode-site separado |
 | HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
-| HII #48 | Diagnostico de recuperacao distingue motor, tarefa e worktree | Setup idempotente, rollback e diagnostico MCP completo |
+| HII #48 | Diagnostico de recuperacao; MCP desconectado nao vira conectado nem falta de OAuth | Setup idempotente, rollback e diagnostico MCP completo |
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
-| HII #51 | Nenhuma entrega nova ainda | Revisoes especializadas, deduplicacao e sintese idempotente |
+| HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao e sintese no PR | Rubricas por dominio, cache do Crivo principal, publicacao pendente e limites completos |
 | HII #59 | Captura duravel de preferencias antes do despacho; testes adversariais | Politica/localidade, Ollama agentivo, sete trilhas e piloto |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
@@ -67,3 +67,61 @@ nao equivale a ter migrado o card operacional.
 Rollback: retirar a UI/rotas novas conserva os arquivos originais e os arquivos
 de recuperacao; nao apagar arquivos pendentes nem liberar automaticamente as
 copias locais. Desabilitar um recurso nao autoriza reexecutar efeitos incertos.
+
+
+## Checkpoint de revisao especializada
+
+Politica opcional em gate.revisao de config/ia.json e POST /v1/configuracao.
+O Crivo original continua obrigatorio. Os especialistas acrescentam pareceres
+estruturados e nao substituem os testes nem representam, por si, IAs independentes.
+A politica deve conter pelo menos um revisor ativo obrigatorio. Papel ausente,
+cobertura parcial, JSON invalido e parada humana bloqueiam esse revisor.
+
+Relatorios por fingerprint/base/rubrica/politica sao imutaveis. A reserva precede
+a chamada; intencao sem resposta exige reconciliacao e nao autoriza nova inferencia
+automatica. Uma revisao explicita da politica permite outra rodada. Sao no maximo
+oito revisores, cada um com timeout de 60 segundos; nao ha loop de correcao.
+O teto governado e consultado antes de cada chamada; custo desconhecido interrompe
+as chamadas seguintes. Isso nao e garantia de teto financeiro dentro de um
+subprocesso cujo provedor nao oferece limite de gasto.
+
+Nove testes de revisao passaram em Bun; os sete primeiros tambem em Node e os
+nove integrados passaram em Node junto dos testes do gate (17 no total).
+A suite Bun completa encontrou o registro de consumidores do teto desatualizado:
+3294 pass, uma falha. O novo consumidor foi acrescentado ao invariante; a suite
+precisa ser repetida no HEAD final. MCP: dois casos RED reproduziram falsos
+diagnosticos; apos correcao, 17 testes passaram.
+
+A CI dos commits publicados inicialmente passou nos dois PRs. Isso nao valida
+automaticamente os incrementos ainda nao publicados.
+
+## Diagnostico estruturado
+
+hii doctor --json e GET /v1/diagnostico fornecem envelope v1 com checks identificados,
+escopo, estado, severidade, correcao, horario e duracao. A API exige administrador
+sem restricao de projetos; executa a sonda em subprocesso, com timeout global
+de 30 segundos e no maximo uma sonda simultanea por processo da API.
+Ausencia de catalogo de modelos e modelo nao listado sao avisos diferentes:
+nenhum deles comprova acesso remoto nem substitui validacao antes do despacho.
+
+A configuracao mostra os mesmos resolvedores usados pelo motor e avisa quando
+uma preferencia de modo antiga foi normalizada. A origem do modelo padrao e
+declarada como adaptador (env ou padrao), sem inventar uma origem mais precisa.
+Setup/aplicacao/reversao e MCP completo por tarefa ainda precisam ser concluidos.
+
+Validacao deste incremento: 73 testes Node de API, revisao, doctor, MCP e
+orcamento passaram; tipos e lint:types tambem passaram.
+
+## Validacao do segundo checkpoint
+
+- HII Bun: 332 arquivos, 3305 testes aprovados, zero falhas.
+- HII Node: suite geral e 30 testes sensiveis isolados aprovados, zero falhas.
+- typecheck, lint:types e lint:clone aprovados.
+- O apendice gerado de OPERACAO.md foi sincronizado depois de os testes de
+  documentacao detectarem deriva. Nenhuma assercao foi removida para aprovar.
+- Revisao especializada: 12 cenarios, incluindo resposta atrasada, custo,
+  concorrencia, parada humana e novo commit. Provedores sao fixtures.
+- Hicode: 208 testes aprovados, um skip existente, tipos e build aprovados.
+  Dois casos RED/GREEN adicionais cobrem vinculo truncado e identidade invalida.
+  Erro de um vinculo nao derruba os demais cards; consultas limitadas a quatro
+  em voo com prazo total de cinco segundos.

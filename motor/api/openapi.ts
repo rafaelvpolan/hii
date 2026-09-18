@@ -28,6 +28,7 @@ export const openapi = {
   info: { title: 'HII Motor API', version: '1.2.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge.' },
   security: [{ bearer: [] }],
   paths: {
+    '/v1/diagnostico': { get: get('diagnosticarMotor', { type: 'object', description: 'Diagnostico v1 sem inferencia, somente API administrativa. Checks com estado, escopo, duracao e horario; timeout global de 30 segundos.' }) },
     '/v1/recuperacoes/previa': { post: { ...post('previaRecuperacao', ref('PacoteRecuperacao'), { type: 'object' }), parameters: [] } },
     '/v1/recuperacoes/importar': { post: post('importarRecuperacao', objeto({ pacote: ref('PacoteRecuperacao'), hash: str }, ['pacote', 'hash']), { type: 'object' }) },
     '/v1/tarefas/{id}/recuperacao': { get: get('diagnosticarRecuperacao', { type: 'object' }, [idParam]) },
@@ -41,7 +42,7 @@ export const openapi = {
     '/v1/observabilidade/eventos': { get: { operationId: 'eventosObservabilidade', parameters: [...escopo, { name: 'Last-Event-ID', in: 'header', schema: str }], description: 'SSE extensao v1: activity/output/cursor/reset. 409 exige reconstruir snapshot. Filtros nao concedem autorizacao.', responses: { '200': { description: 'SSE', content: { 'text/event-stream': { schema: str } } }, default: erro } } },
     '/v1/ask': { post: post('perguntar', objeto({ repo: str, pergunta: { ...str, maxLength: 16000 } }, ['repo', 'pergunta']), ref('Consulta'), '202') },
     '/v1/consultas/{consultaId}': { get: get('consultarResposta', ref('Consulta'), [{ name: 'consultaId', in: 'path', required: true, schema: { ...str, format: 'uuid' } }]) },
-    '/v1/configuracao': { get: get('configuracao', { type: 'object' }), post: post('configurar', objeto({ versao: { const: 1 }, papel: { enum: ['implement', 'verify', 'gate', 'step'] }, provider: str, model: str, effort: { enum: ['low', 'medium', 'high', 'xhigh', 'max'] }, modo: str, gauntlet: { type: 'boolean' } }, ['versao', 'papel']), { type: 'object' }, '200', [revisao]) },
+    '/v1/configuracao': { get: get('configuracao', { type: 'object' }), post: post('configurar', objeto({ versao: { const: 1 }, papel: { enum: ['implement', 'verify', 'gate', 'step'] }, provider: str, model: str, effort: { enum: ['low', 'medium', 'high', 'xhigh', 'max'] }, modo: str, gauntlet: { type: 'boolean' }, revisao: ref('PoliticaDeRevisao') }, ['versao', 'papel']), { type: 'object' }, '200', [revisao]) },
     '/v1/tarefas/{id}/avaliacao': { get: get('avaliarExecucao', ref('AvaliacaoDeExecucao'), [idParam]) },
     '/v1/tarefas/{id}/artefatos': { get: get('listarArtefatos', { type: 'object', properties: { artefatos: { type: 'array', items: ref('Artefato') } } }, [idParam]) },
     '/v1/tarefas/{id}/historico': { get: get('historicoDaExecucao', { type: 'object' }, [idParam, { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 } }]) },
@@ -74,6 +75,10 @@ export const openapi = {
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } },
     schemas: {
+      PoliticaDeRevisao: objeto({ versao: { const: 1 }, revisao: { type: 'integer', minimum: 1 },
+        revisores: { type: 'array', minItems: 1, maxItems: 8, items: objeto({ papel: str, provedor: str, modelo: str, dominio: str,
+          obrigatorio: { type: 'boolean' }, ativo: { type: 'boolean' }, riscos: { type: 'array', items: { enum: ['low', 'high'] } },
+          extensoes: { type: 'array', items: str } }, ['papel', 'provedor', 'dominio', 'obrigatorio', 'ativo']) } }, ['versao', 'revisao', 'revisores']),
       PacoteRecuperacao: objeto({ versao: { const: 1 }, origem: { ...str, pattern: '^[a-f0-9]{64}$' }, arquivo: str, repo: str,
         documento: { ...str, maxLength: 1048576 }, anexos: { type: 'array', maxItems: 64, items: objeto({ nome: str, conteudo: { ...str, contentEncoding: 'base64' }, sha256: str }, ['nome', 'conteudo', 'sha256']) } },
       ['versao', 'origem', 'arquivo', 'repo', 'documento', 'anexos']),

@@ -1,3 +1,4 @@
+import { diagnosticoDoMotor } from './diagnostico.ts'
 import { diagnosticarRecuperacao, confirmarPreparacao } from './diagnostico-recuperacao.ts'
 import { validarPacote, previaRecuperacao, aplicarRecuperacao } from './recuperacao.ts'
 import { snapshotsDaExecucao, restaurarConfiguracao } from '../euclides/snapshot-execucao.ts'
@@ -134,6 +135,10 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
     retencaoEventos: 1000, autenticacao: 'bearer', multiusuario: false,
     observabilidade: { versoes: [1], snapshot: '/v1/observabilidade/snapshot', eventos: '/v1/observabilidade/eventos', recursos: '/v1/observabilidade/recursos', autorizacao: 'mesmo operador do bearer; filtros nao sao autorizacao' },
   })
+  if (url.pathname === '/v1/diagnostico') {
+    if (opcoes.admin !== true || opcoes.repos) throw new ErroApi(403, 'administrador_obrigatorio', 'diagnostico do host exige API administrativa sem restricao de projetos')
+    return resposta(200, objeto(await diagnosticoDoMotor()))
+  }
   if (url.pathname === '/v1/motor/status') return resposta(200, estadoMotor())
   if (url.pathname === '/v1/openapi.json') return resposta(200, openapi)
   if (url.pathname === '/v1/configuracao') return configuracao()

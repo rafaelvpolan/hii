@@ -1,3 +1,4 @@
+import type { PoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from '../cordel/alicerce/config.ts'
@@ -28,6 +29,7 @@ export interface PreferenciaDePapel {
   // ninguem pedir — e num card de pack visual com referencia anexada nenhuma
   // revisao automatica lia o codigo. Agora e escolha explicita, visivel na linha
   // de propriedades da TUI junto com as ias selecionadas.
+  revisao?: PoliticaDeRevisao
   gauntlet?: boolean
 }
 
