@@ -31,7 +31,7 @@ export function texto(valor: Objeto, campo: string, obrigatorio = true, limite =
 
 export function idValido(id: string): boolean { return /^\d{3,12}$/.test(id) }
 
-export const ACOES = ['aprovar-plano', 'aprovar-url', 'recusar', 'responder', 'parar', 'retomar', 'confirmar-fecho', 'recusar-fecho'] as const
+export const ACOES = ['iniciar', 'aprovar-plano', 'aprovar-url', 'recusar', 'responder', 'parar', 'retomar', 'confirmar-fecho', 'recusar-fecho'] as const
 export type AcaoApi = (typeof ACOES)[number]
 
 export function acaoValida(acao: string): acao is AcaoApi { return (ACOES as readonly string[]).includes(acao) }

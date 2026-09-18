@@ -1,3 +1,4 @@
+import { acompanharPresenca } from './motor/api/estado-motor.ts'
 import { MAX_CONCURRENCY, POLL_MS, RUN_TIMEOUT_MS } from './motor/cordel/alicerce/config.ts'
 import { halteradosDoLote, pending, reconcileStranded, runJob, tick } from './motor/oswaldo/mutirao/fila.ts'
 import { varrerPreviewsOrfaos } from './motor/ciclo/crivo/url-viva.ts'
@@ -106,6 +107,7 @@ if (process.argv.includes('--init')) {
       log: linha => process.stdout.write(linha),
       sair: codigo => { saude?.parar(); process.exit(codigo) },
     })
+    acompanharPresenca()
     setInterval(tick, POLL_MS)
     tick()
   }

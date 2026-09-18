@@ -42,3 +42,6 @@ config/ia.json
 config/*.tmp.*
 .runner.pid.root
 skills/_resolved/
+
+# Presenca e controle de partida do daemon
+.runner.lock.*

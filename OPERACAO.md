@@ -662,6 +662,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
 | `HII_API_ADMIN` | — | — | `motor/api/servidor.ts` |
+| `HII_API_AUTOSTART` | — | — | `motor/api/openapi.ts`, `motor/api/servidor.ts` |
 | `HII_API_HOST` | `'127.0.0.1'` | — | `motor/api/servidor.ts` |
 | `HII_API_PORT` | `8787` | — | `motor/api/servidor.ts` |
 | `HII_API_REPOS` | — | — | `motor/api/servidor.ts` |
@@ -742,9 +743,9 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
 | `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs`, `scripts/test-tui-e2e.mjs` |
 | `HII_RUN_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
-| `HII_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
+| `HII_RUNNER_LOCK` | — | ambos, compartilhada entre clones | `motor/api/iniciar-motor.ts`, `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` (+1) |
 | `HII_RUNNER_LOG` | — | motor | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
-| `HII_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh`, `scripts/test-tui-e2e.mjs` |
+| `HII_RUNNER_PIDFILE` | — | ambos, compartilhada entre clones | `motor/api/iniciar-motor.ts`, `motor/cordel/alicerce/contrato.ts`, `scripts/runner-daemon.sh` (+1) |
 | `HII_RUNTIME` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/preflight.ts`, `scripts/runner-daemon.sh` |
 | `HII_SECRETS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/quilombo/cofre/segredos.ts` |
 | `HII_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |

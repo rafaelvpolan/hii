@@ -727,3 +727,5 @@ tela arrastava 46 arquivos de kernel, que o painel era obrigado a duplicar só p
 O painel (**hicode**) fica com `panel/` — Nuxt 4 + Vue 3 — e é dono do quadro de cards, sprints e
 navegação. Por ora ele ainda carrega uma cópia do kernel; ela é **redundante**, não load-bearing, e
 pode ser apagada quando o painel web assumir. `hidash` (dashboard genérico) vem depois.
+
+Estado, versão e partida opt-in por API: [contrato do motor](docs/conexao-hicode/estado-motor.md).

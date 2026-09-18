@@ -1,3 +1,4 @@
+import { estadoMotor } from './estado-motor.ts'
 import type { DependenciaDeProduto } from '../oswaldo/orquestracao/contrato.ts'
 import { despacharTecnico } from './tecnico.ts'
 import { readCard, repoRegistered, listRepos, patchCard } from '../cordel/store.ts'
@@ -96,6 +97,14 @@ function agirNaRevisao(id: string, b: Objeto, esperado: string): RespostaApi {
   const acao = texto(b, 'acao')
   const argumento = texto(b, 'texto', false)
   if (!acaoValida(acao)) throw new ErroApi(400, 'acao_invalida', 'acao nao suportada')
+  if (acao === 'iniciar') {
+    if (t.campos.status !== 'READY') throw new ErroApi(409, 'estado_invalido', 'inicio exige tarefa READY; parada humana exige retomada explicita')
+    const motor = estadoMotor()
+    if (motor.estado !== 'ligado') throw new ErroApi(503, 'motor_indisponivel', motor.motivo)
+    const r = acoes.transition(id, 'EXECUTING', 'inicio recebido pela API do motor')
+    if (!r) throw new ErroApi(409, 'inicio_recusado', 'motor recusou o inicio')
+    return resposta(200, { ok: true, id, status: 'EXECUTING' })
+  }
   if (acao === 'retomar') {
     if (!['HALTED', 'PAUSED'].includes(t.campos.status ?? '')) throw new ErroApi(409, 'estado_invalido', 'tarefa nao esta parada')
     if (motivoParaEsperarHarness(id)) throw new ErroApi(409, 'harness_em_voo', 'aguarde o encerramento do harness')

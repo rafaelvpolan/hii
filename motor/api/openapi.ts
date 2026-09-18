@@ -25,9 +25,11 @@ function objeto(properties: object, required: string[] = []): object {
 
 export const openapi = {
   openapi: '3.1.1',
-  info: { title: 'HII Motor API', version: '1.1.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Nao inicia o daemon nem faz merge.' },
+  info: { title: 'HII Motor API', version: '1.1.0', description: 'API single-user para o backend Hicode. Extensao de observabilidade v1 independente da ponte legada. O motor e a autoridade do estado. Partida do daemon somente por POST administrativo com opt-in explicito. Nao faz merge.' },
   security: [{ bearer: [] }],
   paths: {
+    '/v1/motor/iniciar': { post: { operationId: 'iniciarMotor', description: 'Opt-in HII_API_AUTOSTART=1 e API administrativa. Sem argumentos de processo. Serializa e limita tentativas; nao retoma cards pausados.', requestBody: { required: true, content: json(objeto({})) }, responses: { '200': ok({ type: 'object' }), default: erro } } },
+    '/v1/motor/status': { get: get('estadoMotor', objeto({ protocolo: { const: 1 }, estado: { enum: ['ligado', 'desligado', 'degradado', 'desconhecido'] }, versao: str, versaoEmExecucao: { type: ['string', 'null'] }, fila: str, consultadoEm: str, motivo: str }, ['protocolo', 'estado', 'versao', 'versaoEmExecucao', 'fila', 'consultadoEm', 'motivo'])) },
     '/v1/observabilidade/snapshot': { get: get('snapshotObservabilidade', ref('SnapshotObservabilidade'), [...escopo, { name: 'depois', in: 'query', schema: str }, { name: 'limite', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } }]) },
     '/v1/observabilidade/recursos': { get: get('catalogoObservabilidade', { type: 'object', properties: { recursos: { type: 'array', items: ref('RecursoObservavel') } } }, [repo]) },
     '/v1/observabilidade/eventos': { get: { operationId: 'eventosObservabilidade', parameters: [...escopo, { name: 'Last-Event-ID', in: 'header', schema: str }], description: 'SSE extensao v1: activity/output/cursor/reset. 409 exige reconstruir snapshot. Filtros nao concedem autorizacao.', responses: { '200': { description: 'SSE', content: { 'text/event-stream': { schema: str } } }, default: erro } } },
