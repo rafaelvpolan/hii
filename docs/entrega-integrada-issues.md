@@ -158,3 +158,43 @@ truncado (RED/GREEN) e reutilizou o executor de grupos de processos no doctor.
 Seis testes de migracao passaram em Bun/Node e quatro testes do doctor em Node,
 com typecheck aprovado; esses dois ajustes finais nao sao apresentados como uma
 nova execucao integral da suite.
+
+## Checkpoint: microtasks paralelas opt-in
+
+O executor agora admite uma onda de 2 a 4 microtasks com arquivos declarados,
+distintos e sem infraestrutura compartilhada reconhecida. O padrão permanece 1.
+Ativação: `hii pipeline microtasks 2 --repo owner/repo`. Reversão: o mesmo
+comando com `1`; ramos já iniciados são reconciliados antes de novos despachos.
+
+Cada ramo recebe worktree Git próprio, base fixada, tentativa, reserva de slots
+da fila existente e parcela do orçamento disponível. A integração é serial e
+registra intenção antes do merge. Um reinício reconhece o merge pelos dois pais,
+sem invocar novamente a IA. Estado incerto, worktree alterado, conflito e alteração
+fora dos arquivos declarados bloqueiam e preservam os artefatos. Critérios são
+executados no ramo e novamente no trabalho combinado; a sucessora só é liberada
+depois da segunda prova. O executor passou a bloquear novas chamadas quando uma
+tentativa retorna custo desconhecido ou inválido, inclusive após retomada.
+
+Evidência selecionada: teste RED do DAG anterior (C não começava enquanto B
+aguardava) e GREEN com barreira de sincronização, Git real e executores falsos.
+Oito cenários de paralelismo cobrem DAG, sobreposição, limite, crash de merge,
+parada, escopo, prova combinada e custo. A autoria B/C também foi verificada no
+snapshot público de observabilidade com harness falso.
+
+Limites deste incremento: isolamento Git não equivale a sandbox de segurança;
+não houve chamada paga ou benchmark de IA. A reserva financeira é admissão e
+contabilização; provedores sem teto nativo podem ultrapassar o valor durante uma
+chamada, caso em que a integração e os próximos despachos são bloqueados. Cota
+ou resultado incerto de ramo paralelo ainda exige reconciliação; a troca automática
+nesse caminho e a política por tentativa de #59 permanecem pendentes. A migração
+entre instalações recusa checkpoints com ramos paralelos até reconciliar seus
+worktrees. Worktrees filhos são preservados para inspeção; limpeza automática
+ainda não foi habilitada. Isso não encerra #49 nem #59.
+
+Validação integral deste incremento: Bun 1.4.0, 334 arquivos/3322 testes;
+Node 24, 3286 testes gerais + 30 sensíveis; zero falhas. Tipos, lint de tipos e
+clone limpo aprovados. A primeira execução integral detectou CommonJS na fixture
+nova; os comandos foram convertidos para ESM e a mesma suíte repetida sem
+enfraquecer as asserções.
+
+Tres rodadas de TUI E2E e visualizador 1365/390px aprovadas antes do ajuste final de log serial. Esse ajuste recebeu regressao RED/GREEN com CLI falso nos dois runtimes e nova execucao integral Bun/Node. O log serial do card foi preservado; apenas ramos paralelos ganham arquivos separados.

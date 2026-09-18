@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 import { splitFrontMatter } from '../cordel/frontmatter.ts'
 import { validarPlano } from '../oswaldo/orquestracao/contrato.ts'
+import type { OndaParalela } from '../oswaldo/orquestracao/checkpoint.ts'
 import type { PlanoDeExecucao } from '../oswaldo/orquestracao/contrato.ts'
 import { chaveDoProjeto } from '../oswaldo/orquestracao/config.ts'
 import { salvarPlano } from '../oswaldo/orquestracao/planos.ts'
@@ -16,7 +17,7 @@ interface TentativaLegada {
   microtask: string; inicio: string; fim: string; provedor: string; modelo: string
   estado: 'executando' | 'concluida' | 'falhou' | 'interrompida'; custo: string; motivo: string
 }
-interface CheckpointLegado { versao: 1; hash: string; feitas: string[]; fingerprint: string; tentativas?: TentativaLegada[] }
+interface CheckpointLegado { paralela?: OndaParalela; versao: 1; hash: string; feitas: string[]; fingerprint: string; tentativas?: TentativaLegada[] }
 export interface MigracaoDePlano {
   revisoes: RevisaoDePlano[]; checkpoint: CheckpointLegado; origemId: string; revisaoAtiva: number
 }
@@ -47,6 +48,7 @@ export function diagnosticarPlanoLegado(p: PacoteRecuperacao, fingerprint: strin
   if (!c || c.versao !== 1 || c.hash !== revisao.hash || !Array.isArray(c.feitas) ||
     new Set(c.feitas).size !== c.feitas.length || !fingerprint || c.fingerprint !== fingerprint ||
     !Array.isArray(c.tentativas)) throw new Error('Checkpoint ausente, invalido ou diferente do trabalho atual.')
+  if (c.paralela !== undefined) throw new Error('Checkpoint paralelo exige reconciliacao dos worktrees de cada ramo antes de migrar.')
   const tarefas = new Map(revisao.plano.microtasks.map(m => [m.id, m]))
   for (const t of c.tentativas) {
     if (!t || !tarefas.has(t.microtask) || !['concluida', 'falhou'].includes(t.estado) ||

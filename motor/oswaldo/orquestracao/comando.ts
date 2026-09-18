@@ -1,4 +1,4 @@
-import { configDoOrquestrador } from './config.ts'
+import { configDoOrquestrador, configurarMicrotasks } from './config.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { readCard, patchCard, normalizeId, repoPath } from '../../cordel/store.ts'
 import { lerDocumentoDePlano } from './contrato.ts'
@@ -11,6 +11,12 @@ import { initHicodeHome } from '../../cordel/alicerce/home.ts'
 
 export function comandoDoPipeline(projeto: string, argumento = 'status'): string[] {
   if (!projeto) return ['sem projeto: /repo <owner/nome>']
+  if (argumento.startsWith('microtasks ')) {
+    const quantidade = Number(argumento.slice('microtasks '.length).trim())
+    const c = configurarMicrotasks(projeto, quantidade)
+    return ['concorrencia de microtasks: ' + (c.concorrenciaMicrotasks ?? 1) + ' | revisao ' + c.revisao,
+      'ramos em voo sao reconciliados; novos despachos respeitam o teto da fila']
+  }
   if (argumento === 'setup') {
     const alvo = repoPath(projeto)
     if (!existsSync(alvo)) return ['projeto ausente; registre o clone antes do setup']
@@ -42,8 +48,8 @@ export function comandoDoPipeline(projeto: string, argumento = 'status'): string
     patchCard(id, { plano_revisao: String(r.revisao), plano_hash: r.hash })
     return [`plano #${id} revisao ${r.revisao} validado; retome a execucao para aplicar`]
   }
-  if (argumento !== 'status') return ['uso: hii pipeline <id|status|doctor|setup|plan|close> --repo <owner/nome>']
+  if (argumento !== 'status') return ['uso: hii pipeline <id|status|doctor|setup|plan|close|microtasks> --repo <owner/nome>']
   const c = configDoOrquestrador(projeto)
   return [`motor: gateway | ${projeto}`, 'orquestrador: /hii <tarefa ou arquivo.spec>, somente neste pedido',
-    `concorrencia: ${c.concorrencia} | revisao ${c.revisao}`]
+    `concorrencia: ${c.concorrencia} | microtasks: ${c.concorrenciaMicrotasks ?? 1} | revisao ${c.revisao}`]
 }

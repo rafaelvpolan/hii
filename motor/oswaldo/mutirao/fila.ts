@@ -6,7 +6,7 @@ import type { Job } from '../../cordel/index.ts'
 import { MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
 import { tetoDeParalelismo } from '../../quilombo/limites.ts'
 import { readCard, updateCard } from '../../cordel/store.ts'
-import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, registrarRetornoSemTransicao } from './estado-da-fila.ts'
+import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, quantosSlotsOcupados, registrarRetornoSemTransicao } from './estado-da-fila.ts'
 import { handleExecute } from '../executar.ts'
 import { handleFinish } from '../../quilombo/cartorio/fechar.ts'
 import { handleCorrect } from '../../ciclo/corrigir.ts'
@@ -160,7 +160,7 @@ export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
       avisarFalhaSilenciosa('teto global de gasto', global.motivo, 'o despacho esta drenado ate a janela virar; cards novos ficam no disco')
     } else {
       for (const job of pending()) {
-        if (quantosEmVoo() >= teto) break
+        if (quantosSlotsOcupados() >= teto) break
         void runJob(job)
       }
     }

@@ -223,3 +223,26 @@ test('alteracao externa invalida checkpoint sem repetir efeitos ja executados', 
   expect(chamadas).toBe(4)
   expect(readFileSync(join(dir, 'alteracao-humana.txt'), 'utf8')).toBe('preservar')
 })
+
+test('custo desconhecido ou invalido bloqueia sucessoras sem repetir trabalho confirmado', async () => {
+  const { patchCard } = await import('../../motor/cordel/store.ts')
+  for (const custo of ['', 'NaN', 'Infinity', '-1', '0.1']) {
+    const id = submit({ title: 'Custo incerto', repo: 'org/app', motor_modo: 'passivo' })
+    patchCard(id, { status: 'EXECUTING' })
+    salvarPlano({ ...planoOrquestrado(), id, sessaoId: id }, 0, 'custo-incerto')
+    let chamadas = 0
+    const implementar: Parameters<typeof executarPlano>[2] = async () => {
+      chamadas++
+      return { ok: true, cost: custo, costMeasured: custo !== '0.1' && custo !== '' }
+    }
+    const resultado = await executarPlano(readCard(id)!, dir, implementar, false)
+    expect(resultado.ok).toBe(false)
+    expect(resultado.costMeasured).toBe(false)
+    expect(resultado.failureReason).toContain('custo')
+    expect(chamadas).toBe(1)
+    const retomada = await executarPlano(readCard(id)!, dir, implementar, false)
+    expect(retomada.ok).toBe(false)
+    expect(retomada.costMeasured).toBe(false)
+    expect(chamadas).toBe(1)
+  }
+})

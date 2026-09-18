@@ -13,6 +13,7 @@ const FINISH_STATES = ['REFINED', 'TESTS_GREEN', 'SEC_CLEARED', 'REVIEWED', 'CLE
 const RERUN_STATES = ['EXECUTING', 'CORRECTING', 'SPECCED']
 
 const emVoo = new Set<string>()
+const slotsMicrotasks = new Map<string, number>()
 
 const COOLDOWN_MS = Number(process.env.HII_CARD_COOLDOWN_MS || 0) || 30_000
 
@@ -46,10 +47,23 @@ export function marcarEmVoo(id: string): void {
 
 export function liberar(id: string): void {
   emVoo.delete(id)
+  slotsMicrotasks.delete(id)
 }
 
 export function quantosEmVoo(): number {
   return emVoo.size
+}
+
+// O card ja possui um slot da fila. Ramos adicionais usam o mesmo teto do tick.
+export function quantosSlotsOcupados(): number {
+  return emVoo.size + [...slotsMicrotasks.values()].reduce((s, n) => s + n, 0)
+}
+export function reservarSlotsMicrotasks(id: string, quantidade: number, teto: number): (() => void) | null {
+  if (!emVoo.has(id) || slotsMicrotasks.has(id) || !Number.isInteger(quantidade) || quantidade < 1 ||
+    quantosSlotsOcupados() + quantidade - 1 > teto) return null
+  slotsMicrotasks.set(id, quantidade - 1)
+  let liberado = false
+  return () => { if (!liberado) { slotsMicrotasks.delete(id); liberado = true } }
 }
 
 function resumeAposEstado(estadoQueOPassoPagoGravou: string, worktree: string): string {
