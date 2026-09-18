@@ -1,4 +1,4 @@
-import { fingerprintDoTrabalho } from '../orquestracao/evidencias.ts'
+import { adotarRecuperacao } from '../../euclides/recuperacao-adocao.ts'
 import { configuracaoDaTarefa, registrarSnapshot } from '../../euclides/snapshot-execucao.ts'
 import { preferencias } from '../../tomada/preferencias.ts'
 import { isoNow } from '../../cordel/index.ts'
@@ -41,10 +41,9 @@ async function executarJob(job: Job): Promise<void> {
   const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {
     if (readCard(job.id)?.fm.recuperacao_pendente === 'true') throw new Error('Recuperacao pendente: reconcilie configuracao e checkpoint antes de executar')
-    const recuperada = readCard(job.id)?.fm
-    if (recuperada?.recuperacao_fingerprint && (!recuperada.worktree || await fingerprintDoTrabalho(recuperada.worktree) !== recuperada.recuperacao_fingerprint)) throw new Error('Worktree mudou apos a previa de recuperacao; diagnostique novamente antes de executar')
     await comPreferenciasFixas(async () => {
     registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
+    await adotarRecuperacao(job.id)
     if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
     else if (job.kind === 'execute') await handleExecute(job.id)
     else if (job.kind === 'finish') await handleFinish(job.id)

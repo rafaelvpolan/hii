@@ -21,7 +21,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
 | Hicode #32 | Recuperacao usa tema legivel, responsivo | Revalidar contraste e telas restantes |
-| Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, retomada explicita e E2E | Migrar checkpoint/plano legado completo; lacunas bloqueiam em vez de inventar estado |
+| Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, retomada explicita e E2E | Reconciliar dependencias entre produtos e sessoes nativas; lacunas bloqueiam em vez de inventar estado |
 
 ## Provas ja executadas
 
@@ -59,8 +59,9 @@ fingerprint. Preparar exige If-Match e fingerprint vistos pelo operador.
 Restaurar configuracao exige hash de snapshot e revisao da tarefa. Nenhuma dessas
 operacoes despacha IA. Retomar e uma acao separada e exige daemon confirmado.
 
-Origem com plano legado ainda nao migrado, entrega externa ou worktree perdido
-permanece bloqueada. O arquivo original e mantido. A instalacao real do #025
+Plano legado v1 com historico e checkpoint completos pode ser migrado. Entrega
+externa, dependencia de produto ainda nao reconciliada, efeito incerto ou worktree
+perdido permanece bloqueado. O arquivo original e mantido. A instalacao real do #025
 somente podera ser recuperada apos diagnostico dessa instalacao; passar na fixture
 nao equivale a ter migrado o card operacional.
 
@@ -125,3 +126,35 @@ orcamento passaram; tipos e lint:types tambem passaram.
   Dois casos RED/GREEN adicionais cobrem vinculo truncado e identidade invalida.
   Erro de um vinculo nao derruba os demais cards; consultas limitadas a quatro
   em voo com prazo total de cinco segundos.
+
+
+## Migracao validada de plano legado v1
+
+O pacote inclui planos/<projeto>-<id>.json e orquestracao/execucao-<id>-<revisao>.json.
+O motor confere identidade, hash, revisoes, dependencias concluidas, tentativas,
+custo conhecido e fingerprint do worktree. IDs da nova execucao sao registrados
+sem alterar o arquivo original; historico e custos anteriores permanecem arquivados.
+Preparar nao despacha IA. A retomada verifica novamente criterios das microtasks
+concluidas e executa apenas as pendentes.
+
+Intencao de migracao tem chaves deterministicas por revisao. Repetir o preparo
+reconcilia gravacoes parciais; checkpoint de destino alterado nao e sobrescrito.
+Tentativa executando/interrompida, ausencia de artefato ou custo divergente bloqueia.
+Dependencias entre produtos ainda exigem reconciliacao de IDs/certificados.
+Nenhuma sessao nativa de provedor e anunciada como migrada por este fluxo.
+
+A prova de importacao rege o primeiro despacho. Depois da adocao, a tarefa usa
+os checkpoints atuais; o fingerprint original nao bloqueia a etapa seguinte
+por causa de alteracoes que o proprio motor fez.
+
+Provas: cinco testes de migracao passaram sob Node junto dos seis testes HTTP;
+suite Bun com 333 arquivos/3310 testes aprovada; suite Node geral e 30 testes
+sensiveis aprovados. E2E Hicode/API com plano e checkpoint legados passou em
+desktop/390px e reload. O daemon e simulado, sem inferencia; a unidade do executor
+usa worktree Git real e mostra somente B executada, com A preservada.
+
+Apos a suite completa, a auto-revisao acrescentou um caso de arquivo de origem
+truncado (RED/GREEN) e reutilizou o executor de grupos de processos no doctor.
+Seis testes de migracao passaram em Bun/Node e quatro testes do doctor em Node,
+com typecheck aprovado; esses dois ajustes finais nao sao apresentados como uma
+nova execucao integral da suite.
