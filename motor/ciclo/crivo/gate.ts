@@ -328,8 +328,11 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
   }
   const principal: GateResult = { ok: true, verdict: parsed.verdict, reason: parsed.reason, criterio: parsed.criterio, questions: parsed.questions, cost: res.cost, costMeasured: res.costMeasured, tokens }
   if (principal.verdict === 'BLOCKED') return principal
-  const politica = preferenciaDoPapel('gate').revisao
-  if (!politica) return principal
+  const preferencia = preferenciaDoPapel('gate')
+  if (!preferencia.autoReview) return principal
+  const politica = preferencia.revisao
+  if (!politica) return { ...principal, ok: false, verdict: 'BLOCKED',
+    reason: principal.reason + '; autoReview ligado sem politica de revisao', failureClass: 'terminal' }
   try {
     const revisoes = await executarRevisoes({ id, wt, base, objetivo: desc,
       risco: readCard(id)?.fm.risk === 'high' ? 'high' : 'low', fingerprintEsperado: fingerprint, custoAnterior: principal.costMeasured ? principal.cost : null,

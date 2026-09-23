@@ -126,7 +126,7 @@ test('gate integra especialistas sem dispensar o Crivo existente', async () => {
   writeFileSync(join(agents, 'seguranca.md'), '---\nname: seguranca\ndescription: Seguranca\n---\nRevise seguranca.')
   const { ler, aplicar } = await import('../../motor/tomada/escolha-de-ia.ts')
   const { etagDe } = await import('../../motor/cordel/revisao.ts')
-  expect(aplicar({ papeis: ['gate'], revisao: politica }, etagDe(ler())).ok).toBe(true)
+  expect(aplicar({ papeis: ['gate'], revisao: politica, autoReview: true }, etagDe(ler())).ok).toBe(true)
   expect(() => configurar({ versao: 1, papel: 'gate', revisao: { ...politica, revisores: [] } }, etagDe(ler()))).toThrow()
   expect(configuracao().status).toBe(200)
   const h = providerFor('gate')
@@ -145,6 +145,40 @@ test('gate integra especialistas sem dispensar o Crivo existente', async () => {
     expect(chamadas.length).toBe(2)
     expect(buildPrBody(entrada.id, 'Revisar', r)).toContain('seguranca / claude')
   } finally { h.run = original }
+})
+
+test('revisao humana e o padrao e nao chama especialistas automaticamente', async () => {
+  const { mkdirSync } = await import('node:fs')
+  const { runGatedReview } = await import('../../motor/ciclo/crivo/gate.ts')
+  const { providerFor } = await import('../../motor/tomada/registro.ts')
+  const { ler, aplicar } = await import('../../motor/tomada/escolha-de-ia.ts')
+  const { etagDe } = await import('../../motor/cordel/revisao.ts')
+  const agents = join(dir, '.git', 'agents-human')
+  mkdirSync(agents)
+  process.env.HII_AGENTS_DIR = agents
+  process.env.HII_GATE_PROVIDER = 'claude'
+  writeFileSync(join(agents, 'seguranca.md'), '---\nname: seguranca\ndescription: Seguranca\n---\nRevise seguranca.')
+  expect(aplicar({ papeis: ['gate'], revisao: politica, autoReview: false }, etagDe(ler())).ok).toBe(true)
+  expect(ler().gate?.autoReview).toBe(false)
+  const h = providerFor('gate')
+  const original = h.run
+  const chamadas: string[] = []
+  h.run = async req => { chamadas.push(req.rotulo || ''); return { ...resposta(), text: '{"verdict":"APPROVED","reason":"Crivo aprovado","questions":[]}' } }
+  try {
+    const r = await runGatedReview(dir, 'main', 'Revisar', entrada.id)
+    expect(r.ok).toBe(true)
+    expect(chamadas).toEqual(['gate · crivo'])
+  } finally { h.run = original }
+})
+
+test('API aceita escolha explicita e recusa auto review sem politica ou fora do gate', async () => {
+  const { configurar } = await import('../../motor/api/configuracao.ts')
+  const { ler } = await import('../../motor/tomada/escolha-de-ia.ts')
+  const { etagDe } = await import('../../motor/cordel/revisao.ts')
+  expect(() => configurar({ versao: 1, papel: 'verify', autoReview: true }, etagDe(ler()))).toThrow('gate')
+  expect(() => configurar({ versao: 1, papel: 'gate', autoReview: true }, etagDe(ler()))).toThrow('politica')
+  expect(configurar({ versao: 1, papel: 'gate', autoReview: false }, etagDe(ler())).status).toBe(200)
+  expect(ler().gate?.autoReview).toBe(false)
 })
 
 test('custo desconhecido interrompe proximos revisores obrigatorios', async () => {

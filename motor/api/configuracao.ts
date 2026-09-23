@@ -15,7 +15,7 @@ export function configuracao(): RespostaApi {
   return resposta(200, { versao: 1, preferencias, aplicacao: 'proximos despachos; execucoes em voo mantem snapshot' }, etagDe(preferencias))
 }
 export function configurar(b: Objeto, esperado: string): RespostaApi {
-  campos(b, ['versao', 'papel', 'provider', 'model', 'effort', 'modo', 'gauntlet', 'revisao'])
+  campos(b, ['versao', 'papel', 'provider', 'model', 'effort', 'modo', 'gauntlet', 'autoReview', 'revisao'])
   if (b.versao !== 1) throw new ErroApi(400, 'versao_invalida', 'versao: 1 obrigatoria')
   if (!esperado) throw new ErroApi(428, 'revisao_obrigatoria', 'envie If-Match')
   const papel = texto(b, 'papel') as AgentRole
@@ -32,6 +32,7 @@ export function configurar(b: Objeto, esperado: string): RespostaApi {
   const modo = b.modo === undefined ? undefined : texto(b, 'modo')
   if (modo && !h.modos.modos.includes(modo)) throw new ErroApi(400, 'modo_invalido', 'modo nao suportado')
   if (b.gauntlet !== undefined && (typeof b.gauntlet !== 'boolean' || papel !== 'gate')) throw new ErroApi(400, 'gauntlet_invalido', 'gauntlet booleano pertence ao gate')
+  if (b.autoReview !== undefined && (typeof b.autoReview !== 'boolean' || papel !== 'gate')) throw new ErroApi(400, 'modo_revisao_invalido', 'autoReview booleano pertence ao gate')
   const revisao = b.revisao as PoliticaDeRevisao | undefined
   if (revisao !== undefined) {
     try {
@@ -43,7 +44,10 @@ export function configurar(b: Objeto, esperado: string): RespostaApi {
       }
     } catch (e) { throw new ErroApi(400, 'revisao_invalida', String((e as Error).message)) }
   }
-  const r = aplicar({ papeis: [papel], revisao, provider, model, effort, modo, gauntlet: typeof b.gauntlet === 'boolean' ? b.gauntlet : undefined }, esperado)
+  if (b.autoReview === true && revisao === undefined && !ler().gate?.revisao) throw new ErroApi(400, 'revisao_invalida', 'autoReview exige politica de revisao configurada')
+  const r = aplicar({ papeis: [papel], revisao, provider, model, effort, modo,
+    autoReview: typeof b.autoReview === 'boolean' ? b.autoReview : undefined,
+    gauntlet: typeof b.gauntlet === 'boolean' ? b.gauntlet : undefined }, esperado)
   if (!r.ok) throw new ErroApi(r.mensagem === 'revisao_alterada' ? 412 : 409, 'configuracao_recusada', r.mensagem)
   return configuracao()
 }

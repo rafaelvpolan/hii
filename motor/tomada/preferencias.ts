@@ -30,6 +30,7 @@ export interface PreferenciaDePapel {
   // revisao automatica lia o codigo. Agora e escolha explicita, visivel na linha
   // de propriedades da TUI junto com as ias selecionadas.
   revisao?: PoliticaDeRevisao
+  autoReview?: boolean
   gauntlet?: boolean
 }
 

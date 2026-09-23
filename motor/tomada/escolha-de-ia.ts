@@ -89,6 +89,7 @@ export interface Ajuste {
   effort?: string
   modo?: string
   revisao?: PoliticaDeRevisao
+  autoReview?: boolean
   gauntlet?: boolean
 }
 
@@ -118,6 +119,9 @@ function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
     if (ajuste.effort) atual.effort = ajuste.effort
     if (ajuste.modo !== undefined) atual.modo = ajuste.modo || undefined
     if (ajuste.gauntlet !== undefined) atual.gauntlet = ajuste.gauntlet || undefined
+    // Ausente = ainda nao escolhido; false = revisao humana escolhida; true =
+    // revisores automaticos habilitados. Preservar false evita perguntar sempre.
+    if (ajuste.autoReview !== undefined) atual.autoReview = ajuste.autoReview
     if (ajuste.revisao !== undefined) atual.revisao = structuredClone(ajuste.revisao)
     prefs[papel] = atual
   }

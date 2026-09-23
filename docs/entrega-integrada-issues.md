@@ -15,7 +15,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | Provisionamento selecionavel de MCPs e smoke WSL completo |
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
-| HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao e sintese no PR | Rubricas por dominio, cache do Crivo principal, publicacao pendente e limites completos |
+| HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
 | HII #59 | Captura duravel de preferencias; Ollama agentivo opt-in com tools negociadas e confinadas | Politica completa de localidade, demais trilhas e piloto real |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
@@ -77,6 +77,12 @@ O Crivo original continua obrigatorio. Os especialistas acrescentam pareceres
 estruturados e nao substituem os testes nem representam, por si, IAs independentes.
 A politica deve conter pelo menos um revisor ativo obrigatorio. Papel ausente,
 cobertura parcial, JSON invalido e parada humana bloqueiam esse revisor.
+
+`gate.autoReview` registra a escolha do operador em `config/ia.json`: ausente
+significa que a interface ainda deve perguntar, `false` escolhe revisao humana e
+`true` ativa os revisores especializados. Ativar sem politica valida e recusado.
+Mesmo no modo automatico, o Crivo principal continua obrigatorio e o motor nao
+faz merge; no modo humano o PR segue sem chamadas extras aos especialistas.
 
 Relatorios por fingerprint/base/rubrica/politica sao imutaveis. A reserva precede
 a chamada; intencao sem resposta exige reconciliacao e nao autoriza nova inferencia
