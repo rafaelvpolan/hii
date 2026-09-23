@@ -516,11 +516,20 @@ antes de implementar.
 ### Rodar em modelo local, sem custo externo
 
 ```bash
-HII_IMPLEMENT_PROVIDER=ollama HII_OLLAMA_MODEL=qwen2.5-coder hii run
+HII_IMPLEMENT_PROVIDER=ollama HII_OLLAMA_MODEL=qwen2.5-coder HII_OLLAMA_AGENTIC=1 hii run
 ```
 
-O ollama isola só-leitura e reporta custo; o que ele não faz é restringir
-ferramenta. Quem o motor recusa em papel de verificação é o **kimi**.
+Sem `HII_OLLAMA_AGENTIC=1`, o Ollama continua disponível apenas para geração e
+não entra em tarefas de implementação. No modo agentivo, o motor consulta o
+endpoint `api/show` e só prossegue quando o modelo declara `tools`; oferece leitura e
+substituição exata de texto em arquivos existentes, com raízes, tamanho, número
+de turnos e repetição limitados. Não há shell geral. Em `readonly`, escrita é
+recusada. O pipeline ainda executa os testes e critérios depois da resposta.
+
+Somente endpoint loopback recebe custo de API local medido; outro host, inclusive
+em rede privada, fica com custo desconhecido. Mesmo loopback não comprova por si
+só onde o backend executou a inferência. A garantia de localidade depende também
+da configuração e da rede do servidor Ollama.
 
 ### Depurar um card travado
 
@@ -728,6 +737,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
 | `HII_OBSERVABILIDADE` | — | — | `motor/observabilidade/registro.ts` |
+| `HII_OLLAMA_AGENTIC` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |

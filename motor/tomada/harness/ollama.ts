@@ -1,6 +1,5 @@
 import { run } from '../../quilombo/git.ts'
-import { isPrivateNetworkHost } from '../../quilombo/alfandega/rede-privada.ts'
-import { noProxyArgs } from '../../quilombo/alfandega/loopback.ts'
+import { isLoopbackHost, noProxyArgs } from '../../quilombo/alfandega/loopback.ts'
 import { emptyUsage } from '../uso.ts'
 import { COST_FREE_LOCAL, COST_UNKNOWN } from '../../euclides/tesouro/custo.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
@@ -9,31 +8,35 @@ import { planoLocal } from '../../euclides/tesouro/planos.ts'
 import { estadoDoOllama } from './ollama-estado.ts'
 import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
 import { gravarChamadaNoLiveLog } from './live-log.ts'
+import { executarFerramentaOllama, FERRAMENTAS_OLLAMA } from './ollama-ferramentas.ts'
+import type { ChamadaDeFerramentaOllama } from './ollama-ferramentas.ts'
 
 interface OllamaResponse {
   response?: string
   error?: string
   prompt_eval_count?: number
   eval_count?: number
+  capabilities?: string[]
+  message?: { role?: string; content?: string; tool_calls?: ChamadaDeFerramentaOllama[] }
 }
 
 function baseUrl(): string {
   return process.env.HII_OLLAMA_URL || 'http://localhost:11434'
 }
 
-function endpointRodaNaRedeLocal(): boolean {
+function endpointRodaNesteHost(): boolean {
   try {
-    return isPrivateNetworkHost(new URL(baseUrl()).hostname)
+    return isLoopbackHost(new URL(baseUrl()).hostname)
   } catch {
     return false
   }
 }
 
 function costOfEndpoint(): CostReading {
-  return endpointRodaNaRedeLocal() ? COST_FREE_LOCAL : COST_UNKNOWN
+  return endpointRodaNesteHost() ? COST_FREE_LOCAL : COST_UNKNOWN
 }
 
-export const OLLAMA_CAPACIDADES: HarnessCapabilities = {
+const CAPACIDADES_SIMPLES: HarnessCapabilities = {
   emitsStructuredJson: false,
   restrictsTools: false,     // nao ha mecanismo de ferramenta pra restringir
   isolatesReadonly: true,    // ...e por isso mesmo nao consegue editar nada
@@ -42,6 +45,14 @@ export const OLLAMA_CAPACIDADES: HarnessCapabilities = {
   reportsTokens: true,       // prompt_eval_count / eval_count
   mcp: false,
 }
+
+function agentivoLigado(): boolean { return process.env.HII_OLLAMA_AGENTIC === '1' }
+
+export function capacidadesDoOllama(agentivo = agentivoLigado()): HarnessCapabilities {
+  return agentivo ? { ...CAPACIDADES_SIMPLES, restrictsTools: true, isolatesReadonly: true } : CAPACIDADES_SIMPLES
+}
+
+export const OLLAMA_CAPACIDADES: HarnessCapabilities = CAPACIDADES_SIMPLES
 
 export const OLLAMA_SINAIS: SinaisDoHarness = {
   terminal: [{ pattern: /model not found|no such model/i, reason: 'modelo ollama nao encontrado localmente' }],
@@ -53,7 +64,7 @@ export class OllamaProvider implements Harness {
   readonly name: HarnessId = 'ollama'
   readonly supportsAgents = false
   readonly supportsVision = false
-  readonly agentic = false
+  readonly agentic = agentivoLigado()
 
   readonly modos: CatalogoDeModo = { modos: [], padrao: '' }
   readonly cor: CorDeMarca = { r: 148, g: 163, b: 184 }
@@ -72,12 +83,13 @@ export class OllamaProvider implements Harness {
   plano(): PlanoDoProvedor { return planoLocal('ollama') }
   // Unico harness que descobre modelo ao vivo, sondando o servidor local.
   modelosDisponiveis(): string[] { return estadoDoOllama().modelos }
-  capabilities(): HarnessCapabilities { return OLLAMA_CAPACIDADES }
+  capabilities(): HarnessCapabilities { return capacidadesDoOllama(this.agentic) }
   healthCheck(): Promise<boolean> { return alcancavelPorHttp(urlDoOllama()) }
   sinaisDeFalha(): SinaisDoHarness { return OLLAMA_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     const model = req.model || process.env.HII_OLLAMA_MODEL || 'llama3.1'
+    if (this.agentic) return this.runAgentivo(req, model)
     const body = JSON.stringify({ model, prompt: req.prompt, stream: false })
     const endpoint = `${baseUrl()}/api/generate`
     const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', body]
@@ -122,5 +134,58 @@ export class OllamaProvider implements Harness {
       ...costOfEndpoint(),
       usage,
     }
+  }
+
+  private async runAgentivo(req: AgentRequest, model: string): Promise<AgentResult> {
+    const inicio = Date.now()
+    const usage = emptyUsage()
+    const custo = costOfEndpoint()
+    const chamar = async (rota: string, corpo: object): Promise<{ erro: Error | null; json: OllamaResponse | null }> => {
+      const endpoint = `${baseUrl()}${rota}`
+      const restante = Math.max(1, req.timeoutMs - (Date.now() - inicio))
+      const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', JSON.stringify(corpo)]
+      const { err, stdout } = await run('curl', args, { cwd: req.cwd, timeout: restante, aoIniciar: req.aoIniciar })
+      if (err) return { erro: err, json: null }
+      try {
+        const json = JSON.parse(stdout) as OllamaResponse
+        if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('JSON invalido')
+        return { erro: null, json }
+      } catch { return { erro: new Error('Ollama respondeu sem documento JSON valido'), json: null } }
+    }
+    const falhar = (detalhe: string, timedOut = false): AgentResult => ({ ok: false, failed: true, timedOut, isError: true, detail: detalhe, text: detalhe, ...custo, usage })
+    const sonda = await chamar('/api/show', { model })
+    if (sonda.erro || !sonda.json) return falhar(sonda.erro?.message || 'falha ao consultar capacidade do modelo', !!(sonda.erro as { killed?: boolean } | null)?.killed)
+    if (!Array.isArray(sonda.json.capabilities) || !sonda.json.capabilities.includes('tools')) return falhar(`modelo ${model} nao declara capacidade tools; nenhuma ferramenta foi executada`)
+
+    const mensagens: object[] = [{ role: 'user', content: req.prompt }]
+    const repeticoes = new Map<string, number>()
+    for (let turno = 0, chamadas = 0; turno < 16; turno++) {
+      const resposta = await chamar('/api/chat', { model, stream: false, messages: mensagens, tools: FERRAMENTAS_OLLAMA })
+      if (resposta.erro || !resposta.json) return falhar(resposta.erro?.message || 'falha na conversa Ollama', !!(resposta.erro as { killed?: boolean } | null)?.killed)
+      usage.tokens_in += Number.isSafeInteger(resposta.json.prompt_eval_count) ? Number(resposta.json.prompt_eval_count) : 0
+      usage.tokens_out += Number.isSafeInteger(resposta.json.eval_count) ? Number(resposta.json.eval_count) : 0
+      if (resposta.json.error) return falhar(String(resposta.json.error))
+      const mensagem = resposta.json.message
+      if (!mensagem || typeof mensagem.content !== 'string' || (mensagem.tool_calls !== undefined && !Array.isArray(mensagem.tool_calls))) return falhar('Ollama respondeu sem mensagem valida')
+      mensagens.push({ role: 'assistant', content: mensagem.content, tool_calls: mensagem.tool_calls })
+      if (!mensagem.tool_calls?.length) {
+        if (!mensagem.content) return falhar('Ollama encerrou sem resposta final')
+        try { req.aoEmitir?.('assistant', mensagem.content) } catch { /* observador isolado */ }
+        if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: mensagem.content.split('\n'), custoUsd: custo.cost })
+        return { ok: true, failed: false, timedOut: false, isError: false, detail: '', text: mensagem.content, ...custo, usage }
+      }
+      for (const ferramenta of mensagem.tool_calls) {
+        if (++chamadas > 16) return falhar('limite de 16 chamadas de ferramenta excedido')
+        const assinatura = JSON.stringify(ferramenta)
+        const repetida = (repeticoes.get(assinatura) ?? 0) + 1
+        repeticoes.set(assinatura, repetida)
+        if (repetida > 2) return falhar('ferramenta repetida sem progresso')
+        let conteudo: string
+        try { conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode) }
+        catch (erro) { return falhar((erro as Error).message) }
+        mensagens.push({ role: 'tool', tool_name: ferramenta.function?.name, content: conteudo.slice(0, 64 * 1024) })
+      }
+    }
+    return falhar('limite de 16 turnos do loop agentivo excedido')
   }
 }

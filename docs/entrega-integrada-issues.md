@@ -12,11 +12,11 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | --- | --- | --- |
 | HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico; escopo editorial de hicode-site separado |
 | HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
-| HII #48 | Diagnostico de recuperacao; MCP desconectado nao vira conectado nem falta de OAuth | Setup idempotente, rollback e diagnostico MCP completo |
+| HII #48 | Diagnostico estruturado; setup com previa/hash, aplicacao seletiva, retomada e reversao conservadora | Provisionamento selecionavel de MCPs e smoke WSL completo |
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao e sintese no PR | Rubricas por dominio, cache do Crivo principal, publicacao pendente e limites completos |
-| HII #59 | Captura duravel de preferencias antes do despacho; testes adversariais | Politica/localidade, Ollama agentivo, sete trilhas e piloto |
+| HII #59 | Captura duravel de preferencias; Ollama agentivo opt-in com tools negociadas e confinadas | Politica completa de localidade, demais trilhas e piloto real |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
@@ -198,3 +198,22 @@ nova; os comandos foram convertidos para ESM e a mesma suíte repetida sem
 enfraquecer as asserções.
 
 Tres rodadas de TUI E2E e visualizador 1365/390px aprovadas antes do ajuste final de log serial. Esse ajuste recebeu regressao RED/GREEN com CLI falso nos dois runtimes e nova execucao integral Bun/Node. O log serial do card foi preservado; apenas ramos paralelos ganham arquivos separados.
+
+## Checkpoint: setup recuperavel e Ollama agentivo minimo
+
+`hii pipeline setup` agora apenas apresenta um plano associado a hash. `apply`
+aplica todos ou os IDs selecionados, registrando intenção e resultado por passo;
+repetir o mesmo hash reconcilia interrupções. `undo` remove somente efeitos cujo
+conteúdo e identidade ainda correspondem ao recibo e preserva qualquer alteração
+posterior. O scaffold não instala ferramentas nem muda preferências de IA.
+
+O loop agentivo do Ollama é opt-in por `HII_OLLAMA_AGENTIC=1`. Antes da conversa,
+`/api/show` precisa declarar `tools`. O motor oferece apenas leitura e substituição
+exata em arquivo existente, recusa shell geral, path absoluto/Windows, traversal,
+symlink e escrita em `readonly`, limita arquivo a 512 KiB e limita turnos,
+chamadas e repetição. A resposta textual não substitui os gates posteriores.
+Somente loopback tem custo de API local medido; rede privada fica desconhecida.
+
+As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
+real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama e a
+garantia operacional `somente_local` continuam pendentes.

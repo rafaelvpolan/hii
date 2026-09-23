@@ -637,6 +637,11 @@ Saúde é sondada antes do uso (`motor/tomada/sonda.ts`): `ollama` em `$HII_OLLA
 `motor/tomada/registro.ts` cai no `return true` de `probeProviderHealth` — não saber sondar
 não pode impedir um card de acordar; os quatro registrados hoje sondam de verdade.
 
+O loop de ferramentas do Ollama é opt-in com `HII_OLLAMA_AGENTIC=1`. Antes de
+qualquer efeito, o adaptador exige que `/api/show` declare `tools`; as ferramentas
+ficam limitadas ao workspace e não expõem shell geral. Consulte `OPERACAO.md`
+para os limites e a diferença entre endpoint privado e localidade comprovada.
+
 ---
 
 ## Contrato de ambiente (estado fora do clone)
