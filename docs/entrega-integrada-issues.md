@@ -10,9 +10,9 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 
 | Issue | Incremento nesta branch | Pendencia para conclusao integral |
 | --- | --- | --- |
-| HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico; escopo editorial de hicode-site separado |
+| HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico no escopo decidido: somente HII e Hicode |
 | HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
-| HII #48 | Diagnostico estruturado; setup com previa/hash, aplicacao seletiva, retomada e reversao conservadora | Provisionamento selecionavel de MCPs e smoke WSL completo |
+| HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | Provisionamento selecionavel de MCPs e smoke WSL completo |
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao e sintese no PR | Rubricas por dominio, cache do Crivo principal, publicacao pendente e limites completos |
@@ -207,6 +207,13 @@ repetir o mesmo hash reconcilia interrupções. `undo` remove somente efeitos cu
 conteúdo e identidade ainda correspondem ao recibo e preserva qualquer alteração
 posterior. O scaffold não instala ferramentas nem muda preferências de IA.
 
+Quando existe somente `.hicode/`, o plano inclui primeiro uma migração automática
+para `.hii/`. O rename é precedido por intenção durável e confirmado pela identidade
+do diretório; uma interrupção após o efeito é reconciliada sem repetir a operação.
+`undo` devolve a árvore ao nome legado apenas quando origem e destino ainda batem
+com o recibo. A coexistência das duas árvores, origem que não seja diretório,
+symlink e alterações concorrentes bloqueiam para escolha humana, sem sobrescrita.
+
 O loop agentivo do Ollama é opt-in por `HII_OLLAMA_AGENTIC=1`. Antes da conversa,
 `/api/show` precisa declarar `tools`. O motor oferece apenas leitura e substituição
 exata em arquivo existente, recusa shell geral, path absoluto/Windows, traversal,
@@ -217,3 +224,8 @@ Somente loopback tem custo de API local medido; rede privada fica desconhecida.
 As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
 real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama e a
 garantia operacional `somente_local` continuam pendentes.
+
+Validação da migração: 10 cenários em Bun 1.4.0 e Node, incluindo crash após
+rename, aplicação parcial, reversão conservadora e conflitos. No HEAD deste
+checkpoint passaram typecheck, lint de tipos, clone limpo, Bun com 336 arquivos e
+3335 testes e Node com 3299 testes gerais mais 30 sensíveis, sem falhas.
