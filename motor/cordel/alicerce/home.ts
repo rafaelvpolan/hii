@@ -81,13 +81,13 @@ export function initHicodeHome(repo: string): string[] {
   for (const d of [home, join(home, 'memory'), join(home, 'skills'), join(home, 'state')]) {
     if (!existsSync(d)) { mkdirSync(d, { recursive: true }); created.push(d) }
   }
-  const files: Array<[string, string]> = [
-    [join(home, 'config.json'), JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n'],
-    [join(home, 'rules.md'), DEFAULT_RULES],
-    [join(home, '.gitignore'), 'state/\ncontract.json\n'],
-  ]
+  const files = arquivosIniciaisDoHome().map(([nome, conteudo]) => [join(home, nome), conteudo] as [string, string])
   for (const [f, content] of files) {
     if (!existsSync(f)) { writeFileSync(f, content); created.push(f) }
   }
   return created
+}
+
+export function arquivosIniciaisDoHome(): Array<[string, string]> {
+  return [['config.json', JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n'], ['rules.md', DEFAULT_RULES], ['.gitignore', 'state/\ncontract.json\n']]
 }
