@@ -1,8 +1,9 @@
 import { isoAt, isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, Fields, FailureClass } from '../../cordel/index.ts'
-import { maxWaitingAttempts, pisoDeEsperaMs, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
+import { fallbackRemotoLigado, maxWaitingAttempts, pisoDeEsperaMs, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
 import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
+import { harnessSeExistir } from '../../tomada/registro.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
 import type { AgentRole } from '../../tomada/tipos.ts'
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../../tomada/rota-log.ts'
@@ -73,12 +74,13 @@ function haltFields(input: FailurePolicyInput): Fields {
   }
 }
 
-function trocaDeProvedorPorQuota(input: FailurePolicyInput, _attempts: number): PolicyOutcome | null {
-  if (!quotaFallbackLigado()) return null
+function trocaDeProvedorRecuperavel(input: FailurePolicyInput, _attempts: number): PolicyOutcome | null {
+  const localFalhou = input.failureClass === 'transient' && harnessSeExistir(input.provider)?.rodaLocal === true
+  if (!(input.failureClass === 'quota' && quotaFallbackLigado()) && !(localFalhou && fallbackRemotoLigado())) return null
   if (!input.papel || !PAPEIS_COM_OVERRIDE_DE_PROVEDOR.includes(input.papel)) return null
   const tentadosNoCard = readCard(input.id)?.fm.rota_tentados
   const tentados = rotaTentadas(tentadosNoCard)
-  const rota = (input.rota ?? decidirRota)({ papel: input.papel, classeDeFalha: input.failureClass, provedorAtual: input.provider, tentadosNestaRodada: tentados })
+  const rota = (input.rota ?? decidirRota)({ papel: input.papel, classeDeFalha: input.failureClass, provedorAtual: input.provider, tentadosNestaRodada: tentados, localFalhou })
   if (rota.acao !== 'trocar') return null
   registrarTrocaDeIaNoLiveLog({
     id: input.id,
@@ -111,7 +113,7 @@ function trocaDeProvedorPorQuota(input: FailurePolicyInput, _attempts: number): 
     rota_contexto: rotaContexto,
     ...(input.resumeStep ? { resume_from: input.resumeStep } : {}),
     ...input.extraFields,
-  }, `${isoNow()} ${input.fromStatus}: IA ${input.provider || 'provedor'} falhou por cota (${input.failureReason}) — mudando automaticamente para ${rota.para} agora (${rota.motivo}; HII_QUOTA_FALLBACK=on)`)
+  }, `${isoNow()} ${input.fromStatus}: IA ${input.provider || 'provedor'} teve falha recuperavel (${input.failureReason}) — mudando automaticamente para ${rota.para} agora (${rota.motivo})`)
   return 'rerouted'
 }
 
@@ -141,7 +143,7 @@ function attemptNumber(id: string): number {
 
 function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutcome {
   if (input.failureClass === 'quota') {
-    const trocado = trocaDeProvedorPorQuota(input, attempts)
+    const trocado = trocaDeProvedorRecuperavel(input, attempts)
     if (trocado) return trocado
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HII_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
@@ -151,6 +153,9 @@ function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutco
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED ${input.failureReason} — ${input.technicalDetail}`)
     return 'halt'
   }
+
+  const trocado = trocaDeProvedorRecuperavel(input, attempts)
+  if (trocado) return trocado
 
   if (attempts > maxWaitingAttempts()) {
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED esgotou ${maxWaitingAttempts()} tentativas de espera (${input.failureReason}) — ultimo erro: ${input.technicalDetail}`)

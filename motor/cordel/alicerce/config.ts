@@ -153,3 +153,13 @@ export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
 export function quotaFallbackLigado(): boolean {
   return (process.env.HII_QUOTA_FALLBACK || 'on') === 'on'
 }
+
+export type LocalidadeDeExecucao = 'preferir_local' | 'somente_local' | 'qualquer'
+export function localidadeDeExecucao(): LocalidadeDeExecucao {
+  const valor = process.env.HII_EXECUTION_LOCALITY || 'preferir_local'
+  return ['preferir_local', 'somente_local', 'qualquer'].includes(valor) ? valor as LocalidadeDeExecucao : 'preferir_local'
+}
+
+export function fallbackRemotoLigado(): boolean {
+  return (process.env.HII_REMOTE_FALLBACK || 'on') === 'on' && localidadeDeExecucao() !== 'somente_local'
+}

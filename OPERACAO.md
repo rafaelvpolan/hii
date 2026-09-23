@@ -701,6 +701,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_ESPERA_PISO_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_EVAL` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_EVAL_MIN` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_EXECUTION_LOCALITY` | `'preferir_local'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_DIFF_LIMIT` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_PROVIDER` | — | — | `motor/tomada/registro.ts` |
@@ -749,6 +750,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
 | `HII_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
 | `HII_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_REMOTE_FALLBACK` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
 | `HII_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
 | `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs`, `scripts/test-tui-e2e.mjs` |

@@ -121,3 +121,15 @@ test('JSON exigido pelo pedido tambem filtra papeis mecanicos', () => {
   ]))
   expect(r.acao === 'trocar' && r.para).toBe('json')
 })
+
+test('falha local prefere plug remoto, mas somente_local proibe a saida', () => {
+  const candidatos = [candidato('ollama', { rodaLocal: true }), candidato('local-2', { rodaLocal: true, prioridade: 999 }), candidato('codex')]
+  const remoto = decidirRota(quota({ provedorAtual: 'ollama', classeDeFalha: 'transient', localFalhou: true }), consultaDe(candidatos))
+  expect(remoto.acao === 'trocar' && remoto.para).toBe('codex')
+
+  process.env.HII_EXECUTION_LOCALITY = 'somente_local'
+  try {
+    const local = decidirRota(quota({ provedorAtual: 'ollama', classeDeFalha: 'transient', localFalhou: true }), consultaDe(candidatos))
+    expect(local.acao === 'trocar' && local.para).toBe('local-2')
+  } finally { delete process.env.HII_EXECUTION_LOCALITY }
+})

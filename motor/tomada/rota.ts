@@ -29,6 +29,7 @@ import type { FailureClass } from '../cordel/index.ts'
 import { harnessSeExistir, providerNames, quotaFallbackProviderFor } from './registro.ts'
 import { preferenciaDoPapel } from './preferencias.ts'
 import { cotaEsgotadaEm } from './disponibilidade.ts'
+import { localidadeDeExecucao } from '../cordel/alicerce/config.ts'
 
 export interface EntradaDeRota {
   papel: AgentRole
@@ -36,6 +37,7 @@ export interface EntradaDeRota {
   provedorAtual: HarnessId
   tentadosNestaRodada: readonly HarnessId[]
   exigeJson?: boolean
+  localFalhou?: boolean
 }
 
 export type DecisaoDeRota =
@@ -174,7 +176,9 @@ export function decidirRota(e: EntradaDeRota, consulta: ConsultaDeRota = consult
     .filter(c => !(e.exigeJson ?? (e.papel === 'verify' || e.papel === 'gate')) || c.emitsStructuredJson === true)
     .filter(c => c.autenticado)
     .filter(c => !c.cotaEsgotada)
-  const ordenados = ranquearCandidatosDeRota(e.papel, aptos)
+    .filter(c => localidadeDeExecucao() !== 'somente_local' || c.rodaLocal)
+  const candidatos = e.localFalhou && aptos.some(c => !c.rodaLocal) ? aptos.filter(c => !c.rodaLocal) : aptos
+  const ordenados = ranquearCandidatosDeRota(e.papel, candidatos)
   const escolhido = ordenados[0]
   if (!escolhido) {
     return { acao: 'manter_politica_atual', motivo: `nenhum candidato apto para ${e.papel} fora de {${[...foraDaRodada].filter(Boolean).join(', ')}}` }

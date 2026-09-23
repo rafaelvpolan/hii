@@ -16,7 +16,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
-| HII #59 | Captura duravel de preferencias; Ollama agentivo opt-in com tools negociadas e confinadas | Politica completa de localidade, demais trilhas e piloto real |
+| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in; plug remoto após falha local recuperável | Piloto real e calibracao dos modelos por instalacao |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
@@ -228,10 +228,26 @@ chamadas e repetição. A resposta textual não substitui os gates posteriores.
 Somente loopback tem custo de API local medido; rede privada fica desconhecida.
 
 As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
-real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama e a
-garantia operacional `somente_local` continuam pendentes.
+real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama continua
+pendente; a política `somente_local` é coberta no checkpoint de localidade abaixo.
 
 Validação da migração: 10 cenários em Bun 1.4.0 e Node, incluindo crash após
 rename, aplicação parcial, reversão conservadora e conflitos. No HEAD deste
 checkpoint passaram typecheck, lint de tipos, clone limpo, Bun com 336 arquivos e
 3335 testes e Node com 3299 testes gerais mais 30 sensíveis, sem falhas.
+
+## Checkpoint: plug remoto e localidade
+
+O roteador existente continua escolhendo por papel, capacidade, autenticação, cota,
+custo, tokens e tier da tarefa. Agora uma falha transiente de um executor local
+também pode acionar um provedor remoto apto, sem recriar a tarefa nem trocar o
+worktree. A tentativa anterior, o destino e o motivo ficam registrados no card e
+no live log; um provedor já tentado não volta na mesma rodada.
+
+`HII_REMOTE_FALLBACK=off` desliga esse plug. `HII_EXECUTION_LOCALITY=somente_local`
+é uma restrição mais forte: candidatos remotos são excluídos e a tarefa segue a
+política de espera/parada local. `preferir_local` é o padrão e `qualquer` permite
+o ranqueamento normal. Falha terminal nunca troca de provedor. A política por tier
+em `config/model-tier.json` continua escolhendo o modelo adequado ao tipo da ação
+dentro do provedor configurado, sem inventar nomes de modelos ou contrariar uma
+escolha explícita do operador.

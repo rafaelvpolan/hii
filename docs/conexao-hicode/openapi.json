@@ -945,6 +945,10 @@
                   "gauntlet": {
                     "type": "boolean"
                   },
+                  "autoReview": {
+                    "type": "boolean",
+                    "description": "Executa revisores especializados e usa seus pareceres como gate. Desligado ou ausente deixa a aprovacao do PR para revisao humana."
+                  },
                   "revisao": {
                     "$ref": "#/components/schemas/PoliticaDeRevisao"
                   }
