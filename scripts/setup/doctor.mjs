@@ -23,7 +23,7 @@ function linha(c) {
 
 if (process.argv.includes('--json')) {
   const { coletarDoctor } = await import('../../motor/euclides/radar/doctor-estruturado.ts')
-  const diagnostico = coletarDoctor()
+  const diagnostico = await coletarDoctor()
   out(JSON.stringify(diagnostico))
   process.exit(diagnostico.pior === 'erro' ? 1 : 0)
 }
