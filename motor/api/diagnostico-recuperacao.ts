@@ -17,6 +17,7 @@ import type { PacoteRecuperacao } from './recuperacao.ts'
 export interface DiagnosticoRecuperacao {
   versao: 1; tarefa: string; revisao: string; origem: string; status: string
   preparada: boolean; podePreparar: boolean; bloqueios: string[]; avisos: string[]
+  escolhaConfiguracaoPendente: boolean
   worktree: string; branch: string; fingerprint: string
   plano?: { origemId: string; revisao: number; concluidas: string[]; total: number }
   configuracao: string | null; snapshots: ReturnType<typeof snapshotsDaExecucao>
@@ -26,7 +27,8 @@ export async function diagnosticarRecuperacao(id: string): Promise<DiagnosticoRe
   const card = readCard(id)
   if (!card) throw new ErroApi(404, 'tarefa_ausente', 'tarefa nao encontrada')
   const d: DiagnosticoRecuperacao = { versao: 1, tarefa: id, revisao: etagDe(card), origem: card.fm.recuperacao_origem || '',
-    status: card.fm.status || '', preparada: !!card.fm.recuperacao_preparada && card.fm.recuperacao_pendente !== 'true', podePreparar: false, bloqueios: [], avisos: [], worktree: '', branch: '', fingerprint: '',
+    status: card.fm.status || '', preparada: !!card.fm.recuperacao_preparada && card.fm.recuperacao_pendente !== 'true', podePreparar: false, bloqueios: [], avisos: [],
+    escolhaConfiguracaoPendente: !!card.fm.recuperacao_origem && !card.fm.recuperacao_config, worktree: '', branch: '', fingerprint: '',
     configuracao: card.fm.recuperacao_config || null, snapshots: [], motor: estadoMotor() }
   try { d.snapshots = snapshotsDaExecucao(id) }
   catch { d.bloqueios.push('Snapshot de configuracao ilegivel; preserve o arquivo e reconcilie antes de restaurar.') }
@@ -48,6 +50,7 @@ export async function diagnosticarRecuperacao(id: string): Promise<DiagnosticoRe
     if (fm.pr_url || fm.entrega_evidencia) d.bloqueios.push('Origem registra entrega externa; reconcilie o PR antes de repetir qualquer etapa.')
     if (card.fm.recuperacao_adotada) fm = card.fm
     if (!d.snapshots.length) d.avisos.push('Origem sem snapshot verificavel; configuracao original desconhecida.')
+    if (d.escolhaConfiguracaoPendente) d.bloqueios.push('Configuracao original nao comprovada. Escolha explicitamente um snapshot antes de preparar a retomada.')
     d.avisos.push('Historico original preservado. A etapa de implementacao sera revalidada e pode exigir novas chamadas de IA.')
   }
   if (fm.worktree) {

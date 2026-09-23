@@ -11,6 +11,7 @@ import { diagnosticarPlanoLegado, aplicarPlanoLegado } from '../../motor/api/rec
 import { hashRecuperacao, aplicarRecuperacao } from '../../motor/api/recuperacao.ts'
 import type { PacoteRecuperacao } from '../../motor/api/recuperacao.ts'
 import { diagnosticarRecuperacao, confirmarPreparacao } from '../../motor/api/diagnostico-recuperacao.ts'
+import { restaurarConfiguracao, snapshotsDaExecucao } from '../../motor/euclides/snapshot-execucao.ts'
 import { executarPlano } from '../../motor/oswaldo/orquestracao/executar-plano.ts'
 import { readCard, updateCardPorAcaoHumana } from '../../motor/cordel/store.ts'
 import { chaveDoProjeto } from '../../motor/oswaldo/orquestracao/config.ts'
@@ -57,7 +58,13 @@ test('preparo migra plano e retoma apenas a microtask pendente, preservando cust
   const p = await pacote()
   const importada = aplicarRecuperacao(p, hashRecuperacao(p))
   const id = importada.tarefa!
+  const bloqueada = await diagnosticarRecuperacao(id)
+  expect(bloqueada.escolhaConfiguracaoPendente).toBe(true)
+  expect(bloqueada.podePreparar).toBe(false)
+  expect(bloqueada.bloqueios.join(' ')).toContain('Configuracao original nao comprovada')
+  restaurarConfiguracao(id, snapshotsDaExecucao(id)[0]!.hash)
   const d = await diagnosticarRecuperacao(id)
+  expect(d.escolhaConfiguracaoPendente).toBe(false)
   expect(d.bloqueios).toEqual([])
   expect(d.plano?.concluidas).toEqual(['A'])
   confirmarPreparacao(d)
@@ -117,6 +124,7 @@ test('tentativa interrompida, custo divergente e falta de prova de conclusao exi
 test('mudanca depois do preparo bloqueia primeiro despacho sem adotar worktree', async () => {
   const p = await pacote()
   const id = aplicarRecuperacao(p, hashRecuperacao(p)).tarefa!
+  restaurarConfiguracao(id, snapshotsDaExecucao(id)[0]!.hash)
   confirmarPreparacao(await diagnosticarRecuperacao(id))
   updateCardPorAcaoHumana(id, { fields: { status: 'EXECUTING' } })
   writeFileSync(join(wt, 'arquivo-humano.txt'), 'preservar')

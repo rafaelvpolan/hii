@@ -181,6 +181,19 @@ test('API aceita escolha explicita e recusa auto review sem politica ou fora do 
   expect(ler().gate?.autoReview).toBe(false)
 })
 
+test('API torna politica de localidade visivel sem fingir que e editavel', async () => {
+  const { configuracao } = await import('../../motor/api/configuracao.ts')
+  process.env.HII_EXECUTION_LOCALITY = 'somente_local'
+  process.env.HII_REMOTE_FALLBACK = 'on'
+  try {
+    const corpo = JSON.parse(configuracao().corpo) as { execucao: { localidade: string; fallbackRemoto: boolean; editavel: boolean } }
+    expect(corpo.execucao).toEqual({ localidade: 'somente_local', fallbackRemoto: false, editavel: false })
+  } finally {
+    delete process.env.HII_EXECUTION_LOCALITY
+    delete process.env.HII_REMOTE_FALLBACK
+  }
+})
+
 test('custo desconhecido interrompe proximos revisores obrigatorios', async () => {
   let chamadas = 0
   const r = await executarRevisoes(entrada, { ...politica, revisores: [revisor, { ...revisor, papel: 'arquitetura' }] }, async () => {

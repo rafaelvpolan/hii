@@ -18,10 +18,10 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
 | HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in; plug remoto após falha local recuperável | Piloto real e calibracao dos modelos por instalacao |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
-| Hicode #24 | Nenhuma entrega nova ainda | Politica e acompanhamento local pelo contrato HII |
+| Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
 | Hicode #32 | Recuperacao usa tema legivel, responsivo | Revalidar contraste e telas restantes |
-| Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, retomada explicita e E2E | Reconciliar dependencias entre produtos e sessoes nativas; lacunas bloqueiam em vez de inventar estado |
+| Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, escolha humana de configuracao, retomada explicita e E2E | Reconciliar dependencias entre produtos e sessoes nativas; lacunas bloqueiam em vez de inventar estado |
 
 ## Provas ja executadas
 
@@ -58,6 +58,9 @@ GET /v1/tarefas/{id}/recuperacao confere origem, worktree registrado, branch e
 fingerprint. Preparar exige If-Match e fingerprint vistos pelo operador.
 Restaurar configuracao exige hash de snapshot e revisao da tarefa. Nenhuma dessas
 operacoes despacha IA. Retomar e uma acao separada e exige daemon confirmado.
+Se a configuracao original nao puder ser comprovada, o diagnostico bloqueia a
+preparacao. O snapshot da configuracao atual aparece somente como alternativa;
+o operador precisa escolhe-lo explicitamente antes de liberar a retomada.
 
 Plano legado v1 com historico e checkpoint completos pode ser migrado. Entrega
 externa, dependencia de produto ainda nao reconciliada, efeito incerto ou worktree
@@ -251,3 +254,8 @@ o ranqueamento normal. Falha terminal nunca troca de provedor. A política por t
 em `config/model-tier.json` continua escolhendo o modelo adequado ao tipo da ação
 dentro do provedor configurado, sem inventar nomes de modelos ou contrariar uma
 escolha explícita do operador.
+
+GET /v1/configuracao informa a localidade resolvida e se o fallback remoto esta
+efetivamente ligado. Esse campo e somente leitura: a politica operacional continua
+sob controle do motor. O Hicode pode exibi-la sem deduzir localidade pelo nome do
+provedor e pode persistir gate.autoReview pela mesma API administrativa.

@@ -9,10 +9,13 @@ import type { Objeto } from './contrato.ts'
 import type { AgentRole } from '../tomada/tipos.ts'
 import { resposta } from './idempotencia.ts'
 import type { RespostaApi } from './idempotencia.ts'
+import { fallbackRemotoLigado, localidadeDeExecucao } from '../cordel/alicerce/config.ts'
 
 export function configuracao(): RespostaApi {
   const preferencias = ler()
-  return resposta(200, { versao: 1, preferencias, aplicacao: 'proximos despachos; execucoes em voo mantem snapshot' }, etagDe(preferencias))
+  return resposta(200, { versao: 1, preferencias,
+    execucao: { localidade: localidadeDeExecucao(), fallbackRemoto: fallbackRemotoLigado(), editavel: false },
+    aplicacao: 'proximos despachos; execucoes em voo mantem snapshot' }, etagDe(preferencias))
 }
 export function configurar(b: Objeto, esperado: string): RespostaApi {
   campos(b, ['versao', 'papel', 'provider', 'model', 'effort', 'modo', 'gauntlet', 'autoReview', 'revisao'])
