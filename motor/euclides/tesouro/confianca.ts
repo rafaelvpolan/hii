@@ -219,6 +219,11 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         })
         try { req.aoEvento?.(evento) } catch { /* observador isolado */ }
       },
+      cancelado: () => {
+        if (req.cancelado?.()) return true
+        const atual = id ? readCard(id)?.fm : undefined
+        return atual?.halt_class === 'humano' || atual?.status === 'PAUSED'
+      },
       aoIniciar: (pid) => {
         pidRegistrado = pid
         registrarHarness(id, pid, papel)

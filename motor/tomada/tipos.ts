@@ -34,6 +34,8 @@ export interface AgentRequest {
   aoEmitir?: (canal: 'stdout' | 'stderr' | 'assistant' | 'error', texto: string) => void
   /** Fato semantico sem argumentos, resultado, prompt ou raciocinio. */
   aoEvento?: (evento: EventoDoHarness) => void
+  /** Consulta cooperativa entre subprocessos/ferramentas; true impede novo efeito. */
+  cancelado?: () => boolean
   rotulo?: string
   raia?: string
 }

@@ -259,6 +259,11 @@ e é classificada como falha transitória; sucesso, falha e exceção liberam a 
 Limites e ocupação são expostos em `/v1/provedores`, com endpoint sem credenciais.
 Três testes de concorrência e 26 testes HTTP passaram isoladamente.
 
+Cancelamento cooperativo é verificado entre sonda, inferências e ferramentas.
+Uma parada após ferramenta concluída conserva o efeito para reconciliação e
+impede a próxima chamada ao modelo; a suíte agentiva cobre esse intervalo sem
+subprocesso em voo.
+
 As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
 real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama continua
 pendente; a política `somente_local` é coberta no checkpoint de localidade abaixo.

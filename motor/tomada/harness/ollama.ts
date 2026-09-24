@@ -170,6 +170,9 @@ export class OllamaProvider implements Harness {
       } catch { return { erro: new Error('Ollama respondeu sem documento JSON valido'), json: null } }
     }
     const falhar = (detalhe: string, timedOut = false): AgentResult => ({ ok: false, failed: true, timedOut, isError: true, detail: detalhe, text: detalhe, ...custo, usage })
+    const cancelada = (): AgentResult | null => req.cancelado?.() ? falhar('execucao cancelada pelo operador; nenhuma nova inferencia ou ferramenta iniciada') : null
+    const antesDaSonda = cancelada()
+    if (antesDaSonda) return antesDaSonda
     const sonda = await chamar('/api/show', { model })
     if (sonda.erro || !sonda.json) return falhar(sonda.erro?.message || 'falha ao consultar capacidade do modelo', !!(sonda.erro as { killed?: boolean } | null)?.killed)
     if (!Array.isArray(sonda.json.capabilities) || !sonda.json.capabilities.includes('tools')) return falhar(`modelo ${model} nao declara capacidade tools; nenhuma ferramenta foi executada`)
@@ -178,9 +181,13 @@ export class OllamaProvider implements Harness {
     const mensagens: object[] = [{ role: 'user', content: req.prompt }]
     const repeticoes = new Map<string, number>()
     for (let turno = 0, chamadas = 0; turno < 16; turno++) {
+      const antesDaInferencia = cancelada()
+      if (antesDaInferencia) return antesDaInferencia
       try { req.aoEvento?.({ tipo: 'inferencia_inicio' }) } catch { /* observador isolado */ }
       const resposta = await chamar('/api/chat', { model, stream: false, messages: mensagens, tools: FERRAMENTAS_OLLAMA })
       try { req.aoEvento?.({ tipo: 'inferencia_fim' }) } catch { /* observador isolado */ }
+      const depoisDaInferencia = cancelada()
+      if (depoisDaInferencia) return depoisDaInferencia
       if (resposta.erro || !resposta.json) return falhar(resposta.erro?.message || 'falha na conversa Ollama', !!(resposta.erro as { killed?: boolean } | null)?.killed)
       usage.tokens_in += Number.isSafeInteger(resposta.json.prompt_eval_count) ? Number(resposta.json.prompt_eval_count) : 0
       usage.tokens_out += Number.isSafeInteger(resposta.json.eval_count) ? Number(resposta.json.eval_count) : 0
@@ -195,6 +202,8 @@ export class OllamaProvider implements Harness {
         return { ok: true, failed: false, timedOut: false, isError: false, detail: '', text: mensagem.content, ...custo, usage }
       }
       for (const ferramenta of mensagem.tool_calls) {
+        const antesDaFerramenta = cancelada()
+        if (antesDaFerramenta) return antesDaFerramenta
         if (++chamadas > 16) return falhar('limite de 16 chamadas de ferramenta excedido')
         const assinatura = JSON.stringify(ferramenta)
         const repetida = (repeticoes.get(assinatura) ?? 0) + 1
@@ -206,6 +215,8 @@ export class OllamaProvider implements Harness {
         try { conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode) }
         catch (erro) { return falhar((erro as Error).message) }
         try { req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
+        const depoisDaFerramenta = cancelada()
+        if (depoisDaFerramenta) return depoisDaFerramenta
         mensagens.push({ role: 'tool', tool_name: ferramenta.function?.name, content: conteudo.slice(0, 64 * 1024) })
       }
     }

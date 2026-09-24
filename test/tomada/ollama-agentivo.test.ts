@@ -80,6 +80,22 @@ test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima 
   expect(ferramentas).toEqual(['ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text'])
 })
 
+test('parada entre ferramenta e inferencia seguinte impede novo despacho', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] } },
+    { message: { role: 'assistant', content: 'nao deve ser consumida' } },
+  )
+  let parar = false
+  const r = await new OllamaProvider().run({ ...pedido(), cancelado: () => parar,
+    aoEvento: e => { if (e.tipo === 'ferramenta_fim') parar = true } })
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('cancelada pelo operador')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois')
+  expect(readFileSync(respostas, 'utf8')).toContain('nao deve ser consumida')
+})
+
 test('readonly, traversal e ferramenta desconhecida falham sem alterar arquivo', async () => {
   const fora = `../${dir.split('/').pop()}-fora.txt`
   writeFileSync(join(dir, 'real.txt'), 'interno')

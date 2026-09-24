@@ -534,6 +534,12 @@ gera falha transitória para a fila existente aplicar espera ou fallback, e o sl
 é liberado em sucesso, falha ou exceção. A API `/v1/provedores` expõe limite,
 ocupação e disponibilidade atuais sem incluir credenciais do endpoint.
 
+A parada humana também é consultada entre a sonda, cada inferência e cada
+ferramenta. Se a parada chegar depois de um efeito local confirmado, esse efeito
+permanece no worktree para reconciliação, mas nenhuma ferramenta ou inferência
+seguinte é iniciada. O subprocesso em voo continua sendo interrompido pelo
+mecanismo de PID do motor.
+
 Somente endpoint loopback recebe custo de API local medido; outro host, inclusive
 em rede privada, fica com custo desconhecido. Mesmo loopback não comprova por si
 só onde o backend executou a inferência. A garantia de localidade depende também
