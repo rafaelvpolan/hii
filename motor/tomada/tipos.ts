@@ -8,6 +8,10 @@ export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 export type HarnessId = string
 
 export type AgentMode = 'edit' | 'readonly'
+export type EventoDoHarness =
+  | { tipo: 'modelo_verificado' }
+  | { tipo: 'inferencia_inicio' | 'inferencia_fim' }
+  | { tipo: 'ferramenta_inicio' | 'ferramenta_fim'; ferramenta: string }
 
 export interface AgentRequest {
   consultaId?: string
@@ -28,6 +32,8 @@ export interface AgentRequest {
   aoIniciar?: (pid: number) => void
   /** Somente saida publica estruturada; nunca prompt, argv ou raciocinio. */
   aoEmitir?: (canal: 'stdout' | 'stderr' | 'assistant' | 'error', texto: string) => void
+  /** Fato semantico sem argumentos, resultado, prompt ou raciocinio. */
+  aoEvento?: (evento: EventoDoHarness) => void
   rotulo?: string
   raia?: string
 }

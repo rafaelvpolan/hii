@@ -159,11 +159,14 @@ export class OllamaProvider implements Harness {
     const sonda = await chamar('/api/show', { model })
     if (sonda.erro || !sonda.json) return falhar(sonda.erro?.message || 'falha ao consultar capacidade do modelo', !!(sonda.erro as { killed?: boolean } | null)?.killed)
     if (!Array.isArray(sonda.json.capabilities) || !sonda.json.capabilities.includes('tools')) return falhar(`modelo ${model} nao declara capacidade tools; nenhuma ferramenta foi executada`)
+    try { req.aoEvento?.({ tipo: 'modelo_verificado' }) } catch { /* observador isolado */ }
 
     const mensagens: object[] = [{ role: 'user', content: req.prompt }]
     const repeticoes = new Map<string, number>()
     for (let turno = 0, chamadas = 0; turno < 16; turno++) {
+      try { req.aoEvento?.({ tipo: 'inferencia_inicio' }) } catch { /* observador isolado */ }
       const resposta = await chamar('/api/chat', { model, stream: false, messages: mensagens, tools: FERRAMENTAS_OLLAMA })
+      try { req.aoEvento?.({ tipo: 'inferencia_fim' }) } catch { /* observador isolado */ }
       if (resposta.erro || !resposta.json) return falhar(resposta.erro?.message || 'falha na conversa Ollama', !!(resposta.erro as { killed?: boolean } | null)?.killed)
       usage.tokens_in += Number.isSafeInteger(resposta.json.prompt_eval_count) ? Number(resposta.json.prompt_eval_count) : 0
       usage.tokens_out += Number.isSafeInteger(resposta.json.eval_count) ? Number(resposta.json.eval_count) : 0
@@ -184,8 +187,11 @@ export class OllamaProvider implements Harness {
         repeticoes.set(assinatura, repetida)
         if (repetida > 2) return falhar('ferramenta repetida sem progresso')
         let conteudo: string
+        const nome = ferramenta.function?.name || 'desconhecida'
+        try { req.aoEvento?.({ tipo: 'ferramenta_inicio', ferramenta: nome }) } catch { /* observador isolado */ }
         try { conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode) }
         catch (erro) { return falhar((erro as Error).message) }
+        try { req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
         mensagens.push({ role: 'tool', tool_name: ferramenta.function?.name, content: conteudo.slice(0, 64 * 1024) })
       }
     }

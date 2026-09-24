@@ -200,6 +200,16 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         // Telemetria de consumidores externos nao interfere no resultado pago.
         try { req.aoEmitir?.(canal, texto) } catch { /* observador isolado */ }
       },
+      aoEvento: evento => {
+        atualizar(atividade, a => {
+          a.etapa = evento.tipo
+          a.detalhes.progresso = 'evento confirmado pelo harness'
+          a.detalhes.ultimoEvento = evento.tipo
+          a.detalhes.ferramenta = 'ferramenta' in evento ? evento.ferramenta : null
+          a.recurso.observabilidade = 'instrumented'
+        })
+        try { req.aoEvento?.(evento) } catch { /* observador isolado */ }
+      },
       aoIniciar: (pid) => {
         pidRegistrado = pid
         registrarHarness(id, pid, papel)

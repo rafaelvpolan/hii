@@ -46,17 +46,38 @@ test('modelo sem tools e recusado antes de qualquer efeito', async () => {
 
 test('loop executa substituicao validada e so conclui com resposta final', async () => {
   writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  const eventos: string[] = []
   respostasDaIa(
     { capabilities: ['completion', 'tools'] },
     { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] }, prompt_eval_count: 3, eval_count: 2 },
     { message: { role: 'assistant', content: 'feito' }, prompt_eval_count: 4, eval_count: 1 },
   )
-  const r = await new OllamaProvider().run(pedido())
+  const r = await new OllamaProvider().run({ ...pedido(), aoEvento: e => eventos.push(e.tipo + ('ferramenta' in e ? ':' + e.ferramenta : '')) })
   expect(r.ok).toBe(true)
   expect(r.text).toBe('feito')
   expect(r.usage.tokens_in).toBe(7)
   expect(r.usage.tokens_out).toBe(3)
   expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois')
+  expect(eventos).toEqual(['modelo_verificado', 'inferencia_inicio', 'inferencia_fim', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'inferencia_inicio', 'inferencia_fim'])
+})
+
+test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima inferencia', async () => {
+  writeFileSync(join(dir, 'a.txt'), 'A0')
+  writeFileSync(join(dir, 'b.txt'), 'B0')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'replace_text', arguments: { path: 'a.txt', old_text: 'A0', new_text: 'A1' } } },
+      { function: { name: 'replace_text', arguments: { path: 'b.txt', old_text: 'B0', new_text: 'B1' } } },
+    ] } },
+    { message: { role: 'assistant', content: 'duas alteracoes concluidas' } },
+  )
+  const ferramentas: string[] = []
+  const r = await new OllamaProvider().run({ ...pedido(), aoEvento: e => { if ('ferramenta' in e) ferramentas.push(e.tipo + ':' + e.ferramenta) } })
+  expect(r.ok).toBe(true)
+  expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('A1')
+  expect(readFileSync(join(dir, 'b.txt'), 'utf8')).toBe('B1')
+  expect(ferramentas).toEqual(['ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text'])
 })
 
 test('readonly, traversal e ferramenta desconhecida falham sem alterar arquivo', async () => {

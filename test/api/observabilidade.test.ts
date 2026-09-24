@@ -145,6 +145,23 @@ test('falha do registro nao repete nem perde resultado do harness', async () => 
   assert.equal(snapshot().degradado, true)
 })
 
+test('evento semantico do harness atualiza progresso sem expor argumentos', async () => {
+  const provider = providerFor('verify')
+  const executar = { ...provider, capabilities: () => provider.capabilities(), run: async (req: Parameters<typeof provider.run>[0]) => {
+    req.aoEvento?.({ tipo: 'inferencia_inicio' })
+    req.aoEvento?.({ tipo: 'ferramenta_inicio', ferramenta: 'replace_text' })
+    req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: 'replace_text' })
+    return { ok: true, failed: false, timedOut: false, isError: false, text: 'concluido', detail: '', cost: 0, costMeasured: true, usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 } }
+  } }
+  Object.setPrototypeOf(executar, provider)
+  await runProvider('', executar, { prompt: 'segredo que nao deve ir ao evento', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000 })
+  const atividade = snapshot().atividades.find(a => a.recurso.nome === provider.name)
+  assert.equal(atividade?.recurso.observabilidade, 'instrumented')
+  assert.equal(atividade?.detalhes.ultimoEvento, 'ferramenta_fim')
+  assert.equal(atividade?.detalhes.ferramenta, 'replace_text')
+  assert.ok(!JSON.stringify(atividade).includes('segredo que nao deve ir ao evento'))
+})
+
 test('ask readonly idempotente nunca cria card executavel', async () => {
   const a = await post('/v1/ask', { repo: 'org/app', pergunta: 'Qual projeto?' })
   assert.equal(a.status, 202)
