@@ -39,6 +39,7 @@ import type { runProvider } from '../euclides/tesouro/confianca.ts'
 import { lerArtefato, listarArtefatos } from '../observabilidade/artefatos.ts'
 import { eventosDoCard } from '../euclides/eventos.ts'
 import { perguntas, responderPergunta } from './perguntas.ts'
+import { situacaoDaInferencia } from '../tomada/capacidade-inferencia.ts'
 
 const LIMITE_CORPO = 2 * 1024 * 1024
 function cabecalho(req: IncomingMessage, nome: string): string {
@@ -173,7 +174,7 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => {
     const h = harnessPorNome(p.nome)
     return { ...p, modelos: modelosDe(p.nome), localidade: h.inferenciaLocalVerificada === true ? 'verificada' : h.rodaLocal ? 'indeterminada' : 'remota',
-      aptidao: { ...h.capabilities(), agentic: h.agentic } }
+      aptidao: { ...h.capabilities(), agentic: h.agentic }, inferencia: situacaoDaInferencia(h, h.modeloPadraoPara('implement')) }
   }) })
   if (url.pathname === '/v1/estado') {
     // Cursor ANTES do snapshot: duplicatas sao deduplicaveis; lacunas nao.

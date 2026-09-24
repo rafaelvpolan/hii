@@ -10,6 +10,7 @@ import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
 import { gravarChamadaNoLiveLog } from './live-log.ts'
 import { executarFerramentaOllama, FERRAMENTAS_OLLAMA } from './ollama-ferramentas.ts'
 import type { ChamadaDeFerramentaOllama } from './ollama-ferramentas.ts'
+import { numeroDeEnv } from '../../cordel/alicerce/config.ts'
 
 interface OllamaResponse {
   response?: string
@@ -22,6 +23,14 @@ interface OllamaResponse {
 
 function baseUrl(): string {
   return process.env.HII_OLLAMA_URL || 'http://localhost:11434'
+}
+
+function endpointIdentificado(): string {
+  try {
+    const u = new URL(baseUrl())
+    u.username = ''; u.password = ''; u.search = ''; u.hash = ''
+    return u.toString().replace(/\/$/, '')
+  } catch { return 'ollama:endpoint-invalido' }
 }
 
 function endpointRodaNesteHost(): boolean {
@@ -77,6 +86,11 @@ export class OllamaProvider implements Harness {
     return endpointRodaNesteHost() && process.env.HII_OLLAMA_LOCALITY_VERIFIED === '1'
   }
   readonly temLeitorDePlano = true
+  recursoDeInferencia(modelo: string | undefined): { servidor: string; modelo: string; slotsServidor: number; slotsModelo: number } {
+    return { servidor: endpointIdentificado(), modelo: modelo || this.modeloPadraoPara() || 'llama3.1',
+      slotsServidor: Math.floor(numeroDeEnv('HII_OLLAMA_MAX_INFLIGHT', 1)),
+      slotsModelo: Math.floor(numeroDeEnv('HII_OLLAMA_MODEL_MAX_INFLIGHT', 1)) }
+  }
 
   // Unico harness cuja prontidao depende de um servidor local estar de pe.
   modeloPadraoPara(): string | undefined { return process.env.HII_OLLAMA_MODEL || undefined }

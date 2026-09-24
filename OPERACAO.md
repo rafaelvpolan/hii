@@ -526,6 +526,14 @@ substituição exata de texto em arquivos existentes, com raízes, tamanho, núm
 de turnos e repetição limitados. Não há shell geral. Em `readonly`, escrita é
 recusada. O pipeline ainda executa os testes e critérios depois da resposta.
 
+`HII_OLLAMA_MAX_INFLIGHT` limita chamadas simultâneas no endpoint inteiro e
+`HII_OLLAMA_MODEL_MAX_INFLIGHT` limita chamadas simultâneas ao mesmo modelo;
+ambos usam `1` por padrão. O limite do modelo deve ser menor ou igual ao limite
+do servidor. Configuração inválida bloqueia antes da inferência. Capacidade cheia
+gera falha transitória para a fila existente aplicar espera ou fallback, e o slot
+é liberado em sucesso, falha ou exceção. A API `/v1/provedores` expõe limite,
+ocupação e disponibilidade atuais sem incluir credenciais do endpoint.
+
 Somente endpoint loopback recebe custo de API local medido; outro host, inclusive
 em rede privada, fica com custo desconhecido. Mesmo loopback não comprova por si
 só onde o backend executou a inferência. A garantia de localidade depende também
@@ -740,7 +748,9 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_OBSERVABILIDADE` | — | — | `motor/observabilidade/registro.ts` |
 | `HII_OLLAMA_AGENTIC` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_LOCALITY_VERIFIED` | — | — | `motor/tomada/harness/ollama.ts` |
+| `HII_OLLAMA_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
+| `HII_OLLAMA_MODEL_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
 | `HII_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |

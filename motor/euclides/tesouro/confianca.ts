@@ -15,6 +15,7 @@ import { atualizarRegistroDeConversa } from '../registros.ts'
 import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
 import { contextoDaSessao, iniciarSubsessao, finalizarChamada, lerSessaoHii } from '../sessoes.ts'
 import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
+import { admitirInferencia } from '../../tomada/capacidade-inferencia.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -175,6 +176,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       saidaIncremental: provider.saidaIncremental?.(req) ?? false })
   atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = req.microtask || fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
   let terminou = false
+  let liberarInferencia = (): void => {}
   const pulso = setInterval(() => heartbeat(atividade), 15000)
   pulso.unref()
   let emitiuResposta = false
@@ -188,7 +190,14 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
   }
   let concluida = false
   try {
-    const bruto = await provider.run({
+    const admissao = admitirInferencia(provider, req.model)
+    if (admissao.admitida) liberarInferencia = admissao.liberar
+    atualizar(atividade, a => {
+      a.detalhes.servidorInferencia = admissao.servidor || null
+      a.detalhes.modeloInferencia = admissao.modelo || null
+      a.detalhes.admissaoInferencia = admissao.admitida ? 'admitida' : 'ocupada'
+    })
+    const pedido: AgentRequest = {
       ...req,
       prompt: contexto ? `${contexto}\n\nPEDIDO ATUAL:\n${req.prompt}` : req.prompt,
       rotulo: req.rotulo ?? papel,
@@ -215,7 +224,10 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         registrarHarness(id, pid, papel)
         req.aoIniciar?.(pid)
       },
-    })
+    }
+    const bruto = admissao.admitida ? await provider.run(pedido) : {
+      ok: false, failed: true, timedOut: false, isError: true, detail: admissao.motivo, text: admissao.motivo, ...COST_UNKNOWN, usage: emptyUsage(),
+    }
     const res = bruto.ok ? bruto : { ...bruto, text: redigirDiagnostico(bruto.text), detail: redigirDiagnostico(bruto.detail) }
     descarregar()
     if (!emitiuResposta) saida(atividade, 'assistant', res.text)
@@ -238,6 +250,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     })
     return res
   } finally {
+    liberarInferencia()
     descarregar()
     clearInterval(pulso)
     if (!terminou) terminar(atividade, 'failed', 'chamada interrompida por excecao; consulte a tarefa')

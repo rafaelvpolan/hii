@@ -331,13 +331,17 @@ test('negociacao de configuracao respeita admin e escopo da credencial', async (
   url = `http://127.0.0.1:${b.port}`
   expect((await capacidades()).configuracao).toEqual({ versoes: [1], leitura: false, escrita: false })
 })
-test('catalogo anuncia capacidade real do Ollama sem conceder agentividade', async () => {
+test('catalogo anuncia capacidade e ocupacao reais do Ollama sem conceder agentividade', async () => {
+  process.env.HII_OLLAMA_MAX_INFLIGHT = '2'
+  process.env.HII_OLLAMA_MODEL_MAX_INFLIGHT = '1'
   const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
-  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean } }[] }
+  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null }[] }
   const ollama = body.provedores.find(p => p.nome === 'ollama')
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
   expect(ollama?.localidade).toBe('indeterminada')
+  expect(ollama?.inferencia).toMatchObject({ limiteServidor: 2, limiteModelo: 1, emUsoNoServidor: 0, disponivel: true })
+  expect(body.provedores.find(p => p.nome === 'claude')?.inferencia).toBe(null)
 })
 
 test('estado do daemon vem por HTTP autenticado com versao; API viva nao significa motor ligado', async () => {

@@ -16,7 +16,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #49 | Paralelismo isolado, integracao serial, prova combinada e redistribuicao segura por ramo | Limpeza governada dos worktrees preservados e piloto real |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, rubricas v2 por dominio, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Cache do Crivo principal, publicacao reconciliavel e limites completos |
-| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in com eventos semanticos; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
+| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in com eventos semanticos e admissao por servidor/modelo; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
@@ -252,6 +252,12 @@ nome da ferramenta, sem prompt, argumentos ou resultado. Chamadas múltiplas da
 mesma resposta são executadas em série antes da inferência seguinte. A cobertura
 integrada passou com 19 testes de Ollama/API, além de typecheck, lint de tipos e
 clone limpo.
+
+A admissão de inferência reutiliza o ponto único de chamada do motor e reserva
+slots por endpoint e modelo antes de invocar o harness. Fila cheia não chama a IA
+e é classificada como falha transitória; sucesso, falha e exceção liberam a reserva.
+Limites e ocupação são expostos em `/v1/provedores`, com endpoint sem credenciais.
+Três testes de concorrência e 26 testes HTTP passaram isoladamente.
 
 As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
 real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama continua

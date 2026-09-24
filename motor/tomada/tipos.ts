@@ -141,6 +141,8 @@ export interface Harness {
   // `false` impede uso sob somente_local mesmo que o transporte esteja em
   // loopback: um proxy local pode encaminhar inferencia para a nuvem.
   readonly inferenciaLocalVerificada?: boolean
+  /** Identidade e tetos da capacidade compartilhada; ausencia = sem admissao adicional. */
+  recursoDeInferencia?: (modelo: string | undefined) => { servidor: string; modelo: string; slotsServidor: number; slotsModelo: number }
 
   capabilities(): HarnessCapabilities
   // true = alcancavel agora. Nunca devolve true por omissao: harness que nao
