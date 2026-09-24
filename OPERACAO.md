@@ -525,7 +525,7 @@ endpoint `api/show` e só prossegue quando o modelo declara `tools`; oferece lei
 substituição exata de texto em arquivos existentes, com raízes, tamanho, número
 de turnos e repetição limitados. Não há shell geral. Em `readonly`, escrita é
 recusada. O pipeline ainda executa os testes e critérios depois da resposta.
-As respostas de `/api/chat` usam NDJSON incremental: fragmentos públicos chegam
+As respostas do endpoint Ollama `api/chat` usam NDJSON incremental: fragmentos públicos chegam
 à observabilidade durante a inferência, enquanto o motor recompõe a mensagem e
 as chamadas de ferramenta antes de autorizar qualquer efeito.
 Os tetos usam `HII_AGENT_MAX_TURNS` (16), `HII_AGENT_MAX_TOOLS` (16) e
