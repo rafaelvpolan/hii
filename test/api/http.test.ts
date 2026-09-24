@@ -333,10 +333,11 @@ test('negociacao de configuracao respeita admin e escopo da credencial', async (
 })
 test('catalogo anuncia capacidade real do Ollama sem conceder agentividade', async () => {
   const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
-  const body = await r.json() as { provedores: { nome: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean } }[] }
+  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean } }[] }
   const ollama = body.provedores.find(p => p.nome === 'ollama')
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
+  expect(ollama?.localidade).toBe('indeterminada')
 })
 
 test('estado do daemon vem por HTTP autenticado com versao; API viva nao significa motor ligado', async () => {

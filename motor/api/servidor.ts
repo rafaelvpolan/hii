@@ -170,7 +170,11 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   const perguntaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/perguntas$/)?.[1]
   if (perguntaId) return perguntas(perguntaId)
   if (url.pathname === '/v1/projetos') return resposta(200, { projetos: projetos() })
-  if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => ({ ...p, modelos: modelosDe(p.nome), aptidao: { ...harnessPorNome(p.nome).capabilities(), agentic: harnessPorNome(p.nome).agentic } })) })
+  if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => {
+    const h = harnessPorNome(p.nome)
+    return { ...p, modelos: modelosDe(p.nome), localidade: h.inferenciaLocalVerificada === true ? 'verificada' : h.rodaLocal ? 'indeterminada' : 'remota',
+      aptidao: { ...h.capabilities(), agentic: h.agentic } }
+  }) })
   if (url.pathname === '/v1/estado') {
     // Cursor ANTES do snapshot: duplicatas sao deduplicaveis; lacunas nao.
     const cursor = lerEventos().cursor
