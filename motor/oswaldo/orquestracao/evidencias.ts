@@ -1,13 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import { cardsDir } from '../../cordel/alicerce/config.ts'
+import { cardsDir, politicaDeExecucaoEfetiva } from '../../cordel/alicerce/config.ts'
 import { run, runGit } from '../../quilombo/git.ts'
 import { writeFileAtomic } from '../mutirao/trava-arquivo.ts'
 import { validarPlano } from './contrato.ts'
 import type { PlanoDeExecucao } from './contrato.ts'
 import { iniciar, atualizar, terminar, saida, recurso } from '../../observabilidade/registro.ts'
 import { registrarArtefato } from '../../observabilidade/artefatos.ts'
+import { chamadasDaSessao } from '../../euclides/ias-da-sessao.ts'
+import type { ChamadaDeIa } from '../../cordel/tipos.ts'
 
 export interface Evidencia {
   criterio: string
@@ -32,6 +34,13 @@ export interface RelatorioDeEvidencias {
   instante: string
   evidencias: Evidencia[]
   aprovado: boolean
+  pacote?: {
+    politica: ReturnType<typeof politicaDeExecucaoEfetiva>
+    rollout: PlanoDeExecucao['rollout']
+    chamadas: ChamadaDeIa[]
+    custo: { usd: number; qualidade: 'medido' | 'piso' | 'desconhecido' }
+    tokens: number
+  }
 }
 
 export function ocultarSegredos(texto: string): string {
@@ -114,8 +123,14 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
     const mudou = fingerprint !== await fingerprintDoTrabalho(wt)
     if (mudou) for (const e of evidencias) { e.estado = 'inconclusivo'; e.falha = 'trabalho-alterado'; e.saida += '\nO trabalho mudou durante a verificacao; execute novamente.' }
     for (const [i, e] of evidencias.entries()) terminar(atividades[i] ?? '', e.estado === 'aprovado' ? 'succeeded' : e.estado === 'nao-aplicavel' ? 'skipped' : 'failed', e.estado)
+    const chamadas = chamadasDaSessao(plano.sessaoId)
+    const custo = chamadas.reduce((total, chamada) => total + chamada.custoUsd, 0)
     const relatorio: RelatorioDeEvidencias = { versao: 1, ...(microtask ? { microtask } : {}), tentativa: randomUUID(), plano: plano.id, revisao, fingerprint, instante: new Date().toISOString(), evidencias,
-      aprovado: evidencias.every(e => !e.obrigatorio || e.estado === 'aprovado') }
+      aprovado: evidencias.every(e => !e.obrigatorio || e.estado === 'aprovado'), pacote: {
+        politica: politicaDeExecucaoEfetiva(), rollout: structuredClone(plano.rollout), chamadas,
+        custo: { usd: Math.round(custo * 10000) / 10000, qualidade: chamadas.length === 0 ? 'desconhecido' : chamadas.every(c => c.custoMedido) ? 'medido' : 'piso' },
+        tokens: chamadas.reduce((total, chamada) => total + chamada.tokens, 0),
+      } }
     mkdirSync(join(cardsDir(), 'evidencias'), { recursive: true })
     // O ponteiro atual pode mudar; provas de tentativas anteriores nunca sao sobrescritas.
     writeFileAtomic(join(cardsDir(), 'evidencias', `${plano.id}-${revisao}-${relatorio.tentativa}.json`), JSON.stringify(relatorio, null, 2) + '\n')

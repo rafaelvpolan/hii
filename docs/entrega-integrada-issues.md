@@ -310,3 +310,8 @@ O catalogo de provedores inclui `identidadeInferencia` para o Ollama: endpoint
 normalizado sem credencial, versao do servidor, instante e origem da afericao e
 nomes/digests informados por `/api/tags`. Falha isolada de `/api/version` deixa a
 versao desconhecida sem apagar a prova de saude e os modelos obtidos no servidor.
+
+O artefato de evidencias agrega no mesmo documento ligado ao fingerprint a
+politica efetiva, plano de rollout/reversao e o ledger de chamadas da sessao.
+Custos preservam a qualidade `medido`, `piso` ou `desconhecido`; tokens continuam
+separados e prompts, argumentos privados e credenciais nao entram no pacote.

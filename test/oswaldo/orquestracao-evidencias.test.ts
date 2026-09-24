@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { coletarEvidencias, evidenciaAtual, fingerprintDoTrabalho } from '../../motor/oswaldo/orquestracao/evidencias.ts'
 import { relatorioConsistente } from '../../motor/oswaldo/orquestracao/validacao-evidencias.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
+import { registrarChamada } from '../../motor/euclides/ias-da-sessao.ts'
 
 let dir = ''
 let anterior: NodeJS.ProcessEnv
@@ -20,10 +21,17 @@ afterEach(() => { process.env = anterior; rmSync(dir, { recursive: true, force: 
 
 test('evidencia executa processo real e invalida quando aparece novo diff', async () => {
   const plano = planoOrquestrado()
+  registrarChamada(plano.sessaoId, { ts: new Date().toISOString(), papel: 'implement', provedor: 'ollama', modelo: 'qwen', custoUsd: 0,
+    custoMedido: true, tokens: 5, tokensEntrada: 3, tokensSaida: 2, tokensCache: 0, duracaoS: 1, ok: true, classeDeFalha: '' })
   const r = await coletarEvidencias(plano, 1, dir)
   expect(r.aprovado).toBe(true)
   expect(r.evidencias[0]?.exitCode).toBe(0)
   expect(await evidenciaAtual(plano.id, 1, dir)).toBe(true)
+  expect(r.pacote?.chamadas).toHaveLength(1)
+  expect(r.pacote?.tokens).toBe(5)
+  expect(r.pacote?.custo.qualidade).toBe('medido')
+  expect(r.pacote?.rollout).toEqual(plano.rollout)
+  expect(r.pacote?.politica.versao).toBe(1)
   writeFileSync(join(dir, 'novo.txt'), 'nova alteracao')
   expect(await evidenciaAtual(plano.id, 1, dir)).toBe(false)
 })
