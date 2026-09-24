@@ -233,3 +233,53 @@ test('custo desconhecido em um ramo preserva ambos e nao inicia sucessora', asyn
   expect(r.reason).toContain('custo')
   expect(chamadas).toEqual(['A', 'B', 'C'])
 })
+
+test('cota em ramo limpo redistribui sem perder historico da tentativa', async () => {
+  const plano = { ...planoOrquestrado(), id, sessaoId: id }
+  salvarPlano(plano, 0, 'fallback-paralelo')
+  const chamadas: string[] = []
+  const r = await executarPlano(readCard(id)!, wt, async (card, cwd) => {
+    const nome = card.fm.title!
+    const provider = card.fm.provider_override_implement || 'claude'
+    chamadas.push(nome + ':' + provider)
+    if (nome === 'B' && provider === 'claude') return { ok: false, reason: 'quota', failureClass: 'quota', provider, cost: '0.01', costMeasured: true }
+    writeFileSync(join(cwd, nome + '.txt'), nome)
+    return { ok: true, provider, cost: '0.1', costMeasured: true }
+  }, false, { rota: () => ({ acao: 'trocar', para: 'codex', motivo: 'fixture' }) })
+  expect(r.ok).toBe(true)
+  expect(chamadas).toContain('B:claude')
+  expect(chamadas).toContain('B:codex')
+  const revisao = readCard(id)!.fm.plano_revisao!
+  const checkpoint = JSON.parse(readFileSync(join(process.env.HII_CARDS_DIR!, 'orquestracao', `execucao-${id}-${revisao}.json`), 'utf8')) as import('../../motor/oswaldo/orquestracao/checkpoint.ts').Checkpoint
+  expect(checkpoint.tentativas!.filter(t => t.microtask === 'B').map(t => [t.provedor, t.estado])).toEqual([['claude', 'falhou'], ['codex', 'concluida']])
+})
+
+test('nao redistribui ramo com efeito incerto', async () => {
+  salvarPlano({ ...planoOrquestrado(), id, sessaoId: id }, 0, 'efeito-incerto')
+  let rotas = 0
+  const incerto = await executarPlano(readCard(id)!, wt, async (card, cwd) => {
+    if (card.fm.title === 'B') {
+      writeFileSync(join(cwd, 'B.txt'), 'efeito antes da falha')
+      return { ok: false, reason: 'quota', failureClass: 'quota', provider: 'claude', cost: '0', costMeasured: true }
+    }
+    writeFileSync(join(cwd, card.fm.title + '.txt'), card.fm.title!)
+    return { ok: true, provider: 'claude', cost: '0', costMeasured: true }
+  }, false, { rota: () => { rotas++; return { acao: 'trocar', para: 'codex', motivo: 'fixture' } } })
+  expect(incerto.ok).toBe(false)
+  expect(rotas).toBe(0)
+})
+
+test('nao redistribui ramo com IA atribuida pelo plano', async () => {
+  const fixo = planoOrquestrado()
+  fixo.id = id; fixo.sessaoId = id
+  fixo.microtasks[1]!.ia = { provedor: 'claude' }
+  salvarPlano(fixo, 0, 'ia-fixa')
+  let rotas = 0
+  const resultado = await executarPlano(readCard(id)!, wt, async (card, cwd) => {
+    if (card.fm.title === 'B') return { ok: false, reason: 'quota', failureClass: 'quota', provider: 'claude', cost: '0', costMeasured: true }
+    writeFileSync(join(cwd, card.fm.title + '.txt'), card.fm.title!)
+    return { ok: true, provider: 'claude', cost: '0', costMeasured: true }
+  }, false, { rota: () => { rotas++; return { acao: 'trocar', para: 'codex', motivo: 'fixture' } } })
+  expect(resultado.ok).toBe(false)
+  expect(rotas).toBe(0)
+})

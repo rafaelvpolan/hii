@@ -16,6 +16,7 @@ import { lerPlano, salvarPlano } from './planos.ts'
 import { fingerprintDoTrabalho, coletarEvidencias } from './evidencias.ts'
 import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
+import type { EntradaDeRota, DecisaoDeRota } from '../../tomada/rota.ts'
 
 export function planoInicial(card: Card, wt: string): PlanoDeExecucao {
   const contrato = ensureContract(repoPath(card.fm.repo ?? ''), isoNow())
@@ -40,7 +41,8 @@ import { pedidoDaMicrotask } from './checkpoint.ts'
 import type { Tentativa, Checkpoint } from './checkpoint.ts'
 import { executarOndaParalela, reconciliarIntegracaoParalela } from './paralelo.ts'
 
-export async function executarPlano(card: Card, wt: string, implementar: (card: Card, wt: string, feedback: string, visual: boolean) => Promise<ImplementResult>, visual: boolean): Promise<ImplementResult> {
+export async function executarPlano(card: Card, wt: string, implementar: (card: Card, wt: string, feedback: string, visual: boolean) => Promise<ImplementResult>, visual: boolean,
+  deps: { rota?: (entrada: EntradaDeRota) => DecisaoDeRota } = {}): Promise<ImplementResult> {
   const id = card.fm.id ?? ''
   const revisao = card.fm.plano_revisao ? Number(card.fm.plano_revisao) : undefined
   let r = lerPlano(card.fm.repo ?? '', id, revisao)
@@ -90,7 +92,7 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
     if (onda.some(m => !checkpoint.feitas.includes(m.id)) && (gastoAntesDaOnda === null || gastoAntesDaOnda + custo >= tetoDoCard())) {
       return { ok: false, reason: 'orcamento atingido antes da onda', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
     }
-    const paralelo = await executarOndaParalela({ card, wt, plano: r.plano, revisao: r.revisao, checkpoint, onda, orcamentoDisponivelUsd: tetoDoCard() - (gastoAntesDaOnda ?? 0) - custo, salvar: persistir, implementar, visual })
+    const paralelo = await executarOndaParalela({ card, wt, plano: r.plano, revisao: r.revisao, checkpoint, onda, orcamentoDisponivelUsd: tetoDoCard() - (gastoAntesDaOnda ?? 0) - custo, salvar: persistir, implementar, visual, rota: deps.rota })
     if (paralelo) {
       custo += Number(paralelo.cost) || 0
       medido &&= paralelo.costMeasured === true

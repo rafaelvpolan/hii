@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, lstatSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { cardsDir, MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
+import { cardsDir, fallbackRemotoLigado, MAX_CONCURRENCY, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
 import { despachoLiberado } from '../../euclides/tesouro/teto-global.ts'
 import { readCard, patchCard } from '../../cordel/store.ts'
 import type { Card, ImplementResult } from '../../cordel/tipos.ts'
@@ -14,6 +14,9 @@ import { coletarEvidencias, fingerprintDoTrabalho } from './evidencias.ts'
 import { pedidoDaMicrotask } from './checkpoint.ts'
 import type { Checkpoint, Ramo, Implementar } from './checkpoint.ts'
 import type { Microtask, PlanoDeExecucao } from './contrato.ts'
+import { harnessSeExistir } from '../../tomada/registro.ts'
+import { decidirRota } from '../../tomada/rota.ts'
+import type { EntradaDeRota, DecisaoDeRota } from '../../tomada/rota.ts'
 
 const recusa = (motivo: string): ImplementResult => ({ ok: false, reason: motivo, failureClass: 'terminal', failureReason: motivo, cost: '0', costMeasured: true })
 async function git(wt: string, args: string[]): Promise<string> {
@@ -87,6 +90,7 @@ export async function reconciliarIntegracaoParalela(wt: string, c: Checkpoint, s
 interface Contexto {
   card: Card; wt: string; plano: PlanoDeExecucao; revisao: number; checkpoint: Checkpoint
   onda: Microtask[]; orcamentoDisponivelUsd: number; salvar: () => void; implementar: Implementar; visual: boolean
+  rota?: (entrada: EntradaDeRota) => DecisaoDeRota
 }
 export async function executarOndaParalela(ctx: Contexto): Promise<ImplementResult | null> {
   const { card, wt, plano, revisao, checkpoint: c, salvar, implementar, visual } = ctx
@@ -117,7 +121,7 @@ export async function executarOndaParalela(ctx: Contexto): Promise<ImplementResu
       c.paralela.base = base
       c.paralela.ramos = tarefas.map(m => ({
         microtask: m.id, worktree: join(pasta, id + '-' + revisao + '-' + c.hash.slice(0, 12) + '-' + m.id),
-        base, orcamentoReservadoUsd: ctx.orcamentoDisponivelUsd / tarefas.length, estado: 'reservado', tentativa: { microtask: m.id, inicio: '', fim: '', provedor: m.ia?.provedor ?? '', modelo: m.ia?.modelo ?? '', estado: 'executando', custo: '', motivo: '' },
+        base, orcamentoReservadoUsd: ctx.orcamentoDisponivelUsd / tarefas.length, estado: 'reservado', tentativa: { microtask: m.id, inicio: '', fim: '', provedor: m.ia?.provedor ?? '', modelo: m.ia?.modelo ?? '', estado: 'executando', custo: '', motivo: '' }, tentativas: [],
       }))
       c.paralela.estado = 'ativa'
       c.fingerprint = await fingerprintDoTrabalho(wt)
@@ -144,19 +148,44 @@ export async function executarOndaParalela(ctx: Contexto): Promise<ImplementResu
       const atividade = iniciar({ repo: plano.repo, sessao: plano.sessaoId, execucao: id }, recurso(m.agente, 'agent'), { papel: 'microtask', isolamento: 'git-worktree', worktree: ramo.worktree })
       atualizar(atividade, a => { a.microtask = m.id; a.planoRevisao = revisao })
       try {
-        const resposta = await dentro(atividade, () => implementar(pedidoDaMicrotask({ ...card, fm: { ...card.fm, orq_ramo: 'true' } }, plano, m), ramo.worktree, '', visual))
-        ramo.resultado = resposta
-        ramo.tentativa.custo = resposta.cost
-        ramo.tentativa.custoMedido = resposta.costMeasured === true && Number.isFinite(Number(resposta.cost)) && Number(resposta.cost) >= 0
-        ramo.tentativa.provedor = resposta.provider ?? ramo.tentativa.provedor
-        ramo.tentativa.modelo = resposta.model ?? ramo.tentativa.modelo
-        const valor = Number(resposta.cost)
-        if (Number.isFinite(valor) && valor >= 0) custo += valor
-        medido &&= ramo.tentativa.custoMedido
-        for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += resposta.usage?.[k] ?? 0
+        let override: string | undefined
+        const tentados: string[] = []
+        let gastoDoRamo = 0
+        let resposta: ImplementResult
+        for (;;) {
+          const pedido = pedidoDaMicrotask({ ...card, fm: { ...card.fm, orq_ramo: 'true', ...(override ? { provider_override_implement: override } : {}) } }, plano, m)
+          const tentativa = ramo.tentativa
+          tentativa.inicio ||= isoNow()
+          resposta = await dentro(atividade, () => implementar(pedido, ramo.worktree, '', visual))
+          ramo.resultado = resposta
+          tentativa.custo = resposta.cost
+          tentativa.custoMedido = resposta.costMeasured === true && Number.isFinite(Number(resposta.cost)) && Number(resposta.cost) >= 0
+          tentativa.provedor = resposta.provider ?? override ?? tentativa.provedor
+          tentativa.modelo = resposta.model ?? tentativa.modelo
+          tentativa.fim = isoNow()
+          tentativa.motivo = resposta.reason ?? ''
+          tentativa.estado = resposta.ok ? 'concluida' : 'falhou'
+          const valor = Number(resposta.cost)
+          if (Number.isFinite(valor) && valor >= 0) { custo += valor; gastoDoRamo += valor }
+          medido &&= tentativa.custoMedido
+          for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += resposta.usage?.[k] ?? 0
+          if (resposta.ok) break
+          const atual = resposta.provider ?? override ?? ''
+          if (atual) tentados.push(atual)
+          const localFalhou = resposta.failureClass === 'transient' && harnessSeExistir(atual)?.rodaLocal === true
+          const elegivel = !m.ia && tentativa.custoMedido && await limpo(ramo.worktree) &&
+            ((resposta.failureClass === 'quota' && quotaFallbackLigado()) || (localFalhou && fallbackRemotoLigado()))
+          if (!elegivel || gastoDoRamo >= ramo.orcamentoReservadoUsd || !ativo()) break
+          const rota = (ctx.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: resposta.failureClass!, provedorAtual: atual, tentadosNestaRodada: tentados, localFalhou })
+          if (rota.acao !== 'trocar' || tentados.includes(rota.para)) break
+          ;(ramo.tentativas ??= []).push({ ...tentativa })
+          override = rota.para
+          ramo.tentativa = { microtask: m.id, inicio: isoNow(), fim: '', provedor: override, modelo: '', estado: 'executando', custo: '', motivo: '' }
+          salvar()
+        }
         if (!resposta.ok) throw new Error(resposta.reason || 'harness falhou')
         if (!ramo.tentativa.custoMedido) throw new Error('custo desconhecido no ramo')
-        if (Number(resposta.cost) > ramo.orcamentoReservadoUsd) throw new Error('orcamento reservado excedido no ramo; nenhum novo despacho autorizado')
+        if (gastoDoRamo > ramo.orcamentoReservadoUsd) throw new Error('orcamento reservado excedido no ramo; nenhum novo despacho autorizado')
         if (!(await coletarEvidencias(plano, revisao, ramo.worktree, undefined, m.id)).aprovado) throw new Error('criterios do ramo reprovados ou inconclusivos')
         const alterados = [...(await git(ramo.worktree, ['diff', '--name-only', '-z', ramo.base])).split('\0'),
           ...(await git(ramo.worktree, ['ls-files', '--others', '--exclude-standard', '-z'])).split('\0')].filter(Boolean)
@@ -204,7 +233,7 @@ export async function executarOndaParalela(ctx: Contexto): Promise<ImplementResu
     }
     if (!ativo()) return { ...recusa('execucao interrompida apos integracao'), cost: String(custo), costMeasured: medido, usage }
     for (const ramo of onda.ramos) {
-      if (!c.feitas.includes(ramo.microtask)) { c.feitas.push(ramo.microtask); (c.tentativas ??= []).push(ramo.tentativa) }
+      if (!c.feitas.includes(ramo.microtask)) { c.feitas.push(ramo.microtask); (c.tentativas ??= []).push(...(ramo.tentativas ?? []), ramo.tentativa) }
     }
     onda.estado = 'concluida'
     c.fingerprint = await fingerprintDoTrabalho(wt)

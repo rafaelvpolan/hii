@@ -13,10 +13,10 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico no escopo decidido: somente HII e Hicode |
 | HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
 | HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | MCP e diagnosticado apenas quando uma tarefa exige um conector aplicavel ao harness escolhido |
-| HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
+| HII #49 | Paralelismo isolado, integracao serial, prova combinada e redistribuicao segura por ramo | Limpeza governada dos worktrees preservados e piloto real |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
-| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in; plug remoto após falha local recuperável | Piloto real e calibracao dos modelos por instalacao |
+| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
@@ -191,19 +191,26 @@ tentativa retorna custo desconhecido ou inválido, inclusive após retomada.
 
 Evidência selecionada: teste RED do DAG anterior (C não começava enquanto B
 aguardava) e GREEN com barreira de sincronização, Git real e executores falsos.
-Oito cenários de paralelismo cobrem DAG, sobreposição, limite, crash de merge,
-parada, escopo, prova combinada e custo. A autoria B/C também foi verificada no
+Onze cenários de paralelismo cobrem DAG, sobreposição, limite, crash de merge,
+parada, escopo, prova combinada, custo e redistribuição. A autoria B/C também foi verificada no
 snapshot público de observabilidade com harness falso.
 
 Limites deste incremento: isolamento Git não equivale a sandbox de segurança;
 não houve chamada paga ou benchmark de IA. A reserva financeira é admissão e
 contabilização; provedores sem teto nativo podem ultrapassar o valor durante uma
-chamada, caso em que a integração e os próximos despachos são bloqueados. Cota
-ou resultado incerto de ramo paralelo ainda exige reconciliação; a troca automática
-nesse caminho e a política por tentativa de #59 permanecem pendentes. A migração
+chamada, caso em que a integração e os próximos despachos são bloqueados. Cota ou
+falha local recuperável redistribui o ramo somente quando não há IA atribuída,
+o custo anterior é conhecido, o orçamento comporta outra chamada e o worktree
+continua limpo. Cada tentativa fica no checkpoint. Qualquer efeito no worktree
+torna o resultado incerto e exige reconciliação, sem nova chamada. A migração
 entre instalações recusa checkpoints com ramos paralelos até reconciliar seus
 worktrees. Worktrees filhos são preservados para inspeção; limpeza automática
 ainda não foi habilitada. Isso não encerra #49 nem #59.
+
+Validação deste ajuste: 11 testes de paralelismo e typecheck aprovados; lint de
+tipos e clone limpo aprovados na suíte integral. A suíte local parou no guardrail
+de runtime porque a máquina está com Bun 1.2.21 e o repositório fixa Bun 1.4.0;
+o CI do PR executa com a versão fixada.
 
 Validação integral deste incremento: Bun 1.4.0, 334 arquivos/3322 testes;
 Node 24, 3286 testes gerais + 30 sensíveis; zero falhas. Tipos, lint de tipos e

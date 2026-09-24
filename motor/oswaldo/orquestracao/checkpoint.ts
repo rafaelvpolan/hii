@@ -9,7 +9,7 @@ export interface Tentativa {
 export interface Ramo {
   microtask: string; worktree: string; base: string; orcamentoReservadoUsd: number
   estado: 'reservado' | 'executando' | 'pronto' | 'integrando' | 'integrado' | 'bloqueado'
-  tentativa: Tentativa; commit?: string; antesIntegrar?: string; integradoHead?: string
+  tentativa: Tentativa; tentativas?: Tentativa[]; commit?: string; antesIntegrar?: string; integradoHead?: string
   fingerprint?: string; resultado?: ImplementResult; motivo?: string
 }
 export interface OndaParalela {
