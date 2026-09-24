@@ -73,6 +73,9 @@ export class OllamaProvider implements Harness {
   readonly exigeCliNoPath = false
   readonly comandoDeLogin: readonly string[] = []
   readonly rodaLocal = true
+  get inferenciaLocalVerificada(): boolean {
+    return endpointRodaNesteHost() && process.env.HII_OLLAMA_LOCALITY_VERIFIED === '1'
+  }
   readonly temLeitorDePlano = true
 
   // Unico harness cuja prontidao depende de um servidor local estar de pe.

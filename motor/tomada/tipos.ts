@@ -132,6 +132,9 @@ export interface Harness {
   readonly temLeitorDePlano: boolean
   // true = servidor/modelo na propria maquina, sem conta na nuvem nem tier pago
   readonly rodaLocal: boolean
+  // `false` impede uso sob somente_local mesmo que o transporte esteja em
+  // loopback: um proxy local pode encaminhar inferencia para a nuvem.
+  readonly inferenciaLocalVerificada?: boolean
 
   capabilities(): HarnessCapabilities
   // true = alcancavel agora. Nunca devolve true por omissao: harness que nao

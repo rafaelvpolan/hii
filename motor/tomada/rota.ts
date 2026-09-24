@@ -49,6 +49,7 @@ export interface CandidatoDeRota {
   agentic: boolean
   isolaLeitura: boolean
   rodaLocal: boolean
+  inferenciaLocalVerificada?: boolean
   autenticado: boolean
   cotaEsgotada: boolean
   supportsAgents?: boolean
@@ -107,6 +108,7 @@ export function consultaReal(): ConsultaDeRota {
         agentic: h.agentic,
         isolaLeitura: caps.isolatesReadonly,
         rodaLocal: h.rodaLocal,
+        inferenciaLocalVerificada: h.inferenciaLocalVerificada,
         autenticado: h.autenticado(),
         cotaEsgotada: cotaEsgotadaEm(h.name),
         supportsAgents: h.supportsAgents,
@@ -176,7 +178,7 @@ export function decidirRota(e: EntradaDeRota, consulta: ConsultaDeRota = consult
     .filter(c => !(e.exigeJson ?? (e.papel === 'verify' || e.papel === 'gate')) || c.emitsStructuredJson === true)
     .filter(c => c.autenticado)
     .filter(c => !c.cotaEsgotada)
-    .filter(c => localidadeDeExecucao() !== 'somente_local' || c.rodaLocal)
+    .filter(c => localidadeDeExecucao() !== 'somente_local' || (c.rodaLocal && c.inferenciaLocalVerificada !== false))
   const candidatos = e.localFalhou && aptos.some(c => !c.rodaLocal) ? aptos.filter(c => !c.rodaLocal) : aptos
   const ordenados = ranquearCandidatosDeRota(e.papel, candidatos)
   const escolhido = ordenados[0]

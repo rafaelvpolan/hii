@@ -133,3 +133,13 @@ test('falha local prefere plug remoto, mas somente_local proibe a saida', () => 
     expect(local.acao === 'trocar' && local.para).toBe('local-2')
   } finally { delete process.env.HII_EXECUTION_LOCALITY }
 })
+
+test('somente_local recusa Ollama sem prova mesmo quando o endpoint e loopback', () => {
+  process.env.HII_EXECUTION_LOCALITY = 'somente_local'
+  try {
+    const r = decidirRota(quota({ provedorAtual: 'claude' }), consultaDe([
+      candidato('ollama', { rodaLocal: true, inferenciaLocalVerificada: false }),
+    ]))
+    expect(r.acao).toBe('manter_politica_atual')
+  } finally { delete process.env.HII_EXECUTION_LOCALITY }
+})

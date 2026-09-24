@@ -89,6 +89,10 @@ test('a varredura enxerga o codigo — senao o invariante passaria vazio', () =>
 test('o descritor de cada harness diz a verdade sobre ele', () => {
   const ollama = harnessPorNome('ollama')
   expect(ollama.rodaLocal, 'ollama roda na maquina — e o que impede o painel de marcar (free) como tier pago').toBe(true)
+  expect(ollama.inferenciaLocalVerificada, 'loopback sozinho nao comprova onde a inferencia ocorre').toBe(false)
+  process.env.HII_OLLAMA_LOCALITY_VERIFIED = '1'
+  try { expect(ollama.inferenciaLocalVerificada).toBe(true) }
+  finally { delete process.env.HII_OLLAMA_LOCALITY_VERIFIED }
   expect(ollama.comandoDeLogin).toEqual([])
   expect(ollama.exigeCliNoPath, 'ollama sobe como servidor; o doctor nao cobra --version').toBe(false)
   for (const nome of providerNames().filter(n => n !== 'ollama')) {
