@@ -7,6 +7,7 @@ export interface RunResult {
   err: ExecFileException | null
   stdout: string
   stderr: string
+  cancelled?: boolean
 }
 
 const NONINTERACTIVE_ENV: Record<string, string> = {
@@ -22,15 +23,17 @@ export interface OpcoesDeRun extends ExecFileOptions {
   aoLerStdout?: (pedaco: string) => void
   aoLerStderr?: (pedaco: string) => void
   aoEstourarTempo?: () => void
+  cancelado?: () => boolean
 }
 
 export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<RunResult> {
   const timeoutMs = Number(opts?.timeout) || 0
   const maxBuffer = Number(opts?.maxBuffer) || (1 << 24)
-  const { aoIniciar, aoLerStdout, aoLerStderr, aoEstourarTempo, ...opcoesDoExec } = opts ?? {}
+  const { aoIniciar, aoLerStdout, aoLerStderr, aoEstourarTempo, cancelado, ...opcoesDoExec } = opts ?? {}
   return new Promise((resolve) => {
     let settled = false
     let timedOut = false
+    let cancelled = false
     let bufferError: ExecFileException | null = null
     let hard: ReturnType<typeof setTimeout> | null = null
     // Bun (runtime do runner) aceita `detached`, mas nao transforma o filho em
@@ -71,6 +74,7 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
       settled = true
       if (soft) clearTimeout(soft)
       if (hard) clearTimeout(hard)
+      if (vigia) clearInterval(vigia)
       let e = bufferError ?? erroDoProcesso
       const detalhe = [stderr.join(''), stdout.join('')]
         .map(texto => texto.trim())
@@ -82,7 +86,7 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
         e = Object.assign(new Error(`${e.message}: ${detalhe}`), e)
       }
       if (timedOut) e = Object.assign(e ?? new Error(`timeout apos ${timeoutMs}ms`), { killed: true })
-      resolve({ err: e, stdout: stdout.join(''), stderr: stderr.join('') })
+      resolve({ err: e, stdout: stdout.join(''), stderr: stderr.join(''), ...(cancelled ? { cancelled: true } : {}) })
     })
     const soft = timeoutMs > 0 ? setTimeout(() => {
       timedOut = true
@@ -91,6 +95,16 @@ export function run(cmd: string, args: string[], opts?: OpcoesDeRun): Promise<Ru
       hard = setTimeout(() => { sinalizarGrupo(child.pid, 'SIGKILL', child) }, 5000)
       hard.unref?.()
     }, timeoutMs) : null
+    const vigia = cancelado ? setInterval(() => {
+      let deveCancelar = false
+      try { deveCancelar = cancelado() } catch { deveCancelar = true }
+      if (!deveCancelar || cancelled || settled) return
+      cancelled = true
+      sinalizarGrupo(child.pid, 'SIGTERM', child)
+      hard = setTimeout(() => { sinalizarGrupo(child.pid, 'SIGKILL', child) }, 5000)
+      hard.unref?.()
+    }, 50) : null
+    vigia?.unref?.()
     if (child.pid) aoIniciar?.(child.pid)
   })
 }

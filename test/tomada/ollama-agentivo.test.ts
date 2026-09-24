@@ -96,6 +96,21 @@ test('parada entre ferramenta e inferencia seguinte impede novo despacho', async
   expect(readFileSync(respostas, 'utf8')).toContain('nao deve ser consumida')
 })
 
+test('parada durante requisicao encerra o processo antes do timeout', async () => {
+  writeFileSync(join(bin, 'curl'), `#!/bin/sh
+sleep 30
+`)
+  chmodSync(join(bin, 'curl'), 0o755)
+  const inicio = Date.now()
+  let parar = false
+  setTimeout(() => { parar = true }, 100)
+  const r = await new OllamaProvider().run({ ...pedido(), timeoutMs: 10000, cancelado: () => parar })
+  expect(r.ok).toBe(false)
+  expect(r.timedOut).toBe(false)
+  expect(r.detail).toContain('requisicao Ollama encerrada')
+  expect(Date.now() - inicio).toBeLessThan(3000)
+})
+
 test('readonly, traversal e ferramenta desconhecida falham sem alterar arquivo', async () => {
   const fora = `../${dir.split('/').pop()}-fora.txt`
   writeFileSync(join(dir, 'real.txt'), 'interno')

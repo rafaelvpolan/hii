@@ -300,3 +300,8 @@ provedor e pode persistir gate.autoReview pela mesma API administrativa.
 Cada atividade de harness publica `politicaVersao`, `localidadeExecucao`,
 `fallbackRemoto` e `fallbackCota`, permitindo auditar a politica realmente usada
 na tentativa, inclusive depois de uma alteracao da configuracao global.
+
+No Ollama, a parada cooperativa interrompe o grupo do `curl` ativo e aguarda o
+encerramento do processo antes de a chamada retornar. Assim, o slot de inferencia
+so e liberado depois da confirmacao local; cancelamento permanece distinto de
+timeout e nenhuma ferramenta ou inferencia seguinte e iniciada.

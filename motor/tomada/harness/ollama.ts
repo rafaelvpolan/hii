@@ -110,7 +110,7 @@ export class OllamaProvider implements Harness {
     const body = JSON.stringify({ model, prompt: req.prompt, stream: false })
     const endpoint = `${baseUrl()}/api/generate`
     const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', body]
-    const { err, stdout } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
+    const { err, stdout, cancelled } = await run('curl', args, { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar, cancelado: req.cancelado })
     const usage = emptyUsage()
     let text = ''
     let isError = false
@@ -137,6 +137,8 @@ export class OllamaProvider implements Harness {
       text = erroDoCorpo
     }
     const failed = !!err
+    if (cancelled) return { ok: false, failed: true, timedOut: false, isError: true,
+      detail: 'execucao cancelada pelo operador; requisicao Ollama encerrada', text: '', ...costOfEndpoint(), usage }
     if (!failed && !isError && text) {
       try { req.aoEmitir?.('assistant', text) } catch { /* observador isolado */ }
     }
@@ -157,23 +159,24 @@ export class OllamaProvider implements Harness {
     const inicio = Date.now()
     const usage = emptyUsage()
     const custo = costOfEndpoint()
-    const chamar = async (rota: string, corpo: object): Promise<{ erro: Error | null; json: OllamaResponse | null }> => {
+    const chamar = async (rota: string, corpo: object): Promise<{ erro: Error | null; json: OllamaResponse | null; cancelada: boolean }> => {
       const endpoint = `${baseUrl()}${rota}`
       const restante = Math.max(1, req.timeoutMs - (Date.now() - inicio))
       const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', JSON.stringify(corpo)]
-      const { err, stdout } = await run('curl', args, { cwd: req.cwd, timeout: restante, aoIniciar: req.aoIniciar })
-      if (err) return { erro: err, json: null }
+      const { err, stdout, cancelled } = await run('curl', args, { cwd: req.cwd, timeout: restante, aoIniciar: req.aoIniciar, cancelado: req.cancelado })
+      if (err) return { erro: err, json: null, cancelada: cancelled === true }
       try {
         const json = JSON.parse(stdout) as OllamaResponse
         if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('JSON invalido')
-        return { erro: null, json }
-      } catch { return { erro: new Error('Ollama respondeu sem documento JSON valido'), json: null } }
+        return { erro: null, json, cancelada: false }
+      } catch { return { erro: new Error('Ollama respondeu sem documento JSON valido'), json: null, cancelada: false } }
     }
     const falhar = (detalhe: string, timedOut = false): AgentResult => ({ ok: false, failed: true, timedOut, isError: true, detail: detalhe, text: detalhe, ...custo, usage })
     const cancelada = (): AgentResult | null => req.cancelado?.() ? falhar('execucao cancelada pelo operador; nenhuma nova inferencia ou ferramenta iniciada') : null
     const antesDaSonda = cancelada()
     if (antesDaSonda) return antesDaSonda
     const sonda = await chamar('/api/show', { model })
+    if (sonda.cancelada) return falhar('execucao cancelada pelo operador; requisicao Ollama encerrada')
     if (sonda.erro || !sonda.json) return falhar(sonda.erro?.message || 'falha ao consultar capacidade do modelo', !!(sonda.erro as { killed?: boolean } | null)?.killed)
     if (!Array.isArray(sonda.json.capabilities) || !sonda.json.capabilities.includes('tools')) return falhar(`modelo ${model} nao declara capacidade tools; nenhuma ferramenta foi executada`)
     try { req.aoEvento?.({ tipo: 'modelo_verificado' }) } catch { /* observador isolado */ }
@@ -188,6 +191,7 @@ export class OllamaProvider implements Harness {
       try { req.aoEvento?.({ tipo: 'inferencia_fim' }) } catch { /* observador isolado */ }
       const depoisDaInferencia = cancelada()
       if (depoisDaInferencia) return depoisDaInferencia
+      if (resposta.cancelada) return falhar('execucao cancelada pelo operador; requisicao Ollama encerrada')
       if (resposta.erro || !resposta.json) return falhar(resposta.erro?.message || 'falha na conversa Ollama', !!(resposta.erro as { killed?: boolean } | null)?.killed)
       usage.tokens_in += Number.isSafeInteger(resposta.json.prompt_eval_count) ? Number(resposta.json.prompt_eval_count) : 0
       usage.tokens_out += Number.isSafeInteger(resposta.json.eval_count) ? Number(resposta.json.eval_count) : 0
