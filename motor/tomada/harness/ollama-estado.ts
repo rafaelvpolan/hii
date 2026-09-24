@@ -4,6 +4,8 @@ const TIMEOUT_MS = 400
 export interface EstadoDoOllama {
   habilitado: boolean
   modelos: string[]
+  identidades?: { nome: string; digest: string | null }[]
+  versao?: string | null
   verificadoEm: number
 }
 
@@ -15,16 +17,22 @@ export function urlDoOllama(): string {
 }
 
 interface TagsDoOllama {
-  models?: { name?: string }[]
+  models?: { name?: string; digest?: string }[]
 }
+interface VersaoDoOllama { version?: string }
 
 export async function sondarOllama(agoraMs: number = Date.now()): Promise<EstadoDoOllama> {
   try {
     const r = await fetch(`${urlDoOllama()}/api/tags`, { signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (!r.ok) return { habilitado: false, modelos: [], verificadoEm: agoraMs }
     const j = (await r.json()) as TagsDoOllama
-    const modelos = (j.models ?? []).map(m => m.name ?? '').filter(Boolean)
-    return { habilitado: true, modelos, verificadoEm: agoraMs }
+    const identidades = (j.models ?? []).filter(m => typeof m.name === 'string' && m.name).map(m => ({ nome: m.name!, digest: typeof m.digest === 'string' && m.digest ? m.digest : null }))
+    let versao: string | null = null
+    try {
+      const rv = await fetch(`${urlDoOllama()}/api/version`, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+      if (rv.ok) { const v = await rv.json() as VersaoDoOllama; versao = typeof v.version === 'string' ? v.version : null }
+    } catch { /* tags ainda comprovam que o servidor esta vivo */ }
+    return { habilitado: true, modelos: identidades.map(m => m.nome), identidades, versao, verificadoEm: agoraMs }
   } catch {
     return { habilitado: false, modelos: [], verificadoEm: agoraMs }
   }

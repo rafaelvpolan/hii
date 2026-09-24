@@ -17,6 +17,7 @@ import { comRevisao, RevisaoAlterada } from '../../motor/cordel/revisao.ts'
 import { agir, tarefa } from '../../motor/api/operacoes.ts'
 import { salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
+import { definirEstadoDoOllama } from '../../motor/tomada/harness/ollama-estado.ts'
 
 const token = 'teste-http-isolado-sem-credenciais-123456789'
 let base = ''
@@ -49,7 +50,7 @@ beforeEach(async () => {
   writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/app', path: join(base, 'projeto') }]))
   await subir()
 })
-afterEach(async () => { await fechar(); rmSync(base, { recursive: true, force: true }) })
+afterEach(async () => { await fechar(); definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: 0 }); rmSync(base, { recursive: true, force: true }) })
 
 async function post(path: string, body: object, extras: Record<string, string> = {}): Promise<Response> {
   return fetch(url + path, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'idempotency-key': chave(), ...extras }, body: JSON.stringify(body) })
@@ -334,13 +335,15 @@ test('negociacao de configuracao respeita admin e escopo da credencial', async (
 test('catalogo anuncia capacidade e ocupacao reais do Ollama sem conceder agentividade', async () => {
   process.env.HII_OLLAMA_MAX_INFLIGHT = '2'
   process.env.HII_OLLAMA_MODEL_MAX_INFLIGHT = '1'
+  definirEstadoDoOllama({ habilitado: true, modelos: ['qwen:7b'], identidades: [{ nome: 'qwen:7b', digest: 'sha256:abc' }], versao: '0.12.3', verificadoEm: Date.now() })
   const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
-  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null }[] }
+  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null; identidadeInferencia: { versao: string | null; modelos: { nome: string; digest: string | null }[] } | null }[] }
   const ollama = body.provedores.find(p => p.nome === 'ollama')
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
   expect(ollama?.localidade).toBe('indeterminada')
   expect(ollama?.inferencia).toMatchObject({ limiteServidor: 2, limiteModelo: 1, emUsoNoServidor: 0, disponivel: true })
+  expect(ollama?.identidadeInferencia).toMatchObject({ versao: '0.12.3', modelos: [{ nome: 'qwen:7b', digest: 'sha256:abc' }] })
   expect(body.provedores.find(p => p.nome === 'claude')?.inferencia).toBe(null)
 })
 

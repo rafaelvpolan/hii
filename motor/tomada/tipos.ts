@@ -145,6 +145,9 @@ export interface Harness {
   readonly inferenciaLocalVerificada?: boolean
   /** Identidade e tetos da capacidade compartilhada; ausencia = sem admissao adicional. */
   recursoDeInferencia?: (modelo: string | undefined) => { servidor: string; modelo: string; slotsServidor: number; slotsModelo: number }
+  /** Identidade aferida do endpoint/modelos, sem credenciais. */
+  identidadeDeInferencia?: () => { endpoint: string; versao: string | null; verificadoEm: number | null;
+    origem: 'servidor' | 'configuracao'; modelos: { nome: string; digest: string | null }[] }
 
   capabilities(): HarnessCapabilities
   // true = alcancavel agora. Nunca devolve true por omissao: harness que nao

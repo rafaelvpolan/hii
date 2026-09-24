@@ -305,3 +305,8 @@ No Ollama, a parada cooperativa interrompe o grupo do `curl` ativo e aguarda o
 encerramento do processo antes de a chamada retornar. Assim, o slot de inferencia
 so e liberado depois da confirmacao local; cancelamento permanece distinto de
 timeout e nenhuma ferramenta ou inferencia seguinte e iniciada.
+
+O catalogo de provedores inclui `identidadeInferencia` para o Ollama: endpoint
+normalizado sem credencial, versao do servidor, instante e origem da afericao e
+nomes/digests informados por `/api/tags`. Falha isolada de `/api/version` deixa a
+versao desconhecida sem apagar a prova de saude e os modelos obtidos no servidor.

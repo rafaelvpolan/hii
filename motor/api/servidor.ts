@@ -174,7 +174,8 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => {
     const h = harnessPorNome(p.nome)
     return { ...p, modelos: modelosDe(p.nome), localidade: h.inferenciaLocalVerificada === true ? 'verificada' : h.rodaLocal ? 'indeterminada' : 'remota',
-      aptidao: { ...h.capabilities(), agentic: h.agentic }, inferencia: situacaoDaInferencia(h, h.modeloPadraoPara('implement')) }
+      aptidao: { ...h.capabilities(), agentic: h.agentic }, inferencia: situacaoDaInferencia(h, h.modeloPadraoPara('implement')),
+      identidadeInferencia: h.identidadeDeInferencia?.() ?? null }
   }) })
   if (url.pathname === '/v1/estado') {
     // Cursor ANTES do snapshot: duplicatas sao deduplicaveis; lacunas nao.
