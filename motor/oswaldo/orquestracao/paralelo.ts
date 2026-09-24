@@ -73,6 +73,25 @@ async function mergeReconhecido(wt: string, ramo: Ramo): Promise<boolean> {
   ramo.estado = 'integrado'
   return true
 }
+async function limparRamoIntegrado(wt: string, ramo: Ramo): Promise<void> {
+  if (process.env.HII_PARALLEL_CLEANUP === 'off') {
+    ramo.limpeza = 'preservada'
+    ramo.motivoLimpeza = 'limpeza desativada pelo operador'
+    return
+  }
+  if (ramo.estado !== 'integrado' || ramo.limpeza === 'concluida') return
+  try {
+    await conferirRamo(wt, ramo)
+    if (!await limpo(ramo.worktree)) throw new Error('worktree possui alteracoes nao integradas')
+    const remocao = await withGitLock(() => runGit(wt, ['worktree', 'remove', ramo.worktree]))
+    if (remocao.err) throw remocao.err
+    ramo.limpeza = 'concluida'
+    ramo.motivoLimpeza = ''
+  } catch (erro) {
+    ramo.limpeza = 'preservada'
+    ramo.motivoLimpeza = 'limpeza recusada: ' + (erro as Error).message
+  }
+}
 export async function reconciliarIntegracaoParalela(wt: string, c: Checkpoint, salvar: () => void): Promise<void> {
   const onda = c.paralela
   if (!onda || onda.estado === 'concluida') return
@@ -237,6 +256,10 @@ export async function executarOndaParalela(ctx: Contexto): Promise<ImplementResu
     }
     onda.estado = 'concluida'
     c.fingerprint = await fingerprintDoTrabalho(wt)
+    salvar()
+    // Somente ramos integrados, limpos e ainda ligados ao mesmo repositorio podem
+    // ser removidos. Qualquer divergencia preserva o worktree e grava o motivo.
+    for (const ramo of onda.ramos) await limparRamoIntegrado(wt, ramo)
     salvar()
     return { ok: true, cost: String(custo), costMeasured: medido, usage }
   } catch (erro) {

@@ -6,23 +6,24 @@ como fixtures. Um PR por repositorio; nenhum merge automatico.
 
 ## Estado da auditoria
 
-Esta matriz registra trabalho em andamento, nao declara todas as issues resolvidas.
+Esta matriz registra a implementacao candidata no PR. O fechamento das issues
+depende do CI do HEAD e da validacao final do operador, sem merge automatico.
 
 | Issue | Incremento nesta branch | Pendencia para conclusao integral |
 | --- | --- | --- |
-| HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico no escopo decidido: somente HII e Hicode |
-| HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
-| HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | MCP e diagnosticado apenas quando uma tarefa exige um conector aplicavel ao harness escolhido |
-| HII #49 | Paralelismo isolado, integracao serial, prova combinada e redistribuicao segura por ramo | Limpeza governada dos worktrees preservados e piloto real |
-| HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
-| HII #51 | Parecer estruturado por especialista, rubricas v2 por dominio, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Cache do Crivo principal, publicacao reconciliavel e limites completos |
-| HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in com eventos semanticos e admissao por servidor/modelo; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
+| HII #46 | Consolidacao das provas dos fluxos abaixo, limitada a HII e Hicode | CI do HEAD e aceite operacional do operador |
+| HII #47 | Contrato versionado, CRLF/LF, limite 500/501, conflitos, idempotencia, sessao multi-IA e round-trip | CI do HEAD e aceite operacional do operador |
+| HII #48 | Diagnostico, setup recuperavel, migracao automatica e MCP somente quando exigido | CI do HEAD e aceite operacional do operador |
+| HII #49 | Paralelismo isolado, integracao serial, prova combinada, redistribuicao e limpeza governada | CI do HEAD e aceite operacional do operador |
+| HII #50 | Matriz criterio/verificador, resultados explicitos, invalidacao, artefatos, custo qualificado e regressao TUI | CI visual do HEAD e aceite operacional do operador |
+| HII #51 | Parecer estruturado, rubricas v2, cache, deduplicacao, limites e publicacao reconciliavel preservando texto humano | CI do HEAD e aceite operacional do operador |
+| HII #59 | Politica por tentativa, eventos, tracker, evidencias, Ollama agentivo, piloto real, carga/VRAM, fallback e sessoes multi-IA | Calibracao adicional por hardware e aceite operacional do operador |
 | Hicode #19 | Descoberta guiada, rascunho versionado, aprovação humana, fontes/hipóteses/decisões separadas e origem de épico | Teste operacional final pelo usuário |
 | Hicode #20 | Base existente preservada | Fora do escopo por decisão do operador |
-| Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |
-| Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
-| Hicode #32 | Tokens ciano compartilhados, recortes, foco visível e guarda WCAG AA para textos e estados | Capturas finais com dados reais do operador |
-| Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, escolha humana de configuracao, retomada explicita e E2E | Reconciliar dependencias entre produtos e sessoes nativas; lacunas bloqueiam em vez de inventar estado |
+| Hicode #24 | API expoe localidade/fallback, identidade, carga/VRAM e escolha de revisao | Aceite operacional do operador |
+| Hicode #31 | Heartbeat compartilhado, status/versao e autostart controlado | Aceite operacional do operador |
+| Hicode #32 | Tokens ciano, recortes, foco visivel, guarda WCAG AA e inspecao visual | Aceite visual do operador |
+| Hicode #34 | Recuperacao, snapshots, vinculo, escolha humana de configuracao, retomada e E2E | Aceite operacional; ambiguidade continua bloqueada para escolha humana |
 
 ## Provas ja executadas
 
@@ -208,8 +209,9 @@ o custo anterior é conhecido, o orçamento comporta outra chamada e o worktree
 continua limpo. Cada tentativa fica no checkpoint. Qualquer efeito no worktree
 torna o resultado incerto e exige reconciliação, sem nova chamada. A migração
 entre instalações recusa checkpoints com ramos paralelos até reconciliar seus
-worktrees. Worktrees filhos são preservados para inspeção; limpeza automática
-ainda não foi habilitada. Isso não encerra #49 nem #59.
+worktrees. Ramos bloqueados ou divergentes são preservados. Depois da integração
+comprovada, worktrees limpos são removidos; falha grava o motivo e preserva o
+diretório. `HII_PARALLEL_CLEANUP=off` desativa essa limpeza.
 
 Validação deste ajuste: 11 testes de paralelismo e typecheck aprovados; lint de
 tipos e clone limpo aprovados na suíte integral. A suíte local parou no guardrail
@@ -240,9 +242,10 @@ com o recibo. A coexistência das duas árvores, origem que não seja diretório
 symlink e alterações concorrentes bloqueiam para escolha humana, sem sobrescrita.
 
 O loop agentivo do Ollama é opt-in por `HII_OLLAMA_AGENTIC=1`. Antes da conversa,
-`/api/show` precisa declarar `tools`. O motor oferece apenas leitura e substituição
-exata em arquivo existente, recusa shell geral, path absoluto/Windows, traversal,
-symlink e escrita em `readonly`, limita arquivo a 512 KiB e limita turnos,
+`/api/show` precisa declarar `tools`. O motor oferece leitura, busca literal,
+substituição exata e validações tipadas (`json`, `contains`, `not_contains`) em
+arquivo existente. Recusa shell geral, argumento extra, path absoluto/Windows,
+traversal, symlink e escrita em `readonly`; limita arquivo a 512 KiB, turnos,
 chamadas e repetição. A resposta textual não substitui os gates posteriores.
 Somente loopback tem custo de API local medido; rede privada fica desconhecida.
 Isso não comprova onde a inferência ocorre. Em `somente_local`, o Ollama só fica
@@ -268,9 +271,10 @@ Uma parada após ferramenta concluída conserva o efeito para reconciliação e
 impede a próxima chamada ao modelo; a suíte agentiva cobre esse intervalo sem
 subprocesso em voo.
 
-As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
-real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama continua
-pendente; a política `somente_local` é coberta no checkpoint de localidade abaixo.
+As regressões determinísticas usam servidor/CLI falsos e diretórios temporários.
+O piloto real registrado abaixo usa modelo já instalado e opt-in; não baixa modelo
+nem afirma sandbox de SO. A política `somente_local` é coberta no checkpoint de
+localidade abaixo.
 
 Validação da migração: 10 cenários em Bun 1.4.0 e Node, incluindo crash após
 rename, aplicação parcial, reversão conservadora e conflitos. No HEAD deste
@@ -311,6 +315,8 @@ O catalogo de provedores inclui `identidadeInferencia` para o Ollama: endpoint
 normalizado sem credencial, versao do servidor, instante e origem da afericao e
 nomes/digests informados por `/api/tags`. Falha isolada de `/api/version` deixa a
 versao desconhecida sem apagar a prova de saude e os modelos obtidos no servidor.
+`/api/ps` acrescenta modelos carregados, tamanho e `size_vram`; memoria livre
+permanece explicitamente desconhecida porque esse endpoint nao a mede.
 
 O artefato de evidencias agrega no mesmo documento ligado ao fingerprint a
 politica efetiva, plano de rollout/reversao e o ledger de chamadas da sessao.

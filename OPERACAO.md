@@ -767,6 +767,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_OLLAMA_MODEL_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_PILOT` | — | — | `scripts/piloto-ollama.mjs` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
+| `HII_PARALLEL_CLEANUP` | — | — | `motor/oswaldo/orquestracao/paralelo.ts` |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
 | `HII_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
 | `HII_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |

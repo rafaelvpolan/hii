@@ -1,6 +1,6 @@
 import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { submit } from '../../motor/mirante/acoes.ts'
@@ -67,6 +67,8 @@ test('A -> B/C -> D usa worktrees distintos, integra e revalida antes da sucesso
   expect(locais.get('B')).not.toBe(wt)
   expect(locais.get('B')).not.toBe(locais.get('C'))
   expect(locais.get('D')).toBe(wt)
+  expect(existsSync(locais.get('B')!)).toBe(false)
+  expect(existsSync(locais.get('C')!)).toBe(false)
   for (const nome of ['A', 'B', 'C', 'D']) expect(readFileSync(join(wt, nome + '.txt'), 'utf8')).toBe(nome)
   expect(Number(resultado.cost)).toBe(0.4)
   let repetidas = 0
@@ -118,6 +120,9 @@ test('efeito fora do escopo do ramo bloqueia integracao e conserva arquivos', as
 })
 
 test('crash apos merge e antes do checkpoint reconhece os dois pais sem repetir IA', async () => {
+  // A fixture fabrica o crash reabrindo um checkpoint ja concluido; conserva os
+  // ramos para poder reproduzir esse instante anterior a limpeza.
+  process.env.HII_PARALLEL_CLEANUP = 'off'
   const plano = { ...planoOrquestrado(), id, sessaoId: id }
   plano.microtasks = plano.microtasks.slice(0, 3)
   const revisao = salvarPlano(plano, 0, 'crash-merge')

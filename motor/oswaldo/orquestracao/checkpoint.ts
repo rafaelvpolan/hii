@@ -11,6 +11,7 @@ export interface Ramo {
   estado: 'reservado' | 'executando' | 'pronto' | 'integrando' | 'integrado' | 'bloqueado'
   tentativa: Tentativa; tentativas?: Tentativa[]; commit?: string; antesIntegrar?: string; integradoHead?: string
   fingerprint?: string; resultado?: ImplementResult; motivo?: string
+  limpeza?: 'concluida' | 'preservada'; motivoLimpeza?: string
 }
 export interface OndaParalela {
   versao: 1; tarefas: string[]; estado: 'preparando' | 'ativa' | 'concluida'
