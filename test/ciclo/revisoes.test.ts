@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync } from 'n
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { executarRevisoes, analisarParecer, consolidarAchados, validarPoliticaDeRevisao } from '../../motor/ciclo/crivo/revisoes.ts'
+import { executarRevisoes, analisarParecer, consolidarAchados, rubricaDoDominio, validarPoliticaDeRevisao } from '../../motor/ciclo/crivo/revisoes.ts'
 import type { EntradaDeRevisoes, PoliticaDeRevisao, Parecer, Achado } from '../../motor/ciclo/crivo/revisoes.ts'
 import { emptyUsage } from '../../motor/tomada/uso.ts'
 import { submit } from '../../motor/mirante/acoes.ts'
@@ -40,6 +40,8 @@ test('parecer completo persiste e reutiliza sem repetir chamada nem custo', asyn
     chamadas++
     expect(req.mode).toBe('readonly')
     expect(req.useAgents).toBe(false)
+    expect(req.prompt).toContain('Rubrica v2:')
+    expect(req.prompt).toContain('segredos e dados sensiveis')
     return resposta()
   }
   expect((await executarRevisoes(entrada, politica, executar, catalogo)).aprovado).toBe(true)
@@ -50,6 +52,13 @@ test('parecer completo persiste e reutiliza sem repetir chamada nem custo', asyn
   expect(chamadas).toBe(1)
   patchCard(entrada.id, { status: 'PAUSED' })
   await expect(executarRevisoes(entrada, politica, executar, catalogo)).rejects.toThrow('operador')
+})
+
+test('rubricas por dominio cobrem negocio sem inventar regra ausente', () => {
+  expect(rubricaDoDominio('negocio')).toContain('ausencia de regra permanece pendencia')
+  expect(rubricaDoDominio('SQL')).toContain('parametrizacao e menor privilegio')
+  expect(rubricaDoDominio('Segurança')).toContain('segredos e dados sensiveis')
+  expect(rubricaDoDominio('dominio-customizado')).toContain('criterios declarados e evidencia observavel')
 })
 
 test('concorrencia reserva antes da inferencia e nao repete chamada', async () => {

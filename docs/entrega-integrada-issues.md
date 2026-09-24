@@ -15,7 +15,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | MCP e diagnosticado apenas quando uma tarefa exige um conector aplicavel ao harness escolhido |
 | HII #49 | Paralelismo isolado, integracao serial, prova combinada e redistribuicao segura por ramo | Limpeza governada dos worktrees preservados e piloto real |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
-| HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
+| HII #51 | Parecer estruturado por especialista, rubricas v2 por dominio, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Cache do Crivo principal, publicacao reconciliavel e limites completos |
 | HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
 | Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
 | Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |

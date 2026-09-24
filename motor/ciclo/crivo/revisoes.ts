@@ -32,7 +32,7 @@ export interface Parecer {
   custo: number | null; tokens: number
 }
 export interface RelatorioDeRevisoes {
-  versao: 1; rubrica: 1; tarefa: string; fingerprint: string; head: string; diffHash: string; base: string; politica: string
+  versao: 1; rubrica: 2; tarefa: string; fingerprint: string; head: string; diffHash: string; base: string; politica: string
   instante: string; invalidado: boolean; pareceres: Parecer[]; achados: AchadoConsolidado[]; aprovado: boolean; discordancia: boolean
   custo: number; custoMedido: boolean; tokens: number
   custoIncremental: number; custoIncrementalMedido: boolean; tokensIncrementais: number
@@ -42,6 +42,19 @@ export interface EntradaDeRevisoes {
   custoAnterior?: number | null; fingerprintEsperado?: string; nomes: string[]; diff: string; parcial: boolean; criterios: string[]
 }
 const sha = (s: string): string => createHash('sha256').update(s).digest('hex')
+const RUBRICAS_V2: Readonly<Record<string, readonly string[]>> = {
+  seguranca: ['limites de confianca e autorizacao', 'segredos e dados sensiveis', 'injecao, traversal e efeitos indiretos', 'dependencias e configuracao segura'],
+  arquitetura: ['responsabilidade e acoplamento', 'compatibilidade e migracao', 'idempotencia, concorrencia e retomada', 'operacao, rollback e observabilidade'],
+  performance: ['complexidade e volume limite', 'concorrencia, filas e backpressure', 'memoria, I/O e chamadas externas', 'medicao antes de alegar melhoria'],
+  desempenho: ['complexidade e volume limite', 'concorrencia, filas e backpressure', 'memoria, I/O e chamadas externas', 'medicao antes de alegar melhoria'],
+  sql: ['migracao reversivel e compatibilidade', 'locks, indices e plano de consulta', 'integridade, concorrencia e transacao', 'parametrizacao e menor privilegio'],
+  banco: ['migracao reversivel e compatibilidade', 'locks, indices e plano de consulta', 'integridade, concorrencia e transacao', 'parametrizacao e menor privilegio'],
+  negocio: ['criterio de produto identificado', 'regra e fonte verificavel', 'casos limite e impacto no usuario', 'ausencia de regra permanece pendencia'],
+}
+export function rubricaDoDominio(dominio: string): readonly string[] {
+  const chave = dominio.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return RUBRICAS_V2[chave] ?? ['criterios declarados e evidencia observavel', 'regressoes e casos limite', 'operacao e reversao']
+}
 export function validarPoliticaDeRevisao(p: PoliticaDeRevisao): void {
   if (!p || p.versao !== 1 || !Number.isSafeInteger(p.revisao) || p.revisao < 1 || !Array.isArray(p.revisores) || p.revisores.length > 8 || !p.revisores.some(r => r?.obrigatorio && r?.ativo)) throw new Error('politica de revisao invalida')
   const ids = new Set<string>()
@@ -95,7 +108,8 @@ export function analisarParecer(saida: string, r: RevisorConfigurado, e: Entrada
 }
 function prompt(r: RevisorConfigurado, a: AgenteInjetado, e: EntradaDeRevisoes): string {
   return [a.prompt, 'Revisao somente leitura. O papel e uma rubrica, nao outra IA independente.',
-    'Dominio: ' + r.dominio, 'Objetivo: ' + e.objetivo, 'Criterios permitidos: ' + e.criterios.join(', '),
+    'Dominio: ' + r.dominio, 'Rubrica v2:\n- ' + rubricaDoDominio(r.dominio).join('\n- '),
+    'Objetivo: ' + e.objetivo, 'Criterios permitidos: ' + e.criterios.join(', '),
     'Arquivos: ' + JSON.stringify(e.nomes), 'Diff completo:\n' + e.diff,
     'Nao execute correcoes. Emita apenas JSON com estado (aprovado/bloqueado/inconclusivo), motivo, coberturaCompleta, arquivos e achados.',
     'Cada achado exige severidade P0/P1/P2/P3, dominio, descricao, arquivo, linha (inteiro ou null), evidencia, recomendacao, criterio.',
@@ -114,7 +128,8 @@ export async function executarRevisoes(e: EntradaDeRevisoes, politica: PoliticaD
   const head = await runGit(e.wt, ['rev-parse', 'HEAD'])
   if (head.err) throw new Error('HEAD indisponivel para revisao')
   if (base.err) throw new Error('base indisponivel para revisao')
-  const politicaHash = sha(JSON.stringify({ politica, risco: e.risco, nomes: e.nomes, diff: sha(e.diff), parcial: e.parcial, rubricas: politica.revisores.map(r => catalogo[r.papel] || null), criterios: e.criterios, objetivo: e.objetivo, rubrica: 1 }))
+  const politicaHash = sha(JSON.stringify({ politica, risco: e.risco, nomes: e.nomes, diff: sha(e.diff), parcial: e.parcial,
+    rubricas: politica.revisores.map(r => ({ agente: catalogo[r.papel] || null, dominio: rubricaDoDominio(r.dominio) })), criterios: e.criterios, objetivo: e.objetivo, rubrica: 2 }))
   const dir = join(cardsDir(), 'revisoes')
   mkdirSync(dir, { recursive: true })
   const arquivo = join(dir, e.id + '-' + sha(JSON.stringify([fingerprint, base.stdout.trim(), politicaHash])) + '.json')
@@ -122,7 +137,7 @@ export async function executarRevisoes(e: EntradaDeRevisoes, politica: PoliticaD
     if (existsSync(arquivo)) {
       const envelope = JSON.parse(readFileSync(arquivo, 'utf8')) as { hash: string; relatorio: RelatorioDeRevisoes }
       const salvo = envelope.relatorio
-      if (!salvo || envelope.hash !== sha(JSON.stringify(salvo)) || salvo.versao !== 1 ||
+      if (!salvo || envelope.hash !== sha(JSON.stringify(salvo)) || salvo.versao !== 1 || salvo.rubrica !== 2 ||
         salvo.tarefa !== e.id || salvo.fingerprint !== fingerprint || salvo.base !== base.stdout.trim() ||
         salvo.head !== head.stdout.trim() || salvo.diffHash !== sha(e.diff) || salvo.politica !== politicaHash || salvo.aprovado !== (!salvo.invalidado && aprovado(salvo.pareceres))) throw new Error('parecer persistido inconsistente')
       return salvo
@@ -183,7 +198,7 @@ export async function executarRevisoes(e: EntradaDeRevisoes, politica: PoliticaD
   const mudou = excedeu || parado(e.id) || depois.err || depois.stdout !== base.stdout || await fingerprintDoTrabalho(e.wt) !== fingerprint
   if (mudou) for (const p of pareceres) if (!['desabilitado', 'nao-aplicavel'].includes(p.estado)) { p.estado = 'inconclusivo'; p.motivo = 'Trabalho ou base mudou; parecer invalidado.' }
   const achados = consolidarAchados(pareceres)
-  const relatorio: RelatorioDeRevisoes = { versao: 1, rubrica: 1, tarefa: e.id, fingerprint, head: head.stdout.trim(), diffHash: sha(e.diff), base: base.stdout.trim(), politica: politicaHash, instante: new Date().toISOString(), invalidado: !!mudou, pareceres, achados,
+  const relatorio: RelatorioDeRevisoes = { versao: 1, rubrica: 2, tarefa: e.id, fingerprint, head: head.stdout.trim(), diffHash: sha(e.diff), base: base.stdout.trim(), politica: politicaHash, instante: new Date().toISOString(), invalidado: !!mudou, pareceres, achados,
     aprovado: !mudou && aprovado(pareceres),
     discordancia: new Set(pareceres.filter(p => ['aprovado', 'bloqueado'].includes(p.estado)).map(p => p.estado)).size > 1,
     custo: pareceres.reduce((s, p) => s + (p.custo || 0), 0), custoMedido: pareceres.every(p => p.custo !== null), tokens: pareceres.reduce((s, p) => s + p.tokens, 0),
