@@ -17,6 +17,7 @@ export interface Evidencia {
   exitCode: number | null
   sinal: string
   timeout: boolean
+  falha: 'codigo-saida' | 'timeout' | 'sinal' | 'ferramenta-ausente' | 'ambiente' | 'evidencia-ausente' | 'trabalho-alterado' | null
   duracaoMs: number
   saida: string
 }
@@ -85,8 +86,8 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
       const atividade = iniciar({ repo: plano.repo, sessao: plano.sessaoId, execucao: plano.id }, recurso(c.id, 'validation'), { criterio: c.id, obrigatorio: c.obrigatorio })
       atividades.push(atividade)
       atualizar(atividade, a => { a.planoRevisao = revisao })
-      const e: Evidencia = { criterio: c.id, obrigatorio: c.obrigatorio, estado: 'inconclusivo', comando: [], exitCode: null, sinal: '', timeout: false, duracaoMs: 0, saida: 'sem comando verificavel' }
-      if (c.naoAplicavel && !c.obrigatorio) { e.estado = 'nao-aplicavel'; e.saida = c.naoAplicavel }
+      const e: Evidencia = { criterio: c.id, obrigatorio: c.obrigatorio, estado: 'inconclusivo', comando: [], exitCode: null, sinal: '', timeout: false, falha: 'evidencia-ausente', duracaoMs: 0, saida: 'sem comando verificavel' }
+      if (c.naoAplicavel && !c.obrigatorio) { e.estado = 'nao-aplicavel'; e.falha = null; e.saida = c.naoAplicavel }
       else if (c.comando) {
         const inicio = performance.now()
         const cmd = c.comando
@@ -97,8 +98,13 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
           e.exitCode = r.err ? (typeof r.err.code === 'number' ? r.err.code : null) : 0
           e.sinal = r.err?.signal ?? ''
           e.estado = !r.err && !e.timeout ? 'aprovado' : e.timeout || e.exitCode === null ? 'inconclusivo' : 'reprovado'
+          e.falha = !r.err && !e.timeout ? null
+            : e.timeout ? 'timeout'
+              : e.sinal ? 'sinal'
+                : r.err?.code === 'ENOENT' ? 'ferramenta-ausente'
+                  : typeof r.err?.code === 'number' ? 'codigo-saida' : 'ambiente'
           e.saida = ocultarSegredos([r.stdout, r.stderr, r.err?.message ?? ''].filter(Boolean).join('\n')).slice(-32000)
-        } catch (erro) { e.saida = ocultarSegredos((erro as Error).message) }
+        } catch (erro) { e.falha = 'ambiente'; e.saida = ocultarSegredos((erro as Error).message) }
         e.duracaoMs = performance.now() - inicio
       }
       evidencias.push(e)
@@ -106,7 +112,7 @@ export async function coletarEvidencias(plano: PlanoDeExecucao, revisao: number,
       atualizar(atividade, a => { a.detalhes.exitCode = e.exitCode; a.detalhes.timeout = e.timeout; a.detalhes.duracaoMs = e.duracaoMs })
     }
     const mudou = fingerprint !== await fingerprintDoTrabalho(wt)
-    if (mudou) for (const e of evidencias) { e.estado = 'inconclusivo'; e.saida += '\nO trabalho mudou durante a verificacao; execute novamente.' }
+    if (mudou) for (const e of evidencias) { e.estado = 'inconclusivo'; e.falha = 'trabalho-alterado'; e.saida += '\nO trabalho mudou durante a verificacao; execute novamente.' }
     for (const [i, e] of evidencias.entries()) terminar(atividades[i] ?? '', e.estado === 'aprovado' ? 'succeeded' : e.estado === 'nao-aplicavel' ? 'skipped' : 'failed', e.estado)
     const relatorio: RelatorioDeEvidencias = { versao: 1, ...(microtask ? { microtask } : {}), tentativa: randomUUID(), plano: plano.id, revisao, fingerprint, instante: new Date().toISOString(), evidencias,
       aprovado: evidencias.every(e => !e.obrigatorio || e.estado === 'aprovado') }

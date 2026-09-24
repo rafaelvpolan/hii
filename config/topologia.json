@@ -24,6 +24,7 @@
     ["EXECUTING", "WAITING"],
     ["EXECUTING", "PAUSED"],
     ["EXECUTING", "CONFIRM"],
+    ["EXECUTING", "PR_OPEN"],
     ["EXECUTED", "EXECUTING"],
     ["EXECUTED", "URL_OK"],
     ["WAITING", "EXECUTING"],
