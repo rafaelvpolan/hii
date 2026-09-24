@@ -35,6 +35,7 @@ export interface RelatorioDeRevisoes {
   versao: 1; rubrica: 1; tarefa: string; fingerprint: string; head: string; diffHash: string; base: string; politica: string
   instante: string; invalidado: boolean; pareceres: Parecer[]; achados: AchadoConsolidado[]; aprovado: boolean; discordancia: boolean
   custo: number; custoMedido: boolean; tokens: number
+  custoIncremental: number; custoIncrementalMedido: boolean; tokensIncrementais: number
 }
 export interface EntradaDeRevisoes {
   id: string; wt: string; base: string; objetivo: string; risco: 'low' | 'high'
@@ -137,7 +138,7 @@ export async function executarRevisoes(e: EntradaDeRevisoes, politica: PoliticaD
     const baseAtual = await runGit(e.wt, ['rev-parse', 'origin/' + e.base])
     if (baseAtual.err || baseAtual.stdout !== base.stdout) throw new Error('base mudou durante leitura do parecer')
     if (parado(e.id) || await fingerprintDoTrabalho(e.wt) !== fingerprint) throw new Error('trabalho ou estado mudou durante leitura do parecer')
-    return { ...cache, custo: 0, custoMedido: true, tokens: 0 }
+    return { ...cache, custoIncremental: 0, custoIncrementalMedido: true, tokensIncrementais: 0 }
   }
   const pareceres: Parecer[] = []
   const teto = tetoDoCard()
@@ -185,7 +186,8 @@ export async function executarRevisoes(e: EntradaDeRevisoes, politica: PoliticaD
   const relatorio: RelatorioDeRevisoes = { versao: 1, rubrica: 1, tarefa: e.id, fingerprint, head: head.stdout.trim(), diffHash: sha(e.diff), base: base.stdout.trim(), politica: politicaHash, instante: new Date().toISOString(), invalidado: !!mudou, pareceres, achados,
     aprovado: !mudou && aprovado(pareceres),
     discordancia: new Set(pareceres.filter(p => ['aprovado', 'bloqueado'].includes(p.estado)).map(p => p.estado)).size > 1,
-    custo: pareceres.reduce((s, p) => s + (p.custo || 0), 0), custoMedido: pareceres.every(p => p.custo !== null), tokens: pareceres.reduce((s, p) => s + p.tokens, 0) }
+    custo: pareceres.reduce((s, p) => s + (p.custo || 0), 0), custoMedido: pareceres.every(p => p.custo !== null), tokens: pareceres.reduce((s, p) => s + p.tokens, 0),
+    custoIncremental: pareceres.reduce((s, p) => s + (p.custo || 0), 0), custoIncrementalMedido: pareceres.every(p => p.custo !== null), tokensIncrementais: pareceres.reduce((s, p) => s + p.tokens, 0) }
   // Pareceres sao imutaveis para a mesma revisao/rubrica; nova politica explicita
   // permite nova rodada, sem loops automaticos de chamadas pagas.
   withFileLock(arquivo, () => { if (!existsSync(arquivo)) writeFileAtomic(arquivo, JSON.stringify({ hash: sha(JSON.stringify(relatorio)), relatorio }, null, 2)) })

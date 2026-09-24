@@ -44,7 +44,9 @@ test('parecer completo persiste e reutiliza sem repetir chamada nem custo', asyn
   }
   expect((await executarRevisoes(entrada, politica, executar, catalogo)).aprovado).toBe(true)
   const cache = await executarRevisoes(entrada, politica, executar, catalogo)
-  expect(cache.custo).toBe(0)
+  expect(cache.custo).toBe(0.2)
+  expect(cache.custoIncremental).toBe(0)
+  expect(cache.tokensIncrementais).toBe(0)
   expect(chamadas).toBe(1)
   patchCard(entrada.id, { status: 'PAUSED' })
   await expect(executarRevisoes(entrada, politica, executar, catalogo)).rejects.toThrow('operador')
@@ -69,6 +71,10 @@ test('parecer sem cobertura e excecao de custo desconhecido nao aprovam', async 
   const r = await executarRevisoes(entrada, politica, async () => { throw new Error('resposta perdida') }, catalogo)
   expect(r.aprovado).toBe(false)
   expect(r.custoMedido).toBe(false)
+  const cache = await executarRevisoes(entrada, politica, async () => { throw new Error('nao deve repetir') }, catalogo)
+  expect(cache.custoMedido).toBe(false)
+  expect(cache.custoIncremental).toBe(0)
+  expect(cache.custoIncrementalMedido).toBe(true)
   const incompleta = resposta()
   incompleta.text = incompleta.text.replace('"app.ts"', '"outro.ts"')
   const nova = { ...politica, revisao: 2 }

@@ -340,8 +340,8 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
     return { ...principal, ok: revisoes.aprovado, verdict: revisoes.aprovado ? principal.verdict : 'BLOCKED',
       reason: principal.reason + '; ' + revisoes.pareceres.map(p => p.fonte.papel + ': ' + p.estado + ' — ' + p.motivo).join('; '),
       criterio: revisoes.achados.find(a => ['P0', 'P1'].includes(a.severidade))?.criterio || principal.criterio,
-      cost: principal.cost + revisoes.custo, costMeasured: principal.costMeasured && revisoes.custoMedido,
-      tokens: principal.tokens + revisoes.tokens, failureClass: 'terminal', revisoes }
+      cost: principal.cost + revisoes.custoIncremental, costMeasured: principal.costMeasured && revisoes.custoIncrementalMedido,
+      tokens: principal.tokens + revisoes.tokensIncrementais, failureClass: 'terminal', revisoes }
   } catch (erro) {
     return { ...principal, ok: false, verdict: 'BLOCKED', reason: String((erro as Error).message),
       costMeasured: false, failureClass: 'terminal' }
