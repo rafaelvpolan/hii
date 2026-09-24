@@ -17,10 +17,11 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, rubricas v2 por dominio, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Cache do Crivo principal, publicacao reconciliavel e limites completos |
 | HII #59 | Captura duravel de preferencias; roteamento por capacidade/tier; Ollama agentivo opt-in com eventos semanticos e admissao por servidor/modelo; plug remoto após falha local recuperável, inclusive por tentativa paralela | Piloto real e calibracao dos modelos por instalacao |
-| Hicode #19/#20 | Base existente preservada | Revalidar descoberta e hierarquia ponta a ponta |
+| Hicode #19 | Descoberta guiada, rascunho versionado, aprovação humana, fontes/hipóteses/decisões separadas e origem de épico | Teste operacional final pelo usuário |
+| Hicode #20 | Base existente preservada | Fora do escopo por decisão do operador |
 | Hicode #24 | API expoe localidade/fallback efetivos; painel permite escolher revisao humana ou automatica | Piloto real e calibracao por instalacao |
 | Hicode #31 | Heartbeat entre Bun/Node usa uptime do SO e identidade do processo | Revalidar suite de status/autostart |
-| Hicode #32 | Recuperacao usa tema legivel, responsivo | Revalidar contraste e telas restantes |
+| Hicode #32 | Tokens ciano compartilhados, recortes, foco visível e guarda WCAG AA para textos e estados | Capturas finais com dados reais do operador |
 | Hicode #34 | API/preview/importacao pausada, snapshots, vinculo persistente, escolha humana de configuracao, retomada explicita e E2E | Reconciliar dependencias entre produtos e sessoes nativas; lacunas bloqueiam em vez de inventar estado |
 
 ## Provas ja executadas
