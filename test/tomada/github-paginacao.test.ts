@@ -1,10 +1,12 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { executarComIdempotencia, FASE_DA_PONTE } from '../../motor/quilombo/salvo-conduto/idempotencia.ts'
 import { test, expect } from '../apoio/runner.ts'
 import { GithubIssuesSync, parseIssues } from '../../motor/tomada/ponte/tarefas/github-issues.ts'
 import type { RunResult } from '../../motor/quilombo/git.ts'
+import { createCard, readCard } from '../../motor/cordel/store.ts'
+import { runSync } from '../../motor/tomada/ponte/tarefas/sync.ts'
 
 function ok(stdout: string): RunResult { return { err: null, stdout, stderr: '' } }
 
@@ -70,4 +72,30 @@ test('origem legada preserva o diario e nao republica comentario ja confirmado',
     else process.env.HII_GH_REPO = repoAntes
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('issue fechada pausa card ativo; reabertura nao retoma sem humano', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'hii-tracker-reconcile-'))
+  const env = { ...process.env }
+  try {
+    const bin = join(dir, 'bin'); mkdirSync(bin)
+    process.env.PATH = `${bin}:${env.PATH ?? ''}`
+    process.env.HII_CARDS_DIR = join(dir, 'cards')
+    process.env.HII_TASK_SYNC = 'github-issues'
+    process.env.HII_GH_REPO = 'org/app'
+    writeFileSync(join(bin, 'gh'), `#!/bin/sh
+if [ "$1" = repo ]; then printf '%s' '{"url":"https://github.com/org/app"}'; exit 0; fi
+if [ "$1" = api ]; then printf '%s' '[[{"number":7,"title":"externa","state":"closed","labels":[]}]]'; exit 0; fi
+printf '%s' 'comentado'
+`)
+    chmodSync(join(bin, 'gh'), 0o755)
+    const id = createCard({ title: 'externa', repo: 'org/app', status: 'READY', source: 'github-issues#https://github.com/org/app/issues/7' }, 'objetivo')
+    expect((await runSync()).ok).toBe(true)
+    expect(readCard(id)?.fm.status).toBe('PAUSED')
+    expect(readCard(id)?.fm.tracker_state).toBe('closed')
+    writeFileSync(join(bin, 'gh'), readFileSync(join(bin, 'gh'), 'utf8').replace('"state":"closed"', '"state":"open"'))
+    expect((await runSync()).ok).toBe(true)
+    expect(readCard(id)?.fm.status).toBe('PAUSED')
+    expect(readCard(id)?.fm.tracker_state).toBe('open')
+  } finally { process.env = env; rmSync(dir, { recursive: true, force: true }) }
 })

@@ -6,6 +6,9 @@ export interface ExternalTask {
   externalId: string
   title: string
   body: string
+  estado?: 'open' | 'closed'
+  bloqueios?: string[]
+  prioridade?: string
 }
 
 export interface TaskSync {

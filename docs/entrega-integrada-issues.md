@@ -316,3 +316,9 @@ O artefato de evidencias agrega no mesmo documento ligado ao fingerprint a
 politica efetiva, plano de rollout/reversao e o ledger de chamadas da sessao.
 Custos preservam a qualidade `medido`, `piso` ou `desconhecido`; tokens continuam
 separados e prompts, argumentos privados e credenciais nao entram no pacote.
+
+O tracker GitHub opt-in consulta todas as paginas e estados. Issue fechada ou
+com label de bloqueio pausa o card ativo e persiste estado, blockers e prioridade;
+uma reabertura atualiza a origem, mas nunca retoma o card automaticamente. Cards
+terminais nao sao rebaixados e uma leitura parcial/falha nao e tratada como lista
+vazia nem altera elegibilidade.
