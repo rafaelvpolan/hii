@@ -5,8 +5,6 @@ import { preferenciaDoPapel, arquivoDePreferencias } from '../../tomada/preferen
 import { repoStatus } from '../../cordel/repos.ts'
 import { checkGh, checkProvider, checkRecurso, checkDaemon, checkGitPush, checkContract, checkRuntimes, checkProjectConfig } from './doctor.ts'
 import type { Check, Severity } from './doctor.ts'
-import { conectorExterno, SERVIDOR_NAVEGACAO } from '../../tomada/ponte/mcp.ts'
-import type { DisponibilidadeExterna } from '../../tomada/ponte/estado.ts'
 
 export interface SondaDoctor {
   id: string; escopo: string; nome: string; severidade: Severity
@@ -26,33 +24,6 @@ export function medirCheck(id: string, escopo: string, executar: () => Check): S
   const coletadoEm = new Date().toISOString()
   try {
     const c = executar()
-    return { id, escopo, nome: c.nome, severidade: c.severidade,
-      estado: c.severidade === 'ok' ? 'confirmado' : c.severidade === 'aviso' ? 'atencao' : 'falhou',
-      detalhe: textoPublico(c.detalhe), correcao: textoPublico(c.conserto), duracaoMs: performance.now() - inicio, coletadoEm }
-  } catch (e) {
-    return { id, escopo, nome: id, severidade: 'erro', estado: 'desconhecido',
-      detalhe: textoPublico(String((e as Error).message)), correcao: 'Resolva a falha da sonda e repita o diagnostico; nao houve inferencia.',
-      duracaoMs: performance.now() - inicio, coletadoEm }
-  }
-}
-export async function checkMcp(
-  ferramenta = SERVIDOR_NAVEGACAO,
-  consultar: (nome: string) => Promise<DisponibilidadeExterna> = conectorExterno,
-): Promise<Check> {
-  const limite = new Promise<DisponibilidadeExterna>(resolve => {
-    const timer = setTimeout(() => resolve({ usavel: false, motivo: 'sonda MCP excedeu 5 segundos; disponibilidade desconhecida', tools: [], transitorio: true }), 5000)
-    timer.unref()
-  })
-  const r = await Promise.race([consultar(ferramenta), limite])
-  if (r.usavel) return { nome: 'MCP ' + ferramenta, severidade: 'ok', detalhe: r.tools.length + ' prefixo(s) de ferramenta persistente(s) confirmado(s)', conserto: '' }
-  return { nome: 'MCP ' + ferramenta, severidade: 'aviso', detalhe: r.motivo,
-    conserto: r.transitorio ? 'Repita a sonda antes de uma tarefa que exija este conector.' : 'Configure/autentique o MCP em escopo persistente; o motor nao executa OAuth.' }
-}
-async function medirCheckAssincrono(id: string, escopo: string, executar: () => Promise<Check>): Promise<SondaDoctor> {
-  const inicio = performance.now()
-  const coletadoEm = new Date().toISOString()
-  try {
-    const c = await executar()
     return { id, escopo, nome: c.nome, severidade: c.severidade,
       estado: c.severidade === 'ok' ? 'confirmado' : c.severidade === 'aviso' ? 'atencao' : 'falhou',
       detalhe: textoPublico(c.detalhe), correcao: textoPublico(c.conserto), duracaoMs: performance.now() - inicio, coletadoEm }
@@ -95,14 +66,13 @@ export function checkModelos(): Check {
     detalhe: naoVerificados.length ? 'Modelo efetivo nao verificado: ' + naoVerificados.join(', ') : 'Modelos declarados constam do catalogo; acesso remoto nao testado.',
     conserto: 'Nenhuma inferencia foi usada; catalogo local pode estar desatualizado.' }
 }
-export async function coletarDoctor(): Promise<Diagnostico> {
+export function coletarDoctor(): Diagnostico {
   const inicio = performance.now()
   const checks = [
     medirCheck('gh', 'host', checkGh), medirCheck('provedores', 'host', checkProvider),
     medirCheck('modelos', 'host', checkModelos), medirCheck('recursos', 'host', checkRecurso),
     medirCheck('daemon', 'host', checkDaemon),
   ]
-  checks.push(await medirCheckAssincrono('mcp-' + SERVIDOR_NAVEGACAO, 'host', () => checkMcp()))
   for (const r of repoStatus()) {
     for (const [id, executar] of [
       ['git-push', () => checkGitPush(r.path, r.name)], ['contrato', () => checkContract(r.path)],

@@ -144,6 +144,7 @@ test('transicao nao declarada e rejeitada — a topologia serve pra barrar deriv
   expect(transicaoPermitida(topo, 'READY', 'PR_OPEN')).toBe(false)
   expect(transicaoPermitida(topo, 'INBOX', 'MERGED')).toBe(false)
   expect(transicaoPermitida(topo, 'READY', 'EXECUTING')).toBe(true)
+  expect(transicaoPermitida(topo, 'EXECUTING', 'CONFIRM'), 'gateway nao deve gerar alarme ao pedir confirmacao humana').toBe(true)
 })
 
 test('HALTED e PAUSED sao alcancaveis de qualquer estado — parar nunca depende de rota', () => {

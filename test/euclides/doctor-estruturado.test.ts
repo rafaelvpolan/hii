@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { medirCheck, configuracaoEfetiva, checkModelos, checkMcp } from '../../motor/euclides/radar/doctor-estruturado.ts'
+import { medirCheck, configuracaoEfetiva, checkModelos } from '../../motor/euclides/radar/doctor-estruturado.ts'
 import { modelFor, modoFor, providerNameFor, providerFor } from '../../motor/tomada/registro.ts'
 let dir = ''
 let env: NodeJS.ProcessEnv
@@ -45,18 +45,6 @@ test('modelo desconhecido e catalogo indisponivel sao diagnósticos distintos se
     h.modelosDisponiveis = () => []
     expect(checkModelos().detalhe).toContain('nao verificado')
   } finally { h.modelosDisponiveis = original; h.run = run }
-})
-
-test('MCP diferencia conectado, autenticacao ausente e sonda inconclusiva', async () => {
-  const conectado = await checkMcp('notion', async () => ({ usavel: true, motivo: '', tools: ['mcp__notion'] }))
-  expect(conectado.severidade).toBe('ok')
-  expect(conectado.detalhe).toContain('confirmado')
-  const auth = await checkMcp('notion', async () => ({ usavel: false, motivo: 'conector existe mas pede autenticacao', tools: [] }))
-  expect(auth.severidade).toBe('aviso')
-  expect(auth.conserto).toContain('autentique')
-  const incerto = await checkMcp('notion', async () => ({ usavel: false, motivo: 'nao consegui listar', tools: [], transitorio: true }))
-  expect(incerto.severidade).toBe('aviso')
-  expect(incerto.conserto).toContain('Repita a sonda')
 })
 
 test('API de diagnostico nao bloqueia status e compartilha sonda concorrente', async () => {

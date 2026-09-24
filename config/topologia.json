@@ -23,6 +23,7 @@
     ["EXECUTING", "COMPLETED"],
     ["EXECUTING", "WAITING"],
     ["EXECUTING", "PAUSED"],
+    ["EXECUTING", "CONFIRM"],
     ["EXECUTED", "EXECUTING"],
     ["EXECUTED", "URL_OK"],
     ["WAITING", "EXECUTING"],

@@ -12,7 +12,7 @@ Esta matriz registra trabalho em andamento, nao declara todas as issues resolvid
 | --- | --- | --- |
 | HII #46 | Consolidacao das provas dos fluxos abaixo | Auditar todo o epico no escopo decidido: somente HII e Hicode |
 | HII #47 | Leitura CRLF; IDs ambiguos recusados; recuperacao versionada | Completar matriz de round-trip/compatibilidade |
-| HII #48 | Diagnostico estruturado, incluindo MCP pela mesma sonda do despacho; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | Provisionamento de MCP depende dos dados do servidor escolhido e autenticacao humana |
+| HII #48 | Diagnostico estruturado; setup com previa/hash, migracao automatica `.hicode` -> `.hii`, aplicacao seletiva, retomada e reversao conservadora | MCP e diagnosticado apenas quando uma tarefa exige um conector aplicavel ao harness escolhido |
 | HII #49 | Criterios reais antes de liberar sucessoras; checkpoint alterado bloqueia replay | Paralelismo isolado, integracao e politica de redistribuicao |
 | HII #50 | Provas por microtask separadas da evidencia final; regressao de falso sucesso | Auditar matriz completa TUI/rollout |
 | HII #51 | Parecer estruturado por especialista, API, reserva/cache, deduplicacao, sintese no PR e escolha persistida entre revisao humana e auto review | Rubricas por dominio, cache do Crivo principal e limites completos |
@@ -122,13 +122,10 @@ Setup/aplicacao/reversao e MCP completo por tarefa ainda precisam ser concluidos
 Validacao deste incremento: 73 testes Node de API, revisao, doctor, MCP e
 orcamento passaram; tipos e lint:types tambem passaram.
 
-O doctor estruturado agora inclui `mcp-omc` e diferencia conector persistente,
-autenticacao pendente, ausencia comprovada e sonda inconclusiva/transitoria. A
-sonda tem prazo proprio, nao executa inferencia e nao inicia OAuth. Smoke WSL no
-checkout candidato produziu JSON v1 em 4,6 s e reportou corretamente o MCP ausente,
-sem confundi-lo com autenticacao ou falha do codigo da tarefa. O provisionamento
-automatico de um MCP continua condicionado a URL/comando e escopo escolhidos pelo
-operador; o setup nao inventa endpoint nem grava credencial.
+MCP nao e requisito global do motor. O conector `omc`, pertencente ao ecossistema
+Claude, nao e sondado pelo doctor como requisito do Codex. Quando uma tarefa pede
+uma acao externa, o despacho continua verificando o conector aplicavel e distingue
+ausencia, autenticacao, escopo dinamico e falha transitoria antes de chamar a IA.
 
 ## Validacao do segundo checkpoint
 
