@@ -113,6 +113,39 @@ test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima 
   expect(ferramentas).toEqual(['ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text'])
 })
 
+test('busca e validacao tipadas operam sem conceder shell ao modelo', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'estado=antes\nestado=depois\n')
+  writeFileSync(join(dir, 'dados.json'), '{"ok":true}\n')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'search_text', arguments: { path: 'arquivo.txt', query: 'estado=', max_results: 1 } } },
+      { function: { name: 'validate_file', arguments: { path: 'dados.json', check: 'json' } } },
+      { function: { name: 'validate_file', arguments: { path: 'arquivo.txt', check: 'contains', expected: 'estado=depois' } } },
+    ] } },
+    { message: { role: 'assistant', content: 'validado' } },
+  )
+  const r = await new OllamaProvider().run(pedido('readonly'))
+  expect(r.ok).toBe(true)
+  expect(r.text).toBe('validado')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('estado=antes\nestado=depois\n')
+})
+
+test('validacao tipada rejeita argumento extra e falha de criterio', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'seguro')
+  for (const [argumentos, motivo] of [
+    [{ path: 'arquivo.txt', check: 'contains', expected: 'seguro', command: 'rm' }, 'argumento desconhecido'],
+    [{ path: 'arquivo.txt', check: 'not_contains', expected: 'seguro' }, 'validacao not_contains falhou'],
+  ] as const) {
+    respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'validate_file', arguments: argumentos } },
+    ] } })
+    const r = await new OllamaProvider().run(pedido('readonly'))
+    expect(r.ok).toBe(false)
+    expect(r.detail).toContain(motivo)
+  }
+})
+
 test('limite configurado impede ferramenta excedente antes do efeito', async () => {
   process.env.HII_AGENT_MAX_TOOLS = '1'
   writeFileSync(join(dir, 'a.txt'), 'A0')
