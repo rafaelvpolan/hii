@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cordel/index.ts'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cordel/index.ts'
-import { cardsDir, CLARIFY, EVAL, evalMin, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
+import { cardsDir, CLARIFY, EVAL, evalMin, fallbackRemotoLigado, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
 import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { planSteps } from './rota/perfil.ts'
@@ -28,6 +28,7 @@ import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
 import { executarPlano } from './orquestracao/executar-plano.ts'
+import { harnessSeExistir } from '../tomada/registro.ts'
 
 export interface ExecuteDeps {
   implement: typeof implement
@@ -329,9 +330,10 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     const totalCost = baseCost + auxCost + (parseFloat(res.cost || '0') || 0)
     const totalTokens = baseTokens + auxTokens + rec.tokens_total
     const totals: Fields = { cost_usd: totalCost.toFixed(4), tokens_total: String(totalTokens), tempo_s: tempoAcumulado() }
-    if (failureClass === 'quota' && quotaFallbackLigado()) {
+    const localFalhou = failureClass === 'transient' && harnessSeExistir(res.provider)?.rodaLocal === true
+    if ((failureClass === 'quota' && quotaFallbackLigado()) || (localFalhou && fallbackRemotoLigado())) {
       const tentados = rotaTentadas(card.fm.rota_tentados)
-      const rota = (deps.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: tentados })
+      const rota = (deps.rota ?? decidirRota)({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: tentados, localFalhou })
       if (rota.acao === 'trocar') {
         const technicalDetail = res.timedOut ? `${res.reason ?? ''} apos ${elapsed}s` : (res.reason ?? '')
         const troca = { id, papel: 'implement' as const, de: res.provider, para: rota.para, falha: failureReason, detalhe: technicalDetail, motivo: rota.motivo }

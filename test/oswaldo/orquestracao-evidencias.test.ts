@@ -4,7 +4,9 @@ import { mkdtempSync, rmSync, writeFileSync, symlinkSync, readdirSync, readFileS
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { coletarEvidencias, evidenciaAtual, fingerprintDoTrabalho } from '../../motor/oswaldo/orquestracao/evidencias.ts'
+import { relatorioConsistente } from '../../motor/oswaldo/orquestracao/validacao-evidencias.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
+import { registrarChamada } from '../../motor/euclides/ias-da-sessao.ts'
 
 let dir = ''
 let anterior: NodeJS.ProcessEnv
@@ -19,10 +21,17 @@ afterEach(() => { process.env = anterior; rmSync(dir, { recursive: true, force: 
 
 test('evidencia executa processo real e invalida quando aparece novo diff', async () => {
   const plano = planoOrquestrado()
+  registrarChamada(plano.sessaoId, { ts: new Date().toISOString(), papel: 'implement', provedor: 'ollama', modelo: 'qwen', custoUsd: 0,
+    custoMedido: true, tokens: 5, tokensEntrada: 3, tokensSaida: 2, tokensCache: 0, duracaoS: 1, ok: true, classeDeFalha: '' })
   const r = await coletarEvidencias(plano, 1, dir)
   expect(r.aprovado).toBe(true)
   expect(r.evidencias[0]?.exitCode).toBe(0)
   expect(await evidenciaAtual(plano.id, 1, dir)).toBe(true)
+  expect(r.pacote?.chamadas).toHaveLength(1)
+  expect(r.pacote?.tokens).toBe(5)
+  expect(r.pacote?.custo.qualidade).toBe('medido')
+  expect(r.pacote?.rollout).toEqual(plano.rollout)
+  expect(r.pacote?.politica.versao).toBe(1)
   writeFileSync(join(dir, 'novo.txt'), 'nova alteracao')
   expect(await evidenciaAtual(plano.id, 1, dir)).toBe(false)
 })
@@ -36,8 +45,33 @@ test('exit diferente de zero, timeout e ausencia de comando nao aprovam', async 
     const r = await coletarEvidencias(plano, 1, dir)
     expect(r.aprovado).toBe(false)
     expect(r.evidencias[0]?.estado).toBe(tipo === 'falha' ? 'reprovado' : 'inconclusivo')
+    expect(r.evidencias[0]?.falha).toBe(tipo === 'falha' ? 'codigo-saida' : tipo === 'timeout' ? 'timeout' : 'evidencia-ausente')
     if (tipo === 'timeout') expect(r.evidencias[0]?.timeout).toBe(true)
   }
+})
+
+test('ferramenta ausente, sinal e erro de ambiente ficam distintos no artefato', async () => {
+  const casos = [
+    { esperado: 'ferramenta-ausente', executar: async () => ({ stdout: '', stderr: '', err: Object.assign(new Error('spawn ENOENT'), { code: 'ENOENT' }) }) },
+    { esperado: 'sinal', executar: async () => ({ stdout: '', stderr: '', err: Object.assign(new Error('morto'), { signal: 'SIGTERM' }) }) },
+    { esperado: 'ambiente', executar: async () => ({ stdout: '', stderr: '', err: Object.assign(new Error('permissao'), { code: 'EACCES' }) }) },
+  ] as const
+  for (const caso of casos) {
+    const r = await coletarEvidencias(planoOrquestrado(), 1, dir, caso.executar as never)
+    expect(r.aprovado).toBe(false)
+    expect(r.evidencias[0]?.falha).toBe(caso.esperado)
+  }
+})
+
+test('relatorio adulterado nao muda aprovacao nem justificativa nao aplicavel', async () => {
+  const plano = planoOrquestrado()
+  plano.criterios.push({ id: 'documentacao', descricao: 'nao se aplica', obrigatorio: false, naoAplicavel: 'Mudanca interna sem interface publica.' })
+  const r = await coletarEvidencias(plano, 1, dir)
+  const revisao = { versao: 1 as const, revisao: 1, hash: 'a'.repeat(64), chave: 'teste', criadoEm: new Date().toISOString(), plano }
+  expect(relatorioConsistente(r, revisao)).toBe(true)
+  expect(relatorioConsistente({ ...r, aprovado: false }, revisao)).toBe(false)
+  r.evidencias.find(e => e.criterio === 'documentacao')!.saida = 'dispensado sem motivo'
+  expect(relatorioConsistente(r, revisao)).toBe(false)
 })
 
 test('saida redige segredo; comando que muda o trabalho nao valida o proprio resultado', async () => {

@@ -1,9 +1,12 @@
+import { adotarRecuperacao } from '../../euclides/recuperacao-adocao.ts'
+import { configuracaoDaTarefa, politicaDaTarefa, registrarSnapshot } from '../../euclides/snapshot-execucao.ts'
+import { preferencias } from '../../tomada/preferencias.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { Job } from '../../cordel/index.ts'
-import { MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
+import { comPoliticaDeExecucaoFixa, MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
 import { tetoDeParalelismo } from '../../quilombo/limites.ts'
 import { readCard, updateCard } from '../../cordel/store.ts'
-import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, registrarRetornoSemTransicao } from './estado-da-fila.ts'
+import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, quantosSlotsOcupados, registrarRetornoSemTransicao } from './estado-da-fila.ts'
 import { handleExecute } from '../executar.ts'
 import { handleFinish } from '../../quilombo/cartorio/fechar.ts'
 import { handleCorrect } from '../../ciclo/corrigir.ts'
@@ -27,7 +30,7 @@ export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.t
 export async function runJob(job: Job): Promise<void> {
   const fm = readCard(job.id)?.fm ?? {}
   const atividade = iniciar({ repo: fm.repo ?? '', sessao: fm.sessao_id ?? '', execucao: job.id }, recurso(modoDaExecucao(fm), 'orchestrator'), { fase: job.kind }, paiDaExecucao(job.id))
-  try { await dentro(atividade, () => comPreferenciasFixas(() => executarJob(job))) } finally {
+  try { await dentro(atividade, () => executarJob(job)) } finally {
     const depois = readCard(job.id)?.fm ?? {}
     terminar(atividade, depois.status === 'HALTED' ? depois.halt_class === 'humano' ? 'cancelled' : 'failed' : 'succeeded', `despacho encerrado: ${depois.status ?? 'unknown'}; conclusao da tarefa e independente`)
   }
@@ -37,11 +40,16 @@ async function executarJob(job: Job): Promise<void> {
   marcarEmVoo(job.id)
   const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {
-    if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
-    else if (job.kind === 'execute') await handleExecute(job.id)
-    else if (job.kind === 'finish') await handleFinish(job.id)
-    else if (job.kind === 'spec') await handleSpec(job.id)
-    else await handleCorrect(job.id)
+    if (readCard(job.id)?.fm.recuperacao_pendente === 'true') throw new Error('Recuperacao pendente: reconcilie configuracao e checkpoint antes de executar')
+    await comPreferenciasFixas(() => comPoliticaDeExecucaoFixa(async () => {
+      registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
+      await adotarRecuperacao(job.id)
+      if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
+      else if (job.kind === 'execute') await handleExecute(job.id)
+      else if (job.kind === 'finish') await handleFinish(job.id)
+      else if (job.kind === 'spec') await handleSpec(job.id)
+      else await handleCorrect(job.id)
+    }, politicaDaTarefa(job.id)), configuracaoDaTarefa(job.id))
   } catch (e) {
     // `excecao`, nao `terminal`: aqui nao se sabe NADA sobre a causa — e um erro que
     // escapou de todo handler. Chamar isso de terminal seria afirmar que repetir nao
@@ -152,7 +160,7 @@ export function tick(verificarMerges: typeof checkMerged = checkMerged): void {
       avisarFalhaSilenciosa('teto global de gasto', global.motivo, 'o despacho esta drenado ate a janela virar; cards novos ficam no disco')
     } else {
       for (const job of pending()) {
-        if (quantosEmVoo() >= teto) break
+        if (quantosSlotsOcupados() >= teto) break
         void runJob(job)
       }
     }

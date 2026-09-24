@@ -516,11 +516,39 @@ antes de implementar.
 ### Rodar em modelo local, sem custo externo
 
 ```bash
-HII_IMPLEMENT_PROVIDER=ollama HII_OLLAMA_MODEL=qwen2.5-coder hii run
+HII_IMPLEMENT_PROVIDER=ollama HII_OLLAMA_MODEL=qwen2.5-coder HII_OLLAMA_AGENTIC=1 hii run
 ```
 
-O ollama isola só-leitura e reporta custo; o que ele não faz é restringir
-ferramenta. Quem o motor recusa em papel de verificação é o **kimi**.
+Sem `HII_OLLAMA_AGENTIC=1`, o Ollama continua disponível apenas para geração e
+não entra em tarefas de implementação. No modo agentivo, o motor consulta o
+endpoint `api/show` e só prossegue quando o modelo declara `tools`; oferece leitura e
+substituição exata de texto em arquivos existentes, com raízes, tamanho, número
+de turnos e repetição limitados. Não há shell geral. Em `readonly`, escrita é
+recusada. O pipeline ainda executa os testes e critérios depois da resposta.
+As respostas do endpoint Ollama `api/chat` usam NDJSON incremental: fragmentos públicos chegam
+à observabilidade durante a inferência, enquanto o motor recompõe a mensagem e
+as chamadas de ferramenta antes de autorizar qualquer efeito.
+Os tetos usam `HII_AGENT_MAX_TURNS` (16), `HII_AGENT_MAX_TOOLS` (16) e
+`HII_AGENT_TOOL_OUTPUT_BYTES` (65536) e ficam congelados com a tentativa.
+
+`HII_OLLAMA_MAX_INFLIGHT` limita chamadas simultâneas no endpoint inteiro e
+`HII_OLLAMA_MODEL_MAX_INFLIGHT` limita chamadas simultâneas ao mesmo modelo;
+ambos usam `1` por padrão. O limite do modelo deve ser menor ou igual ao limite
+do servidor. Configuração inválida bloqueia antes da inferência. Capacidade cheia
+gera falha transitória para a fila existente aplicar espera ou fallback, e o slot
+é liberado em sucesso, falha ou exceção. A API `/v1/provedores` expõe limite,
+ocupação e disponibilidade atuais sem incluir credenciais do endpoint.
+
+A parada humana também é consultada entre a sonda, cada inferência e cada
+ferramenta. Se a parada chegar depois de um efeito local confirmado, esse efeito
+permanece no worktree para reconciliação, mas nenhuma ferramenta ou inferência
+seguinte é iniciada. O subprocesso em voo continua sendo interrompido pelo
+mecanismo de PID do motor.
+
+Somente endpoint loopback recebe custo de API local medido; outro host, inclusive
+em rede privada, fica com custo desconhecido. Mesmo loopback não comprova por si
+só onde o backend executou a inferência. A garantia de localidade depende também
+da configuração e da rede do servidor Ollama.
 
 ### Depurar um card travado
 
@@ -659,8 +687,11 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 <!-- hicode:envs:inicio -->
 | Variável | Padrão no código | Contrato motor/painel | Lida em |
 |---|---|---|---|
+| `HII_AGENT_MAX_TOOLS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_AGENT_MAX_TURNS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_AGENT_TOOL_OUTPUT_BYTES` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
-| `HII_AI_PROVIDER` | — | — | `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
+| `HII_AI_PROVIDER` | — | — | `motor/euclides/radar/doctor-estruturado.ts`, `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
 | `HII_API_ADMIN` | — | — | `motor/api/servidor.ts` |
 | `HII_API_AUTOSTART` | — | — | `motor/api/openapi.ts`, `motor/api/servidor.ts` |
 | `HII_API_HOST` | `'127.0.0.1'` | — | `motor/api/servidor.ts` |
@@ -692,6 +723,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_ESPERA_PISO_TIMEOUT_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_EVAL` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_EVAL_MIN` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_EXECUTION_LOCALITY` | `'preferir_local'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_DIFF_LIMIT` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_MODEL` | `'sonnet'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_GATE_PROVIDER` | — | — | `motor/tomada/registro.ts` |
@@ -728,8 +760,14 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_MERGE_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
 | `HII_OBSERVABILIDADE` | — | — | `motor/observabilidade/registro.ts` |
-| `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
+| `HII_OLLAMA_AGENTIC` | — | — | `motor/tomada/harness/ollama.ts`, `scripts/piloto-ollama.mjs` |
+| `HII_OLLAMA_LOCALITY_VERIFIED` | — | — | `motor/tomada/harness/ollama.ts` |
+| `HII_OLLAMA_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
+| `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen2.5-coder:7b'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs`, `scripts/piloto-ollama.mjs` |
+| `HII_OLLAMA_MODEL_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
+| `HII_OLLAMA_PILOT` | — | — | `scripts/piloto-ollama.mjs` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
+| `HII_PARALLEL_CLEANUP` | — | — | `motor/oswaldo/orquestracao/paralelo.ts` |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
 | `HII_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |
 | `HII_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
@@ -739,6 +777,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
 | `HII_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
 | `HII_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |
+| `HII_REMOTE_FALLBACK` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
 | `HII_REPOS_FILE` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts` |
 | `HII_RIGOR_ESTRITO` | — | — | `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/fechar.ts` |
 | `HII_ROOT` | — | ambos | `motor/cordel/alicerce/contrato.ts`, `scripts/apagar-card.mjs`, `scripts/test-tui-e2e.mjs` |

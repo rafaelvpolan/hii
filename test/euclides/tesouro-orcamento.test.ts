@@ -133,6 +133,7 @@ test('INVARIANTE nenhum ponto do motor le o teto de outro lugar que nao o govern
 // teto e nao entravam na lista, entao o "teto lido de duas fontes" podia voltar
 // justamente pelos pontos novos.
 const QUEM_LE_O_TETO: readonly string[] = [
+  'motor/ciclo/crivo/revisoes.ts',
   'motor/oswaldo/executar.ts',
   'motor/oswaldo/gateway.ts',
   'motor/oswaldo/orquestracao/executar-plano.ts',

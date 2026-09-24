@@ -1,4 +1,4 @@
-import { allCards, createCard } from '../../../cordel/store.ts'
+import { allCards, createCard, updateCard } from '../../../cordel/store.ts'
 import { taskSync, taskSyncInvalido } from './registro.ts'
 
 export interface SyncReport {
@@ -37,9 +37,20 @@ export async function runSync(): Promise<SyncReport> {
     falhas.push(`pull: ${detalhe(e as Error)}`)
   }
   let created = 0
+  const terminais = new Set(['MERGED', 'DEPLOYED', 'COMPLETED'])
   for (const t of external) {
     const source = t.source ?? `${sync.name}#${t.externalId}`
-    if (seen.has(source)) continue
+    const existentes = cards.filter(c => c.source === source)
+    if (existentes.length) {
+      for (const card of existentes) {
+        const bloqueada = t.estado === 'closed' || (t.bloqueios?.length ?? 0) > 0
+        const fields = { tracker_state: t.estado ?? 'open', tracker_blockers: (t.bloqueios ?? []).join(','), tracker_priority: t.prioridade ?? '' }
+        updateCard(String(card.id), { fields: bloqueada && !terminais.has(String(card.status)) ? { ...fields, status: 'PAUSED' } : fields,
+          log: bloqueada && card.status !== 'PAUSED' && !terminais.has(String(card.status)) ? `tracker ${t.estado === 'closed' ? 'fechado' : 'bloqueado'}; card pausado sem retomada automatica` : '' })
+      }
+      continue
+    }
+    if (t.estado === 'closed') continue
     const legado = t.source ? cards.filter(c => c.source === `${sync.name}#${t.externalId}`) : []
     if (legado.some(c => c.repo === t.repo)) continue
     if (legado.some(c => !c.repo)) {
@@ -50,7 +61,9 @@ export async function runSync(): Promise<SyncReport> {
     // REJEITAR em vez de virar item em `falhas`, e o relato com exit code
     // desaparecia junto — cards criados antes da falha ficavam sem contabilizacao.
     try {
-      createCard({ status: 'READY', title: t.title, source, ...(t.repo ? { repo: t.repo } : {}) }, `## Objetivo\n${t.body || t.title}\n`)
+      const bloqueada = (t.bloqueios?.length ?? 0) > 0
+      createCard({ status: bloqueada ? 'PAUSED' : 'READY', title: t.title, source, tracker_state: t.estado ?? 'open',
+        tracker_blockers: (t.bloqueios ?? []).join(','), tracker_priority: t.prioridade ?? '', ...(t.repo ? { repo: t.repo } : {}) }, `## Objetivo\n${t.body || t.title}\n`)
       seen.add(source)
       created++
     } catch (e) {

@@ -6,7 +6,8 @@ export interface ServidorMcp {
 }
 
 const RE_AUTH = /needs authentication|not authenticated|unauthorized/i
-const RE_OK = /connected/i
+const RE_OK = /\bconnected\b/i
+const RE_OFFLINE = /\bdisconnected\b|\bnot\s+connected\b/i
 
 export function lerLinhaDeServidor(linha: string): ServidorMcp | null {
   const bruta = linha.trim()
@@ -16,7 +17,7 @@ export function lerLinhaDeServidor(linha: string): ServidorMcp | null {
   if (!nome || nome.includes(' - ')) return null
   const cauda = bruta.slice(separador + 2)
   if (RE_AUTH.test(cauda)) return { nome, estado: 'precisa-auth' }
-  if (RE_OK.test(cauda)) return { nome, estado: 'conectado' }
+  if (!RE_OFFLINE.test(cauda) && RE_OK.test(cauda)) return { nome, estado: 'conectado' }
   return { nome, estado: 'desconhecido' }
 }
 
@@ -95,6 +96,10 @@ export async function disponibilidadeExterna(
   }
   const conectados = candidatos.filter(s => s.estado === 'conectado')
   if (!conectados.length) {
+    if (candidatos.some(s => s.estado === 'desconhecido')) return {
+      usavel: false, motivo: 'Estado do conector ' + ferramenta + ' desconhecido; repita a sonda de disponibilidade.',
+      tools: [], transitorio: true,
+    }
     return {
       usavel: false,
       motivo: `o conector ${ferramenta} existe mas pede autenticacao — autorize numa sessao interativa (/mcp), o motor nao roda o fluxo OAuth`,

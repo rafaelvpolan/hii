@@ -11,14 +11,16 @@ let atrasoMs = 0
 const sonda = (): Promise<boolean> => new Promise(resolve => setTimeout(() => resolve(saudavel), atrasoMs))
 
 const { createCard, readCard, patchCard } = await import('../../motor/cordel/store.ts')
-const { wakeDueWaiting } = await import('../../motor/ciclo/reprise/espera.ts')
+const { wakeDueWaiting: acordar } = await import('../../motor/ciclo/reprise/espera.ts')
 
-beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '2' })
+let agora = 0
+const wakeDueWaiting = (sonda: Parameters<typeof acordar>[0], sabeSondar?: Parameters<typeof acordar>[1]) => acordar(sonda, sabeSondar, agora)
+beforeEach(() => { process.env.HII_WAITING_MAX_ATTEMPTS = '2'; agora = Date.now() })
 
 afterAll(() => rmSync(CARDS, { recursive: true, force: true }))
 
 function isoIn(ms: number): string {
-  return new Date(Date.now() + ms).toISOString()
+  return new Date(agora + ms).toISOString()
 }
 
 function waitingCard(waitUntilMs: number, attempts = '0'): string {
@@ -141,4 +143,13 @@ test('card acordado COM provedor sondavel diz que sondou, e diz quem', async () 
   const registro = logDoCard(id)
   expect(registro).toContain('EXECUTING')
   expect(registro).toContain('sonda de saude de claude respondeu alcancavel')
+})
+
+test('prazo e decidido pelo instante do tick, inclusive depois de ajuste do relogio', async () => {
+  saudavel = true
+  const id = waitingCard(1000)
+  await acordar(sonda, () => true, agora - 60000)
+  expect(readCard(id)?.fm.status).toBe('WAITING')
+  await acordar(sonda, () => true, agora + 1000)
+  expect(readCard(id)?.fm.status).toBe('EXECUTING')
 })

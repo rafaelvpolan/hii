@@ -22,6 +22,7 @@ import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
 import { salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { patchCard } from '../../motor/cordel/store.ts'
 import { writeClarify } from '../../motor/agentes/clarice/clarificar.ts'
+import { comPoliticaDeExecucaoFixa } from '../../motor/cordel/alicerce/config.ts'
 
 let raiz = ''
 let server: Server
@@ -143,6 +144,29 @@ test('falha do registro nao repete nem perde resultado do harness', async () => 
   assert.equal(r.text, 'resultado pago')
   assert.equal(invocacoes, 1)
   assert.equal(snapshot().degradado, true)
+})
+
+test('evento semantico do harness atualiza progresso sem expor argumentos', async () => {
+  const provider = providerFor('verify')
+  const executar = { ...provider, capabilities: () => provider.capabilities(), run: async (req: Parameters<typeof provider.run>[0]) => {
+    req.aoEvento?.({ tipo: 'inferencia_inicio' })
+    req.aoEvento?.({ tipo: 'ferramenta_inicio', ferramenta: 'replace_text' })
+    req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: 'replace_text' })
+    return { ok: true, failed: false, timedOut: false, isError: false, text: 'concluido', detail: '', cost: 0, costMeasured: true, usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 } }
+  } }
+  Object.setPrototypeOf(executar, provider)
+  await comPoliticaDeExecucaoFixa(() => runProvider('', executar, { prompt: 'segredo que nao deve ir ao evento', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000 }),
+    { versao: 1, localidade: 'somente_local', fallbackRemoto: false, fallbackCota: false })
+  const atividade = snapshot().atividades.find(a => a.recurso.nome === provider.name)
+  assert.equal(atividade?.recurso.observabilidade, 'instrumented')
+  assert.equal(atividade?.detalhes.ultimoEvento, 'termino')
+  assert.equal(atividade?.etapa, 'termino')
+  assert.equal(atividade?.detalhes.ferramenta, 'replace_text')
+  assert.equal(atividade?.detalhes.politicaVersao, 1)
+  assert.equal(atividade?.detalhes.localidadeExecucao, 'somente_local')
+  assert.equal(atividade?.detalhes.fallbackRemoto, false)
+  assert.equal(atividade?.detalhes.fallbackCota, false)
+  assert.ok(!JSON.stringify(atividade).includes('segredo que nao deve ir ao evento'))
 })
 
 test('ask readonly idempotente nunca cria card executavel', async () => {
@@ -305,4 +329,22 @@ test('ask vincula consulta a sessao, preserva idempotencia e recusa projeto inco
   const outra = submitSession({ title: 'Outro', repo: 'org/outro' })
   assert.equal((await post('/v1/ask', { ...b, sessao: outra }, 'consulta-fora-do-repo')).status, 403)
   assert.equal(chamadas, 1)
+})
+
+test('chamadas simultaneas conservam microtask explicita em vez do campo compartilhado', async () => {
+  const { submit } = await import('../../motor/mirante/acoes.ts')
+  const id = submit({ title: 'Ramos', repo: 'org/app' })
+  patchCard(id, { microtask_atual: 'A', plano_revisao: '3' })
+  const provider = providerFor('verify')
+  const falso = { ...provider, capabilities: () => provider.capabilities(), run: async () => ({
+    ok: true, failed: false, timedOut: false, isError: false, text: 'fixture', detail: '', cost: 0, costMeasured: true,
+    usage: { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 },
+  }) }
+  Object.setPrototypeOf(falso, provider)
+  await Promise.all(['B', 'C'].map(microtask => runProvider(id, falso, {
+    microtask, prompt: 'fixture', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000,
+  })))
+  const atividades = snapshot({ execucao: id }).atividades.filter(a => a.recurso.tipo === 'harness')
+  assert.deepEqual(atividades.map(a => a.microtask).sort(), ['B', 'C'])
+  assert.ok(atividades.every(a => a.planoRevisao === 3))
 })

@@ -15,6 +15,8 @@ import { atualizarRegistroDeConversa } from '../registros.ts'
 import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.ts'
 import { contextoDaSessao, iniciarSubsessao, finalizarChamada, lerSessaoHii } from '../sessoes.ts'
 import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
+import { admitirInferencia } from '../../tomada/capacidade-inferencia.ts'
+import { politicaDeExecucaoEfetiva } from '../../cordel/alicerce/config.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -162,6 +164,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     }
   }
   const t0 = Date.now()
+  const politicaExecucao = politicaDeExecucaoEfetiva()
   let pidRegistrado = 0
   const fm = id ? readCard(id)?.fm : undefined
   const sessao = fm?.sessao_id || (fm?.tipo === 'session' ? id : '')
@@ -171,10 +174,13 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     { ...recurso(provider.name, 'harness'), observabilidade: 'partial', capacidades: Object.entries(provider.capabilities()).filter(([, v]) => v).map(([k]) => k) },
     { provedorEfetivo: provider.name, modeloConfigurado: req.model ?? null, modeloEfetivo: req.model ?? null,
       papel, modo: req.mode, permissao: req.modo ?? null, esforco: req.effort ?? null,
+      politicaVersao: politicaExecucao.versao, localidadeExecucao: politicaExecucao.localidade,
+      fallbackRemoto: politicaExecucao.fallbackRemoto, fallbackCota: politicaExecucao.fallbackCota,
       agentesSolicitados: req.useAgents, ferramentasInternas: 'nao observaveis por este contrato',
       saidaIncremental: provider.saidaIncremental?.(req) ?? false })
-  atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
+  atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = req.microtask || fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
   let terminou = false
+  let liberarInferencia = (): void => {}
   const pulso = setInterval(() => heartbeat(atividade), 15000)
   pulso.unref()
   let emitiuResposta = false
@@ -187,8 +193,21 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     pendente.clear()
   }
   let concluida = false
+  let cancelamentoPublicado = false
   try {
-    const bruto = await provider.run({
+    const admissao = admitirInferencia(provider, req.model)
+    if (admissao.admitida) liberarInferencia = admissao.liberar
+    atualizar(atividade, a => {
+      a.detalhes.servidorInferencia = admissao.servidor || null
+      a.detalhes.modeloInferencia = admissao.modelo || null
+      a.detalhes.admissaoInferencia = admissao.admitida ? 'admitida' : 'ocupada'
+      if (!admissao.admitida) {
+        a.etapa = 'espera_recurso'
+        a.detalhes.ultimoEvento = 'espera_recurso'
+        a.detalhes.progresso = 'capacidade recusada antes da inferencia'
+      }
+    })
+    const pedido: AgentRequest = {
       ...req,
       prompt: contexto ? `${contexto}\n\nPEDIDO ATUAL:\n${req.prompt}` : req.prompt,
       rotulo: req.rotulo ?? papel,
@@ -200,12 +219,35 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         // Telemetria de consumidores externos nao interfere no resultado pago.
         try { req.aoEmitir?.(canal, texto) } catch { /* observador isolado */ }
       },
+      aoEvento: evento => {
+        atualizar(atividade, a => {
+          a.etapa = evento.tipo
+          a.detalhes.progresso = 'evento confirmado pelo harness'
+          a.detalhes.ultimoEvento = evento.tipo
+          a.detalhes.ferramenta = 'ferramenta' in evento ? evento.ferramenta : null
+          a.recurso.observabilidade = 'instrumented'
+        })
+        try { req.aoEvento?.(evento) } catch { /* observador isolado */ }
+      },
+      cancelado: () => {
+        const publicarCancelamento = (): true => {
+          if (!cancelamentoPublicado) atualizar(atividade, a => { a.etapa = 'cancelamento'; a.detalhes.ultimoEvento = 'cancelamento'; a.detalhes.progresso = 'parada confirmada pelo motor' })
+          cancelamentoPublicado = true
+          return true
+        }
+        if (req.cancelado?.()) return publicarCancelamento()
+        const atual = id ? readCard(id)?.fm : undefined
+        return atual?.halt_class === 'humano' || atual?.status === 'PAUSED' ? publicarCancelamento() : false
+      },
       aoIniciar: (pid) => {
         pidRegistrado = pid
         registrarHarness(id, pid, papel)
         req.aoIniciar?.(pid)
       },
-    })
+    }
+    const bruto = admissao.admitida ? await provider.run(pedido) : {
+      ok: false, failed: true, timedOut: false, isError: true, detail: admissao.motivo, text: admissao.motivo, ...COST_UNKNOWN, usage: emptyUsage(),
+    }
     const res = bruto.ok ? bruto : { ...bruto, text: redigirDiagnostico(bruto.text), detail: redigirDiagnostico(bruto.detail) }
     descarregar()
     if (!emitiuResposta) saida(atividade, 'assistant', res.text)
@@ -218,6 +260,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       a.detalhes.timeout = res.timedOut
     })
     const paradaHumana = id && readCard(id)?.fm.halt_class === 'humano'
+    atualizar(atividade, a => { a.etapa = 'termino'; a.detalhes.ultimoEvento = paradaHumana ? 'cancelamento' : 'termino' })
     terminar(atividade, paradaHumana ? 'cancelled' : res.ok ? 'succeeded' : 'failed', res.detail)
     terminou = true
     semPropagarFalhaDeRegistro(() => recordCostTrust(id, provider.name, res))
@@ -228,6 +271,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     })
     return res
   } finally {
+    liberarInferencia()
     descarregar()
     clearInterval(pulso)
     if (!terminou) terminar(atividade, 'failed', 'chamada interrompida por excecao; consulte a tarefa')

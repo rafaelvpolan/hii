@@ -263,6 +263,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     : implementPrompt(nomesInjetados, agentesAdaptados, recursosSolicitados, workdir, desc, feedback, readProjectRules(workdir), visual, clarifyAnswersPrompt(id), refImages, memory, stackOf(target), renderizarSkills(skillsPara('implementador', ctxSkill)), escopoDoCard(card, workdir), card.fm.rota_contexto || '')
   const res = await runProvider(id, provider, {
     prompt,
+    microtask: card.fm.orq_microtask || undefined,
     cwd: workdir,
     dirs,
     mode: 'edit',
@@ -271,7 +272,7 @@ export async function implement(card: Card, workdir: string, feedback = '', visu
     effort: effortFor('implement', card.fm.effort),
     modo: modoFor('implement', override),
     timeoutMs: RUN_TIMEOUT_MS,
-    liveLog: id ? join(cardsDir(), 'runs', `${id}.live.log`) : undefined,
+    liveLog: id ? join(cardsDir(), 'runs', card.fm.orq_ramo === 'true' && card.fm.orq_microtask ? id + '-' + card.fm.orq_microtask + '.live.log' : `${id}.live.log`) : undefined,
     rotulo: ['implement', ...escolhidos].join(' · '),
     extraTools,
     agentsJson: nomesInjetados.length ? JSON.stringify(agentesInjetados) : '',

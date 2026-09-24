@@ -15,6 +15,16 @@ test('run mata o processo no timeout (err.killed) e volta MUITO antes de o filho
   expect(elapsed, `voltou em ${elapsed}ms; o filho dormiria ${SONO_DO_FILHO_S * 1000}ms`).toBeLessThan(TETO_PARA_VOLTAR_MS)
 }, 60000)
 
+test('run cancela o grupo cooperativamente e distingue cancelamento de timeout', async () => {
+  let cancelar = false
+  setTimeout(() => { cancelar = true }, 100)
+  const t0 = Date.now()
+  const resultado = await run('sleep', [String(SONO_DO_FILHO_S)], { timeout: 10000, cancelado: () => cancelar })
+  expect(resultado.cancelled).toBe(true)
+  expect(resultado.err?.killed).not.toBe(true)
+  expect(Date.now() - t0).toBeLessThan(3000)
+}, 60000)
+
 test('run ignora stdin: CLI nao interpreta o prompt como entrada adicional', async () => {
   const script = "import { fstatSync } from 'node:fs'; process.stdout.write(fstatSync(0).isFIFO() ? 'stdin-pipe' : 'stdin-ignorado')"
   const { err, stdout } = await run(process.execPath, ['--input-type=module', '-e', script], { timeout: 5000 })

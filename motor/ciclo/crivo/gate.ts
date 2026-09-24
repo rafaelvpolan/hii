@@ -1,3 +1,5 @@
+import { executarRevisoes } from './revisoes.ts'
+import type { RelatorioDeRevisoes } from './revisoes.ts'
 import { fingerprintDoTrabalho } from '../../oswaldo/orquestracao/evidencias.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, FailureClass } from '../../cordel/index.ts'
@@ -12,10 +14,10 @@ import { esforcoGovernado, modeloGovernado } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
 import { classifyFailure } from '../reprise/classe-de-falha.ts'
-import { renderizarCriterios } from './criterios.ts'
+import { idsDeCriterio, renderizarCriterios } from './criterios.ts'
 import { cegar, MAX_CANDIDATOS_CEGOS, modoDoCrivo, referenciasDoCard, renderizarComparacao, telaDoCard } from '../canudos/gauntlet.ts'
 import { skillsPara } from '../../cascudo/acervo.ts'
-import { gauntletLigado } from '../../tomada/preferencias.ts'
+import { gauntletLigado, preferenciaDoPapel } from '../../tomada/preferencias.ts'
 import { gastoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -42,6 +44,7 @@ export interface GateResult {
   failureReason?: string
   waitClass?: ClasseDeEspera
   provider?: string
+  revisoes?: RelatorioDeRevisoes
 }
 
 interface RawVerdict {
@@ -323,7 +326,26 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
   if (!parsed.found) {
     return { ok: false, verdict: 'CONDITIONAL', reason: 'gate sem veredito parseavel na saida (revisar manualmente)', criterio: '', questions: [], cost: res.cost, costMeasured: res.costMeasured, tokens }
   }
-  return { ok: true, verdict: parsed.verdict, reason: parsed.reason, criterio: parsed.criterio, questions: parsed.questions, cost: res.cost, costMeasured: res.costMeasured, tokens }
+  const principal: GateResult = { ok: true, verdict: parsed.verdict, reason: parsed.reason, criterio: parsed.criterio, questions: parsed.questions, cost: res.cost, costMeasured: res.costMeasured, tokens }
+  if (principal.verdict === 'BLOCKED') return principal
+  const preferencia = preferenciaDoPapel('gate')
+  if (!preferencia.autoReview) return principal
+  const politica = preferencia.revisao
+  if (!politica) return { ...principal, ok: false, verdict: 'BLOCKED',
+    reason: principal.reason + '; autoReview ligado sem politica de revisao', failureClass: 'terminal' }
+  try {
+    const revisoes = await executarRevisoes({ id, wt, base, objetivo: desc,
+      risco: readCard(id)?.fm.risk === 'high' ? 'high' : 'low', fingerprintEsperado: fingerprint, custoAnterior: principal.costMeasured ? principal.cost : null,
+      nomes: arquivosDoDiff(diff.names), diff: diff.patch, parcial: !!diff.parcial, criterios: idsDeCriterio() }, politica)
+    return { ...principal, ok: revisoes.aprovado, verdict: revisoes.aprovado ? principal.verdict : 'BLOCKED',
+      reason: principal.reason + '; ' + revisoes.pareceres.map(p => p.fonte.papel + ': ' + p.estado + ' — ' + p.motivo).join('; '),
+      criterio: revisoes.achados.find(a => ['P0', 'P1'].includes(a.severidade))?.criterio || principal.criterio,
+      cost: principal.cost + revisoes.custoIncremental, costMeasured: principal.costMeasured && revisoes.custoIncrementalMedido,
+      tokens: principal.tokens + revisoes.tokensIncrementais, failureClass: 'terminal', revisoes }
+  } catch (erro) {
+    return { ...principal, ok: false, verdict: 'BLOCKED', reason: String((erro as Error).message),
+      costMeasured: false, failureClass: 'terminal' }
+  }
 }
 
 export type GateOutcome = 'halt' | 'proceed'
@@ -387,11 +409,15 @@ export function buildPrBody(id: string, desc: string, gate: GateResult): string 
     ? '\n\n**Perguntas ao revisor — responda antes do merge:**\n' + linhasParaOPr(id, gate.questions.map(q => oneLine(q.q))).join('\n')
     : ''
   return [
-    `Gerado pelo motor hicode (agentes Nexus). Card #${id}.`,
+    `Gerado pelo motor HII. Card #${id}.`,
     '',
     (desc || '').slice(0, 500),
     '',
     `**Codefox review:** ${gate.verdict}${gate.ok ? '' : ' (gate nao concluido — revisar manualmente)'} — ${oneLine(gate.reason)}`,
+    gate.revisoes ? '\n**Revisoes estruturadas:**\n' + gate.revisoes.pareceres.map(p =>
+      '- ' + p.fonte.papel + ' / ' + p.fonte.provedor + ' / ' + (p.fonte.modelo || 'padrao') + ': ' + p.estado +
+      ' — ' + oneLine(p.motivo)).join('\n') + '\n\nFingerprint: ' + gate.revisoes.fingerprint +
+      '\nPolitica: ' + gate.revisoes.politica + '\nAchados: ' + gate.revisoes.achados.length : '',
     questions,
   ].join('\n')
 }

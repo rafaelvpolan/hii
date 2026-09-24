@@ -65,7 +65,9 @@ aside[role=status]{overflow-wrap:anywhere}#tui-image{display:block;max-width:100
 /hii tarefas/login.spec    # le o spec no projeto selecionado
 /hii "docs/meu plano.spec"  # caminho com espacos
 hii pipeline doctor --repo owner/projeto
-hii pipeline setup --repo owner/projeto
+hii pipeline setup --repo owner/projeto  # mostra plano e hash; nao altera o alvo
+hii pipeline setup apply HASH --repo owner/projeto
+hii pipeline setup undo HASH --repo owner/projeto
 hii pipeline plan 078 plano.json --repo owner/projeto
 hii pipeline 078           # pipeline manual no CLI
 hii pipeline close 077 --repo owner/projeto

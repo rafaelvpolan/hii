@@ -1,3 +1,4 @@
+import type { PoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from '../cordel/alicerce/config.ts'
@@ -7,8 +8,8 @@ import type { AgentRole } from './tipos.ts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 const fixas = new AsyncLocalStorage<PreferenciasDeIa>()
-export function comPreferenciasFixas<T>(executar: () => Promise<T>): Promise<T> {
-  return fixas.run(structuredClone(preferencias()), executar)
+export function comPreferenciasFixas<T>(executar: () => Promise<T>, configuracao: PreferenciasDeIa = preferencias()): Promise<T> {
+  return fixas.run(structuredClone(configuracao), executar)
 }
 
 export const ESFORCOS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
@@ -28,6 +29,8 @@ export interface PreferenciaDePapel {
   // ninguem pedir — e num card de pack visual com referencia anexada nenhuma
   // revisao automatica lia o codigo. Agora e escolha explicita, visivel na linha
   // de propriedades da TUI junto com as ias selecionadas.
+  revisao?: PoliticaDeRevisao
+  autoReview?: boolean
   gauntlet?: boolean
 }
 

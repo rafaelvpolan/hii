@@ -3,7 +3,7 @@ import type { Fields } from '../../../cordel/index.ts'
 import { executarComIdempotencia, FASE_DA_PONTE } from '../../../quilombo/salvo-conduto/idempotencia.ts'
 import type { ExternalTask, TaskSync } from './tipos.ts'
 
-interface GhIssue { number?: number; title?: string; body?: string | null; pull_request?: { url?: string } }
+interface GhIssue { number?: number; title?: string; body?: string | null; state?: string; labels?: ({ name?: string } | string)[]; pull_request?: { url?: string } }
 
 function primeiraLinha(texto: string): string {
   return String(texto || '').split('\n').filter(Boolean)[0]?.slice(0, 200) ?? 'sem detalhe'
@@ -14,7 +14,12 @@ export function parseIssues(stdout: string, origem = ''): ExternalTask[] {
   if (!Array.isArray(arr)) throw new Error('gh respondeu JSON que nao e lista de issues')
   return arr.filter(i => !i?.pull_request).map(i => {
     if (!i || !Number.isSafeInteger(i.number) || Number(i.number) < 1 || typeof i.title !== 'string' || (i.body != null && typeof i.body !== 'string')) throw new Error('issue com numero, titulo ou corpo invalido')
+    const rotulos = (i.labels ?? []).map(l => typeof l === 'string' ? l : String(l.name ?? '')).filter(Boolean)
+    const bloqueios = rotulos.filter(l => /blocked|bloquead|dependenc/i.test(l))
+    const prioridade = rotulos.find(l => /^(?:priority[: -]*)?p[0-3]$/i.test(l)) ?? ''
     return { externalId: String(i.number), title: i.title, body: i.body ?? '',
+      ...(i.state ? { estado: i.state === 'closed' ? 'closed' as const : 'open' as const } : {}),
+      ...(rotulos.length ? { bloqueios, prioridade } : {}),
       ...(origem ? { source: `github-issues#${origem}/issues/${i.number}`, repo: new URL(origem).pathname.slice(1) } : {}) }
   })
 }
@@ -38,7 +43,7 @@ export class GithubIssuesSync implements TaskSync {
     const origem = origemGithub(info.url ?? '')
     const url = new URL(origem)
     const leitura = await this.run('gh', ['api', '--method', 'GET', '--hostname', url.hostname, '--paginate', '--slurp',
-      `repos${url.pathname}/issues?state=open&per_page=100`], { timeout: 120000 })
+      `repos${url.pathname}/issues?state=all&per_page=100`], { timeout: 120000 })
     if (leitura.err) throw new Error(`gh api falhou — nenhuma lista parcial sera importada: ${primeiraLinha(leitura.stderr)}`)
     const paginas = JSON.parse(leitura.stdout) as GhIssue[][]
     if (!Array.isArray(paginas) || !paginas.every(Array.isArray)) throw new Error('gh api respondeu sem paginas de issues')

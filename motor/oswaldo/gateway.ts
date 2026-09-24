@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { readCard, repoPath, patchCard } from '../cordel/store.ts'
 import { isoNow } from '../cordel/util.ts'
 import type { Card, ImplementResult } from '../cordel/tipos.ts'
-import { cardsDir, quotaFallbackLigado, RUN_TIMEOUT_MS } from '../cordel/alicerce/config.ts'
+import { cardsDir, fallbackRemotoLigado, quotaFallbackLigado, RUN_TIMEOUT_MS } from '../cordel/alicerce/config.ts'
 import { objetivoComInstrucoes } from '../mirante/instruir.ts'
-import { providerFor, modelFor, effortFor, modoFor } from '../tomada/registro.ts'
+import { providerFor, modelFor, effortFor, modoFor, harnessSeExistir } from '../tomada/registro.ts'
 import { runProvider, warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { classifyFailure } from '../ciclo/reprise/classe-de-falha.ts'
@@ -77,8 +77,9 @@ export async function executarGateway(id: string, deps = { chamar: chamarGateway
       return
     }
     const { failureClass, failureReason } = resolvedFailure(res)
-    const rota = failureClass === 'quota' && quotaFallbackLigado()
-      ? deps.rota({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: rotaTentadas(card.fm.rota_tentados) })
+    const localFalhou = failureClass === 'transient' && harnessSeExistir(res.provider)?.rodaLocal === true
+    const rota = (failureClass === 'quota' && quotaFallbackLigado()) || (localFalhou && fallbackRemotoLigado())
+      ? deps.rota({ papel: 'implement', classeDeFalha: failureClass, provedorAtual: res.provider ?? '', tentadosNestaRodada: rotaTentadas(card.fm.rota_tentados), localFalhou })
       : { acao: 'manter_politica_atual' as const, motivo: '' }
     if (rota.acao === 'trocar' && rota.para !== res.provider && !rotaTentadas(card.fm.rota_tentados).includes(rota.para)) {
       const troca = { id, papel: 'implement' as const, de: res.provider, para: rota.para, falha: failureReason, detalhe: res.reason, motivo: rota.motivo }

@@ -11,6 +11,7 @@ export interface ConfigDoOrquestrador {
   projeto: string
   modo: ModoDoMotor
   concorrencia: number
+  concorrenciaMicrotasks?: number
   revisao: number
 }
 
@@ -29,6 +30,9 @@ export function configDoOrquestrador(projeto: string): ConfigDoOrquestrador {
   if (c?.versao !== 1 || c.projeto !== projeto || !['gateway', 'passivo'].includes(c.modo)
     || !Number.isInteger(c.revisao) || !Number.isInteger(c.concorrencia) || c.concorrencia < 1 || c.concorrencia > 4) {
     throw new Error('configuracao do orquestrador invalida: confira versao, projeto, modo e concorrencia (1-4)')
+  }
+  if (c.concorrenciaMicrotasks !== undefined && (!Number.isInteger(c.concorrenciaMicrotasks) || c.concorrenciaMicrotasks < 1 || c.concorrenciaMicrotasks > 4)) {
+    throw new Error('concorrenciaMicrotasks deve ser um inteiro entre 1 e 4')
   }
   // Configuracoes antigas nao podem transformar pedidos comuns em orquestracao.
   return { ...c, modo: 'gateway' }
@@ -52,4 +56,17 @@ export function configurarOrquestrador(projeto: string, concorrencia: number): C
 
 export function modoDaExecucao(campos: Record<string, string>): ModoDoMotor | 'legado' {
   return campos.motor_modo === 'gateway' || campos.motor_modo === 'passivo' ? campos.motor_modo : 'legado'
+}
+
+export function configurarMicrotasks(projeto: string, concorrencia: number): ConfigDoOrquestrador {
+  if (!projeto.trim() || !Number.isInteger(concorrencia) || concorrencia < 1 || concorrencia > 4) throw new Error('projeto e concorrencia de microtasks (1-4) obrigatorios')
+  const arquivo = arquivoDoOrquestrador(projeto)
+  mkdirSync(join(cardsDir(), 'orquestracao'), { recursive: true })
+  return withFileLock(arquivo, () => {
+    const anterior = configDoOrquestrador(projeto)
+    if ((anterior.concorrenciaMicrotasks ?? 1) === concorrencia) return anterior
+    const proxima = { ...anterior, concorrenciaMicrotasks: concorrencia, revisao: anterior.revisao + 1 }
+    writeFileAtomic(arquivo, JSON.stringify(proxima, null, 2) + '\n')
+    return proxima
+  })
 }

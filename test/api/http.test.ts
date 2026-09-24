@@ -17,6 +17,7 @@ import { comRevisao, RevisaoAlterada } from '../../motor/cordel/revisao.ts'
 import { agir, tarefa } from '../../motor/api/operacoes.ts'
 import { salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
+import { definirEstadoDoOllama } from '../../motor/tomada/harness/ollama-estado.ts'
 
 const token = 'teste-http-isolado-sem-credenciais-123456789'
 let base = ''
@@ -49,7 +50,7 @@ beforeEach(async () => {
   writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/app', path: join(base, 'projeto') }]))
   await subir()
 })
-afterEach(async () => { await fechar(); rmSync(base, { recursive: true, force: true }) })
+afterEach(async () => { await fechar(); definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: 0 }); rmSync(base, { recursive: true, force: true }) })
 
 async function post(path: string, body: object, extras: Record<string, string> = {}): Promise<Response> {
   return fetch(url + path, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'idempotency-key': chave(), ...extras }, body: JSON.stringify(body) })
@@ -331,12 +332,21 @@ test('negociacao de configuracao respeita admin e escopo da credencial', async (
   url = `http://127.0.0.1:${b.port}`
   expect((await capacidades()).configuracao).toEqual({ versoes: [1], leitura: false, escrita: false })
 })
-test('catalogo anuncia capacidade real do Ollama sem conceder agentividade', async () => {
+test('catalogo anuncia capacidade e ocupacao reais do Ollama sem conceder agentividade', async () => {
+  process.env.HII_OLLAMA_MAX_INFLIGHT = '2'
+  process.env.HII_OLLAMA_MODEL_MAX_INFLIGHT = '1'
+  definirEstadoDoOllama({ habilitado: true, modelos: ['qwen:7b'], identidades: [{ nome: 'qwen:7b', digest: 'sha256:abc' }], versao: '0.12.3',
+    carga: [{ nome: 'qwen:7b', sizeVram: 4_000_000_000, tamanho: 5_000_000_000, expiraEm: null }], verificadoEm: Date.now() })
   const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
-  const body = await r.json() as { provedores: { nome: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean } }[] }
+  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null; identidadeInferencia: { versao: string | null; modelos: { nome: string; digest: string | null }[]; carga: { nome: string; sizeVram: number | null }[]; memoriaLivre: null } | null }[] }
   const ollama = body.provedores.find(p => p.nome === 'ollama')
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
+  expect(ollama?.localidade).toBe('indeterminada')
+  expect(ollama?.inferencia).toMatchObject({ limiteServidor: 2, limiteModelo: 1, emUsoNoServidor: 0, disponivel: true })
+  expect(ollama?.identidadeInferencia).toMatchObject({ versao: '0.12.3', modelos: [{ nome: 'qwen:7b', digest: 'sha256:abc' }],
+    carga: [{ nome: 'qwen:7b', sizeVram: 4_000_000_000 }], memoriaLivre: null })
+  expect(body.provedores.find(p => p.nome === 'claude')?.inferencia).toBe(null)
 })
 
 test('estado do daemon vem por HTTP autenticado com versao; API viva nao significa motor ligado', async () => {
@@ -367,4 +377,9 @@ test('iniciar por API exige motor ligado, usa ETag e chave idempotente e respeit
   patchCard('025', { status: 'PAUSED' })
   expect((await post('/v1/tarefas/025/acoes', { acao: 'iniciar' }, { 'if-match': (await cliente.tarefa('025')).etag })).status).toBe(409)
   expect(readCard('025')?.fm.status).toBe('PAUSED')
+})
+
+test('diagnostico global exige administrador mesmo com bearer valido', async () => {
+  const r = await fetch(url + '/v1/diagnostico', { headers: { authorization: 'Bearer ' + token } })
+  expect(r.status).toBe(403)
 })

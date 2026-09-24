@@ -8,9 +8,14 @@ export type AgentRole = 'implement' | 'verify' | 'gate' | 'step'
 export type HarnessId = string
 
 export type AgentMode = 'edit' | 'readonly'
+export type EventoDoHarness =
+  | { tipo: 'modelo_verificado' }
+  | { tipo: 'inferencia_inicio' | 'inferencia_fim' }
+  | { tipo: 'ferramenta_inicio' | 'ferramenta_fim'; ferramenta: string }
 
 export interface AgentRequest {
   consultaId?: string
+  microtask?: string
   prompt: string
   cwd: string
   dirs: string[]
@@ -27,6 +32,10 @@ export interface AgentRequest {
   aoIniciar?: (pid: number) => void
   /** Somente saida publica estruturada; nunca prompt, argv ou raciocinio. */
   aoEmitir?: (canal: 'stdout' | 'stderr' | 'assistant' | 'error', texto: string) => void
+  /** Fato semantico sem argumentos, resultado, prompt ou raciocinio. */
+  aoEvento?: (evento: EventoDoHarness) => void
+  /** Consulta cooperativa entre subprocessos/ferramentas; true impede novo efeito. */
+  cancelado?: () => boolean
   rotulo?: string
   raia?: string
 }
@@ -131,6 +140,14 @@ export interface Harness {
   readonly temLeitorDePlano: boolean
   // true = servidor/modelo na propria maquina, sem conta na nuvem nem tier pago
   readonly rodaLocal: boolean
+  // `false` impede uso sob somente_local mesmo que o transporte esteja em
+  // loopback: um proxy local pode encaminhar inferencia para a nuvem.
+  readonly inferenciaLocalVerificada?: boolean
+  /** Identidade e tetos da capacidade compartilhada; ausencia = sem admissao adicional. */
+  recursoDeInferencia?: (modelo: string | undefined) => { servidor: string; modelo: string; slotsServidor: number; slotsModelo: number }
+  /** Identidade aferida do endpoint/modelos, sem credenciais. */
+  identidadeDeInferencia?: () => { endpoint: string; versao: string | null; verificadoEm: number | null;
+    origem: 'servidor' | 'configuracao'; modelos: { nome: string; digest: string | null }[] }
 
   capabilities(): HarnessCapabilities
   // true = alcancavel agora. Nunca devolve true por omissao: harness que nao

@@ -66,10 +66,10 @@ test('REGRESSAO: ollama atras de endpoint remoto NAO afirma custo medido (o zero
   }
 })
 
-test('ollama servido na rede privada continua sendo zero MEDIDO', async () => {
+test('ollama em outro host da rede privada nao comprova custo local', async () => {
   process.env.HII_OLLAMA_URL = 'http://192.168.1.50:11434'
   try {
-    expect((await new OllamaProvider().run(pedido())).costMeasured).toBe(true)
+    expect((await new OllamaProvider().run(pedido())).costMeasured).toBe(false)
   } finally {
     delete process.env.HII_OLLAMA_URL
   }

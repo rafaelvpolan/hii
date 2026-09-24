@@ -1,3 +1,5 @@
+import { uptime } from 'node:os'
+import { inicioNoKernel } from '../tomada/harness-em-voo.ts'
 import { readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
@@ -16,7 +18,7 @@ export interface EstadoMotor {
   consultadoEm: string
   motivo: string
 }
-interface Presenca { pid: number; versao: string; fila: string; atualizado: number; pronto: boolean }
+interface Presenca { pid: number; versao: string; fila: string; atualizado: number; monotonicMs?: number; relogio?: 'os-uptime-v1'; inicioNoKernel?: string; pronto: boolean }
 export function identidadeDaFila(diretorio = cardsDir()): string {
   let caminho = resolve(diretorio)
   try { caminho = realpathSync(caminho) } catch { /* fila ainda nao provisionada */ }
@@ -32,7 +34,7 @@ const VERSAO_EM_EXECUCAO = versaoDoMotor()
 function arquivo(): string { return lockFile() + '.estado.json' }
 export function publicarPresenca(): void {
   const saude = lerSaude()
-  const registro: Presenca = { pid: process.pid, versao: VERSAO_EM_EXECUCAO, fila: identidadeDaFila(), atualizado: Date.now(), pronto: saude.ok && !encerrando() }
+  const registro: Presenca = { pid: process.pid, versao: VERSAO_EM_EXECUCAO, fila: identidadeDaFila(), atualizado: Date.now(), monotonicMs: uptime() * 1000, relogio: 'os-uptime-v1', inicioNoKernel: inicioNoKernel(process.pid), pronto: saude.ok && !encerrando() }
   const destino = arquivo()
   const temporario = destino + '.' + process.pid + '.tmp'
   writeFileSync(temporario, JSON.stringify(registro), { mode: 0o600 })
@@ -62,7 +64,13 @@ export function estadoMotor(): EstadoMotor {
   if (!alive(pid)) return { ...base, estado: 'desligado', motivo: 'Processo do daemon encerrado.' }
   try {
     const p = JSON.parse(readFileSync(arquivo(), 'utf8')) as Presenca
-    if (p.pid !== pid || !Number.isFinite(p.atualizado) || Date.now() - p.atualizado > 10000 || p.atualizado > Date.now() + 1000) {
+    // API e daemon compartilham o host. Ajustes do relogio civil no WSL nao
+    // podem transformar uma presenca fresca em processo travado.
+    const idade = p.relogio === 'os-uptime-v1' && typeof p.monotonicMs === 'number'
+      ? uptime() * 1000 - p.monotonicMs
+      : Date.now() - p.atualizado
+    if (p.inicioNoKernel && p.inicioNoKernel !== inicioNoKernel(pid)) return { ...base, motivo: 'PID foi reutilizado; registro pertence a outro processo.' }
+    if (p.pid !== pid || !Number.isFinite(idade) || idade > 10000 || idade < -1000) {
       return { ...base, motivo: 'Daemon sem confirmacao recente; verifique a instalacao ou bloqueio do processo.' }
     }
     if (p.fila !== base.fila) return { ...base, motivo: 'API e daemon configurados para filas diferentes.' }

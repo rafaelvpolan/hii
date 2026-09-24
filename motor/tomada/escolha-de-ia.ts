@@ -1,3 +1,5 @@
+import { validarPoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
+import type { PoliticaDeRevisao } from '../ciclo/crivo/revisoes.ts'
 // Escolha de IA como capacidade do MOTOR (R: do revezamento, 09/09): persistir e
 // aplicar provedor/modelo/esforco/modo por papel morava em motor/mirante/ — a
 // superficie humana — e por isso o daemon nao tinha como trocar de IA no meio de um
@@ -86,6 +88,8 @@ export interface Ajuste {
   model?: string
   effort?: string
   modo?: string
+  revisao?: PoliticaDeRevisao
+  autoReview?: boolean
   gauntlet?: boolean
 }
 
@@ -102,6 +106,10 @@ export function aplicar(ajuste: Ajuste, esperada?: string): ResultadoEscolha {
 
 function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
   const prefs = ler()
+  if (ajuste.revisao !== undefined) {
+    validarPoliticaDeRevisao(ajuste.revisao)
+    if (ajuste.papeis.some(p => p !== 'gate')) throw new Error('politica de revisao pertence ao gate')
+  }
   for (const papel of ajuste.papeis) {
     const atual = prefs[papel] ?? {}
     const trocouDeProvedor = !!ajuste.provider && ajuste.provider !== atual.provider
@@ -111,6 +119,10 @@ function aplicarInterno(ajuste: Ajuste): ResultadoEscolha {
     if (ajuste.effort) atual.effort = ajuste.effort
     if (ajuste.modo !== undefined) atual.modo = ajuste.modo || undefined
     if (ajuste.gauntlet !== undefined) atual.gauntlet = ajuste.gauntlet || undefined
+    // Ausente = ainda nao escolhido; false = revisao humana escolhida; true =
+    // revisores automaticos habilitados. Preservar false evita perguntar sempre.
+    if (ajuste.autoReview !== undefined) atual.autoReview = ajuste.autoReview
+    if (ajuste.revisao !== undefined) atual.revisao = structuredClone(ajuste.revisao)
     prefs[papel] = atual
   }
   gravar(prefs)

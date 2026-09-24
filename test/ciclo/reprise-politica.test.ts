@@ -200,6 +200,35 @@ test('quota com fallback ligado mas SEM candidato apto continua HALTED — a rot
   delete process.env.HII_QUOTA_FALLBACK
 })
 
+test('falha transiente do executor local usa plug remoto sem esperar o mesmo local', () => {
+  process.env.HII_REMOTE_FALLBACK = 'on'
+  const id = card()
+  try {
+    const outcome = applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'ollama', papel: 'implement',
+      failureClass: 'transient', failureReason: 'servidor local inativo', technicalDetail: 'ECONNREFUSED', rota: rotaQueTroca('codex') })
+    expect(outcome).toBe('rerouted')
+    expect(readCard(id)?.fm.provider_override_implement).toBe('codex')
+    expect(readCard(id)?.fm.status).toBe('EXECUTING')
+  } finally { delete process.env.HII_REMOTE_FALLBACK }
+})
+
+test('somente_local impede plug remoto mesmo quando o executor local falha', () => {
+  process.env.HII_REMOTE_FALLBACK = 'on'
+  process.env.HII_EXECUTION_LOCALITY = 'somente_local'
+  const id = card()
+  let consultada = false
+  try {
+    const outcome = applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'ollama', papel: 'implement',
+      failureClass: 'transient', failureReason: 'servidor local inativo', technicalDetail: 'ECONNREFUSED',
+      rota: () => { consultada = true; return rotaQueTroca('codex')() } })
+    expect(outcome).toBe('waiting')
+    expect(consultada).toBe(false)
+  } finally {
+    delete process.env.HII_REMOTE_FALLBACK
+    delete process.env.HII_EXECUTION_LOCALITY
+  }
+})
+
 test('quota com fallback DESLIGADO (off explicito — o padrao e on desde 09/09) nem consulta a rota', () => {
   process.env.HII_QUOTA_FALLBACK = 'off'
   const id = card()

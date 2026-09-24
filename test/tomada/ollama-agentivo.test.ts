@@ -1,0 +1,213 @@
+import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { OllamaProvider } from '../../motor/tomada/harness/ollama.ts'
+
+let dir = '', bin = '', respostas = '', requisicoes = ''
+let pathAnterior: string | undefined
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'hii-ollama-agentivo-'))
+  bin = join(dir, 'bin'); mkdirSync(bin)
+  respostas = join(dir, 'respostas'); requisicoes = join(dir, 'requisicoes')
+  pathAnterior = process.env.PATH
+  process.env.PATH = `${bin}:${pathAnterior ?? ''}`
+  process.env.HII_OLLAMA_AGENTIC = '1'
+  writeFileSync(join(bin, 'curl'), `#!/bin/sh
+printf '%s\n' "$@" >> '${requisicoes}'
+linha=$(sed -n '1p' '${respostas}')
+sed '1d' '${respostas}' > '${respostas}.tmp'
+mv '${respostas}.tmp' '${respostas}'
+printf '%s\n' "$linha"
+`)
+  chmodSync(join(bin, 'curl'), 0o755)
+})
+afterEach(() => {
+  if (pathAnterior === undefined) delete process.env.PATH; else process.env.PATH = pathAnterior
+  delete process.env.HII_OLLAMA_AGENTIC
+  delete process.env.HII_AGENT_MAX_TOOLS
+  rmSync(join(dir, '..', `${dir.split('/').pop()}-fora.txt`), { force: true })
+  rmSync(dir, { recursive: true, force: true })
+})
+
+function respostasDaIa(...itens: object[]): void { writeFileSync(respostas, itens.map(x => JSON.stringify(x)).join('\n') + '\n') }
+function pedido(modo: 'edit' | 'readonly' = 'edit') {
+  return { prompt: 'ajuste arquivo.txt', cwd: dir, dirs: [dir], mode: modo, useAgents: false, timeoutMs: 10000 }
+}
+
+test('modelo sem tools e recusado antes de qualquer efeito', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa({ capabilities: ['completion'] })
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('nao declara capacidade tools')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
+  expect(readFileSync(requisicoes, 'utf8')).not.toContain('/api/chat')
+})
+
+test('texto de sucesso sem ferramenta nao comprova edicao', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: 'feito' } })
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('nenhuma edicao foi comprovada')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
+})
+
+test('loop executa substituicao validada e so conclui com resposta final', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  const eventos: string[] = []
+  respostasDaIa(
+    { capabilities: ['completion', 'tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] }, prompt_eval_count: 3, eval_count: 2 },
+    { message: { role: 'assistant', content: 'feito' }, prompt_eval_count: 4, eval_count: 1 },
+  )
+  const r = await new OllamaProvider().run({ ...pedido(), aoEvento: e => eventos.push(e.tipo + ('ferramenta' in e ? ':' + e.ferramenta : '')) })
+  expect(r.ok).toBe(true)
+  expect(r.text).toBe('feito')
+  expect(r.usage.tokens_in).toBe(7)
+  expect(r.usage.tokens_out).toBe(3)
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois')
+  expect(eventos).toEqual(['modelo_verificado', 'inferencia_inicio', 'inferencia_fim', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'inferencia_inicio', 'inferencia_fim'])
+})
+
+test('stream NDJSON publica fragmentos e recompõe a resposta final', async () => {
+  const contador = join(dir, 'contador')
+  writeFileSync(contador, '0')
+  writeFileSync(join(bin, 'curl'), `#!/bin/sh
+n=$(cat '${contador}'); n=$((n+1)); printf '%s' "$n" > '${contador}'
+if [ "$n" = 1 ]; then
+  printf '%s\n' '{"capabilities":["tools"]}'
+else
+  printf '%s\n' '{"message":{"role":"assistant","content":"ola "}}'
+  sleep 0.05
+  printf '%s\n' '{"message":{"role":"assistant","content":"mundo"},"prompt_eval_count":2,"eval_count":3}'
+fi
+`)
+  chmodSync(join(bin, 'curl'), 0o755)
+  const partes: string[] = []
+  const r = await new OllamaProvider().run({ ...pedido('readonly'), aoEmitir: (_, texto) => partes.push(texto) })
+  expect(r.ok).toBe(true)
+  expect(r.text).toBe('ola mundo')
+  expect(partes).toEqual(['ola ', 'mundo'])
+  expect(r.usage.tokens_in).toBe(2)
+  expect(r.usage.tokens_out).toBe(3)
+})
+
+test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima inferencia', async () => {
+  writeFileSync(join(dir, 'a.txt'), 'A0')
+  writeFileSync(join(dir, 'b.txt'), 'B0')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'replace_text', arguments: { path: 'a.txt', old_text: 'A0', new_text: 'A1' } } },
+      { function: { name: 'replace_text', arguments: { path: 'b.txt', old_text: 'B0', new_text: 'B1' } } },
+    ] } },
+    { message: { role: 'assistant', content: 'duas alteracoes concluidas' } },
+  )
+  const ferramentas: string[] = []
+  const r = await new OllamaProvider().run({ ...pedido(), aoEvento: e => { if ('ferramenta' in e) ferramentas.push(e.tipo + ':' + e.ferramenta) } })
+  expect(r.ok).toBe(true)
+  expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('A1')
+  expect(readFileSync(join(dir, 'b.txt'), 'utf8')).toBe('B1')
+  expect(ferramentas).toEqual(['ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text'])
+})
+
+test('busca e validacao tipadas operam sem conceder shell ao modelo', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'estado=antes\nestado=depois\n')
+  writeFileSync(join(dir, 'dados.json'), '{"ok":true}\n')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'search_text', arguments: { path: 'arquivo.txt', query: 'estado=', max_results: 1 } } },
+      { function: { name: 'validate_file', arguments: { path: 'dados.json', check: 'json' } } },
+      { function: { name: 'validate_file', arguments: { path: 'arquivo.txt', check: 'contains', expected: 'estado=depois' } } },
+    ] } },
+    { message: { role: 'assistant', content: 'validado' } },
+  )
+  const r = await new OllamaProvider().run(pedido('readonly'))
+  expect(r.ok).toBe(true)
+  expect(r.text).toBe('validado')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('estado=antes\nestado=depois\n')
+})
+
+test('validacao tipada rejeita argumento extra e falha de criterio', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'seguro')
+  for (const [argumentos, motivo] of [
+    [{ path: 'arquivo.txt', check: 'contains', expected: 'seguro', command: 'rm' }, 'argumento desconhecido'],
+    [{ path: 'arquivo.txt', check: 'not_contains', expected: 'seguro' }, 'validacao not_contains falhou'],
+  ] as const) {
+    respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: '', tool_calls: [
+      { function: { name: 'validate_file', arguments: argumentos } },
+    ] } })
+    const r = await new OllamaProvider().run(pedido('readonly'))
+    expect(r.ok).toBe(false)
+    expect(r.detail).toContain(motivo)
+  }
+})
+
+test('limite configurado impede ferramenta excedente antes do efeito', async () => {
+  process.env.HII_AGENT_MAX_TOOLS = '1'
+  writeFileSync(join(dir, 'a.txt'), 'A0')
+  writeFileSync(join(dir, 'b.txt'), 'B0')
+  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: '', tool_calls: [
+    { function: { name: 'replace_text', arguments: { path: 'a.txt', old_text: 'A0', new_text: 'A1' } } },
+    { function: { name: 'replace_text', arguments: { path: 'b.txt', old_text: 'B0', new_text: 'B1' } } },
+  ] } })
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.detail).toContain('limite de 1')
+  expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('A1')
+  expect(readFileSync(join(dir, 'b.txt'), 'utf8')).toBe('B0')
+})
+
+test('parada entre ferramenta e inferencia seguinte impede novo despacho', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa(
+    { capabilities: ['tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] } },
+    { message: { role: 'assistant', content: 'nao deve ser consumida' } },
+  )
+  let parar = false
+  const r = await new OllamaProvider().run({ ...pedido(), cancelado: () => parar,
+    aoEvento: e => { if (e.tipo === 'ferramenta_fim') parar = true } })
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('cancelada pelo operador')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois')
+  expect(readFileSync(respostas, 'utf8')).toContain('nao deve ser consumida')
+})
+
+test('parada durante requisicao encerra o processo antes do timeout', async () => {
+  writeFileSync(join(bin, 'curl'), `#!/bin/sh
+sleep 30
+`)
+  chmodSync(join(bin, 'curl'), 0o755)
+  const inicio = Date.now()
+  let parar = false
+  setTimeout(() => { parar = true }, 100)
+  const r = await new OllamaProvider().run({ ...pedido(), timeoutMs: 10000, cancelado: () => parar })
+  expect(r.ok).toBe(false)
+  expect(r.timedOut).toBe(false)
+  expect(r.detail).toContain('requisicao Ollama encerrada')
+  expect(Date.now() - inicio).toBeLessThan(3000)
+})
+
+test('readonly, traversal e ferramenta desconhecida falham sem alterar arquivo', async () => {
+  const fora = `../${dir.split('/').pop()}-fora.txt`
+  writeFileSync(join(dir, 'real.txt'), 'interno')
+  symlinkSync('real.txt', join(dir, 'atalho.txt'))
+  for (const [modo, chamada, motivo] of [
+    ['readonly', { function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }, 'somente leitura'],
+    ['edit', { function: { name: 'read_file', arguments: { path: fora } } }, 'traversal recusado'],
+    ['edit', { function: { name: 'read_file', arguments: { path: 'C:\\segredo.txt' } } }, 'relativo ao workspace'],
+    ['edit', { function: { name: 'read_file', arguments: { path: 'atalho.txt' } } }, 'symlink recusado'],
+    ['edit', { function: { name: 'shell', arguments: { path: 'arquivo.txt' } } }, 'desconhecida'],
+  ] as const) {
+    writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+    writeFileSync(join(dir, fora), 'segredo')
+    respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: '', tool_calls: [chamada] } })
+    const r = await new OllamaProvider().run(pedido(modo))
+    expect(r.ok, motivo).toBe(false)
+    expect(r.detail, motivo).toContain(motivo)
+    expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
+  }
+})
