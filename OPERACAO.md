@@ -525,6 +525,8 @@ endpoint `api/show` e só prossegue quando o modelo declara `tools`; oferece lei
 substituição exata de texto em arquivos existentes, com raízes, tamanho, número
 de turnos e repetição limitados. Não há shell geral. Em `readonly`, escrita é
 recusada. O pipeline ainda executa os testes e critérios depois da resposta.
+Os tetos usam `HII_AGENT_MAX_TURNS` (16), `HII_AGENT_MAX_TOOLS` (16) e
+`HII_AGENT_TOOL_OUTPUT_BYTES` (65536) e ficam congelados com a tentativa.
 
 `HII_OLLAMA_MAX_INFLIGHT` limita chamadas simultâneas no endpoint inteiro e
 `HII_OLLAMA_MODEL_MAX_INFLIGHT` limita chamadas simultâneas ao mesmo modelo;
@@ -682,6 +684,9 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 <!-- hicode:envs:inicio -->
 | Variável | Padrão no código | Contrato motor/painel | Lida em |
 |---|---|---|---|
+| `HII_AGENT_MAX_TOOLS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_AGENT_MAX_TURNS` | — | — | `motor/cordel/alicerce/config.ts` |
+| `HII_AGENT_TOOL_OUTPUT_BYTES` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_AGENTS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_AI_PROVIDER` | — | — | `motor/euclides/radar/doctor-estruturado.ts`, `motor/tomada/config.ts`, `motor/tomada/registro.ts` |
 | `HII_API_ADMIN` | — | — | `motor/api/servidor.ts` |

@@ -25,6 +25,7 @@ printf '%s\n' "$linha"
 afterEach(() => {
   if (pathAnterior === undefined) delete process.env.PATH; else process.env.PATH = pathAnterior
   delete process.env.HII_OLLAMA_AGENTIC
+  delete process.env.HII_AGENT_MAX_TOOLS
   rmSync(join(dir, '..', `${dir.split('/').pop()}-fora.txt`), { force: true })
   rmSync(dir, { recursive: true, force: true })
 })
@@ -78,6 +79,20 @@ test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima 
   expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('A1')
   expect(readFileSync(join(dir, 'b.txt'), 'utf8')).toBe('B1')
   expect(ferramentas).toEqual(['ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text'])
+})
+
+test('limite configurado impede ferramenta excedente antes do efeito', async () => {
+  process.env.HII_AGENT_MAX_TOOLS = '1'
+  writeFileSync(join(dir, 'a.txt'), 'A0')
+  writeFileSync(join(dir, 'b.txt'), 'B0')
+  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: '', tool_calls: [
+    { function: { name: 'replace_text', arguments: { path: 'a.txt', old_text: 'A0', new_text: 'A1' } } },
+    { function: { name: 'replace_text', arguments: { path: 'b.txt', old_text: 'B0', new_text: 'B1' } } },
+  ] } })
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.detail).toContain('limite de 1')
+  expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('A1')
+  expect(readFileSync(join(dir, 'b.txt'), 'utf8')).toBe('B0')
 })
 
 test('parada entre ferramenta e inferencia seguinte impede novo despacho', async () => {

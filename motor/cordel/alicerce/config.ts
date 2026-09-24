@@ -154,6 +154,7 @@ export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
 export type LocalidadeDeExecucao = 'preferir_local' | 'somente_local' | 'qualquer'
 export interface PoliticaDeExecucaoEfetiva {
   versao: 1; localidade: LocalidadeDeExecucao; fallbackRemoto: boolean; fallbackCota: boolean
+  limitesAgentivos?: { turnos: number; ferramentas: number; saidaFerramentaBytes: number }
 }
 const politicaFixa = new AsyncLocalStorage<PoliticaDeExecucaoEfetiva>()
 function localidadeConfigurada(): LocalidadeDeExecucao {
@@ -165,7 +166,14 @@ export function politicaDeExecucaoEfetiva(): PoliticaDeExecucaoEfetiva {
   if (fixa) return fixa
   const localidade = localidadeConfigurada()
   return { versao: 1, localidade, fallbackRemoto: (process.env.HII_REMOTE_FALLBACK || 'on') === 'on' && localidade !== 'somente_local',
-    fallbackCota: (process.env.HII_QUOTA_FALLBACK || 'on') === 'on' }
+    fallbackCota: (process.env.HII_QUOTA_FALLBACK || 'on') === 'on', limitesAgentivos: {
+      turnos: Math.max(1, Math.floor(numeroDeEnv('HII_AGENT_MAX_TURNS', 16))),
+      ferramentas: Math.max(1, Math.floor(numeroDeEnv('HII_AGENT_MAX_TOOLS', 16))),
+      saidaFerramentaBytes: Math.max(1024, Math.floor(numeroDeEnv('HII_AGENT_TOOL_OUTPUT_BYTES', 65536))),
+    } }
+}
+export function limitesAgentivos(): { turnos: number; ferramentas: number; saidaFerramentaBytes: number } {
+  return politicaDeExecucaoEfetiva().limitesAgentivos ?? { turnos: 16, ferramentas: 16, saidaFerramentaBytes: 65536 }
 }
 export function comPoliticaDeExecucaoFixa<T>(executar: () => Promise<T>, politica: PoliticaDeExecucaoEfetiva = politicaDeExecucaoEfetiva()): Promise<T> {
   return politicaFixa.run(structuredClone(politica), executar)

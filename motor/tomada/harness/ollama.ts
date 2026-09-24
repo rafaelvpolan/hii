@@ -10,7 +10,7 @@ import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
 import { gravarChamadaNoLiveLog } from './live-log.ts'
 import { executarFerramentaOllama, FERRAMENTAS_OLLAMA } from './ollama-ferramentas.ts'
 import type { ChamadaDeFerramentaOllama } from './ollama-ferramentas.ts'
-import { numeroDeEnv } from '../../cordel/alicerce/config.ts'
+import { limitesAgentivos, numeroDeEnv } from '../../cordel/alicerce/config.ts'
 
 interface OllamaResponse {
   response?: string
@@ -164,6 +164,7 @@ export class OllamaProvider implements Harness {
     const inicio = Date.now()
     const usage = emptyUsage()
     const custo = costOfEndpoint()
+    const limites = limitesAgentivos()
     const chamar = async (rota: string, corpo: object): Promise<{ erro: Error | null; json: OllamaResponse | null; cancelada: boolean }> => {
       const endpoint = `${baseUrl()}${rota}`
       const restante = Math.max(1, req.timeoutMs - (Date.now() - inicio))
@@ -188,7 +189,7 @@ export class OllamaProvider implements Harness {
 
     const mensagens: object[] = [{ role: 'user', content: req.prompt }]
     const repeticoes = new Map<string, number>()
-    for (let turno = 0, chamadas = 0; turno < 16; turno++) {
+    for (let turno = 0, chamadas = 0; turno < limites.turnos; turno++) {
       const antesDaInferencia = cancelada()
       if (antesDaInferencia) return antesDaInferencia
       try { req.aoEvento?.({ tipo: 'inferencia_inicio' }) } catch { /* observador isolado */ }
@@ -213,7 +214,7 @@ export class OllamaProvider implements Harness {
       for (const ferramenta of mensagem.tool_calls) {
         const antesDaFerramenta = cancelada()
         if (antesDaFerramenta) return antesDaFerramenta
-        if (++chamadas > 16) return falhar('limite de 16 chamadas de ferramenta excedido')
+        if (++chamadas > limites.ferramentas) return falhar(`limite de ${limites.ferramentas} chamadas de ferramenta excedido`)
         const assinatura = JSON.stringify(ferramenta)
         const repetida = (repeticoes.get(assinatura) ?? 0) + 1
         repeticoes.set(assinatura, repetida)
@@ -226,9 +227,9 @@ export class OllamaProvider implements Harness {
         try { req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
         const depoisDaFerramenta = cancelada()
         if (depoisDaFerramenta) return depoisDaFerramenta
-        mensagens.push({ role: 'tool', tool_name: ferramenta.function?.name, content: conteudo.slice(0, 64 * 1024) })
+        mensagens.push({ role: 'tool', tool_name: ferramenta.function?.name, content: conteudo.slice(0, limites.saidaFerramentaBytes) })
       }
     }
-    return falhar('limite de 16 turnos do loop agentivo excedido')
+    return falhar(`limite de ${limites.turnos} turnos do loop agentivo excedido`)
   }
 }
