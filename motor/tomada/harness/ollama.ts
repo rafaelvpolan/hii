@@ -82,6 +82,7 @@ export class OllamaProvider implements Harness {
   readonly exigeCliNoPath = false
   readonly comandoDeLogin: readonly string[] = []
   readonly rodaLocal = true
+  saidaIncremental(): boolean { return this.agentic }
   get inferenciaLocalVerificada(): boolean {
     return endpointRodaNesteHost() && process.env.HII_OLLAMA_LOCALITY_VERIFIED === '1'
   }
@@ -165,12 +166,33 @@ export class OllamaProvider implements Harness {
     const usage = emptyUsage()
     const custo = costOfEndpoint()
     const limites = limitesAgentivos()
-    const chamar = async (rota: string, corpo: object): Promise<{ erro: Error | null; json: OllamaResponse | null; cancelada: boolean }> => {
+    const chamar = async (rota: string, corpo: object, streaming = false): Promise<{ erro: Error | null; json: OllamaResponse | null; cancelada: boolean }> => {
       const endpoint = `${baseUrl()}${rota}`
       const restante = Math.max(1, req.timeoutMs - (Date.now() - inicio))
       const args = ['-q', ...noProxyArgs(endpoint), '-sS', '--fail-with-body', '-H', 'Content-Type: application/json', endpoint, '-d', JSON.stringify(corpo)]
-      const { err, stdout, cancelled } = await run('curl', args, { cwd: req.cwd, timeout: restante, aoIniciar: req.aoIniciar, cancelado: req.cancelado })
+      let pendente = '', invalida = '', conteudo = '', entrada = 0, saida = 0
+      const ferramentas: ChamadaDeFerramentaOllama[] = []
+      const consumir = (linha: string): void => {
+        if (!linha.trim() || invalida) return
+        try {
+          const parte = JSON.parse(linha) as OllamaResponse
+          if (!parte || typeof parte !== 'object' || Array.isArray(parte)) throw new Error('fragmento invalido')
+          if (parte.error) invalida = String(parte.error)
+          const texto = typeof parte.message?.content === 'string' ? parte.message.content : ''
+          if (texto) { conteudo += texto; try { req.aoEmitir?.('assistant', texto) } catch { /* observador isolado */ } }
+          if (Array.isArray(parte.message?.tool_calls)) ferramentas.push(...parte.message.tool_calls)
+          if (Number.isSafeInteger(parte.prompt_eval_count)) entrada = Number(parte.prompt_eval_count)
+          if (Number.isSafeInteger(parte.eval_count)) saida = Number(parte.eval_count)
+        } catch { invalida = 'Ollama respondeu com fragmento JSON invalido' }
+      }
+      const { err, stdout, cancelled } = await run('curl', args, { cwd: req.cwd, timeout: restante, aoIniciar: req.aoIniciar, cancelado: req.cancelado,
+        aoLerStdout: streaming ? pedaco => { pendente += pedaco; const linhas = pendente.split('\n'); pendente = linhas.pop() ?? ''; for (const linha of linhas) consumir(linha) } : undefined })
       if (err) return { erro: err, json: null, cancelada: cancelled === true }
+      if (streaming) {
+        consumir(pendente)
+        if (invalida) return { erro: new Error(invalida), json: null, cancelada: false }
+        return { erro: null, cancelada: false, json: { message: { role: 'assistant', content: conteudo, ...(ferramentas.length ? { tool_calls: ferramentas } : {}) }, prompt_eval_count: entrada, eval_count: saida } }
+      }
       try {
         const json = JSON.parse(stdout) as OllamaResponse
         if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('JSON invalido')
@@ -193,7 +215,7 @@ export class OllamaProvider implements Harness {
       const antesDaInferencia = cancelada()
       if (antesDaInferencia) return antesDaInferencia
       try { req.aoEvento?.({ tipo: 'inferencia_inicio' }) } catch { /* observador isolado */ }
-      const resposta = await chamar('/api/chat', { model, stream: false, messages: mensagens, tools: FERRAMENTAS_OLLAMA })
+      const resposta = await chamar('/api/chat', { model, stream: true, messages: mensagens, tools: FERRAMENTAS_OLLAMA }, true)
       try { req.aoEvento?.({ tipo: 'inferencia_fim' }) } catch { /* observador isolado */ }
       const depoisDaInferencia = cancelada()
       if (depoisDaInferencia) return depoisDaInferencia
@@ -207,7 +229,6 @@ export class OllamaProvider implements Harness {
       mensagens.push({ role: 'assistant', content: mensagem.content, tool_calls: mensagem.tool_calls })
       if (!mensagem.tool_calls?.length) {
         if (!mensagem.content) return falhar('Ollama encerrou sem resposta final')
-        try { req.aoEmitir?.('assistant', mensagem.content) } catch { /* observador isolado */ }
         if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: mensagem.content.split('\n'), custoUsd: custo.cost })
         return { ok: true, failed: false, timedOut: false, isError: false, detail: '', text: mensagem.content, ...custo, usage }
       }

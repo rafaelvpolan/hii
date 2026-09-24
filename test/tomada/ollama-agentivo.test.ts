@@ -62,6 +62,29 @@ test('loop executa substituicao validada e so conclui com resposta final', async
   expect(eventos).toEqual(['modelo_verificado', 'inferencia_inicio', 'inferencia_fim', 'ferramenta_inicio:replace_text', 'ferramenta_fim:replace_text', 'inferencia_inicio', 'inferencia_fim'])
 })
 
+test('stream NDJSON publica fragmentos e recompõe a resposta final', async () => {
+  const contador = join(dir, 'contador')
+  writeFileSync(contador, '0')
+  writeFileSync(join(bin, 'curl'), `#!/bin/sh
+n=$(cat '${contador}'); n=$((n+1)); printf '%s' "$n" > '${contador}'
+if [ "$n" = 1 ]; then
+  printf '%s\n' '{"capabilities":["tools"]}'
+else
+  printf '%s\n' '{"message":{"role":"assistant","content":"ola "}}'
+  sleep 0.05
+  printf '%s\n' '{"message":{"role":"assistant","content":"mundo"},"prompt_eval_count":2,"eval_count":3}'
+fi
+`)
+  chmodSync(join(bin, 'curl'), 0o755)
+  const partes: string[] = []
+  const r = await new OllamaProvider().run({ ...pedido(), aoEmitir: (_, texto) => partes.push(texto) })
+  expect(r.ok).toBe(true)
+  expect(r.text).toBe('ola mundo')
+  expect(partes).toEqual(['ola ', 'mundo'])
+  expect(r.usage.tokens_in).toBe(2)
+  expect(r.usage.tokens_out).toBe(3)
+})
+
 test('multiplas ferramentas da mesma resposta sao serializadas antes da proxima inferencia', async () => {
   writeFileSync(join(dir, 'a.txt'), 'A0')
   writeFileSync(join(dir, 'b.txt'), 'B0')
