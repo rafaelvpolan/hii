@@ -234,6 +234,10 @@ exata em arquivo existente, recusa shell geral, path absoluto/Windows, traversal
 symlink e escrita em `readonly`, limita arquivo a 512 KiB e limita turnos,
 chamadas e repetição. A resposta textual não substitui os gates posteriores.
 Somente loopback tem custo de API local medido; rede privada fica desconhecida.
+Isso não comprova onde a inferência ocorre. Em `somente_local`, o Ollama só fica
+elegível após o operador verificar o deployment e definir
+`HII_OLLAMA_LOCALITY_VERIFIED=1`; a API expõe a localidade como verificada,
+indeterminada ou remota.
 
 As provas usam servidor/CLI falsos e diretórios temporários; não houve inferência
 real, download de modelo ou afirmação de sandbox de SO. O piloto Ollama continua
@@ -253,7 +257,8 @@ worktree. A tentativa anterior, o destino e o motivo ficam registrados no card e
 no live log; um provedor já tentado não volta na mesma rodada.
 
 `HII_REMOTE_FALLBACK=off` desliga esse plug. `HII_EXECUTION_LOCALITY=somente_local`
-é uma restrição mais forte: candidatos remotos são excluídos e a tarefa segue a
+é uma restrição mais forte: candidatos remotos ou de localidade indeterminada
+são excluídos e a tarefa segue a
 política de espera/parada local. `preferir_local` é o padrão e `qualquer` permite
 o ranqueamento normal. Falha terminal nunca troca de provedor. A política por tier
 em `config/model-tier.json` continua escolhendo o modelo adequado ao tipo da ação

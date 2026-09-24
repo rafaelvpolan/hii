@@ -739,6 +739,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_MODELOS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts`, `motor/tomada/catalogo.ts` |
 | `HII_OBSERVABILIDADE` | — | — | `motor/observabilidade/registro.ts` |
 | `HII_OLLAMA_AGENTIC` | — | — | `motor/tomada/harness/ollama.ts` |
+| `HII_OLLAMA_LOCALITY_VERIFIED` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` |
 | `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
