@@ -8,6 +8,7 @@ import { emptyUsage } from '../../motor/tomada/uso.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { snapshot } from '../../motor/observabilidade/registro.ts'
 
 let dir = ''
 let env: NodeJS.ProcessEnv
@@ -60,6 +61,9 @@ test('runProvider nao chama harness quando ocupado e libera depois da conclusao'
   const ocupada = await runProvider('', h, req, 'implement')
   expect(ocupada.ok).toBe(false)
   expect(chamadas).toBe(1)
+  const atividadeOcupada = snapshot().atividades.find(a => a.detalhes.admissaoInferencia === 'ocupada')
+  expect(atividadeOcupada?.detalhes.progresso).toBe('capacidade recusada antes da inferencia')
+  expect(atividadeOcupada?.detalhes.ultimoEvento).toBe('termino')
   expect(classifyFailure(h, { timedOut: ocupada.timedOut, detail: ocupada.detail, text: ocupada.text }).failureClass).toBe('transient')
   liberar()
   expect((await primeira).ok).toBe(true)

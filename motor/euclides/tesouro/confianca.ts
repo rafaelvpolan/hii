@@ -193,6 +193,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     pendente.clear()
   }
   let concluida = false
+  let cancelamentoPublicado = false
   try {
     const admissao = admitirInferencia(provider, req.model)
     if (admissao.admitida) liberarInferencia = admissao.liberar
@@ -200,6 +201,11 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       a.detalhes.servidorInferencia = admissao.servidor || null
       a.detalhes.modeloInferencia = admissao.modelo || null
       a.detalhes.admissaoInferencia = admissao.admitida ? 'admitida' : 'ocupada'
+      if (!admissao.admitida) {
+        a.etapa = 'espera_recurso'
+        a.detalhes.ultimoEvento = 'espera_recurso'
+        a.detalhes.progresso = 'capacidade recusada antes da inferencia'
+      }
     })
     const pedido: AgentRequest = {
       ...req,
@@ -224,9 +230,14 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         try { req.aoEvento?.(evento) } catch { /* observador isolado */ }
       },
       cancelado: () => {
-        if (req.cancelado?.()) return true
+        const publicarCancelamento = (): true => {
+          if (!cancelamentoPublicado) atualizar(atividade, a => { a.etapa = 'cancelamento'; a.detalhes.ultimoEvento = 'cancelamento'; a.detalhes.progresso = 'parada confirmada pelo motor' })
+          cancelamentoPublicado = true
+          return true
+        }
+        if (req.cancelado?.()) return publicarCancelamento()
         const atual = id ? readCard(id)?.fm : undefined
-        return atual?.halt_class === 'humano' || atual?.status === 'PAUSED'
+        return atual?.halt_class === 'humano' || atual?.status === 'PAUSED' ? publicarCancelamento() : false
       },
       aoIniciar: (pid) => {
         pidRegistrado = pid
@@ -249,6 +260,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       a.detalhes.timeout = res.timedOut
     })
     const paradaHumana = id && readCard(id)?.fm.halt_class === 'humano'
+    atualizar(atividade, a => { a.etapa = 'termino'; a.detalhes.ultimoEvento = paradaHumana ? 'cancelamento' : 'termino' })
     terminar(atividade, paradaHumana ? 'cancelled' : res.ok ? 'succeeded' : 'failed', res.detail)
     terminou = true
     semPropagarFalhaDeRegistro(() => recordCostTrust(id, provider.name, res))
