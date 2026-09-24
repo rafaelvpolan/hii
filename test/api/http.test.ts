@@ -335,15 +335,17 @@ test('negociacao de configuracao respeita admin e escopo da credencial', async (
 test('catalogo anuncia capacidade e ocupacao reais do Ollama sem conceder agentividade', async () => {
   process.env.HII_OLLAMA_MAX_INFLIGHT = '2'
   process.env.HII_OLLAMA_MODEL_MAX_INFLIGHT = '1'
-  definirEstadoDoOllama({ habilitado: true, modelos: ['qwen:7b'], identidades: [{ nome: 'qwen:7b', digest: 'sha256:abc' }], versao: '0.12.3', verificadoEm: Date.now() })
+  definirEstadoDoOllama({ habilitado: true, modelos: ['qwen:7b'], identidades: [{ nome: 'qwen:7b', digest: 'sha256:abc' }], versao: '0.12.3',
+    carga: [{ nome: 'qwen:7b', sizeVram: 4_000_000_000, tamanho: 5_000_000_000, expiraEm: null }], verificadoEm: Date.now() })
   const r = await fetch(url + '/v1/provedores', { headers: { authorization: `Bearer ${token}` } })
-  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null; identidadeInferencia: { versao: string | null; modelos: { nome: string; digest: string | null }[] } | null }[] }
+  const body = await r.json() as { provedores: { nome: string; localidade: string; aptidao: { agentic: boolean; emitsStructuredJson: boolean }; inferencia: { limiteServidor: number; limiteModelo: number; emUsoNoServidor: number; disponivel: boolean } | null; identidadeInferencia: { versao: string | null; modelos: { nome: string; digest: string | null }[]; carga: { nome: string; sizeVram: number | null }[]; memoriaLivre: null } | null }[] }
   const ollama = body.provedores.find(p => p.nome === 'ollama')
   expect(ollama?.aptidao.agentic).toBe(false)
   expect(ollama?.aptidao.emitsStructuredJson).toBe(false)
   expect(ollama?.localidade).toBe('indeterminada')
   expect(ollama?.inferencia).toMatchObject({ limiteServidor: 2, limiteModelo: 1, emUsoNoServidor: 0, disponivel: true })
-  expect(ollama?.identidadeInferencia).toMatchObject({ versao: '0.12.3', modelos: [{ nome: 'qwen:7b', digest: 'sha256:abc' }] })
+  expect(ollama?.identidadeInferencia).toMatchObject({ versao: '0.12.3', modelos: [{ nome: 'qwen:7b', digest: 'sha256:abc' }],
+    carga: [{ nome: 'qwen:7b', sizeVram: 4_000_000_000 }], memoriaLivre: null })
   expect(body.provedores.find(p => p.nome === 'claude')?.inferencia).toBe(null)
 })
 

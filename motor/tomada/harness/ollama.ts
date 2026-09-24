@@ -92,10 +92,11 @@ export class OllamaProvider implements Harness {
       slotsServidor: Math.floor(numeroDeEnv('HII_OLLAMA_MAX_INFLIGHT', 1)),
       slotsModelo: Math.floor(numeroDeEnv('HII_OLLAMA_MODEL_MAX_INFLIGHT', 1)) }
   }
-  identidadeDeInferencia(): { endpoint: string; versao: string | null; verificadoEm: number | null; origem: 'servidor' | 'configuracao'; modelos: { nome: string; digest: string | null }[] } {
+  identidadeDeInferencia(): { endpoint: string; versao: string | null; verificadoEm: number | null; origem: 'servidor' | 'configuracao'; modelos: { nome: string; digest: string | null }[]; carga: { nome: string; sizeVram: number | null; tamanho: number | null; expiraEm: string | null }[]; memoriaLivre: null } {
     const estado = estadoDoOllama()
     return { endpoint: endpointIdentificado(), versao: estado.versao ?? null, verificadoEm: estado.verificadoEm || null,
-      origem: estado.habilitado ? 'servidor' : 'configuracao', modelos: estado.identidades ?? estado.modelos.map(nome => ({ nome, digest: null })) }
+      origem: estado.habilitado ? 'servidor' : 'configuracao', modelos: estado.identidades ?? estado.modelos.map(nome => ({ nome, digest: null })),
+      carga: estado.carga ?? [], memoriaLivre: null }
   }
 
   // Unico harness cuja prontidao depende de um servidor local estar de pe.
