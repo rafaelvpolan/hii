@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ENV_CARDS_DIR, ENV_REPOS_FILE, ENV_ROOT, ENV_SKILLS_DIR } from './contrato.ts'
 import type { ClasseDeEspera } from '../tipos.ts'
+import { AsyncLocalStorage } from 'node:async_hooks'
 
 // As variaveis do motor mudaram de prefixo (HICODE_ -> HII_) em 12/09/2026. Quem
 // ainda sobe o motor com o nome antigo continua funcionando: o valor e copiado
@@ -150,16 +151,32 @@ export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
 // conferindo aptidao (autenticacao, cota, capacidade do papel), trocar de provedor
 // deixou de ser salto no escuro. HII_QUOTA_FALLBACK=off devolve o comportamento
 // antigo: parar e chamar o humano na primeira cota esgotada.
-export function quotaFallbackLigado(): boolean {
-  return (process.env.HII_QUOTA_FALLBACK || 'on') === 'on'
-}
-
 export type LocalidadeDeExecucao = 'preferir_local' | 'somente_local' | 'qualquer'
-export function localidadeDeExecucao(): LocalidadeDeExecucao {
+export interface PoliticaDeExecucaoEfetiva {
+  versao: 1; localidade: LocalidadeDeExecucao; fallbackRemoto: boolean; fallbackCota: boolean
+}
+const politicaFixa = new AsyncLocalStorage<PoliticaDeExecucaoEfetiva>()
+function localidadeConfigurada(): LocalidadeDeExecucao {
   const valor = process.env.HII_EXECUTION_LOCALITY || 'preferir_local'
   return ['preferir_local', 'somente_local', 'qualquer'].includes(valor) ? valor as LocalidadeDeExecucao : 'preferir_local'
 }
+export function politicaDeExecucaoEfetiva(): PoliticaDeExecucaoEfetiva {
+  const fixa = politicaFixa.getStore()
+  if (fixa) return fixa
+  const localidade = localidadeConfigurada()
+  return { versao: 1, localidade, fallbackRemoto: (process.env.HII_REMOTE_FALLBACK || 'on') === 'on' && localidade !== 'somente_local',
+    fallbackCota: (process.env.HII_QUOTA_FALLBACK || 'on') === 'on' }
+}
+export function comPoliticaDeExecucaoFixa<T>(executar: () => Promise<T>, politica: PoliticaDeExecucaoEfetiva = politicaDeExecucaoEfetiva()): Promise<T> {
+  return politicaFixa.run(structuredClone(politica), executar)
+}
+export function quotaFallbackLigado(): boolean {
+  return politicaDeExecucaoEfetiva().fallbackCota
+}
+export function localidadeDeExecucao(): LocalidadeDeExecucao {
+  return politicaDeExecucaoEfetiva().localidade
+}
 
 export function fallbackRemotoLigado(): boolean {
-  return (process.env.HII_REMOTE_FALLBACK || 'on') === 'on' && localidadeDeExecucao() !== 'somente_local'
+  return politicaDeExecucaoEfetiva().fallbackRemoto
 }

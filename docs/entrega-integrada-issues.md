@@ -58,6 +58,9 @@ GET /v1/tarefas/{id}/recuperacao confere origem, worktree registrado, branch e
 fingerprint. Preparar exige If-Match e fingerprint vistos pelo operador.
 Restaurar configuracao exige hash de snapshot e revisao da tarefa. Nenhuma dessas
 operacoes despacha IA. Retomar e uma acao separada e exige daemon confirmado.
+Snapshots novos preservam tambem a politica efetiva de localidade e fallbacks.
+Ao retomar, preferencias e politica sao reinstaladas em contextos assincronos
+isolados; uma mudanca de ambiente afeta somente despachos futuros.
 Se a configuracao original nao puder ser comprovada, o diagnostico bloqueia a
 preparacao. O snapshot da configuracao atual aparece somente como alternativa;
 o operador precisa escolhe-lo explicitamente antes de liberar a retomada.
@@ -294,3 +297,6 @@ GET /v1/configuracao informa a localidade resolvida e se o fallback remoto esta
 efetivamente ligado. Esse campo e somente leitura: a politica operacional continua
 sob controle do motor. O Hicode pode exibi-la sem deduzir localidade pelo nome do
 provedor e pode persistir gate.autoReview pela mesma API administrativa.
+Cada atividade de harness publica `politicaVersao`, `localidadeExecucao`,
+`fallbackRemoto` e `fallbackCota`, permitindo auditar a politica realmente usada
+na tentativa, inclusive depois de uma alteracao da configuracao global.

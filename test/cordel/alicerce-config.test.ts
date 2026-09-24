@@ -1,7 +1,7 @@
 import { test, expect } from '../apoio/runner.ts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, cardsDir, pipelineManual, reposFile } from '../../motor/cordel/alicerce/config.ts'
+import { ROOT, cardsDir, comPoliticaDeExecucaoFixa, fallbackRemotoLigado, localidadeDeExecucao, pipelineManual, politicaDeExecucaoEfetiva, quotaFallbackLigado, reposFile } from '../../motor/cordel/alicerce/config.ts'
 
 const SUFIXO_SEM_CACHE = 'forced'
 
@@ -139,4 +139,17 @@ test('pipelineManual: manual por padrao, auto por card ou por env — e o campo 
     if (prev === undefined) delete process.env.HII_PIPELINE
     else process.env.HII_PIPELINE = prev
   }
+})
+
+test('politica de execucao fica isolada por tentativa concorrente', async () => {
+  const local = { versao: 1 as const, localidade: 'somente_local' as const, fallbackRemoto: false, fallbackCota: false }
+  const livre = { versao: 1 as const, localidade: 'qualquer' as const, fallbackRemoto: true, fallbackCota: true }
+  const observar = (esperada: typeof local | typeof livre) => comPoliticaDeExecucaoFixa(async () => {
+    await new Promise(resolve => setTimeout(resolve, 1))
+    expect(politicaDeExecucaoEfetiva()).toEqual(esperada)
+    expect(localidadeDeExecucao()).toBe(esperada.localidade)
+    expect(fallbackRemotoLigado()).toBe(esperada.fallbackRemoto)
+    expect(quotaFallbackLigado()).toBe(esperada.fallbackCota)
+  }, esperada)
+  await Promise.all([observar(local), observar(livre)])
 })

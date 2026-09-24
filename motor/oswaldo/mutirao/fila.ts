@@ -1,9 +1,9 @@
 import { adotarRecuperacao } from '../../euclides/recuperacao-adocao.ts'
-import { configuracaoDaTarefa, registrarSnapshot } from '../../euclides/snapshot-execucao.ts'
+import { configuracaoDaTarefa, politicaDaTarefa, registrarSnapshot } from '../../euclides/snapshot-execucao.ts'
 import { preferencias } from '../../tomada/preferencias.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { Job } from '../../cordel/index.ts'
-import { MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
+import { comPoliticaDeExecucaoFixa, MAX_CONCURRENCY } from '../../cordel/alicerce/config.ts'
 import { tetoDeParalelismo } from '../../quilombo/limites.ts'
 import { readCard, updateCard } from '../../cordel/store.ts'
 import { assinaturaDaFila, pending, marcarEmVoo, liberar, quantosEmVoo, quantosSlotsOcupados, registrarRetornoSemTransicao } from './estado-da-fila.ts'
@@ -41,15 +41,15 @@ async function executarJob(job: Job): Promise<void> {
   const statusAntes = readCard(job.id)?.fm.status ?? ''
   try {
     if (readCard(job.id)?.fm.recuperacao_pendente === 'true') throw new Error('Recuperacao pendente: reconcilie configuracao e checkpoint antes de executar')
-    await comPreferenciasFixas(async () => {
-    registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
-    await adotarRecuperacao(job.id)
-    if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
-    else if (job.kind === 'execute') await handleExecute(job.id)
-    else if (job.kind === 'finish') await handleFinish(job.id)
-    else if (job.kind === 'spec') await handleSpec(job.id)
-    else await handleCorrect(job.id)
-    }, configuracaoDaTarefa(job.id))
+    await comPreferenciasFixas(() => comPoliticaDeExecucaoFixa(async () => {
+      registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
+      await adotarRecuperacao(job.id)
+      if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
+      else if (job.kind === 'execute') await handleExecute(job.id)
+      else if (job.kind === 'finish') await handleFinish(job.id)
+      else if (job.kind === 'spec') await handleSpec(job.id)
+      else await handleCorrect(job.id)
+    }, politicaDaTarefa(job.id)), configuracaoDaTarefa(job.id))
   } catch (e) {
     // `excecao`, nao `terminal`: aqui nao se sabe NADA sobre a causa — e um erro que
     // escapou de todo handler. Chamar isso de terminal seria afirmar que repetir nao

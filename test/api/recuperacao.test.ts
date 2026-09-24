@@ -7,7 +7,8 @@ import { createHash } from 'node:crypto'
 import type { Server } from 'node:http'
 import { criarServidorApi } from '../../motor/api/servidor.ts'
 import { allCards, readCard, createCard } from '../../motor/cordel/store.ts'
-import { registrarSnapshot, snapshotsDaExecucao, configuracaoDaTarefa } from '../../motor/euclides/snapshot-execucao.ts'
+import { registrarSnapshot, snapshotsDaExecucao, configuracaoDaTarefa, politicaDaTarefa } from '../../motor/euclides/snapshot-execucao.ts'
+import { comPoliticaDeExecucaoFixa } from '../../motor/cordel/alicerce/config.ts'
 import { tarefa } from '../../motor/api/operacoes.ts'
 import type { PreviaRecuperacao, PacoteRecuperacao } from '../../motor/api/recuperacao.ts'
 
@@ -102,12 +103,14 @@ test('escopo da credencial e conferido antes de preview e importacao', async () 
 })
 test('restauracao usa revisao, mantem parada e nao altera preferencias globais', async () => {
   const id = createCard({ title: 'Configuracao', repo: 'org/app', status: 'PAUSED' }, 'Objetivo')
-  const s = registrarSnapshot(id, 'configuracao original', { implement: { provider: 'ollama', model: 'fixture' } })
+  const politica = { versao: 1 as const, localidade: 'somente_local' as const, fallbackRemoto: false, fallbackCota: false }
+  const s = await comPoliticaDeExecucaoFixa(async () => registrarSnapshot(id, 'configuracao original', { implement: { provider: 'ollama', model: 'fixture' } }), politica)
   const rota = '/v1/tarefas/' + id + '/restaurar-configuracao'
   expect((await post(rota, { hash: s.hash })).status).toBe(428)
   expect((await post(rota, { hash: s.hash }, { 'if-match': '"obsoleta"' })).status).toBe(412)
   expect((await post(rota, { hash: s.hash }, { 'if-match': tarefa(id).etag })).status).toBe(200)
   expect(configuracaoDaTarefa(id).implement?.model).toBe('fixture')
+  expect(politicaDaTarefa(id)).toEqual(politica)
   expect(readCard(id)?.fm.status).toBe('PAUSED')
   expect(readFileSync(process.env.HII_IA_FILE!, 'utf8')).toBe('{}')
 })

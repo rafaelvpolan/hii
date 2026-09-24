@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, chmodSync } from 'node:fs'
 import { join } from 'node:path'
-import { cardsDir } from '../cordel/alicerce/config.ts'
+import { cardsDir, politicaDeExecucaoEfetiva } from '../cordel/alicerce/config.ts'
+import type { PoliticaDeExecucaoEfetiva } from '../cordel/alicerce/config.ts'
 import { readCard, updateCardPorAcaoHumana } from '../cordel/store.ts'
 import { preferencias } from '../tomada/preferencias.ts'
 import type { PreferenciasDeIa } from '../tomada/preferencias.ts'
@@ -17,6 +18,7 @@ export interface SnapshotExecucao {
   instante: string
   motivo: string
   configuracao: PreferenciasDeIa
+  politicaExecucao?: PoliticaDeExecucaoEfetiva
   campos: Record<string, string>
 }
 const CAMPOS = ['repo', 'sessao_id', 'motor_modo', 'pipeline', 'plano_revisao', 'plano_hash', 'microtask_atual', 'retomar_em', 'ai', 'effort', 'risk', 'cost_usd', 'cost_floor', 'cost_unverified', 'tokens_total', 'provider_override_implement', 'orq_modelo'] as const
@@ -47,7 +49,8 @@ export function registrarSnapshot(id: string, motivo: string, config: Preferenci
   if (!card) throw new Error('Tarefa ausente')
   const campos = Object.fromEntries(CAMPOS.filter(k => card.fm[k] !== undefined).map(k => [k, card.fm[k]!]))
   const seguro = jsonPublico(JSON.parse(JSON.stringify(config)) as Json) as PreferenciasDeIa
-  const dados = { versao: 1 as const, tarefa: id, repo: card.fm.repo || '', instante: new Date().toISOString(), motivo, configuracao: seguro, campos }
+  const dados = { versao: 1 as const, tarefa: id, repo: card.fm.repo || '', instante: new Date().toISOString(), motivo, configuracao: seguro,
+    politicaExecucao: politicaDeExecucaoEfetiva(), campos }
   const hash = createHash('sha256').update(JSON.stringify(dados)).digest('hex')
   const snapshot = { ...dados, hash }
   const dir = diretorio(id)
@@ -61,6 +64,10 @@ export function registrarSnapshot(id: string, motivo: string, config: Preferenci
 export function configuracaoDaTarefa(id: string): PreferenciasDeIa {
   const card = readCard(id)
   return card?.fm.recuperacao_config ? snapshotDaExecucao(id, card.fm.recuperacao_config).configuracao : preferencias()
+}
+export function politicaDaTarefa(id: string): PoliticaDeExecucaoEfetiva {
+  const card = readCard(id)
+  return card?.fm.recuperacao_config ? snapshotDaExecucao(id, card.fm.recuperacao_config).politicaExecucao ?? politicaDeExecucaoEfetiva() : politicaDeExecucaoEfetiva()
 }
 export function restaurarConfiguracao(id: string, hash: string): SnapshotExecucao {
   const snapshot = snapshotDaExecucao(id, hash)

@@ -16,6 +16,7 @@ import { esquecerHarness, registrarHarness } from '../../tomada/harness-em-voo.t
 import { contextoDaSessao, iniciarSubsessao, finalizarChamada, lerSessaoHii } from '../sessoes.ts'
 import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
 import { admitirInferencia } from '../../tomada/capacidade-inferencia.ts'
+import { politicaDeExecucaoEfetiva } from '../../cordel/alicerce/config.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -163,6 +164,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     }
   }
   const t0 = Date.now()
+  const politicaExecucao = politicaDeExecucaoEfetiva()
   let pidRegistrado = 0
   const fm = id ? readCard(id)?.fm : undefined
   const sessao = fm?.sessao_id || (fm?.tipo === 'session' ? id : '')
@@ -172,6 +174,8 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     { ...recurso(provider.name, 'harness'), observabilidade: 'partial', capacidades: Object.entries(provider.capabilities()).filter(([, v]) => v).map(([k]) => k) },
     { provedorEfetivo: provider.name, modeloConfigurado: req.model ?? null, modeloEfetivo: req.model ?? null,
       papel, modo: req.mode, permissao: req.modo ?? null, esforco: req.effort ?? null,
+      politicaVersao: politicaExecucao.versao, localidadeExecucao: politicaExecucao.localidade,
+      fallbackRemoto: politicaExecucao.fallbackRemoto, fallbackCota: politicaExecucao.fallbackCota,
       agentesSolicitados: req.useAgents, ferramentasInternas: 'nao observaveis por este contrato',
       saidaIncremental: provider.saidaIncremental?.(req) ?? false })
   atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = req.microtask || fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })

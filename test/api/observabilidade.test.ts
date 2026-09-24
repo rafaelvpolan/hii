@@ -22,6 +22,7 @@ import { planoOrquestrado } from '../fixtures/plano-orquestrado.ts'
 import { salvarPlano } from '../../motor/oswaldo/orquestracao/planos.ts'
 import { patchCard } from '../../motor/cordel/store.ts'
 import { writeClarify } from '../../motor/agentes/clarice/clarificar.ts'
+import { comPoliticaDeExecucaoFixa } from '../../motor/cordel/alicerce/config.ts'
 
 let raiz = ''
 let server: Server
@@ -154,11 +155,16 @@ test('evento semantico do harness atualiza progresso sem expor argumentos', asyn
     return { ok: true, failed: false, timedOut: false, isError: false, text: 'concluido', detail: '', cost: 0, costMeasured: true, usage: { tokens_in: 1, tokens_out: 1, tokens_cache_create: 0, tokens_cache_read: 0 } }
   } }
   Object.setPrototypeOf(executar, provider)
-  await runProvider('', executar, { prompt: 'segredo que nao deve ir ao evento', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000 })
+  await comPoliticaDeExecucaoFixa(() => runProvider('', executar, { prompt: 'segredo que nao deve ir ao evento', cwd: raiz, dirs: [raiz], mode: 'readonly', useAgents: false, timeoutMs: 1000 }),
+    { versao: 1, localidade: 'somente_local', fallbackRemoto: false, fallbackCota: false })
   const atividade = snapshot().atividades.find(a => a.recurso.nome === provider.name)
   assert.equal(atividade?.recurso.observabilidade, 'instrumented')
   assert.equal(atividade?.detalhes.ultimoEvento, 'ferramenta_fim')
   assert.equal(atividade?.detalhes.ferramenta, 'replace_text')
+  assert.equal(atividade?.detalhes.politicaVersao, 1)
+  assert.equal(atividade?.detalhes.localidadeExecucao, 'somente_local')
+  assert.equal(atividade?.detalhes.fallbackRemoto, false)
+  assert.equal(atividade?.detalhes.fallbackCota, false)
   assert.ok(!JSON.stringify(atividade).includes('segredo que nao deve ir ao evento'))
 })
 
