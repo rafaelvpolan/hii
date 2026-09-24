@@ -45,6 +45,15 @@ test('modelo sem tools e recusado antes de qualquer efeito', async () => {
   expect(readFileSync(requisicoes, 'utf8')).not.toContain('/api/chat')
 })
 
+test('texto de sucesso sem ferramenta nao comprova edicao', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: 'feito' } })
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('nenhuma edicao foi comprovada')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
+})
+
 test('loop executa substituicao validada e so conclui com resposta final', async () => {
   writeFileSync(join(dir, 'arquivo.txt'), 'antes')
   const eventos: string[] = []
@@ -77,7 +86,7 @@ fi
 `)
   chmodSync(join(bin, 'curl'), 0o755)
   const partes: string[] = []
-  const r = await new OllamaProvider().run({ ...pedido(), aoEmitir: (_, texto) => partes.push(texto) })
+  const r = await new OllamaProvider().run({ ...pedido('readonly'), aoEmitir: (_, texto) => partes.push(texto) })
   expect(r.ok).toBe(true)
   expect(r.text).toBe('ola mundo')
   expect(partes).toEqual(['ola ', 'mundo'])

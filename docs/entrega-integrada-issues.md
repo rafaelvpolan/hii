@@ -322,3 +322,12 @@ com label de bloqueio pausa o card ativo e persiste estado, blockers e prioridad
 uma reabertura atualiza a origem, mas nunca retoma o card automaticamente. Cards
 terminais nao sao rebaixados e uma leitura parcial/falha nao e tratada como lista
 vazia nem altera elegibilidade.
+
+Piloto local real em 24/09/2026: Ollama 0.30.10, `qwen3:8b`, digest
+`500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`.
+Uma fixture temporaria percorreu verificacao do modelo, duas inferencias, leitura,
+substituicao e resposta final em 72,8 s (553 tokens de entrada, 939 de saida),
+alterando `estado=antes` para `estado=depois`. O piloto inicial com
+`qwen2.5-coder:7b` respondeu sem ferramenta; esse caso revelou um falso sucesso e
+agora e recusado em modo edit como edicao nao comprovada. Execute novamente com
+`HII_OLLAMA_PILOT=1 bun run pilot:ollama`; sem opt-in o script nao roda.

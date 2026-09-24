@@ -211,6 +211,7 @@ export class OllamaProvider implements Harness {
 
     const mensagens: object[] = [{ role: 'user', content: req.prompt }]
     const repeticoes = new Map<string, number>()
+    let ferramentasExecutadas = 0
     for (let turno = 0, chamadas = 0; turno < limites.turnos; turno++) {
       const antesDaInferencia = cancelada()
       if (antesDaInferencia) return antesDaInferencia
@@ -229,6 +230,7 @@ export class OllamaProvider implements Harness {
       mensagens.push({ role: 'assistant', content: mensagem.content, tool_calls: mensagem.tool_calls })
       if (!mensagem.tool_calls?.length) {
         if (!mensagem.content) return falhar('Ollama encerrou sem resposta final')
+        if (req.mode === 'edit' && ferramentasExecutadas === 0) return falhar('modelo encerrou sem executar ferramenta; nenhuma edicao foi comprovada')
         if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: mensagem.content.split('\n'), custoUsd: custo.cost })
         return { ok: true, failed: false, timedOut: false, isError: false, detail: '', text: mensagem.content, ...custo, usage }
       }
@@ -245,6 +247,7 @@ export class OllamaProvider implements Harness {
         try { req.aoEvento?.({ tipo: 'ferramenta_inicio', ferramenta: nome }) } catch { /* observador isolado */ }
         try { conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode) }
         catch (erro) { return falhar((erro as Error).message) }
+        ferramentasExecutadas++
         try { req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
         const depoisDaFerramenta = cancelada()
         if (depoisDaFerramenta) return depoisDaFerramenta
