@@ -55,7 +55,7 @@ export function pendencia(id: string): Pendencia | null {
 
 export function cardsPerguntando(cards: Fields[], repo = ''): string[] {
   return cards
-    .filter(c => c.status === 'CLARIFY' && (!repo || c.repo === repo))
+    .filter(c => (c.status === 'CLARIFY' || perguntaDeTrocaPorCota(c) !== null) && (!repo || c.repo === repo))
     .map(c => c.id ?? '')
     .filter(Boolean)
 }

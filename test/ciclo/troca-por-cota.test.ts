@@ -104,3 +104,19 @@ test('sem candidato apto, para como antes e nao abre pergunta', () => {
   expect(readCard(id)?.fm.status).toBe('HALTED')
   expect(pendencia(id)).toBeNull()
 })
+
+test('pergunta de cota nao reaparece depois de outro tipo de parada', () => {
+  const id = cotaEsgotada()
+  applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'ollama', papel: 'implement', failureClass: 'terminal', failureReason: 'quebrou', technicalDetail: '' })
+  expect(readCard(id)?.fm.halt_class).toBe('terminal')
+  expect(pendencia(id)).toBeNull()
+})
+
+test('aceitar a troca preserva as IAs ja tentadas antes da parada', () => {
+  const id = createCard({ title: 'tres ias', status: 'EXECUTING', repo: 'org/repo', rota_tentados: 'kimi' }, 'x')
+  applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'claude', papel: 'implement', failureClass: 'quota', failureReason: 'cota', technicalDetail: '', rota: paraOllama })
+  responder(id, '1')
+  const tentados = readCard(id)?.fm.rota_tentados ?? ''
+  expect(tentados).toContain('kimi')
+  expect(tentados).toContain('claude')
+})

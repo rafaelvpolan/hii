@@ -53,13 +53,14 @@ export function recomendarTrocaPorCota(p: PedidoDeRecomendacao): Fields | null {
     troca_falha: p.falha,
     troca_retomar_em: p.resumeStatus,
     troca_resume_from: p.resumeStep ?? '',
+    troca_tentados: comTentativaDeRota(readCard(p.id)?.fm.rota_tentados, p.provedor),
     troca_decidida: '',
   }
 }
 
 export function perguntaDeTrocaPorCota(fm: Fields): ClarifyQuestion | null {
   const para = fm.troca_recomendada
-  if (fm.status !== 'HALTED' || !para || fm.troca_decidida) return null
+  if (fm.status !== 'HALTED' || fm.halt_class !== 'quota' || !para || fm.troca_decidida) return null
   const de = fm.troca_de || 'o provedor atual'
   return {
     q: `A cota de ${de} acabou (${fm.troca_falha || 'cota esgotada'}). Recomendo trocar para ${para}: ${fm.troca_motivo ?? ''}. Trocar e retomar a tarefa?`,
@@ -100,7 +101,7 @@ export function decidirTrocaPorCota(id: string, resposta: string): DecisaoDeTroc
     fields: {
       status: alvo,
       [campoDeOverrideDoPapel(papel)]: para,
-      rota_tentados: comTentativaDeRota(fm.rota_tentados, de),
+      rota_tentados: comTentativaDeRota(fm.troca_tentados || fm.rota_tentados, de),
       rota_contexto: contexto,
       wait_provider: para,
       ...(fm.troca_resume_from ? { resume_from: fm.troca_resume_from } : {}),

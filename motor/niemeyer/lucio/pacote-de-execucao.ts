@@ -90,7 +90,7 @@ function avisoDeCotaDe(provedor: string): string {
 }
 
 export function hashDoPacote(p: Omit<PacoteDeExecucao, 'hash'>): string {
-  const material = { objetivo: p.objetivo, modo: p.modo, agentes: p.agentes, skills: p.skills, gates: p.gates, portoes: p.portoes, acaoExterna: p.acaoExterna }
+  const material = { objetivo: p.objetivo, modo: p.modo, acaoExterna: p.acaoExterna }
   return createHash('sha256').update(JSON.stringify(material)).digest('hex').slice(0, 16)
 }
 

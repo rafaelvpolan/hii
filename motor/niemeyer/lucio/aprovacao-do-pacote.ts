@@ -37,10 +37,15 @@ function gravarPacote(p: PacoteDeExecucao): string {
   return arquivo
 }
 
+export function execucaoJaIniciada(fm: Fields): boolean {
+  return !!fm.worktree || Number(fm.cost_usd || '0') > 0 || Number(fm.tokens_total || '0') > 0
+}
+
 export function liberarPeloPacote(id: string): boolean {
   if (!promptPrimeiroLigado()) return true
   const card = readCard(id)
   if (!card || card.fm.tipo === 'session') return true
+  if (!card.fm.pacote_hash && execucaoJaIniciada(card.fm)) return true
   const pacote = montarPacote(card)
   if (card.fm.pacote_aprovado_hash === pacote.hash) return true
   const arquivo = gravarPacote(pacote)
@@ -117,7 +122,7 @@ export function definirIaDoCard(id: string, e: EscolhaDeIa): { ok: boolean; reas
   if (e.provedor && !harness) return { ok: false, reason: `IA desconhecida: ${e.provedor}` }
   if (harness && papel === 'implement' && !harness.agentic) return { ok: false, reason: `${harness.name} nao edita arquivos; nao pode implementar` }
   if (ENTREGUES.includes(card.fm.status ?? '')) return { ok: false, reason: `#${id} ja foi entregue` }
-  const espera = card.fm.status === 'EXECUTING' ? motivoParaEsperarHarness(id) : ''
+  const espera = motivoParaEsperarHarness(id)
   if (espera) return { ok: false, reason: espera }
   const modelo: Fields = papel === 'implement' ? { orq_modelo: e.modelo ?? '' } : {}
   updateCardPorAcaoHumana(id, {

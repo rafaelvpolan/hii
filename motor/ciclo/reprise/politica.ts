@@ -71,6 +71,8 @@ function haltFields(input: FailurePolicyInput): Fields {
     provider_override_step: '',
     provider_override_gate: '',
     provider_override_verify: '',
+    troca_recomendada: '',
+    troca_decidida: '',
     ...input.extraFields,
   }
 }

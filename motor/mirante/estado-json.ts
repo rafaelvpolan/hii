@@ -5,6 +5,8 @@ import type { Fields } from '../cordel/index.ts'
 import { allCards } from '../cordel/store.ts'
 import { cardsDir } from '../cordel/alicerce/config.ts'
 import { readClarify } from '../agentes/clarice/clarificar.ts'
+import { perguntaDoPacote } from '../niemeyer/lucio/aprovacao-do-pacote.ts'
+import { perguntaDeTrocaPorCota } from '../ciclo/reprise/troca-por-cota.ts'
 import { usoDeDisco } from '../euclides/estado-em-disco.ts'
 import type { UsoDeDisco } from '../euclides/estado-em-disco.ts'
 import { daemonPid, daemonStatus } from '../oswaldo/mutirao/daemon.ts'
@@ -90,6 +92,8 @@ function numero(bruto: string): number {
 }
 
 function perguntaAberta(c: Fields): PerguntaAberta | null {
+  const doMotor = perguntaDeTrocaPorCota(c) ?? perguntaDoPacote(c)
+  if (doMotor) return { indice: 0, total: 1, pergunta: doMotor.q, opcoes: doMotor.options, recomendada: doMotor.recommended }
   if (texto(c, 'status') !== 'CLARIFY') return null
   const perguntas = readClarify(texto(c, 'id'))
   const indice = perguntas.findIndex(q => !q.answer)

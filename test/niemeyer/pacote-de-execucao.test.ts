@@ -105,3 +105,17 @@ test('IA desconhecida ou papel invalido sao recusados', () => {
   expect(definirIaDoCard(id, { papel: 'faxina', provedor: 'codex' }).ok).toBe(false)
   expect(existsSync(join(BASE, 'cards', 'pacotes', `${id}.md`))).toBe(false)
 })
+
+test('tarefa que ja comecou antes da atualizacao nao volta para aprovacao', () => {
+  const id = createCard({ title: 'em voo', status: 'EXECUTING', repo: 'org/site', worktree: '/tmp/wt-qualquer', cost_usd: '1.2' }, '## Objetivo\nem voo\n')
+  expect(liberarPeloPacote(id)).toBe(true)
+  expect(readCard(id)?.fm.status).toBe('EXECUTING')
+})
+
+test('a pergunta do pacote aparece no estado lido pela TUI e pelo painel', async () => {
+  const { snapshotDoMotor } = await import('../../motor/mirante/estado-json.ts')
+  const id = tarefa('pergunta no estado')
+  liberarPeloPacote(id)
+  const t = snapshotDoMotor().tarefas.find(x => x.id === id)
+  expect(t?.pergunta?.opcoes).toEqual(['Aprovar e executar', 'Cancelar a tarefa'])
+})
