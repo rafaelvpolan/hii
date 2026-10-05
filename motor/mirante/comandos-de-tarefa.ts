@@ -48,7 +48,7 @@ function responderPergunta(id: string, texto: string): ResultadoDeAcao {
   const r = responder(id, texto)
   const feito = r.restantes > 0
     ? `respondido: ${r.resposta} — faltam ${r.restantes} pergunta(s)`
-    : `respondido: ${r.resposta} — #${id} retomado`
+    : r.retomou ? `respondido: ${r.resposta} — #${id} retomado` : `respondido: ${r.resposta}`
   return resultado(r.ok, 'responder', id, r.ok ? feito : r.reason)
 }
 

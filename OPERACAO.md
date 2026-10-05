@@ -700,6 +700,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_API_TOKEN` | `''` | — | `bin/hii.ts`, `motor/api/servidor.ts` |
 | `HII_AUDIT_LOTE_CHARS` | — | — | `motor/agentes/assis/tipos.ts` |
 | `HII_BUDGET_USD` | — | — | `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/teto-global.ts` |
+| `HII_CARD_BUDGET_TOKENS` | — | — | `motor/euclides/tesouro/orcamento.ts` |
 | `HII_CARD_BUDGET_USD` | — | — | `motor/ciclo/canudos/gauntlet.ts`, `motor/cordel/alicerce/snapshot.ts`, `motor/euclides/tesouro/orcamento.ts` |
 | `HII_CARD_COOLDOWN_MS` | `0` | — | `motor/oswaldo/mutirao/estado-da-fila.ts` |
 | `HII_CARDS_DIR` | — | ambos, compartilhada entre clones | `motor/cordel/alicerce/contrato.ts`, `motor/mirante/cli/dados.ts`, `scripts/apagar-card.mjs` (+3) |
@@ -711,6 +712,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_COLOR_DEPTH` | — | — | `motor/mirante/tui/paleta.ts` |
 | `HII_CONCURRENCY` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
 | `HII_CONFLICT_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
+| `HII_COTA_AVISO_PCT` | — | — | `motor/euclides/tesouro/aviso-de-cota.ts` |
 | `HII_COTA_TTL_MS` | `'2000'` | — | `motor/euclides/tesouro/cota-runs.ts` |
 | `HII_CPU_POR_WORKTREE` | — | — | `motor/euclides/radar/doctor.ts`, `motor/quilombo/limites.ts` |
 | `HII_CPUS_TOTAL` | — | — | `motor/quilombo/limites.ts` |
@@ -773,7 +775,8 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_POLL_MS` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_PREVIEW_BASE` | — | — | `motor/cordel/alicerce/config.ts` |
 | `HII_PROJECT_MEMORY` | `'on'` | — | `motor/cordel/alicerce/config.ts` |
-| `HII_QUOTA_FALLBACK` | `'on'` | — | `motor/ciclo/reprise/politica.ts`, `motor/cordel/alicerce/config.ts`, `motor/oswaldo/executar.ts` (+1) |
+| `HII_PROMPT_PRIMEIRO` | `'on'` | — | `motor/niemeyer/lucio/aprovacao-do-pacote.ts` |
+| `HII_QUOTA_FALLBACK` | `'perguntar'` | — | `motor/ciclo/reprise/politica.ts`, `motor/ciclo/reprise/troca-por-cota.ts`, `motor/cordel/alicerce/config.ts` (+2) |
 | `HII_REAJUSTE_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
 | `HII_REGISTROS_TTL_MS` | — | — | `motor/euclides/podar.ts` |
 | `HII_REGRAS_FILE` | — | motor | `motor/cordel/alicerce/contrato.ts` |

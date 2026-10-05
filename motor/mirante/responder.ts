@@ -5,8 +5,10 @@ import { umaLinha } from './instruir.ts'
 import { gravarPerguntasDoCrivo, perguntasDoCrivo } from '../ciclo/crivo/perguntas-do-crivo.ts'
 import { answerClarify } from './acoes.ts'
 import type { ClarifyQuestion, Fields } from '../cordel/tipos.ts'
+import { decidirTrocaPorCota, perguntaDeTrocaPorCota } from '../ciclo/reprise/troca-por-cota.ts'
+import { perguntaDoPacote, responderPacote } from '../niemeyer/lucio/aprovacao-do-pacote.ts'
 
-export type OrigemDaPergunta = 'clarify' | 'crivo'
+export type OrigemDaPergunta = 'clarify' | 'crivo' | 'cota' | 'pacote'
 
 export interface Pendencia {
   id: string
@@ -37,6 +39,10 @@ export function pendencia(id: string): Pendencia | null {
   // primeira aparecia: a do crivo era gravada em `review_questions` e lida por
   // ninguem — o card parava com as perguntas dentro do frontmatter e a TUI dizia
   // apenas "a tarefa parou".
+  const daCota = perguntaDeTrocaPorCota(card.fm)
+  if (daCota) return { id, titulo: card.fm.title ?? '', perguntas: [daCota], indice: 0, atual: daCota, origem: 'cota' }
+  const doPacote = perguntaDoPacote(card.fm)
+  if (doPacote) return { id, titulo: card.fm.title ?? '', perguntas: [doPacote], indice: 0, atual: doPacote, origem: 'pacote' }
   const daRevisao = perguntasDoCrivo(card.fm, id)
   const doClarify = card.fm.status === 'CLARIFY' ? readClarify(id) : []
   const perguntas = doClarify.length ? doClarify : daRevisao
@@ -75,6 +81,14 @@ export function responder(id: string, entrada: string): RespostaResult {
   const resposta = resolverResposta(p.atual, entrada)
   if (!resposta) {
     return { ...vazio, reason: `opcao invalida — escolha de 1 a ${p.atual.options.length}, ou escreva a resposta` }
+  }
+  if (p.origem === 'pacote') {
+    const d = responderPacote(id, resposta)
+    return { ok: d.ok, reason: d.reason, resposta, restantes: 0, retomou: d.retomou }
+  }
+  if (p.origem === 'cota') {
+    const d = decidirTrocaPorCota(id, resposta)
+    return { ok: d.ok, reason: d.reason, resposta, restantes: 0, retomou: d.retomou }
   }
   const perguntas = p.perguntas.map((q, i) => (i === p.indice ? { ...q, answer: resposta } : q))
   const restantes = perguntas.filter(q => !q.answer).length

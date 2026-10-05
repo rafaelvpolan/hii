@@ -127,7 +127,7 @@ test('INVARIANTE o motor CONFERE o escopo no diff, nao so pede no prompt', async
   const executar = await lerArquivo('motor/oswaldo/executar.ts')
   expect(executar, 'sem a checagem, escopo e mais uma instrucao em texto que o modelo pode ignorar').toContain('foraDoEscopo(')
   expect(executar).toContain('escreveu FORA do escopo')
-  const agente = await lerArquivo('motor/ciclo/agente.ts')
+  const agente = await lerArquivo('motor/ciclo/prompt-de-implementacao.ts')
   expect(agente, 'e o agente tem de saber a regra ANTES de trabalhar').toContain('ESCOPO DE ESCRITA')
 })
 

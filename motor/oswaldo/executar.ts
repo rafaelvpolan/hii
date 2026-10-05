@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cordel/index.ts'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cordel/index.ts'
 import { cardsDir, CLARIFY, EVAL, evalMin, fallbackRemotoLigado, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
-import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
+import { gastoDoCard, motivoDeTokensExcedidos, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
@@ -196,6 +196,12 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
+  const excessoDeTokens = motivoDeTokensExcedidos(baseTokens)
+  if (excessoDeTokens) {
+    const motivo = `${excessoDeTokens} antes de (re)executar — decida se continua`
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
+    return
+  }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
   let auxCost = 0
   let auxTokens = 0
@@ -345,6 +351,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     const technicalDetail = res.timedOut ? `${res.reason ?? ''} apos ${elapsed}s` : (res.reason ?? '')
     const outcome = applyFailurePolicy({
       id,
+      papel: 'implement',
+      ...(deps.rota ? { rota: deps.rota } : {}),
       fromStatus: 'EXECUTING',
       resumeStatus: 'EXECUTING',
       provider: res.provider ?? '',

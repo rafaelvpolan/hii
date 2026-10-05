@@ -10,6 +10,7 @@ import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../../tomada/r
 import { appendFailureAttempt } from './tentativas.ts'
 import type { FailureOutcome } from './tentativas.ts'
 import { stampRunFailure } from '../../euclides/registros.ts'
+import { recomendarTrocaPorCota } from './troca-por-cota.ts'
 
 export type ResumeStatus = 'EXECUTING' | 'URL_OK' | 'CORRECTING' | 'SPECCED'
 
@@ -145,6 +146,11 @@ function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutco
   if (input.failureClass === 'quota') {
     const trocado = trocaDeProvedorRecuperavel(input, attempts)
     if (trocado) return trocado
+    const recomendacao = recomendarTrocaPorCota({ id: input.id, papel: input.papel, provedor: input.provider, falha: input.failureReason, resumeStatus: input.resumeStatus, resumeStep: input.resumeStep, rota: input.rota })
+    if (recomendacao) {
+      patchCard(input.id, { ...haltFields(input), ...recomendacao }, `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — recomendado trocar para ${recomendacao.troca_recomendada}; aguardando a decisao do humano (responda a pergunta da tarefa)`)
+      return 'halt'
+    }
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HII_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
   }

@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from '
 import { join } from 'node:path'
 import { DEFAULT_PROVIDER } from '../../tomada/registro.ts'
 import { avisarArquivoIlegivel, motivoDoErro } from './aviso.ts'
+import { diretoriosPorIa, leiaMePorIa } from './pastas-por-ia.ts'
 
 export interface ProjectConfig {
   provider?: string
@@ -65,7 +66,8 @@ const DEFAULT_CONFIG: ProjectConfig = { provider: DEFAULT_PROVIDER, base: 'main'
 
 const DEFAULT_RULES = `# Regras do projeto para o motor hicode
 
-Estas regras sao ADITIVAS ao CLAUDE.md do repositorio; nunca o substituem.
+Estas regras sao a fonte para qualquer IA: o motor as injeta no prompt e
+\`hii projetar\` as leva ao padrao nativo de cada IA (CLAUDE.md, AGENTS.md).
 Escreva aqui, curto, o que o motor precisa saber deste projeto (stack, convencoes,
 o que nunca mexer). Quanto mais curto, menos tokens por card.
 `
@@ -78,10 +80,10 @@ export function initHicodeHome(repo: string): string[] {
     renameSync(legacy, home)
     created.push(`${home} (migrado de .hicode/)`)
   }
-  for (const d of [home, join(home, 'memory'), join(home, 'skills'), join(home, 'state')]) {
+  for (const d of [home, join(home, 'memory'), join(home, 'skills'), join(home, 'state'), ...diretoriosPorIa(home)]) {
     if (!existsSync(d)) { mkdirSync(d, { recursive: true }); created.push(d) }
   }
-  const files = arquivosIniciaisDoHome().map(([nome, conteudo]) => [join(home, nome), conteudo] as [string, string])
+  const files = [...arquivosIniciaisDoHome().map(([nome, conteudo]) => [join(home, nome), conteudo] as [string, string]), ...leiaMePorIa(home)]
   for (const [f, content] of files) {
     if (!existsSync(f)) { writeFileSync(f, content); created.push(f) }
   }

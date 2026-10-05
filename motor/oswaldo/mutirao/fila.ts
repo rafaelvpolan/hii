@@ -23,6 +23,7 @@ import { executarGateway } from '../gateway.ts'
 import { modoDaExecucao } from '../orquestracao/config.ts'
 import { iniciar, terminar, recurso, dentro, paiDaExecucao } from '../../observabilidade/registro.ts'
 import { comPreferenciasFixas } from '../../tomada/preferencias.ts'
+import { liberarPeloPacote } from '../../niemeyer/lucio/aprovacao-do-pacote.ts'
 
 export { reconcileStranded, pending, halteradosDoLote } from './estado-da-fila.ts'
 
@@ -44,6 +45,7 @@ async function executarJob(job: Job): Promise<void> {
     await comPreferenciasFixas(() => comPoliticaDeExecucaoFixa(async () => {
       registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
       await adotarRecuperacao(job.id)
+      if (job.kind === 'execute' && !liberarPeloPacote(job.id)) return
       if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
       else if (job.kind === 'execute') await handleExecute(job.id)
       else if (job.kind === 'finish') await handleFinish(job.id)

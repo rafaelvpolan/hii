@@ -34,6 +34,7 @@ export interface CriterioDeTier {
 export interface OrcamentoPorCard {
   readonly tetoUsd: number
   readonly acaoAoEstourar: string
+  readonly tetoTokens?: number
 }
 
 export type ModelosPorProvedor = Readonly<Record<string, Readonly<Partial<Record<Tier, string>>>>>
@@ -57,7 +58,7 @@ interface Cru {
   versao?: number
   padrao?: string
   criterios?: Record<string, { tier?: string; motivo?: string }>
-  orcamentoPorCard?: { tetoUsd?: number; acaoAoEstourar?: string }
+  orcamentoPorCard?: { tetoUsd?: number; acaoAoEstourar?: string; tetoTokens?: number }
   modelosPorTier?: { porProvedor?: Record<string, Record<string, string>> }
   esforcosPorTier?: Record<string, string>
   orcamentoGlobal?: { tetoUsd?: number; janela?: string }
@@ -100,7 +101,11 @@ export function lerGovernanca(): Governanca {
   if (typeof teto !== 'number' || !Number.isFinite(teto) || teto <= 0 || !acaoAoEstourar) {
     throw new Error(`model-tier.json: orcamentoPorCard precisa de tetoUsd numero finito > 0 e acaoAoEstourar — recebido ${JSON.stringify(teto)}. Teto infinito ou de outro tipo e a ausencia de orcamento com outro nome`)
   }
-  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar }, modelosPorTier: lerModelosPorTier(cru), esforcosPorTier: lerEsforcosPorTier(cru), orcamentoGlobal: lerOrcamentoGlobal(cru) }
+  const tetoTokens = cru.orcamentoPorCard?.tetoTokens ?? 0
+  if (typeof tetoTokens !== 'number' || !Number.isFinite(tetoTokens) || tetoTokens < 0) {
+    throw new Error(`model-tier.json: orcamentoPorCard.tetoTokens precisa ser numero finito >= 0 (0 = desligado) — recebido ${JSON.stringify(tetoTokens)}`)
+  }
+  return { versao: cru.versao ?? 0, padrao, criterios, orcamentoPorCard: { tetoUsd: teto, acaoAoEstourar, tetoTokens }, modelosPorTier: lerModelosPorTier(cru), esforcosPorTier: lerEsforcosPorTier(cru), orcamentoGlobal: lerOrcamentoGlobal(cru) }
 }
 
 function lerEsforcosPorTier(cru: Cru): Readonly<Partial<Record<Tier, Esforco>>> {
@@ -179,4 +184,32 @@ export function gastoDoCard(cru: string | undefined): number | null {
 export function tetoDoCard(g: Governanca = lerGovernanca()): number {
   const doOperador = numeroDeEnv('HII_CARD_BUDGET_USD', 0)
   return doOperador > 0 ? doOperador : g.orcamentoPorCard.tetoUsd
+}
+
+export function tetoDeTokensDoCard(g: Governanca = lerGovernanca()): number {
+  const doOperador = numeroDeEnv('HII_CARD_BUDGET_TOKENS', 0)
+  return doOperador > 0 ? doOperador : g.orcamentoPorCard.tetoTokens ?? 0
+}
+
+export interface ConsumoDoCard {
+  readonly usd: number | null
+  readonly tokens: number
+}
+
+export function consumoDoCard(fm: { cost_usd?: string; tokens_total?: string }): ConsumoDoCard {
+  const tokens = Number(fm.tokens_total || '0')
+  return { usd: gastoDoCard(fm.cost_usd), tokens: Number.isFinite(tokens) && tokens > 0 ? tokens : 0 }
+}
+
+export function motivoDeOrcamentoExcedido(consumo: ConsumoDoCard, g: Governanca = lerGovernanca()): string {
+  if (consumo.usd === null) return 'cost_usd nao e numero — sem saber o gasto, a proxima chamada paga nao e liberada'
+  const tetoUsd = tetoDoCard(g)
+  if (tetoUsd > 0 && consumo.usd >= tetoUsd) return `limite de custo da execucao atingido (US$ ${consumo.usd.toFixed(4)} de US$ ${tetoUsd})`
+  return motivoDeTokensExcedidos(consumo.tokens, g)
+}
+
+export function motivoDeTokensExcedidos(tokens: number, g: Governanca = lerGovernanca()): string {
+  const teto = tetoDeTokensDoCard(g)
+  if (teto > 0 && tokens >= teto) return `limite de tokens da execucao atingido (${tokens} de ${teto}) — vale para todo provedor, inclusive os que nao informam custo em dolar`
+  return ''
 }
