@@ -734,3 +734,5 @@ navegação. Por ora ele ainda carrega uma cópia do kernel; ela é **redundante
 pode ser apagada quando o painel web assumir. `hidash` (dashboard genérico) vem depois.
 
 Estado, versão e partida opt-in por API: [contrato do motor](docs/conexao-hicode/estado-motor.md).
+
+Fluxo local, memoria por IA, aprovacao do prompt e limites: [docs/execucao-local-prompt-primeiro.md](docs/execucao-local-prompt-primeiro.md).

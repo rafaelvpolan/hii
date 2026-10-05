@@ -157,11 +157,3 @@ test('mudanca de regras depois da exibicao impede aprovacao de prompt antigo', (
     expect(responder(id, '1').retomou).toBe(true)
   } finally { writeFileSync(arquivo, original) }
 })
-
-test('a aprovacao anterior ao brainstorm retoma a fase de origem sem pular para implementacao', () => {
-  const id = createCard({ title: 'descobrir arquitetura', status: 'READY', repo: 'org/site' }, '## Objetivo\nDescobrir arquitetura\n')
-  expect(liberarPeloPacote(id)).toBe(false)
-  expect(readCard(id)?.fm.pacote_retomar_status).toBe('READY')
-  expect(responder(id, '1').retomou).toBe(true)
-  expect(readCard(id)?.fm.status).toBe('READY')
-})

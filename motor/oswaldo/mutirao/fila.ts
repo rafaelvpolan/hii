@@ -45,7 +45,7 @@ async function executarJob(job: Job): Promise<void> {
     await comPreferenciasFixas(() => comPoliticaDeExecucaoFixa(async () => {
       registrarSnapshot(job.id, 'antes do despacho ' + job.kind, preferencias())
       await adotarRecuperacao(job.id)
-      if (job.kind === 'execute' && !liberarPeloPacote(job.id)) return
+      if (!liberarPeloPacote(job.id)) return
       if (job.kind === 'execute' && modoDaExecucao(readCard(job.id)?.fm ?? {}) === 'gateway') await executarGateway(job.id)
       else if (job.kind === 'execute') await handleExecute(job.id)
       else if (job.kind === 'finish') await handleFinish(job.id)

@@ -1,3 +1,6 @@
+import { projetarParaCodex } from '../../cordel/alicerce/pastas-por-ia.ts'
+import { OllamaProvider } from './ollama.ts'
+import { baseOllamaLocal, configuradoOllama, modeloOllama, recusaDoModeloLocal } from './backend-ollama.ts'
 import { redigirDiagnostico } from '../diagnostico.ts'
 import { run } from '../../quilombo/git.ts'
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
@@ -7,7 +10,7 @@ import { COST_UNKNOWN } from '../../euclides/tesouro/custo.ts'
 import { resolverModo } from '../modo-puro.ts'
 import { codexAutenticado } from '../../euclides/tesouro/planos.ts'
 import type { AgentMode, AgentRequest, AgentResult, CatalogoDeModo, CorDeMarca, Harness, HarnessCapabilities, HarnessId, PlanoDoProvedor, SinaisDoHarness } from '../tipos.ts'
-import { planoDoCodex } from '../../euclides/tesouro/planos.ts'
+import { planoDoCodex, planoLocal } from '../../euclides/tesouro/planos.ts'
 import { cliSaudavel } from '../sonda.ts'
 import { AcumuladorDeLinhas, cabecalhoDaChamada, carimboAgora, comRaia, linhaDeConclusao } from './live-log.ts'
 import type { Usage } from '../../cordel/index.ts'
@@ -29,9 +32,10 @@ function sandbox(mode: AgentMode): string {
   return mode === 'edit' ? 'workspace-write' : 'read-only'
 }
 
-export function argv(req: AgentRequest, workdir: string): string[] {
+export function argv(req: AgentRequest, workdir: string, ollama = false): string[] {
   const aprovacao = resolverModo(CODEX_MODOS, req.modo)
   const a = ['exec', req.prompt, '-C', workdir, '--sandbox', sandbox(req.mode), '-c', `approval_policy="${aprovacao}"`, '--json']
+  if (ollama) a.push('--oss', '--local-provider', 'ollama')
   if (req.model) a.push('-m', req.model)
   if (req.effort) a.push('-c', `model_reasoning_effort="${req.effort}"`)
   for (const d of req.dirs.slice(1)) a.push('--add-dir', d)
@@ -163,8 +167,22 @@ export const CODEX_SINAIS: SinaisDoHarness = {
 }
 
 export class CodexProvider implements Harness {
+  prepararProjeto(alvo: string): void { projetarParaCodex(alvo) }
   saidaIncremental(): boolean { return true }
-  readonly name: HarnessId = 'codex'
+  readonly name: HarnessId
+  readonly ollama: boolean
+  readonly recursoDeInferencia?: Harness['recursoDeInferencia']
+  readonly identidadeDeInferencia?: Harness['identidadeDeInferencia']
+  private readonly servidorLocal = new OllamaProvider()
+  constructor(ollama = false) {
+    this.ollama = ollama
+    this.name = ollama ? 'codex-ollama' : 'codex'
+    if (ollama) {
+      this.recursoDeInferencia = modelo => this.servidorLocal.recursoDeInferencia(modelo)
+      this.identidadeDeInferencia = () => this.servidorLocal.identidadeDeInferencia()
+    }
+  }
+  get inferenciaLocalVerificada(): boolean { return this.ollama && this.servidorLocal.inferenciaLocalVerificada }
   readonly supportsAgents = false
   readonly supportsVision = false
   readonly agentic = true
@@ -173,21 +191,26 @@ export class CodexProvider implements Harness {
   readonly cor: CorDeMarca = { r: 16, g: 163, b: 127 }
   readonly binario = 'codex'
   readonly exigeCliNoPath = true
-  readonly comandoDeLogin: readonly string[] = ['codex', 'login']
-  readonly rodaLocal = false
-  readonly temLeitorDePlano = true
+  get comandoDeLogin(): readonly string[] { return this.ollama ? [] : ['codex', 'login'] }
+  get rodaLocal(): boolean { return this.ollama }
+  get temLeitorDePlano(): boolean { return !this.ollama }
 
-  modeloPadraoPara(): string | undefined { return process.env.HII_CODEX_MODEL || undefined }
-  prontoParaUso(): boolean { return true }
-  comoObterQuandoAusente(): string { return 'instale o CLI do Codex' }
-  autenticado(): boolean { return codexAutenticado() }
-  plano(agoraMs: number): PlanoDoProvedor { return planoDoCodex(agoraMs) }
-  modelosDisponiveis(): string[] { return [] }
-  capabilities(): HarnessCapabilities { return CODEX_CAPACIDADES }
-  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, URL_DA_API) }
+  modeloPadraoPara(): string | undefined { return this.ollama ? modeloOllama('codex') : process.env.HII_CODEX_MODEL || undefined }
+  prontoParaUso(): boolean { return !this.ollama || (configuradoOllama('codex') && this.servidorLocal.prontoParaUso()) }
+  comoObterQuandoAusente(): string { return this.ollama ? 'instale o CLI codex, inicie o Ollama local e configure HII_CODEX_OLLAMA_MODEL' : 'instale o CLI do Codex' }
+  autenticado(): boolean { return this.ollama ? configuradoOllama('codex') : codexAutenticado() }
+  plano(agoraMs: number): PlanoDoProvedor { return this.ollama ? planoLocal(this.name) : planoDoCodex(agoraMs) }
+  modelosDisponiveis(): string[] { return this.ollama ? this.servidorLocal.modelosDisponiveis() : [] }
+  capabilities(): HarnessCapabilities { return this.ollama ? { ...CODEX_CAPACIDADES, acceptsEffort: false } : CODEX_CAPACIDADES }
+  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, this.ollama ? baseOllamaLocal() + '/api/tags' : URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CODEX_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
+    if (this.ollama) {
+      const motivo = await recusaDoModeloLocal(req.model || modeloOllama('codex'))
+      if (motivo) return { ok: false, failed: true, timedOut: false, isError: false, detail: motivo, text: '', ...COST_UNKNOWN, usage: emptyUsage() }
+    }
+    if (this.ollama) req = { ...req, model: req.model || modeloOllama('codex'), effort: undefined }
     const workdir = req.dirs[0] ?? req.cwd
     const live = liveCodexLog(req)
     const observadas = new AcumuladorDeLinhas()
@@ -199,7 +222,8 @@ export class CodexProvider implements Harness {
         if (e.type === 'error' || e.type === 'turn.failed') req.aoEmitir?.('error', e.message || e.error?.message || 'falha do Codex')
       } catch { /* JSON parcial ou nao publico */ }
     }
-    const { err, stdout, stderr } = await run('codex', argv(req, workdir), {
+    const { err, stdout, stderr } = await run('codex', argv(req, workdir, this.ollama), {
+      env: this.ollama ? { OLLAMA_BASE_URL: baseOllamaLocal() } : {},
       cwd: workdir,
       timeout: req.timeoutMs,
       aoIniciar: req.aoIniciar,

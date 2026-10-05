@@ -85,6 +85,7 @@ const SECOES: Secao[] = [
   {
     titulo: 'projeto',
     itens: [
+      { chave: '/pacote', arg: '[id]', texto: 'le o prompt e o contrato antes de aprovar' },
       { chave: '/ia', arg: '[papel] <ia>', texto: 'escolhe a ia que roda cada papel' },
       { chave: '/model', arg: '[papel] <modelo>', texto: 'escolhe o modelo da ia atual' },
       { chave: '/effort', arg: '[papel] <nivel>', texto: 'escolhe o esforco da ia atual' },

@@ -26,6 +26,8 @@ export interface AgentRequest {
   modo?: string
   expectsJson?: boolean
   timeoutMs: number
+  /** Saldo em USD para o limite nativo do CLI, quando suportado. */
+  maxBudgetUsd?: number
   liveLog?: string
   extraTools?: string[]
   agentsJson?: string
@@ -124,6 +126,8 @@ export const SEM_PLANO: PlanoDoProvedor = {
 // `if (nome === 'claude')` em sete arquivos, inclusive fora de tomada/ — o que
 // fazia "adicionar uma IA" ser uma caca ao tesouro pelo repositorio.
 export interface Harness {
+  /** Projeta o pacote de instrucoes para o formato nativo no projeto-alvo. */
+  prepararProjeto?: (alvo: string) => void
   saidaIncremental?: (req: AgentRequest) => boolean
   readonly name: HarnessId
   readonly supportsAgents: boolean

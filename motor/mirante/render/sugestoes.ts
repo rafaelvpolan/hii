@@ -20,6 +20,7 @@ export const AJUDA_DO_COMANDO: Record<string, string> = {
   '/new': 'cria uma session do hii no projeto',
   '/ref': 'anexa imagem de referencia (url, caminho ou clipboard)',
   '/serve': 'sobe o modo dev da tarefa aberta ou do projeto e mostra a url (/start, /dev, /preview)',
+  '/pacote': 'le o prompt completo antes de aprovar',
   '/ia': 'escolhe a ia que roda cada papel',
   '/model': 'escolhe o modelo da ia atual',
   '/effort': 'escolhe o esforco da ia atual',

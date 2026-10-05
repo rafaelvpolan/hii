@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { arquivoDoPacote } from '../niemeyer/lucio/aprovacao-do-pacote.ts'
 import { comandoManual, camposDoIntake } from './comandos-manuais.ts'
 import { pedirPassoManual, pedirSuiteManual } from '../quilombo/cartorio/passos-manuais.ts'
 import { motivoParaEsperarHarness } from '../tomada/harness-em-voo.ts'
@@ -113,6 +115,15 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
         io.log(`orquestrador: ${(erro as Error).message}`)
         return state
       }
+    }
+    case 'pacote': {
+      const tarefaId = normalizeId(texto.trim() || state.seguindo)
+      const card = tarefaId ? readCard(tarefaId) : null
+      if (!card) { io.log('uso: /pacote <id> — selecione uma tarefa existente'); return state }
+      const arquivo = arquivoDoPacote(tarefaId)
+      if (!existsSync(arquivo)) { io.log(`#${tarefaId}: o motor ainda nao gerou o pacote; nenhuma aprovacao foi registrada`); return state }
+      for (const linha of readFileSync(arquivo, 'utf8').split('\n')) io.log(linha)
+      return state
     }
     case 'help': {
       const espera = esperandoVoce(allCards(), state.repo)

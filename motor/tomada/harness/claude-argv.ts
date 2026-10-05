@@ -34,6 +34,7 @@ function permissaoArgv(modo: string | undefined): string[] {
 
 export function claudeArgv(req: AgentRequest, formato: string[] = FORMATO_JSON): string[] {
   const a = ['-p', req.prompt, ...formato]
+  if (req.maxBudgetUsd !== undefined && Number.isFinite(req.maxBudgetUsd) && req.maxBudgetUsd > 0) a.push('--max-budget-usd', String(req.maxBudgetUsd))
   if (req.model) a.push('--model', req.model)
   if (req.effort) a.push('--effort', req.effort)
   if (req.mode === 'edit') a.push(...permissaoArgv(req.modo), '--allowedTools', toolsFor(req))

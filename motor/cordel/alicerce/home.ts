@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from '
 import { join } from 'node:path'
 import { DEFAULT_PROVIDER } from '../../tomada/registro.ts'
 import { avisarArquivoIlegivel, motivoDoErro } from './aviso.ts'
-import { diretoriosPorIa, leiaMePorIa } from './pastas-por-ia.ts'
+import { diretoriosPorIa, leiaMePorIa, temLinkNoDestino } from './pastas-por-ia.ts'
 
 export interface ProjectConfig {
   provider?: string
@@ -75,21 +75,25 @@ o que nunca mexer). Quanto mais curto, menos tokens por card.
 export function initHicodeHome(repo: string): string[] {
   const home = hicodeHome(repo)
   const created: string[] = []
+  if (temLinkNoDestino(repo, home)) throw new Error('.hii deve ser uma pasta propria do projeto, sem links simbolicos')
   const legacy = join(repo, '.hicode')
+  if (!existsSync(home) && existsSync(legacy) && temLinkNoDestino(repo, legacy)) throw new Error('.hicode legado nao pode ser um link simbolico para migracao')
   if (!existsSync(home) && existsSync(legacy)) {
     renameSync(legacy, home)
     created.push(`${home} (migrado de .hicode/)`)
   }
   for (const d of [home, join(home, 'memory'), join(home, 'skills'), join(home, 'state'), ...diretoriosPorIa(home)]) {
+    if (temLinkNoDestino(repo, d)) throw new Error('pasta do projeto nao pode ser link simbolico: ' + d)
     if (!existsSync(d)) { mkdirSync(d, { recursive: true }); created.push(d) }
   }
   const files = [...arquivosIniciaisDoHome().map(([nome, conteudo]) => [join(home, nome), conteudo] as [string, string]), ...leiaMePorIa(home)]
   for (const [f, content] of files) {
+    if (temLinkNoDestino(repo, f)) throw new Error('arquivo gerenciado do projeto nao pode ser link simbolico: ' + f)
     if (!existsSync(f)) { writeFileSync(f, content); created.push(f) }
   }
   return created
 }
 
 export function arquivosIniciaisDoHome(): Array<[string, string]> {
-  return [['config.json', JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n'], ['rules.md', DEFAULT_RULES], ['.gitignore', 'state/\ncontract.json\n']]
+  return [['config.json', JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n'], ['rules.md', DEFAULT_RULES], ['memory/LEIA-ME.md', '# Memoria duravel do projeto\n\nRegistre decisoes, convencoes e aprendizados confirmados. Nao inclua credenciais nem logs de execucao. Esta memoria e compartilhada entre as IAs.\n'], ['.gitignore', 'state/\ncontract.json\nia/*/executions/\n']]
 }

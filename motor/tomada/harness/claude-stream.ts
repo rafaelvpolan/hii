@@ -127,7 +127,7 @@ function podarLog(caminho: string): void {
   }
 }
 
-export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<AgentResult> {
+export function runClaudeStream(req: AgentRequest, liveLog: string, ambiente: NodeJS.ProcessEnv = {}, argumentos: string[] = []): Promise<AgentResult> {
   const dir = dirname(liveLog)
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
@@ -149,7 +149,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string): Promise<Age
     let timedOut = false
     let hard: ReturnType<typeof setTimeout> | null = null
 
-    const child = spawn('claude', argvStream(req), { cwd: req.cwd, env: { ...process.env, ...NONINTERACTIVE_ENV }, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn('claude', [...argvStream(req), ...argumentos], { cwd: req.cwd, env: { ...process.env, ...NONINTERACTIVE_ENV, ...ambiente }, stdio: ['ignore', 'pipe', 'pipe'] })
     if (child.pid) req.aoIniciar?.(child.pid)
 
     const soft = setTimeout(() => {

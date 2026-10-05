@@ -1,5 +1,8 @@
+import { projetarParaClaude } from '../../cordel/alicerce/pastas-por-ia.ts'
+import { OllamaProvider } from './ollama.ts'
+import { ambienteClaudeOllama, argumentosClaudeOllama, baseOllamaLocal, configuradoOllama, modeloOllama, recusaDoModeloLocal } from './backend-ollama.ts'
 import { claudeArgv, CLAUDE_MODOS } from './claude-argv.ts'
-import { claudeAutenticado, planoDoClaude } from '../../euclides/tesouro/planos.ts'
+import { claudeAutenticado, planoDoClaude, planoLocal } from '../../euclides/tesouro/planos.ts'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv.ts'
 import { run } from '../../quilombo/git.ts'
 import { emptyUsage } from '../uso.ts'
@@ -42,39 +45,63 @@ export const CLAUDE_SINAIS: SinaisDoHarness = {
 }
 
 export class ClaudeProvider implements Harness {
+  prepararProjeto(alvo: string): void { projetarParaClaude(alvo) }
   saidaIncremental(req: AgentRequest): boolean { return !!req.liveLog }
-  readonly name: HarnessId = 'claude'
+  readonly name: HarnessId
+  readonly ollama: boolean
+  readonly recursoDeInferencia?: Harness['recursoDeInferencia']
+  readonly identidadeDeInferencia?: Harness['identidadeDeInferencia']
+  private readonly servidorLocal = new OllamaProvider()
+  constructor(ollama = false) {
+    this.ollama = ollama
+    this.name = ollama ? 'claude-ollama' : 'claude'
+    if (ollama) {
+      this.recursoDeInferencia = modelo => this.servidorLocal.recursoDeInferencia(modelo)
+      this.identidadeDeInferencia = () => this.servidorLocal.identidadeDeInferencia()
+    }
+  }
+  get inferenciaLocalVerificada(): boolean { return this.ollama && this.servidorLocal.inferenciaLocalVerificada }
   readonly supportsAgents = true
-  readonly supportsVision = true
+  get supportsVision(): boolean { return !this.ollama }
   readonly agentic = true
 
   readonly modos: CatalogoDeModo = CLAUDE_MODOS
   readonly cor: CorDeMarca = { r: 218, g: 119, b: 86 }
   readonly binario = 'claude'
   readonly exigeCliNoPath = true
-  readonly comandoDeLogin: readonly string[] = ['claude', '/login']
-  readonly rodaLocal = false
-  readonly temLeitorDePlano = true
+  get comandoDeLogin(): readonly string[] { return this.ollama ? [] : ['claude', '/login'] }
+  get rodaLocal(): boolean { return this.ollama }
+  get temLeitorDePlano(): boolean { return !this.ollama }
 
-  prontoParaUso(): boolean { return true }
+  prontoParaUso(): boolean { return !this.ollama || (configuradoOllama('claude') && this.servidorLocal.prontoParaUso()) }
   // De proposito NAO le HII_CLAUDE_MODEL: o claude usa o modelo padrao do
   // proprio CLI fora de verify/gate, e era assim antes desta refatoracao.
   modeloPadraoPara(papel: AgentRole): string | undefined {
+    if (this.ollama) return modeloOllama('claude')
     if (papel === 'verify') return VERIFY_MODEL
     if (papel === 'gate') return GATE_MODEL
     return undefined
   }
-  comoObterQuandoAusente(): string { return 'instale o CLI do Claude Code' }
-  autenticado(): boolean { return claudeAutenticado() }
-  plano(agoraMs: number): PlanoDoProvedor { return planoDoClaude(agoraMs) }
-  modelosDisponiveis(): string[] { return this.plano(Date.now()).modelos }
-  capabilities(): HarnessCapabilities { return CLAUDE_CAPACIDADES }
-  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, URL_DA_API) }
+  comoObterQuandoAusente(): string { return this.ollama ? 'instale o CLI claude, inicie o Ollama local e configure HII_CLAUDE_OLLAMA_MODEL' : 'instale o CLI do Claude Code' }
+  autenticado(): boolean { return this.ollama ? configuradoOllama('claude') : claudeAutenticado() }
+  plano(agoraMs: number): PlanoDoProvedor { return this.ollama ? planoLocal(this.name) : planoDoClaude(agoraMs) }
+  modelosDisponiveis(): string[] { return this.ollama ? this.servidorLocal.modelosDisponiveis() : this.plano(Date.now()).modelos }
+  capabilities(): HarnessCapabilities { return this.ollama ? { ...CLAUDE_CAPACIDADES, reportsCostUsd: false, acceptsEffort: false } : CLAUDE_CAPACIDADES }
+  healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, this.ollama ? baseOllamaLocal() + '/api/tags' : URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CLAUDE_SINAIS }
 
   async run(req: AgentRequest): Promise<AgentResult> {
-    if (req.liveLog) return runClaudeStream(req, req.liveLog)
-    const { err, stdout, stderr } = await run('claude', claudeArgv(req), { cwd: req.cwd, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
+    if (this.ollama) {
+      const motivo = await recusaDoModeloLocal(req.model || modeloOllama('claude'))
+      if (motivo) return { ok: false, failed: true, timedOut: false, isError: false, detail: motivo, text: '', ...COST_UNKNOWN, usage: emptyUsage() }
+    }
+    const ambiente = this.ollama ? ambienteClaudeOllama() : {}
+    if (this.ollama) req = { ...req, model: req.model || modeloOllama('claude'), effort: undefined }
+    if (req.liveLog) {
+      const res = await runClaudeStream(req, req.liveLog, ambiente, this.ollama ? argumentosClaudeOllama() : [])
+      return this.ollama ? { ...res, ...COST_UNKNOWN } : res
+    }
+    const { err, stdout, stderr } = await run('claude', [...claudeArgv(req), ...(this.ollama ? argumentosClaudeOllama() : [])], { cwd: req.cwd, env: ambiente, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     let reading: CostReading = COST_UNKNOWN
     let text = ''
     let isError = false
@@ -102,7 +129,7 @@ export class ClaudeProvider implements Harness {
       isError,
       detail: err ? String(err.message || '') : '',
       text,
-      ...reading,
+      ...(this.ollama ? COST_UNKNOWN : reading),
       usage,
     }
   }
