@@ -55,7 +55,7 @@ const timer = setInterval(() => {
     HII_RUNNER_PIDFILE: join(base, 'runner.pid'), HII_RUNNER_LOCK: join(base, 'runner.lock'),
     HII_RUNNER_LOG: join(base, 'runner.log'), HII_HEALTH_PORT: '0',
     HII_OLLAMA_URL: 'http://127.0.0.1:1', HII_POLL_MS: '100', HII_SHUTDOWN_TIMEOUT_MS: '100',
-    HII_TIER_FILE: join(base, 'model-tier.json'), HII_AI_PROVIDER: 'codex', HII_QUOTA_FALLBACK: 'off', HII_RUN_TIMEOUT_MS: '60000',
+    HII_TIER_FILE: join(base, 'model-tier.json'), HII_AI_PROVIDER: 'codex', HII_QUOTA_FALLBACK: 'off', HII_PROMPT_PRIMEIRO: 'off', HII_RUN_TIMEOUT_MS: '60000',
   }
   for (const name of ['alvo', 'outro', ...additional]) execFileSync(join(bin, 'git'), ['init', '-q', '-b', 'main', join(base, name)], { env })
   return { base, env, cli: (...args) => execFileSync(process.execPath, [resolve('bin/hii.ts'), ...args], { env, encoding: 'utf8', timeout: 15000 }) }
