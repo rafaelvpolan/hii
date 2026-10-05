@@ -337,7 +337,7 @@ test('inventario travado: quantos sinais proprios (terminal/quota/transient) cad
     inventario[nome] = { terminal: sinais.terminal.length, quota: sinais.quota.length, transient: sinais.transient.length }
   }
   expect(inventario).toEqual({
-    claude: { terminal: 0, quota: 1, transient: 1 },
+    claude: { terminal: 1, quota: 1, transient: 1 },
     codex: { terminal: 0, quota: 1, transient: 1 },
     ollama: { terminal: 1, quota: 0, transient: 1 },
     kimi: { terminal: 1, quota: 0, transient: 0 },

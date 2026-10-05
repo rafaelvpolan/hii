@@ -8,7 +8,7 @@ import { planoLocal } from '../../euclides/tesouro/planos.ts'
 import { estadoDoOllama } from './ollama-estado.ts'
 import { alcancavelPorHttp, urlDoOllama } from '../sonda.ts'
 import { gravarChamadaNoLiveLog } from './live-log.ts'
-import { executarFerramentaOllama, FERRAMENTAS_OLLAMA } from './ollama-ferramentas.ts'
+import { executarFerramentaOllama, FERRAMENTAS_OLLAMA, ErroRecuperavelDaFerramenta } from './ollama-ferramentas.ts'
 import type { ChamadaDeFerramentaOllama } from './ollama-ferramentas.ts'
 import { limitesAgentivos, numeroDeEnv } from '../../cordel/alicerce/config.ts'
 
@@ -44,6 +44,8 @@ function endpointRodaNesteHost(): boolean {
 function costOfEndpoint(): CostReading {
   return endpointRodaNesteHost() ? COST_FREE_LOCAL : COST_UNKNOWN
 }
+
+const COBRANCA_DE_EDICAO = 'Nenhuma edicao foi aplicada ainda. Esta tarefa exige alterar arquivos: chame a ferramenta replace_text de verdade, com path, old_text e new_text. Nao descreva a chamada em texto. Leia o arquivo antes se precisar de um old_text exato.'
 
 const CAPACIDADES_SIMPLES: HarnessCapabilities = {
   emitsStructuredJson: false,
@@ -212,7 +214,8 @@ export class OllamaProvider implements Harness {
 
     const mensagens: object[] = [{ role: 'user', content: req.prompt }]
     const repeticoes = new Map<string, number>()
-    let ferramentasExecutadas = 0
+    let edicoesAplicadas = 0
+    let cobrouEdicao = false
     for (let turno = 0, chamadas = 0; turno < limites.turnos; turno++) {
       const antesDaInferencia = cancelada()
       if (antesDaInferencia) return antesDaInferencia
@@ -231,7 +234,12 @@ export class OllamaProvider implements Harness {
       mensagens.push({ role: 'assistant', content: mensagem.content, tool_calls: mensagem.tool_calls })
       if (!mensagem.tool_calls?.length) {
         if (!mensagem.content) return falhar('Ollama encerrou sem resposta final')
-        if (req.mode === 'edit' && ferramentasExecutadas === 0) return falhar('modelo encerrou sem executar ferramenta; nenhuma edicao foi comprovada')
+        if (req.mode === 'edit' && edicoesAplicadas === 0) {
+          if (cobrouEdicao) return falhar('modelo encerrou sem aplicar nenhuma edicao; nenhuma edicao foi comprovada')
+          cobrouEdicao = true
+          mensagens.push({ role: 'user', content: COBRANCA_DE_EDICAO })
+          continue
+        }
         if (req.liveLog) gravarChamadaNoLiveLog({ caminho: req.liveLog, rotulo: req.rotulo, raia: req.raia, linhas: mensagem.content.split('\n'), custoUsd: custo.cost })
         return { ok: true, failed: false, timedOut: false, isError: false, detail: '', text: mensagem.content, ...custo, usage }
       }
@@ -246,9 +254,14 @@ export class OllamaProvider implements Harness {
         let conteudo: string
         const nome = ferramenta.function?.name || 'desconhecida'
         try { req.aoEvento?.({ tipo: 'ferramenta_inicio', ferramenta: nome }) } catch { /* observador isolado */ }
-        try { conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode) }
-        catch (erro) { return falhar((erro as Error).message) }
-        ferramentasExecutadas++
+        try {
+          conteudo = executarFerramentaOllama(ferramenta, req.cwd, req.dirs, req.mode)
+          if (nome === 'replace_text') edicoesAplicadas++
+        }
+        catch (erro) {
+          if (!(erro instanceof ErroRecuperavelDaFerramenta)) return falhar((erro as Error).message)
+          conteudo = `ERRO da ferramenta ${nome}: ${(erro as Error).message}. Nada foi alterado. Corrija os argumentos e chame de novo; para replace_text, leia o arquivo antes e use um old_text que ocorra exatamente uma vez.`
+        }
         try { req.aoEvento?.({ tipo: 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
         const depoisDaFerramenta = cancelada()
         if (depoisDaFerramenta) return depoisDaFerramenta

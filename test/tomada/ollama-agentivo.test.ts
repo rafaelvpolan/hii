@@ -47,10 +47,11 @@ test('modelo sem tools e recusado antes de qualquer efeito', async () => {
 
 test('texto de sucesso sem ferramenta nao comprova edicao', async () => {
   writeFileSync(join(dir, 'arquivo.txt'), 'antes')
-  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: 'feito' } })
+  respostasDaIa({ capabilities: ['tools'] }, { message: { role: 'assistant', content: 'feito' } }, { message: { role: 'assistant', content: 'feito' } })
   const r = await new OllamaProvider().run(pedido())
   expect(r.ok).toBe(false)
   expect(r.detail).toContain('nenhuma edicao foi comprovada')
+  expect(readFileSync(requisicoes, 'utf8')).toContain('Nenhuma edicao foi aplicada ainda')
   expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
 })
 
@@ -131,7 +132,7 @@ test('busca e validacao tipadas operam sem conceder shell ao modelo', async () =
   expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('estado=antes\nestado=depois\n')
 })
 
-test('validacao tipada rejeita argumento extra e falha de criterio', async () => {
+test('validacao tipada rejeita argumento extra e falha de criterio e devolve o motivo ao modelo', async () => {
   writeFileSync(join(dir, 'arquivo.txt'), 'seguro')
   for (const [argumentos, motivo] of [
     [{ path: 'arquivo.txt', check: 'contains', expected: 'seguro', command: 'rm' }, 'argumento desconhecido'],
@@ -142,7 +143,8 @@ test('validacao tipada rejeita argumento extra e falha de criterio', async () =>
     ] } })
     const r = await new OllamaProvider().run(pedido('readonly'))
     expect(r.ok).toBe(false)
-    expect(r.detail).toContain(motivo)
+    expect(readFileSync(requisicoes, 'utf8')).toContain(motivo)
+    expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('seguro')
   }
 })
 
@@ -210,4 +212,64 @@ test('readonly, traversal e ferramenta desconhecida falham sem alterar arquivo',
     expect(r.detail, motivo).toContain(motivo)
     expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes')
   }
+})
+
+test('erro de uso da ferramenta volta ao modelo, que corrige e conclui', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes e antes')
+  respostasDaIa(
+    { capabilities: ['completion', 'tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] } },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes e', new_text: 'depois e' } } }] } },
+    { message: { role: 'assistant', content: 'feito' } },
+  )
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(true)
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois e antes')
+  expect(readFileSync(requisicoes, 'utf8')).toContain('old_text deve ocorrer exatamente uma vez')
+})
+
+test('erro de seguranca da ferramenta continua encerrando a execucao', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa(
+    { capabilities: ['completion', 'tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: '../fora.txt', old_text: 'a', new_text: 'b' } } }] } },
+  )
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('traversal')
+})
+
+test('chamada descrita em texto depois de um erro de edicao nao conta como sucesso', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes e antes')
+  respostasDaIa(
+    { capabilities: ['completion', 'tools'] },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] } },
+    { message: { role: 'assistant', content: 'Final replace_text call: replace_text("antes e", "depois e")' } },
+    { message: { role: 'assistant', content: 'pronto, a substituicao esta descrita acima' } },
+  )
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(false)
+  expect(r.detail).toContain('nenhuma edicao foi comprovada')
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('antes e antes')
+})
+
+test('a cobranca de edicao leva o modelo a chamar a ferramenta de verdade', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa(
+    { capabilities: ['completion', 'tools'] },
+    { message: { role: 'assistant', content: 'replace_text("antes", "depois")' } },
+    { message: { role: 'assistant', content: '', tool_calls: [{ function: { name: 'replace_text', arguments: { path: 'arquivo.txt', old_text: 'antes', new_text: 'depois' } } }] } },
+    { message: { role: 'assistant', content: 'feito' } },
+  )
+  const r = await new OllamaProvider().run(pedido())
+  expect(r.ok).toBe(true)
+  expect(readFileSync(join(dir, 'arquivo.txt'), 'utf8')).toBe('depois')
+})
+
+test('modo somente leitura conclui sem edicao e sem cobranca', async () => {
+  writeFileSync(join(dir, 'arquivo.txt'), 'antes')
+  respostasDaIa({ capabilities: ['completion', 'tools'] }, { message: { role: 'assistant', content: 'nada a mudar' } })
+  const r = await new OllamaProvider().run(pedido('readonly'))
+  expect(r.ok).toBe(true)
+  expect(readFileSync(requisicoes, 'utf8')).not.toContain('Nenhuma edicao foi aplicada ainda')
 })

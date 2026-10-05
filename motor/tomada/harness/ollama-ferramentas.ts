@@ -3,6 +3,8 @@ import { isAbsolute, join, relative, resolve } from 'node:path'
 import type { AgentMode } from '../tipos.ts'
 import { withFileLock, writeFileAtomic } from '../../oswaldo/mutirao/trava-arquivo.ts'
 
+export class ErroRecuperavelDaFerramenta extends Error {}
+
 export interface ChamadaDeFerramentaOllama {
   function?: { name?: string; arguments?: Record<string, string | number | boolean | null> }
 }
@@ -67,13 +69,13 @@ function caminhoPermitido(cwd: string, dirs: readonly string[], entrada: string 
 
 function texto(args: Record<string, string | number | boolean | null>, campo: string): string {
   const valor = args[campo]
-  if (typeof valor !== 'string') throw new Error(campo + ' deve ser string')
+  if (typeof valor !== 'string') throw new ErroRecuperavelDaFerramenta(campo + ' deve ser string')
   return valor
 }
 
 function validarCampos(args: Record<string, string | number | boolean | null>, permitidos: readonly string[]): void {
   const extra = Object.keys(args).find(campo => !permitidos.includes(campo))
-  if (extra) throw new Error('argumento desconhecido: ' + extra)
+  if (extra) throw new ErroRecuperavelDaFerramenta('argumento desconhecido: ' + extra)
 }
 
 export function executarFerramentaOllama(chamada: ChamadaDeFerramentaOllama, cwd: string, dirs: readonly string[], modo: AgentMode): string {
@@ -88,9 +90,9 @@ export function executarFerramentaOllama(chamada: ChamadaDeFerramentaOllama, cwd
   if (nome === 'search_text') {
     validarCampos(args, ['path', 'query', 'max_results'])
     const consulta = texto(args, 'query')
-    if (!consulta) throw new Error('query nao pode ser vazia')
+    if (!consulta) throw new ErroRecuperavelDaFerramenta('query nao pode ser vazia')
     const limiteBruto = args.max_results ?? 20
-    if (typeof limiteBruto !== 'number' || !Number.isInteger(limiteBruto) || limiteBruto < 1 || limiteBruto > 100) throw new Error('max_results deve ser inteiro entre 1 e 100')
+    if (typeof limiteBruto !== 'number' || !Number.isInteger(limiteBruto) || limiteBruto < 1 || limiteBruto > 100) throw new ErroRecuperavelDaFerramenta('max_results deve ser inteiro entre 1 e 100')
     const resultados = readFileSync(caminho, 'utf8').split(/\r?\n/)
       .map((linha, indice) => ({ linha, numero: indice + 1 }))
       .filter(item => item.linha.includes(consulta)).slice(0, limiteBruto)
@@ -105,11 +107,11 @@ export function executarFerramentaOllama(chamada: ChamadaDeFerramentaOllama, cwd
       JSON.parse(conteudo)
       return 'validacao json aprovada'
     }
-    if (check !== 'contains' && check !== 'not_contains') throw new Error('check de validacao desconhecido: ' + check)
+    if (check !== 'contains' && check !== 'not_contains') throw new ErroRecuperavelDaFerramenta('check de validacao desconhecido: ' + check)
     const esperado = texto(args, 'expected')
-    if (!esperado) throw new Error('expected nao pode ser vazio')
+    if (!esperado) throw new ErroRecuperavelDaFerramenta('expected nao pode ser vazio')
     const contem = conteudo.includes(esperado)
-    if ((check === 'contains' && !contem) || (check === 'not_contains' && contem)) throw new Error(`validacao ${check} falhou`)
+    if ((check === 'contains' && !contem) || (check === 'not_contains' && contem)) throw new ErroRecuperavelDaFerramenta(`validacao ${check} falhou`)
     return `validacao ${check} aprovada`
   }
   if (nome !== 'replace_text') throw new Error('ferramenta desconhecida: ' + nome)
@@ -119,7 +121,7 @@ export function executarFerramentaOllama(chamada: ChamadaDeFerramentaOllama, cwd
   const novo = texto(args, 'new_text')
   withFileLock(caminho, () => {
     const antes = readFileSync(caminho, 'utf8')
-    if (!antigo || antes.split(antigo).length !== 2) throw new Error('old_text deve ocorrer exatamente uma vez')
+    if (!antigo || antes.split(antigo).length !== 2) throw new ErroRecuperavelDaFerramenta('old_text deve ocorrer exatamente uma vez')
     const depois = antes.replace(antigo, novo)
     if (Buffer.byteLength(depois) > LIMITE_ARQUIVO) throw new Error('resultado excede 512 KiB')
     writeFileAtomic(caminho, depois)
