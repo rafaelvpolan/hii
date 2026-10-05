@@ -1,3 +1,6 @@
+import { registrarExecucaoDoProjeto } from '../execucoes-do-projeto.ts'
+import { repoPath, repoRegistered } from '../../cordel/store.ts'
+import { consumoDoCard, motivoDeOrcamentoExcedido, tetoDoCard } from './orcamento.ts'
 import { redigirDiagnostico } from '../../tomada/diagnostico.ts'
 import { isoNow } from '../../cordel/index.ts'
 import type { Fields } from '../../cordel/index.ts'
@@ -146,12 +149,25 @@ function anotarChamada(id: string, provider: Harness, req: AgentRequest, papel: 
         ? ''
         : classifyFailure(provider, { timedOut: res.timedOut, detail: res.detail, text: res.text }).failureClass,
     })
+    const card = id ? readCard(id) : null
+    if (card?.fm.repo && repoRegistered(card.fm.repo)) {
+      registrarExecucaoDoProjeto(repoPath(card.fm.repo), {
+        tarefa: id, provedor: provider.name, modelo: req.model ?? '', papel,
+        instante: isoNow(), ok: res.ok, custoUsd: res.costMeasured ? res.cost : null,
+        tokens: sumTokens(res.usage), pacoteHash: card.fm.pacote_aprovado_hash ?? '',
+      })
+    }
     if (!id) atualizarRegistroDeConversa(sessaoParaChamada(id))
   })
 }
 
 export async function runProvider(id: string, provider: Harness, req: AgentRequest, papel: PapelDeChamada = 'desconhecido'): Promise<AgentResult> {
-  const recusa = recusaPorLimite(provider, req)
+  const cardAntes = id ? readCard(id) : null
+  const consumo = cardAntes ? consumoDoCard(cardAntes.fm) : null
+  const recusa = (consumo ? motivoDeOrcamentoExcedido(consumo) : '') || recusaPorLimite(provider, req)
+  if (consumo?.usd !== null && consumo?.usd !== undefined) {
+    req = { ...req, maxBudgetUsd: tetoDoCard() - consumo.usd }
+  }
   if (recusa) {
     return {
       ok: false,

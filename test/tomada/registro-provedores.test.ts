@@ -18,7 +18,7 @@ function comEnv(vars: Record<string, string>, fn: () => void): void {
 }
 
 test('o registry expoe exatamente os provedores do motor — opencode saiu, kimi entrou', () => {
-  expect(providerNames()).toEqual(['claude', 'codex', 'ollama', 'kimi'])
+  expect(providerNames()).toEqual(['claude', 'codex', 'ollama', 'kimi', 'claude-ollama', 'codex-ollama'])
 })
 
 test('"opencode" nao e mais nome de provedor valido — override cai no default', () => {

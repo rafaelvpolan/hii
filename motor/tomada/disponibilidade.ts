@@ -31,6 +31,7 @@ export function cotaEsgotadaEm(nome: HarnessId, agoraMs: number = Date.now()): b
 }
 
 function situacaoDoInstalado(nome: HarnessId, agoraMs: number): Situacao {
+  if (harnessPorNome(nome).rodaLocal && !harnessPorNome(nome).prontoParaUso()) return 'precisa-servidor'
   if (!harnessPorNome(nome).autenticado()) return 'nao-autenticado'
   if (cotaEsgotadaEm(nome, agoraMs)) return 'cota-esgotada'
   return 'disponivel'

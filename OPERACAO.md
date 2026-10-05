@@ -708,7 +708,9 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_CLAUDE_CONFIG` | — | — | `motor/euclides/tesouro/planos.ts` |
 | `HII_CLAUDE_HOME_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_CLAUDE_MODEL` | — | — | `motor/tomada/harness/claude.ts` |
+| `HII_CLAUDE_OLLAMA_MODEL` | — | — | `motor/tomada/harness/backend-ollama.ts`, `motor/tomada/harness/claude.ts` |
 | `HII_CODEX_MODEL` | — | — | `motor/tomada/harness/codex.ts` |
+| `HII_CODEX_OLLAMA_MODEL` | — | — | `motor/tomada/harness/backend-ollama.ts`, `motor/tomada/harness/codex.ts` |
 | `HII_COLOR_DEPTH` | — | — | `motor/mirante/tui/paleta.ts` |
 | `HII_CONCURRENCY` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/radar/doctor.ts`, `motor/oswaldo/mutirao/fila.ts` (+1) |
 | `HII_CONFLICT_RETRIES` | — | — | `motor/cordel/alicerce/config.ts`, `motor/euclides/tesouro/instabilidade.ts` |
@@ -765,10 +767,11 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_OLLAMA_AGENTIC` | — | — | `motor/tomada/harness/ollama.ts`, `scripts/piloto-ollama.mjs` |
 | `HII_OLLAMA_LOCALITY_VERIFIED` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
-| `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen2.5-coder:7b'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs`, `scripts/piloto-ollama.mjs` |
+| `HII_OLLAMA_MEMORY_BUDGET_MB` | `'0'` | — | `motor/tomada/harness/backend-ollama.ts` |
+| `HII_OLLAMA_MODEL` | `'llama3.1'`, `'qwen2.5-coder:7b'`, `'qwen3-coder:30b'` | — | `motor/tomada/harness/backend-ollama.ts`, `motor/tomada/harness/ollama.ts`, `scripts/generativo/ollama.mjs` (+1) |
 | `HII_OLLAMA_MODEL_MAX_INFLIGHT` | — | — | `motor/tomada/harness/ollama.ts` |
 | `HII_OLLAMA_PILOT` | — | — | `scripts/piloto-ollama.mjs` |
-| `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts`, `motor/tomada/sonda.ts` (+1) |
+| `HII_OLLAMA_URL` | `'http://127.0.0.1:11434'`, `'http://localhost:11434'` | — | `motor/tomada/harness/backend-ollama.ts`, `motor/tomada/harness/ollama-estado.ts`, `motor/tomada/harness/ollama.ts` (+2) |
 | `HII_PARALLEL_CLEANUP` | — | — | `motor/oswaldo/orquestracao/paralelo.ts` |
 | `HII_PASTE_INLINE_MAX` | `120` | — | `motor/mirante/tui/input.ts` |
 | `HII_PIPELINE` | `'manual'` | — | `bin/hii.ts`, `motor/cordel/alicerce/config.ts`, `motor/quilombo/cartorio/passos-manuais.ts` |

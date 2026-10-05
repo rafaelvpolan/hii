@@ -4,10 +4,10 @@
 
 Nenhuma execução chama IA antes de o pedinte aprovar o pacote de execução.
 
-1. Quando a fila pega uma tarefa em `EXECUTING`, `liberarPeloPacote` (motor/niemeyer/lucio/aprovacao-do-pacote.ts) monta o pacote sem chamar IA: prompt do implementador, IA e modelo por papel, agentes escolhidos, skills que disparam, gates do pipeline, portões de build e teste do contrato, limites de custo e aviso de cota.
+1. Antes de a fila despachar qualquer fase que chama IA, `liberarPeloPacote` (motor/niemeyer/lucio/aprovacao-do-pacote.ts) monta o pacote sem chamar IA: prompt do implementador, IA e modelo por papel, agentes escolhidos, skills que disparam, gates do pipeline, portões de build e teste do contrato, limites de custo e aviso de cota.
 2. O pacote é gravado em `cards/pacotes/<id>.md`, a tarefa vai para `CLARIFY` e a pergunta "Aprovar e executar?" aparece no mesmo canal da TUI e da API (`GET /v1/tarefas/{id}/perguntas`).
 3. Respostas: `1` ou "Aprovar e executar" libera; `2` ou "Cancelar a tarefa" para como parada humana; texto livre vira instrução adicional e gera um pacote novo antes de qualquer IA.
-4. A aprovação vale para o hash do pacote (objetivo, modo, agentes, skills, gates, portões). Trocar de IA não muda o hash e não pede nova aprovação; mudar o pedido pede.
+4. A aprovação vale para o hash do pacote (objetivo, modo, agentes, skills, gates, portões). Trocar IA/modelo, regras, prompt ou contrato muda o hash e exige nova aprovação. Uma resposta sobre um pacote desatualizado apenas publica o novo pacote para revisão.
 
 `HII_PROMPT_PRIMEIRO=off` desliga. `GET /v1/tarefas/{id}/pacote` devolve o pacote para o painel.
 
@@ -34,8 +34,8 @@ Erro de uso de ferramenta (argumento a mais, `old_text` ambíguo, validação qu
 
 ## Pastas por IA no projeto-alvo
 
-`hii init` cria `.hii/memory/` e `.hii/ia/<ia>/{agents,skills}` para claude e ollama. Papel em `.hii/ia/<ia>/agents/` vence o catálogo do motor quando aquela IA executa. `hii projetar <repo> claude` grava o bloco gerenciado do `CLAUDE.md` a partir de `.hii/rules.md` e copia papéis e skills para `.claude/agents` e `.claude/skills`, preservando arquivo humano diferente.
+`hii init` cria `.hii/memory/` e `.hii/ia/<ia>/{agents,skills}` para claude, codex e ollama. Papel em `.hii/ia/<ia>/agents/` vence o catálogo do motor quando aquela IA executa. `hii projetar <repo> claude` grava o bloco gerenciado do `CLAUDE.md` a partir de `.hii/rules.md` e copia papéis e skills para `.claude/agents` e `.claude/skills`, preservando arquivo humano diferente.
 
 ## Integração do Codex
 
-O adaptador do Codex usa os mesmos pontos sem mudança no núcleo: `.hii/ia/codex/agents` já tem precedência pelo `provider.name`; a projeção nativa (AGENTS.md, `.agents/skills`, `.codex/`) entra como função irmã de `projetarParaClaude` em motor/cordel/alicerce/pastas-por-ia.ts e um ramo no comando `projetar`. Pacote, troca por cota, teto de tokens e IA por tarefa valem para qualquer harness.
+O adaptador do Codex usa os mesmos pontos sem mudança no núcleo: `.hii/ia/codex/agents` já tem precedência pelo `provider.name`; a projeção nativa cria o bloco gerenciado de AGENTS.md e atualiza `.agents/skills` por meio de `projetarParaCodex`, também disponível em `hii projetar <repo> codex`. Arquivos alterados pelo humano são preservados. Pacote, troca por cota, teto de tokens e IA por tarefa valem para qualquer harness.

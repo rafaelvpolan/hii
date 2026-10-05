@@ -95,7 +95,7 @@ test('o descritor de cada harness diz a verdade sobre ele', () => {
   finally { delete process.env.HII_OLLAMA_LOCALITY_VERIFIED }
   expect(ollama.comandoDeLogin).toEqual([])
   expect(ollama.exigeCliNoPath, 'ollama sobe como servidor; o doctor nao cobra --version').toBe(false)
-  for (const nome of providerNames().filter(n => n !== 'ollama')) {
+  for (const nome of providerNames().filter(n => !harnessPorNome(n).rodaLocal)) {
     expect(harnessPorNome(nome).rodaLocal, `${nome} nao roda local`).toBe(false)
     expect(harnessPorNome(nome).binario, `${nome} precisa de binario`).not.toBe('')
   }

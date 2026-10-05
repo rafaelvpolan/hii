@@ -6,7 +6,7 @@ export type EffectKind =
   | 'approve-url' | 'reject-url' | 'reopen-repo'
   | 'confirm-close' | 'reject-close'
   | 'answer' | 'rm' | 'confirm-rm' | 'instruct' | 'resume' | 'pick-repo' | 'acao-tarefa' | 'aprovacao' | 'ia' | 'consultar' | 'nova-sessao' | 'modelo' | 'esforco' | 'modo' | 'gauntlet' | 'situacao' | 'config' | 'ref' | 'login' | 'intake' | 'servir'
-  | 'pipeline-step' | 'orquestrador'
+  | 'pipeline-step' | 'orquestrador' | 'pacote'
 
 export interface SessionState {
   tela: '' | 'config'
@@ -64,7 +64,7 @@ export function canonico(comando: string): string {
   return comando
 }
 
-export const COMMANDS = ['/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/ask', '/new', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
+export const COMMANDS = ['/pacote', '/help', '/config', '/historico', '/ref', '/serve', '/rm', '/stop', '/new-task', '/new-ask', '/ask', '/new', '/repo', '/ia', '/model', '/effort', '/mode', '/gauntlet', '/login', '/exit',
   // Pipeline manual: um comando por passo. Mesma implementacao do CLI
   // (`hii passo`, `hii pipeline`) — cartorio/passos-manuais.ts.
   '/arquitetura', '/polimento', '/testes', '/seguranca', '/limpeza', '/hii',
@@ -270,6 +270,8 @@ function command(line: string, state: SessionState): Reply {
     case 'crivo':
       return reply({ kind: 'gauntlet', text: arg }, state)
 
+    case 'pacote':
+      return reply({ kind: 'pacote', text: arg }, state)
     case 'login':
       return reply({ kind: 'login', text: arg }, state)
     case 'repo':

@@ -11,7 +11,7 @@ export const DEFAULT_PROVIDER: HarnessId = 'claude'
 // Registrar um harness novo = importar a classe e somar uma linha aqui.
 // Nada mais no motor precisa saber que ele existe.
 const PROVIDERS: ReadonlyMap<HarnessId, Harness> = new Map<HarnessId, Harness>(
-  [new ClaudeProvider(), new CodexProvider(), new OllamaProvider(), new KimiProvider()]
+  [new ClaudeProvider(), new CodexProvider(), new OllamaProvider(), new KimiProvider(), new ClaudeProvider(true), new CodexProvider(true)]
     .map(h => [h.name, h]),
 )
 

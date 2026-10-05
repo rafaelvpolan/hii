@@ -1,3 +1,4 @@
+import { definirEstadoDoOllama } from '../../motor/tomada/harness/ollama-estado.ts'
 import { test, expect } from '../apoio/runner.ts'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -62,12 +63,14 @@ test('dependencias: node_modules ausente vira aviso com o comando exato de corre
 })
 
 test('IA: CLI local instalado e autenticado dispensa o ollama', () => {
+  definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
   const c = comBinarioFalso('claude', { oauthAccount: { userRateLimitTier: 'default_claude_pro' } }, () => checarIa(false))
   expect(c.severidade).toBe('ok')
   expect(c.detalhe).toContain('claude')
 })
 
 test('IA: CLI instalado mas sem login vira aviso, nunca erro — a TUI continua abrindo', () => {
+  definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
   const c = comBinarioFalso('claude', {}, () => checarIa(false))
   expect(c.severidade).toBe('aviso')
   expect(c.detalhe).toContain('claude')
@@ -76,6 +79,7 @@ test('IA: CLI instalado mas sem login vira aviso, nunca erro — a TUI continua 
 
 test('IA: CLI instalado com cota estourada vira aviso, nunca erro — a TUI continua abrindo', () => {
   const agora = Date.now()
+  definirEstadoDoOllama({ habilitado: false, modelos: [], verificadoEm: Date.now() })
   const c = comBinarioFalso('claude', {
     oauthAccount: { userRateLimitTier: 'default_claude_max_5x' },
     cachedUsageUtilization: {

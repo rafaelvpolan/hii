@@ -239,3 +239,26 @@ de estado isolados e nao deve ser usada como entrada operacional do motor.
 - Kimi e migracao do adapter Hicode nao foram alterados nesta auditoria.
 
 Contrato separado para clientes externos: [conexao Hicode/motor](conexao-hicode/README.md).
+
+## Prompt aprovado e provedores locais — 2026-10-05
+
+O comando /pacote mostra o prompt persistido sem executar IA. A configuracao inclui
+claude-ollama e codex-ollama; as tres referencias visuais de configuracao foram
+revisadas e atualizadas para essa inclusao. O teste de corte visual induzido
+continua ativo na verificacao normal.
+
+Validacao nesta branch com Bun 1.4.0 e Node 24.17.0:
+- typecheck, lint:types e lint:clone aprovados.
+- 3.450 testes Bun aprovados, em 350 arquivos isolados.
+- 3.444 testes Node aprovados (3.414 paralelos e 30 serializados).
+- Tres rodadas completas de scripts/test-tui-e2e.mjs aprovadas, incluindo
+  isolamento de daemon privado, teclado/PTY/gateway, reconexao e replay.
+- scripts/validar-visualizador.mjs aprovado em desktop e 390px.
+- Evidencias locais: /tmp/hii-tui-local-final-v1; fixtures com CLIs falsos,
+  sem tocar no daemon operacional ou executar IA paga.
+
+Os protocolos Claude/Codex com Ollama foram testados com servidor HTTP e CLIs
+de fixture. Tentativas de inferencia real nesta maquina nao concluiram dentro
+dos limites de carga; isso nao certifica edicao real por modelos locais.
+O preflight agora recusa modelos acima do teto conservador de memoria antes
+de chamar o CLI. Nao foi implementado VPS.

@@ -76,8 +76,9 @@ function portoesDoContrato(alvo: string, modo: string): string[] {
 function textoDeLimites(card: Card): string {
   const consumo = consumoDoCard(card.fm)
   const tetoTokens = tetoDeTokensDoCard()
+  const semDolar = !providerFor('implement', card.fm.provider_override_implement || undefined).capabilities().reportsCostUsd
   const gasto = consumo.usd === null ? 'gasto ilegivel' : `gasto ate agora US$ ${consumo.usd.toFixed(4)}`
-  return `teto US$ ${tetoDoCard()}${tetoTokens > 0 ? ` ou ${tetoTokens} tokens, o que vier primeiro` : ''}; ${gasto} e ${consumo.tokens} tokens`
+  return `teto US$ ${tetoDoCard()}${tetoTokens > 0 ? ` ou ${tetoTokens} tokens, o que vier primeiro` : ''}; ${gasto} e ${consumo.tokens} tokens${semDolar ? '; custo em dolar nao reportado: teto monetario nao garante a cobranca real, limite de tokens aplicado' : ''}`
 }
 
 function avisoDeCotaDe(provedor: string): string {
@@ -90,7 +91,13 @@ function avisoDeCotaDe(provedor: string): string {
 }
 
 export function hashDoPacote(p: Omit<PacoteDeExecucao, 'hash'>): string {
-  const material = { objetivo: p.objetivo, modo: p.modo, acaoExterna: p.acaoExterna }
+  // Telemetria varia durante a execucao; o contrato aprovado nao.
+  const material = {
+    versao: p.versao, repo: p.repo, objetivo: p.objetivo, modo: p.modo,
+    acaoExterna: p.acaoExterna, ias: p.ias, agentes: p.agentes,
+    skills: p.skills, gates: p.gates, portoes: p.portoes, prompt: p.prompt,
+    limites: p.limites.split(';')[0],
+  }
   return createHash('sha256').update(JSON.stringify(material)).digest('hex').slice(0, 16)
 }
 

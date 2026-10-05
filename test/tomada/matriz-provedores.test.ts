@@ -21,7 +21,7 @@ test('o registro nao esta vazio, e o eixo de papeis tambem nao — sem isto a ma
 })
 
 test('a varredura de combinacoes harness x papel x modo enxerga o suficiente — senao os for-of abaixo passariam vazios', () => {
-  expect(providerNames().length).toBe(4)
+  expect(providerNames().length).toBe(6)
   expect(agentRoles().length).toBe(4)
   expect(providerNames().length * agentRoles().length * MODOS.length).toBeGreaterThanOrEqual(32)
 })
@@ -289,7 +289,7 @@ test('ollama: sinaisDeFalha nao declara quota propria de proposito — "monthly 
 })
 
 test('ENOENT real (binario ausente de verdade, PATH em branco) vira terminal com o motivo certo, nos quatro harnesses', async () => {
-  for (const nome of providerNames()) {
+  for (const nome of providerNames().filter(n => !n.endsWith('-ollama'))) {
     const res = await comPathEmBranco(() => harnessPorNome(nome).run(pedidoSimples()))
     expect(res.ok, nome).toBe(false)
     // A frase depende do RUNTIME: node diz `spawn ENOENT`, bun diz
@@ -309,7 +309,7 @@ test('timeout (wrapper generico de quilombo/git.ts) vira transient em qualquer h
   fakeBin('codex', '#!/usr/bin/env bash\nexec sleep 30\n')
   fakeBin('kimi', '#!/usr/bin/env bash\nexec sleep 30\n')
   fakeBin('curl', '#!/usr/bin/env bash\nexec sleep 30\n')
-  for (const nome of providerNames()) {
+  for (const nome of providerNames().filter(n => !n.endsWith('-ollama'))) {
     const res = await harnessPorNome(nome).run(pedidoSimples({ timeoutMs: 300 }))
     expect(res.timedOut, nome).toBe(true)
     expect(res.ok, nome).toBe(false)
@@ -323,7 +323,7 @@ test('saida nao-JSON: Ollama recusa resposta HTTP invalida; CLIs preservam carac
   fakeBin('codex', "#!/usr/bin/env bash\necho 'lixo-codex sem chave nenhuma'\n")
   fakeBin('kimi', "#!/usr/bin/env bash\necho 'lixo-kimi sem chave nenhuma'\n")
   fakeBin('curl', "#!/usr/bin/env bash\necho 'lixo-ollama sem chave nenhuma'\n")
-  for (const nome of providerNames()) {
+  for (const nome of providerNames().filter(n => !n.endsWith('-ollama'))) {
     const res = await harnessPorNome(nome).run(pedidoSimples())
     expect(res.ok, nome).toBe(nome !== 'ollama')
     expect(res.isError, nome).toBe(nome === 'ollama')
@@ -337,6 +337,8 @@ test('inventario travado: quantos sinais proprios (terminal/quota/transient) cad
     inventario[nome] = { terminal: sinais.terminal.length, quota: sinais.quota.length, transient: sinais.transient.length }
   }
   expect(inventario).toEqual({
+    'claude-ollama': { terminal: 1, quota: 1, transient: 1 },
+    'codex-ollama': { terminal: 0, quota: 1, transient: 1 },
     claude: { terminal: 1, quota: 1, transient: 1 },
     codex: { terminal: 0, quota: 1, transient: 1 },
     ollama: { terminal: 2, quota: 0, transient: 1 },
