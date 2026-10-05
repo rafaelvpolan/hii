@@ -82,3 +82,9 @@ test('login do Claude expirado e credencial com dica de login, nao falha desconh
   expect(r.reason).toContain('credencial')
   expect(r.reason).toContain('claude login')
 })
+
+test('modelo local que nao comprova a edicao para com instrucao de trocar a IA', () => {
+  const r = classifyFailure(harnessPorNome('ollama'), ctx({ detail: 'modelo encerrou sem aplicar nenhuma edicao; nenhuma edicao foi comprovada' }))
+  expect(r.failureClass).toBe('terminal')
+  expect(r.reason).toContain('troque a IA da tarefa')
+})

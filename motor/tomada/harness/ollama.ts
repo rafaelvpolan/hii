@@ -66,7 +66,10 @@ export function capacidadesDoOllama(agentivo = agentivoLigado()): HarnessCapabil
 export const OLLAMA_CAPACIDADES: HarnessCapabilities = CAPACIDADES_SIMPLES
 
 export const OLLAMA_SINAIS: SinaisDoHarness = {
-  terminal: [{ pattern: /model not found|no such model/i, reason: 'modelo ollama nao encontrado localmente' }],
+  terminal: [
+    { pattern: /model not found|no such model/i, reason: 'modelo ollama nao encontrado localmente' },
+    { pattern: /nenhuma edicao foi comprovada|Ollama encerrou sem resposta final/, reason: 'o modelo local nao concluiu a edicao; troque a IA da tarefa ou use um modelo maior em HII_OLLAMA_MODEL e retome' },
+  ],
   quota: [],
   transient: [{ pattern: /connection refused/i, reason: 'ollama nao esta respondendo (servidor local fora do ar)' }],
 }
