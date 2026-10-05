@@ -1293,6 +1293,256 @@
         }
       }
     },
+    "/v1/tarefas/{id}/ia": {
+      "get": {
+        "operationId": "iaDaTarefa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "papeis": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ias": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "papel": {
+                            "type": "string"
+                          },
+                          "provedor": {
+                            "type": "string"
+                          },
+                          "modelo": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "papel",
+                          "provedor",
+                          "modelo"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "definirIaDaTarefa",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "papel": {
+                    "enum": [
+                      "implement",
+                      "verify",
+                      "gate",
+                      "step"
+                    ]
+                  },
+                  "provedor": {
+                    "type": "string"
+                  },
+                  "modelo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "papel",
+                  "provedor"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tarefas/{id}/pacote": {
+      "get": {
+        "operationId": "pacoteDaTarefa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{3,12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resposta do motor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "hash": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "aprovadoHash": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "resumo": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "markdown": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Revisao para If-Match quando aplicavel"
+              }
+            }
+          },
+          "default": {
+            "description": "Erro de autenticacao, validacao, revisao, conflito ou operacao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/artefatos/{artefatoId}": {
       "get": {
         "operationId": "lerArtefato",

@@ -36,7 +36,7 @@ export const CLAUDE_CAPACIDADES: HarnessCapabilities = {
 }
 
 export const CLAUDE_SINAIS: SinaisDoHarness = {
-  terminal: [],
+  terminal: [{ pattern: /failed to authenticate|oauth session expired|could not be refreshed|not logged in/i, reason: 'credencial do Claude expirada ou ausente — rode `claude login` (ou /login no hii) e retome a tarefa' }],
   quota: [{ pattern: /claude ai usage limit reached|you'?ve hit your session limit|5-hour limit reached|weekly limit reached/i, reason: 'limite de uso da assinatura Claude atingido' }],
   transient: [{ pattern: /overloaded_error|\bapi_error\b/i, reason: 'erro transitorio da API Anthropic' }],
 }

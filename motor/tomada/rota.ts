@@ -25,7 +25,7 @@
 //   5. lista vazia -> mantem a politica atual. Nunca inventa provedor.
 
 import type { AgentRole, HarnessId } from './tipos.ts'
-import type { FailureClass } from '../cordel/index.ts'
+import type { FailureClass, Fields } from '../cordel/index.ts'
 import { harnessSeExistir, providerNames, quotaFallbackProviderFor } from './registro.ts'
 import { preferenciaDoPapel } from './preferencias.ts'
 import { cotaEsgotadaEm } from './disponibilidade.ts'
@@ -82,6 +82,14 @@ function semRepetir(nomes: readonly HarnessId[]): HarnessId[] {
 
 export function campoDeOverrideDoPapel(papel: AgentRole): string {
   return `provider_override_${papel}`
+}
+
+export function campoDaEscolhaHumana(papel: AgentRole): string {
+  return `ia_escolhida_${papel}`
+}
+
+export function overridesSoComEscolhaHumana(fm: Fields, papeis: readonly AgentRole[]): Fields {
+  return Object.fromEntries(papeis.map(p => [campoDeOverrideDoPapel(p), fm[campoDaEscolhaHumana(p)] ?? '']))
 }
 
 export function rotaTentadas(csv: string | undefined): HarnessId[] {

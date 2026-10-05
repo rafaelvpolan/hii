@@ -202,7 +202,7 @@ test('API torna politica de localidade visivel sem fingir que e editavel', async
   process.env.HII_REMOTE_FALLBACK = 'on'
   try {
     const corpo = JSON.parse(configuracao().corpo) as { execucao: { localidade: string; fallbackRemoto: boolean; editavel: boolean } }
-    expect(corpo.execucao).toEqual({ localidade: 'somente_local', fallbackRemoto: false, editavel: false })
+    expect(corpo.execucao).toEqual({ localidade: 'somente_local', fallbackRemoto: false, trocaPorCota: 'perguntar', promptPrimeiro: true, editavel: false })
   } finally {
     delete process.env.HII_EXECUTION_LOCALITY
     delete process.env.HII_REMOTE_FALLBACK

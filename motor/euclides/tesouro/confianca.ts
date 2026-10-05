@@ -17,6 +17,7 @@ import { contextoDaSessao, iniciarSubsessao, finalizarChamada, lerSessaoHii } fr
 import { iniciar, atualizar, terminar, saida, recurso, escopoAtual, heartbeat } from '../../observabilidade/registro.ts'
 import { admitirInferencia } from '../../tomada/capacidade-inferencia.ts'
 import { politicaDeExecucaoEfetiva } from '../../cordel/alicerce/config.ts'
+import { avisarCotaPerto } from './aviso-de-cota.ts'
 
 function semReporte(fm: Fields, provider: string): boolean {
   return parseProviders(fm.cost_unverified).includes(provider)
@@ -164,6 +165,11 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     }
   }
   const t0 = Date.now()
+  try {
+    avisarCotaPerto({ id, provedor: provider.name, papel })
+  } catch (e) {
+    process.stderr.write(`[hii] #${id}: aviso de cota indisponivel (${String((e as Error).message)}) — a chamada segue\n`)
+  }
   const politicaExecucao = politicaDeExecucaoEfetiva()
   let pidRegistrado = 0
   const fm = id ? readCard(id)?.fm : undefined

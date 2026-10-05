@@ -166,7 +166,7 @@ test('INVARIANTE o escopo e cumprido em DOIS pontos, nao so depois do implement'
 // DENTRO de referencia declarada, e nao trata todo caminho nao citado como proibido.
 // Anunciar o que nao acontece calibra o modelo errado.
 test('INVARIANTE a promessa do prompt cobre so o que o motor cumpre', async () => {
-  const agente = await lerArquivo('motor/ciclo/agente.ts')
+  const agente = await lerArquivo('motor/ciclo/prompt-de-implementacao.ts')
   const bloco = agente.slice(agente.indexOf('function blocoDeEscopo'), agente.indexOf('function blocoDeEscopo') + 1800)
   const linhaDaPromessa = bloco.split('\n').find(l => l.includes('CONFERE isto no diff'))
   expect(linhaDaPromessa, 'a promessa tem de existir').toBeDefined()

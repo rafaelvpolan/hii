@@ -75,3 +75,16 @@ test('cota tem prioridade sobre transiente quando a mensagem mistura os dois sin
   const r = classifyFailure(harnessPorNome('codex'), ctx({ text: '429 too many requests — insufficient_quota' }))
   expect(r.failureClass).toBe('quota')
 })
+
+test('login do Claude expirado e credencial com dica de login, nao falha desconhecida', () => {
+  const r = classifyFailure(harnessPorNome('claude'), ctx({ detail: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  expect(r.failureClass).toBe('terminal')
+  expect(r.reason).toContain('credencial')
+  expect(r.reason).toContain('claude login')
+})
+
+test('modelo local que nao comprova a edicao para com instrucao de trocar a IA', () => {
+  const r = classifyFailure(harnessPorNome('ollama'), ctx({ detail: 'modelo encerrou sem aplicar nenhuma edicao; nenhuma edicao foi comprovada' }))
+  expect(r.failureClass).toBe('terminal')
+  expect(r.reason).toContain('troque a IA da tarefa')
+})

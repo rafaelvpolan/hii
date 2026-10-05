@@ -14,7 +14,7 @@ import { ondasEstritas } from './contrato.ts'
 import type { PlanoDeExecucao, CriterioDoPlano } from './contrato.ts'
 import { lerPlano, salvarPlano } from './planos.ts'
 import { fingerprintDoTrabalho, coletarEvidencias } from './evidencias.ts'
-import { gastoDoCard, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
+import { gastoDoCard, motivoDeTokensExcedidos, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
 import type { EntradaDeRota, DecisaoDeRota } from '../../tomada/rota.ts'
 
@@ -87,7 +87,13 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
   let medido = true
   const usage = { tokens_in: 0, tokens_out: 0, tokens_cache_create: 0, tokens_cache_read: 0 }
   let ultimo: ImplementResult = { ok: true, cost: '0', costMeasured: true, resultText: 'microtasks ja concluidas' }
+  const tokensDoCard = Number(card.fm.tokens_total || '0') || 0
+  const tokensAcumulados = (): number => tokensDoCard + usage.tokens_in + usage.tokens_out + usage.tokens_cache_create + usage.tokens_cache_read
   for (const onda of ondasEstritas(r.plano.microtasks)) {
+    const excessoDeTokens = motivoDeTokensExcedidos(tokensAcumulados())
+    if (excessoDeTokens && onda.some(m => !checkpoint.feitas.includes(m.id))) {
+      return { ok: false, reason: excessoDeTokens, failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
+    }
     const gastoAntesDaOnda = gastoDoCard(card.fm.cost_usd)
     if (onda.some(m => !checkpoint.feitas.includes(m.id)) && (gastoAntesDaOnda === null || gastoAntesDaOnda + custo >= tetoDoCard())) {
       return { ok: false, reason: 'orcamento atingido antes da onda', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
@@ -111,6 +117,8 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
         continue
       }
       const gasto = gastoDoCard(card.fm.cost_usd)
+      const excessoEntreMicrotasks = motivoDeTokensExcedidos(tokensAcumulados())
+      if (excessoEntreMicrotasks) return { ok: false, reason: excessoEntreMicrotasks, failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       if (gasto === null || gasto + custo >= tetoDoCard()) return { ok: false, reason: 'orcamento atingido entre microtasks', failureClass: 'terminal', failureReason: 'orcamento atingido', cost: String(custo), costMeasured: medido, usage }
       patchCard(id, { microtask_atual: m.id }, `${isoNow()} microtask ${m.id}: ${m.titulo} | agente ${m.agente}`)
       const pedido = pedidoDaMicrotask(card, r.plano, m)

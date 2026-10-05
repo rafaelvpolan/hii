@@ -22,6 +22,7 @@ import { prepararMatriz } from '../motor/quilombo/cartorio/aprovar-plano.ts'
 import { pedirPassoManual, pedirSuiteManual } from '../motor/quilombo/cartorio/passos-manuais.ts'
 import { runtimeDeScript } from '../motor/cordel/alicerce/runtime.ts'
 import { ajudaDeComandosManuais } from '../motor/mirante/comandos-manuais.ts'
+import { projetarParaClaude } from '../motor/cordel/alicerce/pastas-por-ia.ts'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const DAEMON = join(ROOT, 'scripts', 'runner-daemon.sh')
@@ -227,6 +228,7 @@ function usage(): void {
     'Tarefas e integracao:',
     '  sync                     sincroniza tarefas externas (HII_TASK_SYNC)',
     '  init [caminho]           provisiona .hii/ num repo-alvo (default: diretorio atual)',
+    '  projetar [caminho] [ia]  leva .hii/ ao padrao nativo da IA (claude: CLAUDE.md, .claude/agents, .claude/skills)',
     '  hooks install [caminho]  instala o gate pre-push deterministico (default: atual)',
     '  hooks uninstall [caminho] remove o gate pre-push',
     '',
@@ -316,6 +318,14 @@ async function main(): Promise<number> {
       const target = args[1] || process.cwd()
       const created = initHicodeHome(target)
       process.stdout.write(created.length ? `.hii/ provisionado em ${target}:\n${created.map(c => `  + ${c}`).join('\n')}\n` : `.hii/ ja existe em ${target}\n`)
+      return 0
+    }
+    case 'projetar': {
+      const target = args[1] || process.cwd()
+      const ia = args[2] || 'claude'
+      if (ia !== 'claude') { process.stderr.write(`projetar: so a projecao do claude existe neste motor (pedido: ${ia}); ollama nao tem pasta nativa e e lido de .hii/ia/ollama pelo motor\n`); return 1 }
+      const r = projetarParaClaude(target)
+      process.stdout.write([...r.escritos.map(f => `  + ${f}`), ...r.iguais.map(f => `  = ${f}`), ...r.preservados.map(f => `  ! ${f} (diferente da fonte; preservado, revise a mao)`)].join('\n') + '\n')
       return 0
     }
     case 'hooks':

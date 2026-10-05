@@ -147,14 +147,18 @@ export function pisoDeEsperaMs(classe: ClasseDeEspera): number {
   if (classe === 'taxa') return numeroDeEnv('HII_ESPERA_PISO_TAXA_MS', 60_000)
   return 0
 }
-// Ligado por omissao desde 09/09 (R: no PENDENCIAS): com o roteador de rotas
-// conferindo aptidao (autenticacao, cota, capacidade do papel), trocar de provedor
-// deixou de ser salto no escuro. HII_QUOTA_FALLBACK=off devolve o comportamento
-// antigo: parar e chamar o humano na primeira cota esgotada.
 export type LocalidadeDeExecucao = 'preferir_local' | 'somente_local' | 'qualquer'
+export type ModoDeTrocaPorCota = 'perguntar' | 'automatica' | 'parar'
 export interface PoliticaDeExecucaoEfetiva {
   versao: 1; localidade: LocalidadeDeExecucao; fallbackRemoto: boolean; fallbackCota: boolean
+  trocaPorCota?: ModoDeTrocaPorCota
   limitesAgentivos?: { turnos: number; ferramentas: number; saidaFerramentaBytes: number }
+}
+function trocaPorCotaConfigurada(): ModoDeTrocaPorCota {
+  const valor = (process.env.HII_QUOTA_FALLBACK || 'perguntar').trim().toLowerCase()
+  if (valor === 'on' || valor === 'automatica') return 'automatica'
+  if (valor === 'off' || valor === 'parar') return 'parar'
+  return 'perguntar'
 }
 const politicaFixa = new AsyncLocalStorage<PoliticaDeExecucaoEfetiva>()
 function localidadeConfigurada(): LocalidadeDeExecucao {
@@ -166,7 +170,7 @@ export function politicaDeExecucaoEfetiva(): PoliticaDeExecucaoEfetiva {
   if (fixa) return fixa
   const localidade = localidadeConfigurada()
   return { versao: 1, localidade, fallbackRemoto: (process.env.HII_REMOTE_FALLBACK || 'on') === 'on' && localidade !== 'somente_local',
-    fallbackCota: (process.env.HII_QUOTA_FALLBACK || 'on') === 'on', limitesAgentivos: {
+    fallbackCota: trocaPorCotaConfigurada() === 'automatica', trocaPorCota: trocaPorCotaConfigurada(), limitesAgentivos: {
       turnos: Math.max(1, Math.floor(numeroDeEnv('HII_AGENT_MAX_TURNS', 16))),
       ferramentas: Math.max(1, Math.floor(numeroDeEnv('HII_AGENT_MAX_TOOLS', 16))),
       saidaFerramentaBytes: Math.max(1024, Math.floor(numeroDeEnv('HII_AGENT_TOOL_OUTPUT_BYTES', 65536))),
@@ -180,6 +184,11 @@ export function comPoliticaDeExecucaoFixa<T>(executar: () => Promise<T>, politic
 }
 export function quotaFallbackLigado(): boolean {
   return politicaDeExecucaoEfetiva().fallbackCota
+}
+export function modoDeTrocaPorCota(): ModoDeTrocaPorCota {
+  const p = politicaDeExecucaoEfetiva()
+  if (p.trocaPorCota) return p.trocaPorCota
+  return p.fallbackCota ? 'automatica' : 'parar'
 }
 export function localidadeDeExecucao(): LocalidadeDeExecucao {
   return politicaDeExecucaoEfetiva().localidade

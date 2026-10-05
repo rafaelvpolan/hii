@@ -27,6 +27,8 @@
   "regraDeSubida": "card ou regra de config/regras-inegociaveis.json pode forcar tier acima do padrao, NUNCA abaixo. Mesma politica da LEI sobre o perfil de risco.",
   "orcamentoPorCard": {
     "tetoUsd": 16,
+    "tetoTokens": 2000000,
+    "sobreTetoTokens": "Segundo freio, o que vier primeiro: provedor que nao informa custo em dolar (codex, kimi) gravava cost_usd 0 e o tetoUsd nunca disparava — o card 008 consumiu 5.006.156 tokens sem parar. Os cards medidos do claude ficaram entre 1.465 e 454.498 tokens, entao 2 milhoes nao muda nenhum deles. 0 desliga; HII_CARD_BUDGET_TOKENS sobrepoe.",
     "acaoAoEstourar": "pausar e notificar humano",
     "sobre": "Calibrado pelo pior caso medido, nao pelo tipico: quatro pontos de reparo independentes com teto 2 cada somam 8 chamadas de agente por card, ~US$ 15,52-15,67. Regimes observados: tipico US$ 2,87, observado US$ 1,55-1,96. Ver PENDENCIAS.md — reduzir os tetos de reparo e o caminho para baixar isto."
   }

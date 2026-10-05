@@ -8,7 +8,7 @@ import { cardsDir, fallbackRemotoLigado, quotaFallbackLigado, RUN_TIMEOUT_MS } f
 import { objetivoComInstrucoes } from '../mirante/instruir.ts'
 import { providerFor, modelFor, effortFor, modoFor, harnessSeExistir } from '../tomada/registro.ts'
 import { runProvider, warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
-import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
+import { gastoDoCard, motivoDeTokensExcedidos, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { classifyFailure } from '../ciclo/reprise/classe-de-falha.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
 import { writeRun, resolvedFailure } from '../euclides/registros.ts'
@@ -41,8 +41,10 @@ export async function executarGateway(id: string, deps = { chamar: chamarGateway
     const cwd = repoPath(card.fm.repo ?? '')
     const gasto = gastoDoCard(card.fm.cost_usd)
     const teto = tetoDoCard()
-    if (!existsSync(cwd) || gasto === null || gasto >= teto) {
-      patchCard(id, { status: 'HALTED', halt_class: gasto === null || (gasto ?? 0) >= teto ? 'orcamento' : 'terminal', halt_reason: 'gateway: verifique projeto e orcamento' }, `${isoNow()} EXECUTING->HALTED gateway sem precondicoes`)
+    const excessoDeTokens = motivoDeTokensExcedidos(Number(card.fm.tokens_total || '0') || 0)
+    if (!existsSync(cwd) || gasto === null || gasto >= teto || excessoDeTokens) {
+      const porOrcamento = gasto === null || (gasto ?? 0) >= teto || !!excessoDeTokens
+      patchCard(id, { status: 'HALTED', halt_class: porOrcamento ? 'orcamento' : 'terminal', halt_reason: excessoDeTokens || 'gateway: verifique projeto e orcamento' }, `${isoNow()} EXECUTING->HALTED gateway sem precondicoes${excessoDeTokens ? ` — ${excessoDeTokens}` : ''}`)
       return
     }
     warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -88,7 +90,7 @@ export async function executarGateway(id: string, deps = { chamar: chamarGateway
       continue
     }
     const diagnostico = gravarDiagnostico(id, { provedor: res.provider ?? '', falha: failureReason, detalhe: res.reason ?? '', motivo: rota.motivo })
-    const outcome = applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: res.provider ?? '', failureClass, failureReason, waitClass: res.waitClass, technicalDetail: res.reason ?? '', extraFields: totais })
+    const outcome = applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: res.provider ?? '', failureClass, failureReason, waitClass: res.waitClass, technicalDetail: res.reason ?? '', extraFields: totais, papel: 'implement', rota: deps.rota })
     const acao = outcome === 'waiting'
       ? `retomada automatica em ${readCard(id)?.fm.wait_until ?? 'breve'}; /stop ${id} para interromper`
       : failureClass === 'quota' ? 'sem destino apto; escolha outra IA com /ia ou aguarde a renovacao da cota'

@@ -48,6 +48,11 @@ export const openapi = {
     '/v1/tarefas/{id}/historico': { get: get('historicoDaExecucao', { type: 'object' }, [idParam, { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 } }]) },
     '/v1/tarefas/{id}/perguntas': { get: get('perguntas', { type: 'object', properties: { perguntaId: { type: ['string', 'null'] }, pendencia: { type: ['object', 'null'] } } }, [idParam]) },
     '/v1/tarefas/{id}/respostas': { post: post('responderPergunta', objeto({ perguntaId: str, texto: str }, ['perguntaId', 'texto']), { type: 'object' }, '200', [idParam, revisao]) },
+    '/v1/tarefas/{id}/ia': {
+      get: get('iaDaTarefa', { type: 'object', properties: { id: str, papeis: { type: 'array', items: str }, ias: { type: 'array', items: objeto({ papel: str, provedor: str, modelo: str }, ['papel', 'provedor', 'modelo']) } } }, [idParam]),
+      post: post('definirIaDaTarefa', objeto({ papel: { enum: ['implement', 'verify', 'gate', 'step'] }, provedor: str, modelo: str }, ['papel', 'provedor']), { type: 'object' }, '200', [idParam, revisao]),
+    },
+    '/v1/tarefas/{id}/pacote': { get: get('pacoteDaTarefa', { type: 'object', properties: { id: str, hash: { type: ['string', 'null'] }, status: { type: ['string', 'null'] }, aprovadoHash: { type: ['string', 'null'] }, resumo: { type: ['string', 'null'] }, markdown: str } }, [idParam]) },
     '/v1/artefatos/{artefatoId}': { get: get('lerArtefato', ref('Artefato'), [{ name: 'artefatoId', in: 'path', required: true, schema: { ...str, pattern: '^[a-f0-9]{64}$' } }]) },
     '/v1/capacidades': { get: get('capacidades', ref('Capacidades')) },
     '/v1/openapi.json': { get: get('contrato', { type: 'object' }) },

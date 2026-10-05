@@ -7,6 +7,7 @@ const CARDS = mkdtempSync(join(tmpdir(), 'hicode-tickdispatch-'))
 process.env.HII_CARDS_DIR = CARDS
 mkdirSync(join(CARDS, 'runs'), { recursive: true })
 process.env.HII_REPOS_FILE = join(CARDS, 'repos-vazio.json')
+process.env.HII_PROMPT_PRIMEIRO = 'off'
 
 const { createCard, readCard } = await import('../../motor/cordel/store.ts')
 const { archiveDir } = await import('../../motor/cordel/arquivar.ts')

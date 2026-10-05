@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { extractObjetivo, isoNow } from '../cordel/index.ts'
 import type { Card, Fields, ImplementResult, StepMap, StepMetric, Usage } from '../cordel/index.ts'
 import { cardsDir, CLARIFY, EVAL, evalMin, fallbackRemotoLigado, quotaFallbackLigado, VERIFY_MODEL, VISUAL_AI } from '../cordel/alicerce/config.ts'
-import { gastoDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
+import { gastoDoCard, motivoDeTokensExcedidos, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
 import { clarify, clarifyPorIdeacao, writeClarify } from '../agentes/clarice/clarificar.ts'
 import { planSteps } from './rota/perfil.ts'
 import { activeSteps } from '../niemeyer/config.ts'
@@ -23,7 +23,7 @@ import { resolvedFailure, writeRun } from '../euclides/registros.ts'
 import { abrirSessao } from '../euclides/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
-import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
+import { comTentativaDeRota, decidirRota, overridesSoComEscolhaHumana, rotaTentadas } from '../tomada/rota.ts'
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
@@ -196,6 +196,12 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
     return
   }
+  const excessoDeTokens = motivoDeTokensExcedidos(baseTokens)
+  if (excessoDeTokens) {
+    const motivo = `${excessoDeTokens} antes de (re)executar — decida se continua`
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', halt_reason: motivo }, `${isoNow()} EXECUTING->HALTED ${motivo}`)
+    return
+  }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
   let auxCost = 0
   let auxTokens = 0
@@ -345,6 +351,8 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     const technicalDetail = res.timedOut ? `${res.reason ?? ''} apos ${elapsed}s` : (res.reason ?? '')
     const outcome = applyFailurePolicy({
       id,
+      papel: 'implement',
+      ...(deps.rota ? { rota: deps.rota } : {}),
       fromStatus: 'EXECUTING',
       resumeStatus: 'EXECUTING',
       provider: res.provider ?? '',
@@ -404,7 +412,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
-  patchCard(id, { wait_attempts: '', provider_override_implement: '', rota_tentados: '', rota_contexto: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
+  patchCard(id, { wait_attempts: '', ...overridesSoComEscolhaHumana(card.fm, ['implement']), rota_tentados: '', rota_contexto: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {

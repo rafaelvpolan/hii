@@ -39,6 +39,7 @@ import type { runProvider } from '../euclides/tesouro/confianca.ts'
 import { lerArtefato, listarArtefatos } from '../observabilidade/artefatos.ts'
 import { eventosDoCard } from '../euclides/eventos.ts'
 import { perguntas, responderPergunta } from './perguntas.ts'
+import { definirIaDaTarefa, iaDaTarefa, pacoteDaTarefa } from './ia-da-tarefa.ts'
 import { situacaoDaInferencia } from '../tomada/capacidade-inferencia.ts'
 
 const LIMITE_CORPO = 2 * 1024 * 1024
@@ -170,6 +171,10 @@ async function consulta(url: URL, opcoes: OpcoesApi): Promise<RespostaApi> {
   }
   const perguntaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/perguntas$/)?.[1]
   if (perguntaId) return perguntas(perguntaId)
+  const iaGetId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/ia$/)?.[1]
+  if (iaGetId) return iaDaTarefa(iaGetId)
+  const pacoteId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/pacote$/)?.[1]
+  if (pacoteId) return pacoteDaTarefa(pacoteId)
   if (url.pathname === '/v1/projetos') return resposta(200, { projetos: projetos() })
   if (url.pathname === '/v1/provedores') return resposta(200, { provedores: provedoresDisponiveis().map(p => {
     const h = harnessPorNome(p.nome)
@@ -252,7 +257,8 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
   const planoId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/plano$/)?.[1]
   const restaurarId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/restaurar-configuracao$/)?.[1]
   const respostaId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/respostas$/)?.[1]
-  const rotaValida = ['/v1/sessoes', '/v1/configuracao', '/v1/ask'].includes(url.pathname) || planoId || respostaId || restaurarId || (m && (
+  const iaPostId = url.pathname.match(/^\/v1\/tarefas\/(\d{3,12})\/ia$/)?.[1]
+  const rotaValida = ['/v1/sessoes', '/v1/configuracao', '/v1/ask'].includes(url.pathname) || planoId || respostaId || restaurarId || iaPostId || (m && (
     (m[1] === 'sessoes' && ['pedidos', 'fechar'].includes(m[3] ?? '')) || (m[1] === 'tarefas' && m[3] === 'acoes')))
   if (!rotaValida || url.search) throw new ErroApi(404, 'rota_ausente', 'rota nao encontrada')
   const esperado = cabecalho(req, 'if-match')
@@ -276,6 +282,7 @@ async function mutacao(req: IncomingMessage, url: URL, opcoes: OpcoesApi): Promi
     }
     if (planoId) return revisarPlano(planoId, entrada, esperado, cabecalho(req, 'idempotency-key'))
     if (respostaId) return responderPergunta(respostaId, entrada, esperado)
+    if (iaPostId) return definirIaDaTarefa(iaPostId, entrada, esperado)
     if (url.pathname === '/v1/sessoes') return novaSessao(entrada)
     const id = m?.[2] ?? ''
     if (m?.[3] === 'pedidos') return novoPedido(id, entrada, preparo?.provas)

@@ -94,8 +94,18 @@ function comFerramentasExtra(agente: AgenteInjetado, extras: readonly string[]):
   return { ...agente, tools: Array.from(new Set([...agente.tools, ...extras])) }
 }
 
-export function agentesNexusPor(nomes: readonly string[], ferramentasExtra: readonly string[] = []): Record<string, AgenteInjetado> {
-  const todos = agentesNexus()
+export interface OrigemDoProjeto {
+  readonly alvo: string
+  readonly provedor: string
+}
+
+export function agentesDoProjeto(origem: OrigemDoProjeto): Record<string, AgenteInjetado> {
+  const dir = join(origem.alvo, '.hii', 'ia', origem.provedor, 'agents')
+  return origem.alvo && existsSync(dir) ? memorizadoDe(dir)() : {}
+}
+
+export function agentesNexusPor(nomes: readonly string[], ferramentasExtra: readonly string[] = [], projeto?: OrigemDoProjeto): Record<string, AgenteInjetado> {
+  const todos = { ...agentesNexus(), ...(projeto ? agentesDoProjeto(projeto) : {}) }
   const escolhidos: Record<string, AgenteInjetado> = {}
   for (const nome of nomes) {
     const agente = todos[nome]

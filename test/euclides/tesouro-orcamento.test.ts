@@ -143,6 +143,8 @@ const QUEM_LE_O_TETO: readonly string[] = [
   'motor/ciclo/macunaima/divergir.ts',
   'motor/cordel/alicerce/snapshot.ts',
   'motor/niemeyer/lucio/fase-spec.ts',
+  'motor/niemeyer/lucio/pacote-de-execucao.ts',
+  'motor/api/configuracao.ts',
 ]
 
 test('INVARIANTE quem barra por orcamento chama tetoDoCard', async () => {

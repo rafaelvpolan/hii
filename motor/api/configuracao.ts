@@ -9,12 +9,17 @@ import type { Objeto } from './contrato.ts'
 import type { AgentRole } from '../tomada/tipos.ts'
 import { resposta } from './idempotencia.ts'
 import type { RespostaApi } from './idempotencia.ts'
-import { fallbackRemotoLigado, localidadeDeExecucao } from '../cordel/alicerce/config.ts'
+import { fallbackRemotoLigado, localidadeDeExecucao, modoDeTrocaPorCota } from '../cordel/alicerce/config.ts'
+import { tetoDeTokensDoCard, tetoDoCard } from '../euclides/tesouro/orcamento.ts'
+import { limiarDeAvisoDeCota } from '../euclides/tesouro/aviso-de-cota.ts'
+import { promptPrimeiroLigado } from '../niemeyer/lucio/aprovacao-do-pacote.ts'
 
 export function configuracao(): RespostaApi {
   const preferencias = ler()
   return resposta(200, { versao: 1, preferencias,
-    execucao: { localidade: localidadeDeExecucao(), fallbackRemoto: fallbackRemotoLigado(), editavel: false },
+    execucao: { localidade: localidadeDeExecucao(), fallbackRemoto: fallbackRemotoLigado(), trocaPorCota: modoDeTrocaPorCota(), promptPrimeiro: promptPrimeiroLigado(), editavel: false },
+    limites: { tetoUsdPorCard: tetoDoCard(), tetoTokensPorCard: tetoDeTokensDoCard(), avisoDeCotaPct: limiarDeAvisoDeCota(), editavel: false, origem: 'config/model-tier.json (orcamentoPorCard); sobreposicao por env documentada em OPERACAO.md' },
+    iaPorTarefa: '/v1/tarefas/{id}/ia',
     aplicacao: 'proximos despachos; execucoes em voo mantem snapshot' }, etagDe(preferencias))
 }
 export function configurar(b: Objeto, esperado: string): RespostaApi {

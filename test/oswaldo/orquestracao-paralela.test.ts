@@ -239,7 +239,8 @@ test('custo desconhecido em um ramo preserva ambos e nao inicia sucessora', asyn
   expect(chamadas).toEqual(['A', 'B', 'C'])
 })
 
-test('cota em ramo limpo redistribui sem perder historico da tentativa', async () => {
+test('com troca por cota automatica, ramo limpo redistribui sem perder historico da tentativa', async () => {
+  process.env.HII_QUOTA_FALLBACK = 'on'
   const plano = { ...planoOrquestrado(), id, sessaoId: id }
   salvarPlano(plano, 0, 'fallback-paralelo')
   const chamadas: string[] = []
@@ -250,13 +251,30 @@ test('cota em ramo limpo redistribui sem perder historico da tentativa', async (
     if (nome === 'B' && provider === 'claude') return { ok: false, reason: 'quota', failureClass: 'quota', provider, cost: '0.01', costMeasured: true }
     writeFileSync(join(cwd, nome + '.txt'), nome)
     return { ok: true, provider, cost: '0.1', costMeasured: true }
-  }, false, { rota: () => ({ acao: 'trocar', para: 'codex', motivo: 'fixture' }) })
+  }, false, { rota: () => ({ acao: 'trocar', para: 'codex', motivo: 'fixture' }) }).finally(() => { delete process.env.HII_QUOTA_FALLBACK })
   expect(r.ok).toBe(true)
   expect(chamadas).toContain('B:claude')
   expect(chamadas).toContain('B:codex')
   const revisao = readCard(id)!.fm.plano_revisao!
   const checkpoint = JSON.parse(readFileSync(join(process.env.HII_CARDS_DIR!, 'orquestracao', `execucao-${id}-${revisao}.json`), 'utf8')) as import('../../motor/oswaldo/orquestracao/checkpoint.ts').Checkpoint
   expect(checkpoint.tentativas!.filter(t => t.microtask === 'B').map(t => [t.provedor, t.estado])).toEqual([['claude', 'falhou'], ['codex', 'concluida']])
+})
+
+test('no padrao perguntar, ramo sem cota nao troca de IA sozinho', async () => {
+  delete process.env.HII_QUOTA_FALLBACK
+  salvarPlano({ ...planoOrquestrado(), id, sessaoId: id }, 0, 'cota-pergunta')
+  const chamadas: string[] = []
+  const r = await executarPlano(readCard(id)!, wt, async (card, cwd) => {
+    const nome = card.fm.title!
+    const provider = card.fm.provider_override_implement || 'claude'
+    chamadas.push(nome + ':' + provider)
+    if (nome === 'B') return { ok: false, reason: 'quota', failureClass: 'quota', provider, cost: '0.01', costMeasured: true }
+    writeFileSync(join(cwd, nome + '.txt'), nome)
+    return { ok: true, provider, cost: '0.1', costMeasured: true }
+  }, false, { rota: () => ({ acao: 'trocar', para: 'codex', motivo: 'fixture' }) })
+  expect(r.ok).toBe(false)
+  expect(chamadas).toContain('B:claude')
+  expect(chamadas).not.toContain('B:codex')
 })
 
 test('nao redistribui ramo com efeito incerto', async () => {

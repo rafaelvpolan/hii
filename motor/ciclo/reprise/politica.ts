@@ -2,7 +2,7 @@ import { isoAt, isoNow } from '../../cordel/index.ts'
 import type { ClasseDeEspera, Fields, FailureClass } from '../../cordel/index.ts'
 import { fallbackRemotoLigado, maxWaitingAttempts, pisoDeEsperaMs, quotaFallbackLigado } from '../../cordel/alicerce/config.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
-import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
+import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, overridesSoComEscolhaHumana, rotaTentadas } from '../../tomada/rota.ts'
 import { harnessSeExistir } from '../../tomada/registro.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
 import type { AgentRole } from '../../tomada/tipos.ts'
@@ -10,6 +10,7 @@ import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../../tomada/r
 import { appendFailureAttempt } from './tentativas.ts'
 import type { FailureOutcome } from './tentativas.ts'
 import { stampRunFailure } from '../../euclides/registros.ts'
+import { recomendarTrocaPorCota } from './troca-por-cota.ts'
 
 export type ResumeStatus = 'EXECUTING' | 'URL_OK' | 'CORRECTING' | 'SPECCED'
 
@@ -66,10 +67,9 @@ function haltFields(input: FailurePolicyInput): Fields {
     wait_provider: '',
     rota_contexto: '',
     rota_tentados: '',
-    provider_override_implement: '',
-    provider_override_step: '',
-    provider_override_gate: '',
-    provider_override_verify: '',
+    ...overridesSoComEscolhaHumana(readCard(input.id)?.fm ?? {}, PAPEIS_COM_OVERRIDE_DE_PROVEDOR),
+    troca_recomendada: '',
+    troca_decidida: '',
     ...input.extraFields,
   }
 }
@@ -145,6 +145,11 @@ function decideOutcome(input: FailurePolicyInput, attempts: number): PolicyOutco
   if (input.failureClass === 'quota') {
     const trocado = trocaDeProvedorRecuperavel(input, attempts)
     if (trocado) return trocado
+    const recomendacao = recomendarTrocaPorCota({ id: input.id, papel: input.papel, provedor: input.provider, falha: input.failureReason, resumeStatus: input.resumeStatus, resumeStep: input.resumeStep, rota: input.rota })
+    if (recomendacao) {
+      patchCard(input.id, { ...haltFields(input), ...recomendacao }, `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — recomendado trocar para ${recomendacao.troca_recomendada}; aguardando a decisao do humano (responda a pergunta da tarefa)`)
+      return 'halt'
+    }
     patchCard(input.id, haltFields(input), `${isoNow()} ${input.fromStatus}->HALTED cota do provedor ${input.provider || 'desconhecido'} esgotada: ${input.failureReason} — motor PARADO (sem troca automatica de provedor, ou sem candidato apto); configure HII_QUOTA_FALLBACK para permitir troca explicita`)
     return 'halt'
   }
