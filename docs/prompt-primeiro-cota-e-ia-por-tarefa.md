@@ -26,6 +26,12 @@ O teto é "US$ `orcamentoPorCard.tetoUsd` ou `orcamentoPorCard.tetoTokens` token
 
 `GET /v1/tarefas/{id}/ia` lista a IA de cada papel (implement, verify, gate, step); vazio é o padrão do motor. `POST /v1/tarefas/{id}/ia` com `{papel, provedor, modelo?}`, `If-Match` e `Idempotency-Key` define a IA do card, com as mesmas validações de capacidade de `/v1/configuracao`. `GET /v1/configuracao` mostra `execucao.trocaPorCota`, `execucao.promptPrimeiro` e `limites`.
 
+A escolha humana também fica em `ia_escolhida_<papel>`. Parada por falha e fim da implementação limpam só a troca automática do roteador; a IA escolhida pelo humano volta ao `provider_override_<papel>`, então retomar a tarefa usa a mesma IA. Aceitar a troca por cota conta como escolha humana.
+
+## Ollama agentivo
+
+Erro de uso de ferramenta (argumento a mais, `old_text` ambíguo, validação que falhou) volta ao modelo como resposta da ferramenta, sem alterar nada, para ele corrigir a chamada. Erro de segurança (caminho fora do workspace, modo somente leitura) continua encerrando a execução. Em modo de edição, a resposta final só vale depois de pelo menos um `replace_text` aplicado. Sem isso o motor cobra o modelo uma vez e, se ele de novo só descrever a chamada em texto, a execução falha com "nenhuma edicao foi comprovada" em vez de concluir sem mudar nada.
+
 ## Pastas por IA no projeto-alvo
 
 `hii init` cria `.hii/memory/` e `.hii/ia/<ia>/{agents,skills}` para claude e ollama. Papel em `.hii/ia/<ia>/agents/` vence o catálogo do motor quando aquela IA executa. `hii projetar <repo> claude` grava o bloco gerenciado do `CLAUDE.md` a partir de `.hii/rules.md` e copia papéis e skills para `.claude/agents` e `.claude/skills`, preservando arquivo humano diferente.

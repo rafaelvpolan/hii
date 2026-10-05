@@ -23,7 +23,7 @@ import { resolvedFailure, writeRun } from '../euclides/registros.ts'
 import { abrirSessao } from '../euclides/ias-da-sessao.ts'
 import { warnBudgetWithoutGuarantee } from '../euclides/tesouro/confianca.ts'
 import { applyFailurePolicy } from '../ciclo/reprise/politica.ts'
-import { comTentativaDeRota, decidirRota, rotaTentadas } from '../tomada/rota.ts'
+import { comTentativaDeRota, decidirRota, overridesSoComEscolhaHumana, rotaTentadas } from '../tomada/rota.ts'
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
 import { conferirInstrucoes, pendentesDoCard, registrarConferencia } from '../ciclo/crivo/conferencia-de-instrucoes.ts'
 import { aprovarUrlPeloMotor, decisaoDeAprovacaoDeUrl } from '../ciclo/crivo/aprovacao-automatica.ts'
@@ -412,7 +412,7 @@ export async function handleExecute(id: string, deps: ExecuteDeps = { implement,
     process.stdout.write(`[runner] #${id}: HALTED — escreveu fora do escopo: ${violou.join(', ')}\n`)
     return
   }
-  patchCard(id, { wait_attempts: '', provider_override_implement: '', rota_tentados: '', rota_contexto: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
+  patchCard(id, { wait_attempts: '', ...overridesSoComEscolhaHumana(card.fm, ['implement']), rota_tentados: '', rota_contexto: '' }, `${isoNow()} EXECUTING: ${res.resultText || 'mudanca aplicada'} (implementacao concluida)`)
   if (surface.surface === 'none') {
     const { costSum, tokensTotal } = await commitAndRecord(id, wt, card, steps, res, t0)
     patchCard(id, {

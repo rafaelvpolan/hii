@@ -119,3 +119,20 @@ test('a pergunta do pacote aparece no estado lido pela TUI e pelo painel', async
   const t = snapshotDoMotor().tarefas.find(x => x.id === id)
   expect(t?.pergunta?.opcoes).toEqual(['Aprovar e executar', 'Cancelar a tarefa'])
 })
+
+test('a IA escolhida pelo humano sobrevive a uma parada por falha', async () => {
+  const { applyFailurePolicy } = await import('../../motor/ciclo/reprise/politica.ts')
+  const id = tarefa('parada mantem a escolha')
+  expect(definirIaDoCard(id, { papel: 'implement', provedor: 'codex' }).ok).toBe(true)
+  applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'codex', papel: 'implement', failureClass: 'terminal', failureReason: 'quebrou', technicalDetail: '' })
+  const fm = readCard(id)?.fm
+  expect(fm?.status).toBe('HALTED')
+  expect(fm?.provider_override_implement).toBe('codex')
+})
+
+test('troca automatica do roteador continua limpa na parada', async () => {
+  const { applyFailurePolicy } = await import('../../motor/ciclo/reprise/politica.ts')
+  const id = createCard({ title: 'rota automatica', status: 'EXECUTING', repo: 'org/site', provider_override_implement: 'kimi' }, '## Objetivo\nx\n')
+  applyFailurePolicy({ id, fromStatus: 'EXECUTING', resumeStatus: 'EXECUTING', provider: 'kimi', papel: 'implement', failureClass: 'terminal', failureReason: 'quebrou', technicalDetail: '' })
+  expect(readCard(id)?.fm.provider_override_implement ?? '').toBe('')
+})

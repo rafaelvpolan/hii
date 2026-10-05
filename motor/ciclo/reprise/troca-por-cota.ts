@@ -9,7 +9,7 @@ import type { Fields } from '../../cordel/index.ts'
 import type { ClarifyQuestion } from '../../cordel/tipos.ts'
 import { readCard, updateCardPorAcaoHumana } from '../../cordel/store.ts'
 import { modoDeTrocaPorCota } from '../../cordel/alicerce/config.ts'
-import { campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
+import { campoDaEscolhaHumana, campoDeOverrideDoPapel, comTentativaDeRota, decidirRota, rotaTentadas } from '../../tomada/rota.ts'
 import type { DecisaoDeRota, EntradaDeRota } from '../../tomada/rota.ts'
 import { contextoDaTrocaDeIa } from '../../tomada/rota-log.ts'
 import { motivoParaEsperarHarness } from '../../tomada/harness-em-voo.ts'
@@ -101,6 +101,7 @@ export function decidirTrocaPorCota(id: string, resposta: string): DecisaoDeTroc
     fields: {
       status: alvo,
       [campoDeOverrideDoPapel(papel)]: para,
+      [campoDaEscolhaHumana(papel)]: para,
       rota_tentados: comTentativaDeRota(fm.troca_tentados || fm.rota_tentados, de),
       rota_contexto: contexto,
       wait_provider: para,

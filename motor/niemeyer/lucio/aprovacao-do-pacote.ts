@@ -10,7 +10,7 @@ import { patchCard, readCard, updateCardPorAcaoHumana } from '../../cordel/store
 import { cardsDir } from '../../cordel/alicerce/config.ts'
 import { anexarSubPrompt } from '../../mirante/instruir.ts'
 import { harnessSeExistir } from '../../tomada/registro.ts'
-import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
+import { campoDaEscolhaHumana, campoDeOverrideDoPapel } from '../../tomada/rota.ts'
 import type { AgentRole } from '../../tomada/tipos.ts'
 import { motivoParaEsperarHarness } from '../../tomada/harness-em-voo.ts'
 import { publicarEvento } from '../../euclides/ponte-eventos.ts'
@@ -126,7 +126,7 @@ export function definirIaDoCard(id: string, e: EscolhaDeIa): { ok: boolean; reas
   if (espera) return { ok: false, reason: espera }
   const modelo: Fields = papel === 'implement' ? { orq_modelo: e.modelo ?? '' } : {}
   updateCardPorAcaoHumana(id, {
-    fields: { [campoDeOverrideDoPapel(papel)]: e.provedor, ...modelo },
+    fields: { [campoDeOverrideDoPapel(papel)]: e.provedor, [campoDaEscolhaHumana(papel)]: e.provedor, ...modelo },
     log: `${isoNow()} IA do papel ${papel} definida pelo humano: ${e.provedor || 'padrao do motor'}${e.modelo ? ` (${e.modelo})` : ''}`,
   })
   const depois = readCard(id)
