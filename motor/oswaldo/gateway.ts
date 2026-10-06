@@ -1,5 +1,6 @@
 import { encerrando } from './mutirao/encerramento.ts'
-import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, lstatSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { readCard, repoPath, patchCard } from '../cordel/store.ts'
 import { isoNow } from '../cordel/util.ts'
@@ -16,11 +17,32 @@ import { decidirRota, rotaTentadas, comTentativaDeRota } from '../tomada/rota.ts
 import { gravarDiagnostico, redigirDiagnostico, resumoDoDiagnostico } from '../tomada/diagnostico.ts'
 import { gravarChamadaNoLiveLog } from '../tomada/harness/live-log.ts'
 import { contextoDaTrocaDeIa, registrarTrocaDeIaNoLiveLog } from '../tomada/rota-log.ts'
+import { runGit } from '../quilombo/git.ts'
+
+const FORA_DO_PEDIDO = ['--', '.', ':!.hii', ':!node_modules']
+export const SEM_ALTERACAO = 'a IA concluiu sem alterar nenhum arquivo do projeto; confira a resposta no log, ajuste o pedido ou troque a IA da tarefa e retome'
+
+async function estadoDoCheckout(cwd: string): Promise<string | null> {
+  const hash = createHash('sha256')
+  for (const args of [['status', '--porcelain=v1', '-z', '--untracked-files=all', ...FORA_DO_PEDIDO], ['diff', '--no-ext-diff', '--binary', 'HEAD', ...FORA_DO_PEDIDO]]) {
+    const r = await runGit(cwd, ['--no-optional-locks', ...args])
+    if (r.err) return null
+    hash.update(r.stdout)
+  }
+  const novos = await runGit(cwd, ['--no-optional-locks', 'ls-files', '--others', '--exclude-standard', '-z', ...FORA_DO_PEDIDO])
+  if (novos.err) return null
+  for (const nome of novos.stdout.split('\0').filter(Boolean)) {
+    const caminho = join(cwd, nome)
+    hash.update(nome).update(lstatSync(caminho).isFile() ? readFileSync(caminho) : '')
+  }
+  return hash.digest('hex')
+}
 
 export async function chamarGateway(card: Card, cwd: string): Promise<ImplementResult> {
   const override = card.fm.provider_override_implement || undefined
   const provider = providerFor('implement', override)
   const model = modelFor('implement', override)
+  const antes = await estadoDoCheckout(cwd)
   const res = await runProvider(card.fm.id ?? '', provider, {
     prompt: [card.fm.rota_contexto || '', objetivoComInstrucoes(card.body, card.fm.title ?? '')].filter(Boolean).join('\n\n'),
     cwd, dirs: [cwd], mode: 'edit', useAgents: false, model,
@@ -28,6 +50,7 @@ export async function chamarGateway(card: Card, cwd: string): Promise<ImplementR
     timeoutMs: RUN_TIMEOUT_MS, liveLog: join(cardsDir(), 'runs', `${card.fm.id}.live.log`), rotulo: 'gateway',
   }, 'implement')
   const comum = { cost: String(res.cost), costMeasured: res.costMeasured, usage: res.usage, provider: provider.name, model }
+  if (res.ok && antes !== null && antes === await estadoDoCheckout(cwd)) return { ...comum, ok: false, reason: SEM_ALTERACAO + '\n' + res.text.slice(0, 400), failureClass: 'terminal', failureReason: SEM_ALTERACAO }
   if (res.ok) return { ...comum, ok: true, resultText: res.text.slice(0, 140), fullText: res.text }
   const falha = classifyFailure(provider, res)
   return { ...comum, ok: false, reason: [res.detail, res.text].filter(Boolean).join('\n'), timedOut: res.timedOut, failureClass: falha.failureClass, failureReason: falha.reason, waitClass: falha.classeDeEspera }
