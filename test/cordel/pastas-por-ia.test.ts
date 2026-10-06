@@ -122,3 +122,13 @@ test('link quebrado em AGENTS.md nao cria arquivo fora do projeto', () => {
   expect(() => projetarParaCodex(p)).toThrow()
   expect(existsSync(fora)).toBe(false)
 })
+
+test('init em projeto antigo acrescenta ao .gitignore so as regras que faltam', () => {
+  const p = projeto()
+  const ignore = join(p, '.hii', '.gitignore')
+  writeFileSync(ignore, 'state/\ncontract.json\nsegredo-local/\n')
+  initHicodeHome(p)
+  expect(readFileSync(ignore, 'utf8')).toBe('state/\ncontract.json\nsegredo-local/\nia/*/executions/\n')
+  initHicodeHome(p)
+  expect(readFileSync(ignore, 'utf8')).toBe('state/\ncontract.json\nsegredo-local/\nia/*/executions/\n')
+})

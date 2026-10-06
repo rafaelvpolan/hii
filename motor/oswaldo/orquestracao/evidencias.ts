@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { cardsDir, politicaDeExecucaoEfetiva } from '../../cordel/alicerce/config.ts'
 import { run, runGit } from '../../quilombo/git.ts'
@@ -64,8 +64,9 @@ export async function fingerprintDoTrabalho(wt: string): Promise<string> {
   const novos = await lerGit(['ls-files', '--others', '--exclude-standard', '-z'])
   if (novos.err) throw new Error('nao foi possivel listar arquivos novos')
   for (const nome of novos.stdout.split('\0').filter(Boolean).sort()) {
-    const caminho = dentroDoWorktree(wt, nome)
-    hash.update(nome).update(readFileSync(caminho))
+    const proprio = resolve(realpathSync(wt), nome)
+    if (lstatSync(proprio).isSymbolicLink()) { hash.update(nome).update('link:' + readlinkSync(proprio)); continue }
+    hash.update(nome).update(readFileSync(dentroDoWorktree(wt, nome)))
   }
   return hash.digest('hex')
 }
@@ -145,4 +146,17 @@ export async function evidenciaAtual(id: string, revisao: number, wt: string): P
   if (!existsSync(arquivo)) return false
   const r = JSON.parse(readFileSync(arquivo, 'utf8')) as RelatorioDeEvidencias
   return !r.microtask && r.versao === 1 && r.plano === id && r.revisao === revisao && r.aprovado === true && r.fingerprint === await fingerprintDoTrabalho(wt)
+}
+
+const FERRAMENTA_AUSENTE = /(?:command )?not found|nao encontrad|não encontrad/i
+
+function motivoDaEvidencia(e: Evidencia): string {
+  if (e.timeout) return `${e.criterio}: excedeu o tempo`
+  if (e.exitCode === 127 && FERRAMENTA_AUSENTE.test(e.saida)) return `${e.criterio}: ferramenta do projeto ausente no worktree (dependencias do projeto nao instaladas; instale no checkout do projeto e retome)`
+  if (e.estado === 'inconclusivo') return `${e.criterio}: inconclusivo${e.falha ? ` (${e.falha})` : ''}`
+  return `${e.criterio}: saiu com codigo ${e.exitCode ?? '?'}`
+}
+
+export function motivoDaReprovacao(evidencias: readonly Evidencia[]): string {
+  return evidencias.filter(e => e.obrigatorio && e.estado !== 'aprovado' && e.estado !== 'nao-aplicavel').map(motivoDaEvidencia).join('; ')
 }

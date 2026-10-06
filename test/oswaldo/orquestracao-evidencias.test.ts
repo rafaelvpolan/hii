@@ -137,3 +137,19 @@ test('duracao da evidencia nao fica negativa quando o relogio civil recua', asyn
     expect(r.evidencias[0]!.duracaoMs >= 0).toBe(true)
   } finally { Date.now = data }
 })
+
+test('node_modules ligado por symlink e nao ignorado entra no fingerprint sem ser seguido', async () => {
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\n')
+  const externo = mkdtempSync(join(tmpdir(), 'hii-deps-'))
+  const outro = mkdtempSync(join(tmpdir(), 'hii-deps-'))
+  try {
+    symlinkSync(externo, join(dir, 'node_modules'), 'dir')
+    const antes = await fingerprintDoTrabalho(dir)
+    rmSync(join(dir, 'node_modules'))
+    symlinkSync(outro, join(dir, 'node_modules'), 'dir')
+    expect(await fingerprintDoTrabalho(dir)).not.toBe(antes)
+  } finally {
+    rmSync(externo, { recursive: true, force: true })
+    rmSync(outro, { recursive: true, force: true })
+  }
+})

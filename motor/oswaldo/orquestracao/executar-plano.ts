@@ -13,7 +13,7 @@ import { writeFileAtomic } from '../mutirao/trava-arquivo.ts'
 import { ondasEstritas } from './contrato.ts'
 import type { PlanoDeExecucao, CriterioDoPlano } from './contrato.ts'
 import { lerPlano, salvarPlano } from './planos.ts'
-import { fingerprintDoTrabalho, coletarEvidencias } from './evidencias.ts'
+import { fingerprintDoTrabalho, coletarEvidencias, motivoDaReprovacao } from './evidencias.ts'
 import { gastoDoCard, motivoDeTokensExcedidos, tetoDoCard } from '../../euclides/tesouro/orcamento.ts'
 import { iniciar, atualizar, terminar, dentro, recurso } from '../../observabilidade/registro.ts'
 import type { EntradaDeRota, DecisaoDeRota } from '../../tomada/rota.ts'
@@ -133,7 +133,7 @@ export async function executarPlano(card: Card, wt: string, implementar: (card: 
         ultimo = await dentro(atividade, () => implementar(pedido, wt, '', visual))
         if (ultimo.ok) {
           const prova = await coletarEvidencias(r.plano, r.revisao, wt, undefined, m.id)
-          if (!prova.aprovado) ultimo = { ...ultimo, ok: false, reason: 'microtask ' + m.id + ': criterios obrigatorios reprovados ou inconclusivos',
+          if (!prova.aprovado) ultimo = { ...ultimo, ok: false, reason: 'microtask ' + m.id + ': criterios obrigatorios reprovados ou inconclusivos' + (motivoDaReprovacao(prova.evidencias) ? ' — ' + motivoDaReprovacao(prova.evidencias) : ''),
             failureClass: 'terminal', failureReason: 'evidencia da microtask nao aprovada' }
         }
         tentativa.provedor = ultimo.provider ?? tentativa.provedor

@@ -35,6 +35,10 @@ export function blocoDeEscopo(e: EscopoDeEscrita): string {
   return `${linhas.join('\n')}\n`
 }
 
+export function blocoDeMemoria(memory: string): string {
+  return memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : ''
+}
+
 export function implementPrompt(agentesInjetados: readonly string[], agentesAdaptados: string, recursosSolicitados: string, workdir: string, desc: string, feedback: string, rules: string, visual: boolean, clarifications: string, refImages: string[], memory: string, stack: string, skills: string, escopo: EscopoDeEscrita, rotaContexto = ''): string {
   const refs = refImages.length
     ? `REFERENCIAS DE DESIGN (${refImages.length}): abra CADA imagem abaixo com a tool Read e replique o design o mais FIEL possivel (layout, cores, tipografia, espacamento, componentes); extraia os tokens a partir delas. Imagens:\n${refImages.map(p => `- ${p}`).join('\n')}\n`
@@ -55,7 +59,7 @@ export function implementPrompt(agentesInjetados: readonly string[], agentesAdap
     skills ? `${skills}\n` : '',
     agentesAdaptados ? `${agentesAdaptados}\n` : '',
     recursosSolicitados ? `${recursosSolicitados}\n` : '',
-    memory ? `MEMORIA DO PROJETO (.hii/memory — decisoes/convencoes acumuladas, respeite):\n${memory}\n` : '',
+    blocoDeMemoria(memory),
     rotaContexto ? `CONTEXTO PRESERVADO NA TROCA DE IA:\n${rotaContexto}\n` : '',
     clarifications ? clarifications : '',
     refs,
