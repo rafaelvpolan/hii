@@ -1,0 +1,96 @@
+import { TEMPO_COM_GIT_MS } from '../tempo-de-teste.ts'
+import { test, expect, afterAll } from '../apoio/runner.ts'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import type { GateResult } from '../../motor/ciclo/crivo/gate.ts'
+import type { FinishDeps } from '../../motor/quilombo/cartorio/fechar.ts'
+
+const BASE = mkdtempSync(join(tmpdir(), 'hii-retomada-pr-'))
+// Rigor estrito muda o comportamento do fechamento de proposito (barra area
+// nova sem comando de teste). Fixado aqui para o teste nao depender do env de
+// quem roda a suite.
+delete process.env.HII_RIGOR_ESTRITO
+process.env.HII_CARDS_DIR = join(BASE, 'cards')
+mkdirSync(process.env.HII_CARDS_DIR, { recursive: true })
+
+function git(dir: string, args: string[]): string {
+  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+}
+
+const origem = join(BASE, 'origem.git')
+const semente = join(BASE, 'semente')
+const clone = join(BASE, 'clone')
+mkdirSync(semente, { recursive: true })
+execFileSync('git', ['init', '-q', '--bare', origem])
+git(semente, ['init', '-q', '.'])
+git(semente, ['config', 'user.email', 't@t'])
+git(semente, ['config', 'user.name', 't'])
+writeFileSync(join(semente, 'a.txt'), 'um\n')
+git(semente, ['add', '-A'])
+git(semente, ['commit', '-qm', 'primeiro'])
+git(semente, ['branch', '-M', 'main'])
+git(semente, ['remote', 'add', 'origin', origem])
+git(semente, ['push', '-q', '-u', 'origin', 'main'])
+execFileSync('git', ['--git-dir', origem, 'symbolic-ref', 'HEAD', 'refs/heads/main'])
+execFileSync('git', ['clone', '-q', origem, clone])
+git(clone, ['config', 'user.email', 't@t'])
+git(clone, ['config', 'user.name', 't'])
+
+process.env.HII_REPOS_FILE = join(BASE, 'repos.json')
+writeFileSync(process.env.HII_REPOS_FILE, JSON.stringify([{ name: 'org/repo', path: clone, branch: 'main' }]))
+
+const GATE_APROVADO: GateResult = { ok: true, verdict: 'APPROVED', reason: 'sem defeito real encontrado', criterio: '', questions: [], cost: 0.01, costMeasured: true, tokens: 100 }
+
+const agenteFinish: FinishDeps = {
+  runStep: (): never => { throw new Error('nao deveria chamar runStep — steps: nada nao roda nenhum passo') },
+  runCodefoxGate: (): Promise<GateResult> => Promise.resolve(GATE_APROVADO),
+}
+
+
+const ghBinDir = join(BASE, 'bin-fake-gh')
+mkdirSync(ghBinDir, { recursive: true })
+const ghFalso = join(ghBinDir, 'gh')
+writeFileSync(ghFalso, `#!/usr/bin/env bash\necho "gh-falso: comando nao suportado: $*" >&2\nexit 1\n`)
+chmodSync(ghFalso, 0o755)
+const pathOriginal = process.env.PATH ?? ''
+process.env.PATH = `${ghBinDir}:${pathOriginal}`
+
+const realGit = await import('../../motor/quilombo/git.ts')
+
+const { createCard, readCard } = await import('../../motor/cordel/store.ts')
+const { handleFinish } = await import('../../motor/quilombo/cartorio/fechar.ts')
+
+afterAll(() => {
+  process.env.PATH = pathOriginal
+  rmSync(BASE, { recursive: true, force: true })
+})
+
+function commitar(wt: string, arquivo: string, texto: string, mensagem: string): void {
+  writeFileSync(join(wt, arquivo), texto)
+  git(wt, ['add', '-A'])
+  git(wt, ['-c', 'commit.gpgsign=false', 'commit', '-qm', mensagem])
+}
+
+test('PR que nao abriu depois do push retoma no fechamento, nao na implementacao', async () => {
+  const wt = join(BASE, 'wt')
+  const id = createCard({
+    title: 'pr que nao abriu',
+    status: 'URL_OK',
+    repo: 'org/repo',
+    surface: 'none',
+    clarified: 'true',
+    steps: 'nada',
+    slug: 'sem-pr',
+    worktree: wt,
+  }, '## Objetivo\nfazer algo\n')
+  await realGit.ensureWorktree(clone, wt, `hicode/${id}-sem-pr`, 'main')
+  commitar(wt, 'mudanca.txt', 'conteudo\n', 'feat: mudanca')
+
+  await handleFinish(id, agenteFinish)
+  const c = readCard(id)
+  expect(c?.fm.status).toBe('HALTED')
+  expect(c?.fm.pr_url ?? '').toBe('')
+  expect(c?.fm.retomar_em).toBe('URL_OK')
+}, TEMPO_COM_GIT_MS)

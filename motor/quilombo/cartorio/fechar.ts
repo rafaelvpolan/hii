@@ -77,11 +77,11 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const teto = tetoDoCard()
   const gasto = gastoDoCard(card.fm.cost_usd)
   if (gasto === null) {
-    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — tratar isso como "gastou 0" liberaria o polimento pago sem saber o que o card ja custou`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', retomar_em: 'URL_OK' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED cost_usd=${JSON.stringify(card.fm.cost_usd)} nao e numero — tratar isso como "gastou 0" liberaria o polimento pago sem saber o que o card ja custou`)
     return
   }
   if (teto > 0 && gasto > teto) {
-    patchCard(id, { status: 'HALTED', halt_class: 'orcamento' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes do polimento — decida se continua`)
+    patchCard(id, { status: 'HALTED', halt_class: 'orcamento', retomar_em: 'URL_OK' }, `${isoNow()} ${card.fm.status ?? 'URL_OK'}->HALTED orcamento excedido (US$${card.fm.cost_usd} > US$${teto}) antes do polimento — decida se continua`)
     return
   }
   warnBudgetWithoutGuarantee(id, card.fm, teto)
@@ -101,7 +101,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
   const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const preflight = podeAbrirPr(target, repoName)
   if (preflight.severidade === 'erro') {
-    patchCard(id, { status: 'HALTED', halt_class: 'terminal' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', retomar_em: 'URL_OK' }, `${isoNow()} URL_OK->HALTED preflight: ${preflight.detalhe}${preflight.conserto ? ` — conserto: ${preflight.conserto}` : ''} (nada foi gasto no polimento)`)
     process.stdout.write(`[runner] #${id}: HALTED preflight — ${preflight.detalhe}\n`)
     return
   }
@@ -485,7 +485,7 @@ export async function handleFinish(id: string, deps: FinishDeps = { runStep, run
     patchCard(id, {}, `${isoNow()} PR ja constava no diario de execucao (${url}) — nao foi aberto de novo`)
   }
   if (!url) {
-    patchCard(id, { status: 'HALTED', halt_class: 'terminal', pipeline_liberado: '', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
+    patchCard(id, { status: 'HALTED', halt_class: 'terminal', pipeline_liberado: '', retomar_em: 'URL_OK', ...totalsFields }, `${isoNow()} ${statusAtual}->HALTED gh pr create falhou (push ja OK — so falta abrir o PR): ${erroDoGh}`)
     return
   }
   patchCard(id, { pr_url: url })
