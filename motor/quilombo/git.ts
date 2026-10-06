@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { spawn, type ChildProcess, type ExecFileException, type ExecFileOptions, type SpawnOptions } from 'node:child_process'
 import { WT_BASE } from '../cordel/alicerce/config.ts'
@@ -339,9 +339,20 @@ export async function ensureWorktree(target: string, wt: string, branch: string,
     if (!existsSync(nm) && existsSync(join(target, 'node_modules'))) {
       try { symlinkSync(join(target, 'node_modules'), nm, 'dir') } catch { void 0 }
     }
+    if (existsSync(nm) && lstatSync(nm).isSymbolicLink()) await excluirLinkDeDependencias(wt)
     const head = await runGit(wt, ['rev-parse', '--short=7', 'HEAD'])
     return { path: wt, baseCommit: ref.stdout.trim().slice(0, 7), origem, head: head.stdout.trim(), divergida }
   })
+}
+
+async function excluirLinkDeDependencias(wt: string): Promise<void> {
+  const comum = (await runGit(wt, ['rev-parse', '--path-format=absolute', '--git-common-dir'])).stdout.trim()
+  if (!comum) return
+  const arquivo = join(comum, 'info', 'exclude')
+  const atual = existsSync(arquivo) ? readFileSync(arquivo, 'utf8') : ''
+  if (atual.split(/\r?\n/).includes('/node_modules')) return
+  mkdirSync(join(comum, 'info'), { recursive: true })
+  writeFileSync(arquivo, `${atual}${atual && !atual.endsWith('\n') ? '\n' : ''}/node_modules\n`)
 }
 
 export async function worktreeOnBranch(wt: string, branch: string): Promise<boolean> {
