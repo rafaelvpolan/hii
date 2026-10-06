@@ -32,6 +32,14 @@ A escolha humana também fica em `ia_escolhida_<papel>`. Parada por falha e fim 
 
 Erro de uso de ferramenta (argumento a mais, `old_text` ambíguo, validação que falhou) volta ao modelo como resposta da ferramenta, sem alterar nada, para ele corrigir a chamada. Erro de segurança (caminho fora do workspace, modo somente leitura) continua encerrando a execução. Em modo de edição, a resposta final só vale depois de pelo menos um `replace_text` aplicado. Sem isso o motor cobra o modelo uma vez e, se ele de novo só descrever a chamada em texto, a execução falha com "nenhuma edicao foi comprovada" em vez de concluir sem mudar nada.
 
+## Prova de mudança e retomada
+
+O gateway compara o estado do checkout antes e depois da chamada, fora de `.hii/` e `node_modules`. Se a IA responde sucesso sem mudar nenhum arquivo, a tarefa para com instrução de ajustar o pedido ou trocar a IA, em vez de concluir. Vale para qualquer IA, inclusive Claude e Codex rodando sobre Ollama.
+
+Paradas do fechamento retomam no fechamento: push recusado no preflight, orçamento estourado antes do polimento e PR que não abriu depois do push gravam `retomar_em: URL_OK`. A identidade do pacote ignora a memória do projeto, que outras tarefas escrevem ao abrir PR; mudança de regra, prompt, IA ou contrato continua pedindo nova aprovação.
+
+O link de `node_modules` que o motor cria no worktree entra no `info/exclude` local do repositório, então não aparece como alteração na evidência nem na certificação da entrega. Se o checkout não tem dependências instaladas, a parada por critério diz que a ferramenta do projeto está ausente.
+
 ## Pastas por IA no projeto-alvo
 
 `hii init` cria `.hii/memory/` e `.hii/ia/<ia>/{agents,skills}` para claude, codex e ollama. Papel em `.hii/ia/<ia>/agents/` vence o catálogo do motor quando aquela IA executa. `hii projetar <repo> claude` grava o bloco gerenciado do `CLAUDE.md` a partir de `.hii/rules.md` e copia papéis e skills para `.claude/agents` e `.claude/skills`, preservando arquivo humano diferente.
