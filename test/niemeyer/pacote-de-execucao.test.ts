@@ -165,3 +165,18 @@ test('a aprovacao anterior ao brainstorm retoma a fase de origem sem pular para 
   expect(responder(id, '1').retomou).toBe(true)
   expect(readCard(id)?.fm.status).toBe('READY')
 })
+
+test('memoria escrita por outra tarefa nao devolve para aprovacao uma tarefa ja aprovada', () => {
+  const id = tarefa('memoria de outra tarefa')
+  liberarPeloPacote(id)
+  expect(responder(id, '1').retomou).toBe(true)
+  const memoria = join(BASE, 'projeto', '.hii', 'memory')
+  mkdirSync(memoria, { recursive: true })
+  const arquivo = join(memoria, 'decisoes.md')
+  try {
+    writeFileSync(arquivo, '#999 "outra tarefa" -> PR aberto (https://exemplo/pr/1)\n')
+    expect(liberarPeloPacote(id)).toBe(true)
+    expect(readCard(id)?.fm.status).toBe('EXECUTING')
+    expect(montarPacote(readCard(id)!).prompt).toContain('#999 "outra tarefa"')
+  } finally { rmSync(memoria, { recursive: true, force: true }) }
+})
