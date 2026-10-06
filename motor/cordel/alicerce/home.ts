@@ -90,8 +90,18 @@ export function initHicodeHome(repo: string): string[] {
   for (const [f, content] of files) {
     if (temLinkNoDestino(repo, f)) throw new Error('arquivo gerenciado do projeto nao pode ser link simbolico: ' + f)
     if (!existsSync(f)) { writeFileSync(f, content); created.push(f) }
+    else if (f === join(home, '.gitignore') && completarIgnorados(f, content)) created.push(`${f} (regras novas)`)
   }
   return created
+}
+
+function completarIgnorados(arquivo: string, esperado: string): boolean {
+  const atual = readFileSync(arquivo, 'utf8')
+  const presentes = new Set(atual.split(/\r?\n/).map(l => l.trim()))
+  const faltando = esperado.split('\n').filter(l => l && !presentes.has(l))
+  if (!faltando.length) return false
+  writeFileSync(arquivo, `${atual}${atual.endsWith('\n') || !atual ? '' : '\n'}${faltando.join('\n')}\n`)
+  return true
 }
 
 export function arquivosIniciaisDoHome(): Array<[string, string]> {
