@@ -9,7 +9,7 @@ import { linhasParaOPr, normalizarPergunta } from './perguntas-do-crivo.ts'
 import type { PerguntaDoCrivo } from './perguntas-do-crivo.ts'
 import { patchCard, readCard } from '../../cordel/store.ts'
 import { providerFor, modelFor } from '../../tomada/registro.ts'
-import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
+import { roteamentoDaEtapa } from '../../tomada/etapa.ts'
 import { esforcoGovernado, modeloGovernado } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
@@ -257,7 +257,8 @@ async function gateReviewInterno(wt: string, base: string, desc: string, working
   if (!diff.names.trim()) {
     return { ok: true, verdict: 'APPROVED', reason: 'sem mudancas vs a base', criterio: '', questions: [], cost: 0, costMeasured: true, tokens: 0 }
   }
-  const overrideDoGate = readCard(id)?.fm[campoDeOverrideDoPapel('gate')] || undefined
+  const cardDoGate = readCard(id)
+  const overrideDoGate = cardDoGate ? roteamentoDaEtapa(cardDoGate, 'gate') : undefined
   const provider = providerFor('gate', overrideDoGate)
   const todasAsReferencias = referenciasDoCard(id)
   const referencias = todasAsReferencias.slice(0, MAX_REFERENCIAS_NA_COMPARACAO)

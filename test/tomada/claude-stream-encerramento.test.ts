@@ -16,6 +16,23 @@ beforeEach(() => {
 })
 afterEach(() => { process.env = env; rmSync(base, { recursive: true, force: true }) })
 
+test('eventos de ferramentas correlacionam inicio e fim sem publicar argumentos ou resultados', async () => {
+  const linhas = [
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', id: 'uso-1', input: { file_path: 'segredo.txt' } }] } },
+    { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'uso-1', content: 'conteudo privado' }] } },
+    { type: 'result', result: 'concluido', total_cost_usd: 0 },
+  ].map(e => JSON.stringify(e))
+  writeFileSync(join(base, 'bin', 'claude'), `#!/bin/sh\nprintf '%s\\n' ${linhas.map(l => `'${l}'`).join(' ')}\n`, { mode: 0o755 })
+  const eventos: string[] = []
+  const resultado = await new ClaudeProvider().run({ prompt: 'teste', cwd: base, dirs: [base], mode: 'edit', useAgents: false,
+    timeoutMs: 3000, liveLog: join(base, 'chamada.log'), aoEvento: e => eventos.push(JSON.stringify(e)) })
+  expect(resultado.ok).toBe(true)
+  expect(eventos).toEqual([
+    JSON.stringify({ tipo: 'ferramenta_inicio', ferramenta: 'Read' }),
+    JSON.stringify({ tipo: 'ferramenta_fim', ferramenta: 'Read' }),
+  ])
+})
+
 for (const caso of [
   { nome: 'exit 1 sem result', script: 'echo authentication failed >&2; exit 1', fim: 'falhou', detalhe: 'authentication failed' },
   { nome: 'exit 0 sem result', script: 'echo stream incompleto; exit 0', fim: 'falhou', detalhe: 'sem evento result' },

@@ -36,7 +36,8 @@ function pedido(): AgentRequest {
 }
 
 test('Codex grava eventos no live.log antes de a execucao terminar e a tela os enxerga', async () => {
-  const promessa = new CodexProvider().run(pedido())
+  const eventos: string[] = []
+  const promessa = new CodexProvider().run({ ...pedido(), aoEvento: e => eventos.push(JSON.stringify(e)) })
   let durante = ''
   for (let i = 0; i < 20; i++) {
     durante = readFileSync(log, 'utf8')
@@ -52,6 +53,7 @@ test('Codex grava eventos no live.log antes de a execucao terminar e a tela os e
 
   const resultado = await promessa
   expect(resultado.ok).toBe(true)
+  expect(eventos).toEqual([JSON.stringify({ tipo: 'ferramenta_fim', ferramenta: 'command_execution' })])
   const final = readFileSync(log, 'utf8')
   expect(final).toContain('— concluido —')
   expect(renderExecucao(parseLog(final), { color: false, largura: 80 })).toContain('● Bash(npm test)')

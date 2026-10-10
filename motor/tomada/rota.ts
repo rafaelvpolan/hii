@@ -57,6 +57,7 @@ export interface CandidatoDeRota {
   emitsStructuredJson?: boolean
   reportsCostUsd?: boolean
   reportsTokens?: boolean
+  mcp?: boolean
   preservaContexto?: boolean
   qualidade?: number
   custoRelativo?: number
@@ -124,6 +125,7 @@ export function consultaReal(): ConsultaDeRota {
         emitsStructuredJson: caps.emitsStructuredJson,
         reportsCostUsd: caps.reportsCostUsd,
         reportsTokens: caps.reportsTokens,
+        mcp: caps.mcp,
       }
     },
   }

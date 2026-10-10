@@ -18,6 +18,7 @@ export const TIPOS_DE_EVENTO = [
   'repair_attempt',
   'human_checkpoint',
   'model_tier_selected',
+  'step_route_selected',
   'efeito_registrado',
   'orfao',
   'card_fechado',

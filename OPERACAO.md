@@ -796,6 +796,7 @@ do manual (e uma documentada que nada lia); esta seção fecha essa porta.
 | `HII_SHUTDOWN_TIMEOUT_MS` | `30_000` | — | `motor/oswaldo/mutirao/encerramento.ts` |
 | `HII_SKILLS_DIR` | — | motor | `motor/cordel/alicerce/contrato.ts` |
 | `HII_STEP_PROVIDER` | — | — | `motor/tomada/registro.ts` |
+| `HII_STEP_ROUTING_CONFIG` | — | — | `motor/tomada/etapa.ts` |
 | `HII_TASK_SYNC` | `'none'` | — | `bin/hii.ts`, `motor/euclides/radar/doctor.ts`, `motor/tomada/ponte/tarefas/registro.ts` |
 | `HII_TEST_JOBS` | `0` | — | `scripts/test-bun.mjs` |
 | `HII_TEST_TIMEOUT_MS` | `0` | — | `scripts/test-bun.mjs` |

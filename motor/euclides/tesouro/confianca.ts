@@ -1,4 +1,5 @@
 import { registrarExecucaoDoProjeto } from '../execucoes-do-projeto.ts'
+import { monitorDeTrajetoria } from '../../ciclo/trajetoria.ts'
 import { repoPath, repoRegistered } from '../../cordel/store.ts'
 import { consumoDoCard, motivoDeOrcamentoExcedido, tetoDoCard } from './orcamento.ts'
 import { redigirDiagnostico } from '../../tomada/diagnostico.ts'
@@ -202,6 +203,15 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       saidaIncremental: provider.saidaIncremental?.(req) ?? false })
   atualizar(atividade, a => { a.subsessao = sub || null; a.microtask = req.microtask || fm?.microtask_atual || null; a.planoRevisao = fm?.plano_revisao ? Number(fm.plano_revisao) : null })
   let terminou = false
+  const trajetoria = monitorDeTrajetoria()
+  let inspecao: ReturnType<typeof setTimeout> | undefined
+  const inspecionar = (): void => {
+    const saude = trajetoria.inspecionar()
+    atualizar(atividade, a => { a.detalhes.trajectoryHealth = JSON.stringify(saude) })
+    inspecao = setTimeout(inspecionar, saude.proximaInspecaoMs)
+    inspecao.unref()
+  }
+  inspecionar()
   let liberarInferencia = (): void => {}
   const pulso = setInterval(() => heartbeat(atividade), 15000)
   pulso.unref()
@@ -242,6 +252,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
         try { req.aoEmitir?.(canal, texto) } catch { /* observador isolado */ }
       },
       aoEvento: evento => {
+        trajetoria.evento(evento)
         atualizar(atividade, a => {
           a.etapa = evento.tipo
           a.detalhes.progresso = 'evento confirmado pelo harness'
@@ -280,6 +291,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
       const tokensReportados = provider.capabilities().reportsTokens && sumTokens(res.usage) > 0
       a.metricas.tokens = { valor: tokensReportados ? sumTokens(res.usage) : null, qualidade: tokensReportados ? 'measured' : 'unknown', fonte: provider.name, instante }
       a.detalhes.timeout = res.timedOut
+      a.detalhes.trajectoryHealth = JSON.stringify(trajetoria.inspecionar())
     })
     const paradaHumana = id && readCard(id)?.fm.halt_class === 'humano'
     atualizar(atividade, a => { a.etapa = 'termino'; a.detalhes.ultimoEvento = paradaHumana ? 'cancelamento' : 'termino' })
@@ -296,6 +308,7 @@ export async function runProvider(id: string, provider: Harness, req: AgentReque
     liberarInferencia()
     descarregar()
     clearInterval(pulso)
+    if (inspecao) clearTimeout(inspecao)
     if (!terminou) terminar(atividade, 'failed', 'chamada interrompida por excecao; consulte a tarefa')
     if (pidRegistrado) esquecerHarness(id, pidRegistrado)
     if (sub && !concluida) semPropagarFalhaDeRegistro(() => finalizarChamada(sessao, sub, { ok: false, texto: 'chamada interrompida por excecao; resultado nao confirmado' }))
