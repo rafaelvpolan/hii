@@ -98,3 +98,8 @@ Ficam para evolucao experimental: roteador aprendido por resultados historicos,
 intervencao ativa/replacement, geracao automatica de testes adversariais,
 reutilizacao entre planos diferentes e migracao de versao MCP. A primeira
 versao usa politicas explicitas e preserva os mecanismos existentes de prova.
+
+## Radar tecnico semanal
+
+O [guia do radar](radar-tecnico.md) vincula a pesquisa semanal ao estado do
+repositorio, aos PRs e aos criterios de experimentacao do motor.
