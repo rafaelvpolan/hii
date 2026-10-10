@@ -218,6 +218,10 @@ export class CodexProvider implements Harness {
     const emitir = (linha: string): void => {
       try {
         const e = JSON.parse(linha) as CodexEvent
+        if ((e.type === 'item.started' || e.type === 'item.completed') && e.item?.type
+          && ['command_execution', 'file_change', 'mcp_tool_call', 'web_search'].includes(e.item.type)) {
+          try { req.aoEvento?.({ tipo: e.type === 'item.started' ? 'ferramenta_inicio' : 'ferramenta_fim', ferramenta: e.item.type }) } catch { /* observador isolado */ }
+        }
         if (e.type === 'item.completed' && e.item?.type === 'agent_message' && e.item.text) req.aoEmitir?.('assistant', e.item.text)
         if (e.type === 'error' || e.type === 'turn.failed') req.aoEmitir?.('error', e.message || e.error?.message || 'falha do Codex')
       } catch { /* JSON parcial ou nao publico */ }

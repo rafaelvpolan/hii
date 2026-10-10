@@ -1,0 +1,17 @@
+{
+  "versao": 1,
+  "rotas": [
+    { "papel": "implement", "dificuldade": "simples", "provedores": ["kimi", "codex", "claude"] },
+    { "papel": "implement", "dificuldade": "padrao", "provedores": ["codex", "claude", "kimi"] },
+    { "papel": "implement", "dificuldade": "complexa", "provedores": ["claude", "codex"] },
+    { "papel": "step", "dificuldade": "simples", "provedores": ["kimi", "codex"] },
+    { "papel": "step", "dificuldade": "padrao", "provedores": ["codex", "claude"] },
+    { "papel": "step", "dificuldade": "complexa", "provedores": ["claude", "codex"] },
+    { "papel": "verify", "dificuldade": "simples", "provedores": ["codex", "claude"] },
+    { "papel": "verify", "dificuldade": "padrao", "provedores": ["codex", "claude"] },
+    { "papel": "verify", "dificuldade": "complexa", "provedores": ["claude", "codex"] },
+    { "papel": "gate", "dificuldade": "simples", "provedores": ["codex", "claude"] },
+    { "papel": "gate", "dificuldade": "padrao", "provedores": ["codex", "claude"] },
+    { "papel": "gate", "dificuldade": "complexa", "provedores": ["codex", "claude"] }
+  ]
+}

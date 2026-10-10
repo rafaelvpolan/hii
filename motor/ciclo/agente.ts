@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { roteamentoDaEtapa } from '../tomada/etapa.ts'
 import { objetivoComInstrucoes } from '../mirante/instruir.ts'
 import { existsSync } from 'node:fs'
 import { lerEscopo, SEM_ESCOPO } from '../oswaldo/rota/escopo.ts'
@@ -15,7 +16,6 @@ import { agentesNexusPor } from '../agentes/registro.ts'
 import type { AgenteInjetado } from '../agentes/registro.ts'
 import { readProjectRules } from '../cordel/alicerce/home.ts'
 import { readCard, repoPath } from '../cordel/store.ts'
-import { campoDeOverrideDoPapel } from '../tomada/rota.ts'
 import { runProvider } from '../euclides/tesouro/confianca.ts'
 import { markProviderSubstituted } from '../tomada/confianca.ts'
 import { readProjectMemory } from '../cascudo/memoria.ts'
@@ -124,7 +124,7 @@ export function escopoDoCard(card: Card, workdir: string): EscopoDeEscrita {
 export async function implement(card: Card, workdir: string, feedback = '', visual = false): Promise<ImplementResult> {
   const desc = objetivoComInstrucoes(card.body, card.fm.title ?? '')
   const id = card.fm.id ?? ''
-  const override = card.fm.provider_override_implement || undefined
+  const override = roteamentoDaEtapa(card, 'implement', feedback, visual, lerAcaoExterna(card.fm.title ?? '', desc).externo)
   const provider = providerFor('implement', override)
   const model = card.fm.orq_modelo || modelFor('implement', override)
   if (override && !isProviderName(override)) markProviderSubstituted(id, override, provider.name)
@@ -258,7 +258,8 @@ function stepPrompt(agenteInjetado: boolean, wt: string, agent: string, instruct
 // escopo que valesse so para o implementador seria escopo pela metade.
 export async function runStep(wt: string, agent: string, instruction: string, id: string, repo: string, packs: readonly string[] = [], escopo: EscopoDeEscrita = SEM_ESCOPO): Promise<StepResult> {
   const t = Date.now()
-  const overrideDoPasso = readCard(id)?.fm[campoDeOverrideDoPapel('step')] || undefined
+  const cardDoPasso = readCard(id)
+  const overrideDoPasso = cardDoPasso ? roteamentoDaEtapa({ ...cardDoPasso, fm: { ...cardDoPasso.fm, title: agent }, body: instruction }, 'step') : undefined
   const provider = providerFor('step', overrideDoPasso)
   if (!provider.agentic) return { time: 0, cost: 0, costMeasured: true, tokens: 0, ok: false, text: `provider ${provider.name} nao-agentico — step "${agent}" NAO executou (use claude/codex para steps que editam)`, failureClass: 'terminal', failureReason: 'provider configurado nao edita arquivos', provider: provider.name }
   const navegacao = await navegacaoSemantica()

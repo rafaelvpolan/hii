@@ -35,6 +35,7 @@ export interface GatilhoDeSkill {
 }
 
 export interface Skill {
+  readonly estado?: 'trial' | 'active' | 'stable' | 'retired'
   readonly id: string
   readonly pack: string
   readonly origem: string
@@ -76,6 +77,8 @@ function ehPapel(v: string): v is PapelDeSkill {
 export function lerSkill(texto: string, arquivo: string, pack: string, origem: string): Skill {
   const { campos, corpo } = lerFrontmatter(texto, arquivo)
   const id = campos.id ?? ''
+  const estado = campos.estado ?? 'stable'
+  if (!['trial', 'active', 'stable', 'retired'].includes(estado)) throw new Error(`${arquivo}: estado de skill invalido`)
   if (!id) throw new Error(`${arquivo}: skill sem id`)
   if (!corpo) throw new Error(`${arquivo}: skill "${id}" sem corpo de instrucao — frontmatter sozinho nao ensina nada`)
 
@@ -94,7 +97,7 @@ export function lerSkill(texto: string, arquivo: string, pack: string, origem: s
   }
   const achados = auditarTexto(corpo, arquivo)
   if (achados.length) throw new Error(relatoDaAuditoria(achados))
-  return { id, pack, origem, papeis: papeis as PapelDeSkill[], gatilho, instrucoes: corpo, arquivo }
+  return { id, pack, origem, papeis: papeis as PapelDeSkill[], gatilho, instrucoes: corpo, arquivo, estado: estado as Skill['estado'] }
 }
 
 function varrerPack(raiz: string, pack: string, origem: string): Skill[] {
@@ -168,7 +171,10 @@ export function fundirOrigens(base: string = diretorioDeSkills(), ordem: readonl
   const vistas = new Map<string, string[]>()
   const porOrigem: Record<string, number> = {}
   for (const origem of ordem) {
+    const idsDaOrigem = new Set<string>()
     for (const s of varrerOrigem(base, origem)) {
+      if (idsDaOrigem.has(s.id)) throw new Error(`skill duplicada na origem ${origem}: ${s.id}`)
+      idsDaOrigem.add(s.id)
       vistas.set(s.id, [...(vistas.get(s.id) ?? []), origem])
       if (!escolhida.has(s.id)) {
         escolhida.set(s.id, s)
@@ -183,6 +189,7 @@ export function fundirOrigens(base: string = diretorioDeSkills(), ordem: readonl
 }
 
 export interface ContextoDeGatilho {
+  readonly experimentarSkills?: boolean
   readonly arquivos: readonly string[]
   readonly deps: readonly string[]
   // Packs declarados no card, pelo item 16. O gatilho por arquivo e dependencia
@@ -206,7 +213,14 @@ export function gatilhoBate(g: GatilhoDeSkill, ctx: ContextoDeGatilho): boolean 
 // o trabalho comeca.
 export function skillsPara(papel: PapelDeSkill, ctx: ContextoDeGatilho, acervo: readonly Skill[] = carregarAcervo()): Skill[] {
   const declarados = ctx.packs ?? []
-  return acervo.filter(s => s.papeis.includes(papel) && (gatilhoBate(s.gatilho, ctx) || declarados.includes(s.pack)))
+  const escolhidas = acervo.filter(s => s.estado !== 'retired' && (s.estado !== 'trial' || ctx.experimentarSkills)
+    && s.papeis.includes(papel) && (gatilhoBate(s.gatilho, ctx) || declarados.includes(s.pack)))
+  const ids = new Set<string>()
+  for (const s of escolhidas) {
+    if (ids.has(s.id)) throw new Error(`skills selecionadas com id duplicado: ${s.id}`)
+    ids.add(s.id)
+  }
+  return escolhidas
 }
 
 export function renderizarSkills(skills: readonly Skill[]): string {
@@ -214,7 +228,7 @@ export function renderizarSkills(skills: readonly Skill[]): string {
   const escopo = escopoAtual()
   if (escopo) for (const s of skills) {
     const id = iniciar(escopo, { ...recurso(s.id, 'skill', s.origem), versao: createHash('sha256').update(s.instrucoes).digest('hex') },
-      { estadoDoConteudo: 'loaded', evidencia: 'conteudo incluido no prompt pelo renderizador', consumidor: s.papeis.join(','), pack: s.pack, gatilho: JSON.stringify(s.gatilho), processo: false })
+      { estadoDoConteudo: 'loaded', cicloDeVida: s.estado ?? 'stable', evidencia: 'conteudo incluido no prompt pelo renderizador', consumidor: s.papeis.join(','), pack: s.pack, gatilho: JSON.stringify(s.gatilho), processo: false })
     terminar(id, 'succeeded', 'carregamento de instrucoes; nao e processo nem prova de obediencia do modelo')
   }
   const blocos = skills.map(s => `### skill: ${s.id} (${s.pack})\n${s.instrucoes}`)

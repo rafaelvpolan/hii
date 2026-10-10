@@ -3,7 +3,7 @@ import type { Card, Fields } from '../../cordel/index.ts'
 import { ROOT, GATE_DIFF_LIMIT } from '../../cordel/alicerce/config.ts'
 import { runGit } from '../../quilombo/git.ts'
 import { modelFor, providerFor } from '../../tomada/registro.ts'
-import { campoDeOverrideDoPapel } from '../../tomada/rota.ts'
+import { roteamentoDaEtapa } from '../../tomada/etapa.ts'
 import { esforcoGovernado, modeloGovernado, registrarTier, tierDaAcaoDoCard } from '../../oswaldo/rui.ts'
 import { runProvider } from '../../euclides/tesouro/confianca.ts'
 import { sumTokens } from '../../tomada/uso.ts'
@@ -19,7 +19,7 @@ export interface EvalResult {
 export async function evaluate(card: Card, wt: string, base: string): Promise<EvalResult> {
   const desc = extractObjetivo(card.body) || card.fm.title || ''
   const diff = (await runGit(wt, ['diff', `origin/${base}`, '--', '.', ':!node_modules'])).stdout.slice(0, GATE_DIFF_LIMIT)
-  const overrideDoVerify = card.fm[campoDeOverrideDoPapel('verify')] || undefined
+  const overrideDoVerify = roteamentoDaEtapa(card, 'verify')
   const provider = providerFor('verify', overrideDoVerify)
   const prompt = [
     'Voce e um avaliador de qualidade de codigo. Dada a TAREFA e o DIFF abaixo, avalie o quanto o diff cumpre a tarefa e com que qualidade.',

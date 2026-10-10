@@ -180,6 +180,12 @@ export function runClaudeStream(req: AgentRequest, liveLog: string, ambiente: No
         // O CLI pode emitir `result` mais de uma vez na mesma chamada (visto no card
         // 007: duas linhas de conclusao identicas). So a primeira fecha o bloco.
         if (ev.type === 'result' && gotResult) return
+        if (ev.type === 'assistant' || ev.type === 'user') for (const c of ev.message?.content ?? []) {
+          const nome = c.type === 'tool_use' ? c.name : c.type === 'tool_result' && c.tool_use_id ? ferramentasEmVoo.get(c.tool_use_id) : undefined
+          if (nome) {
+            try { req.aoEvento?.({ tipo: c.type === 'tool_use' ? 'ferramenta_inicio' : 'ferramenta_fim', ferramenta: nome }) } catch { /* observador isolado */ }
+          }
+        }
         const human = renderEvent(ev, ferramentasEmVoo)
         if (human) write(semControle(human) + '\n')
         if (ev.type === 'assistant' && ev.message?.content) {
