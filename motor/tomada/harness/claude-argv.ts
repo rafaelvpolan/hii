@@ -1,6 +1,8 @@
 import type { AgentRequest } from '../tipos.ts'
 import { resolverModo } from '../modo-puro.ts'
 import type { CatalogoDeModo } from '../tipos.ts'
+import { argumentosDaPasta } from './pasta-do-claude.ts'
+import type { OpcoesDaPasta } from './pasta-do-claude.ts'
 
 export const CLAUDE_MODOS: CatalogoDeModo = { modos: ['default', 'acceptEdits', 'plan'], padrao: 'acceptEdits' }
 
@@ -32,7 +34,7 @@ function permissaoArgv(modo: string | undefined): string[] {
   return escolhido === 'default' ? [] : ['--permission-mode', escolhido]
 }
 
-export function claudeArgv(req: AgentRequest, formato: string[] = FORMATO_JSON): string[] {
+export function claudeArgv(req: AgentRequest, formato: string[] = FORMATO_JSON, opcoes: OpcoesDaPasta = {}): string[] {
   const a = ['-p', req.prompt, ...formato]
   if (req.maxBudgetUsd !== undefined && Number.isFinite(req.maxBudgetUsd) && req.maxBudgetUsd > 0) a.push('--max-budget-usd', String(req.maxBudgetUsd))
   if (req.model) a.push('--model', req.model)
@@ -40,6 +42,7 @@ export function claudeArgv(req: AgentRequest, formato: string[] = FORMATO_JSON):
   if (req.mode === 'edit') a.push(...permissaoArgv(req.modo), '--allowedTools', toolsFor(req))
   else a.push('--allowedTools', toolsFor(req))
   a.push(...agentsArgv(req))
+  a.push(...argumentosDaPasta(req, opcoes))
   for (const d of req.dirs) a.push('--add-dir', d)
   return a
 }

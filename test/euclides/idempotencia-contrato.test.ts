@@ -104,6 +104,7 @@ const LEITURAS_DECLARADAS: readonly string[] = [
   "'issue', 'list'",
   "'api', '--method', 'GET'",
   "'pr', 'view'",
+  "'pr', 'diff'",
 ]
 
 // Qualquer forma de chamar o binario `gh`, com o nome como primeiro argumento ou

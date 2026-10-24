@@ -22,10 +22,6 @@ export function configuradoOllama(_cli: 'claude' | 'codex'): boolean {
   try { return !!baseOllamaLocal() } catch { return false }
 }
 
-export function argumentosClaudeOllama(): string[] {
-  return ['--setting-sources', 'project,local', '--settings', JSON.stringify({ env: ambienteClaudeOllama() })]
-}
-
 interface ModeloLocal { name?: string; model?: string; size?: number; capabilities?: string[] }
 interface CatalogoLocal { models?: ModeloLocal[] }
 

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git push:*)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr create:*)",
+      "Bash(rm -rf /*)",
+      "Bash(npm publish *)",
+      "Read(~/.claude/.credentials.json)",
+      "Bash(*.credentials.json*)"
+    ]
+  }
+}

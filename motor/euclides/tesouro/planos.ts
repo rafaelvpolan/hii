@@ -34,8 +34,95 @@ interface ClaudeConfig {
   }
 }
 
-function arquivoDoClaude(): string {
+export function arquivoDoClaude(): string {
   return process.env.HII_CLAUDE_CONFIG || join(homedir(), '.claude.json')
+}
+
+type ValorJson = null | boolean | number | string | ValorJson[] | { [chave: string]: ValorJson }
+
+// Lista branca do que vai para o --mcp-config. Servidor com headers ou oauth nao
+// vira definicao: fica em `recusados`, e o Claude do motor cai no modo conta em
+// vez de rodar sem a credencial ou leva-la para o argv.
+export interface DefinicaoDeServidorMcp {
+  type?: string
+  command?: string
+  args?: string[]
+  env?: Record<string, string>
+  url?: string
+}
+
+export interface ServidoresMcpDoClaude {
+  readonly definicoes: Readonly<Record<string, DefinicaoDeServidorMcp>>
+  // Nome do servidor -> por que ele nao virou definicao (autenticacao).
+  readonly recusados: Readonly<Record<string, string>>
+  // Vazio = config lida. Preenchido = ausente ou ilegivel, e este e o motivo.
+  readonly falhou: string
+}
+
+const CAMPOS_DE_AUTENTICACAO = ['headers', 'oauth'] as const
+
+function autenticacaoDe(v: ValorJson | undefined): string {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return ''
+  const servidor: { [chave: string]: ValorJson } = v
+  return CAMPOS_DE_AUTENTICACAO.filter(campo => servidor[campo] !== undefined).join(' e ')
+}
+
+function definicaoDe(v: ValorJson | undefined): DefinicaoDeServidorMcp | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
+  if (autenticacaoDe(v)) return null
+  const d: DefinicaoDeServidorMcp = {}
+  for (const campo of ['type', 'command', 'url'] as const) {
+    const valor = v[campo]
+    if (valor === undefined) continue
+    if (typeof valor !== 'string') return null
+    d[campo] = valor
+  }
+  const args = v.args
+  if (args !== undefined) {
+    if (!Array.isArray(args)) return null
+    const textos = args.filter((a): a is string => typeof a === 'string')
+    if (textos.length !== args.length) return null
+    d.args = textos
+  }
+  const env = v.env
+  if (env !== undefined) {
+    if (!env || typeof env !== 'object' || Array.isArray(env)) return null
+    const pares: Record<string, string> = {}
+    for (const [k, valor] of Object.entries(env)) {
+      if (typeof valor !== 'string') return null
+      pares[k] = valor
+    }
+    d.env = pares
+  }
+  return d.command || d.url ? d : null
+}
+
+function lerServidoresMcp(caminho: string): ServidoresMcpDoClaude {
+  if (!existsSync(caminho)) return { definicoes: {}, recusados: {}, falhou: `${caminho} nao existe` }
+  let bruto: { [chave: string]: ValorJson }
+  try {
+    bruto = JSON.parse(readFileSync(caminho, 'utf8')) as { [chave: string]: ValorJson }
+  } catch (e) {
+    return { definicoes: {}, recusados: {}, falhou: `${caminho} ilegivel (${String((e as Error).message)})` }
+  }
+  const servidores = bruto?.mcpServers
+  const definicoes: Record<string, DefinicaoDeServidorMcp> = {}
+  const recusados: Record<string, string> = {}
+  if (servidores && typeof servidores === 'object' && !Array.isArray(servidores)) {
+    for (const [nome, v] of Object.entries(servidores)) {
+      const autenticacao = autenticacaoDe(v)
+      if (autenticacao) { recusados[nome] = `autenticado por ${autenticacao}`; continue }
+      const d = definicaoDe(v)
+      if (d) definicoes[nome] = d
+    }
+  }
+  return { definicoes, recusados, falhou: '' }
+}
+
+const lerServidoresDoClaude = memoArquivo(caminho => caminho, lerServidoresMcp)
+
+export function servidoresMcpDoClaude(): ServidoresMcpDoClaude {
+  return lerServidoresDoClaude(arquivoDoClaude())
 }
 
 export function claudeAutenticado(): boolean {

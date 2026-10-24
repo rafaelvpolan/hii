@@ -1,5 +1,13 @@
 export type EstadoServidor = 'conectado' | 'precisa-auth' | 'desconhecido'
 
+export const MCP_PREFIX = 'mcp__'
+
+// Mora aqui, e nao em mcp.ts, porque este arquivo nao importa nada: a pasta do
+// Claude usa o prefixo sem puxar o registro de harness para dentro do argv.
+export function prefixoDe(servidor: string): string {
+  return `${MCP_PREFIX}${servidor.replace(/[^a-zA-Z0-9]+/g, '_')}`
+}
+
 export interface ServidorMcp {
   nome: string
   estado: EstadoServidor

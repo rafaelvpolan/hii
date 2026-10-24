@@ -9,6 +9,7 @@ import { AcumuladorDeLinhas, cabecalhoDaChamada, carimboAgora, comRaia } from '.
 import { COST_UNKNOWN, readReportedCost } from '../../euclides/tesouro/custo.ts'
 import type { CostReading } from '../../euclides/tesouro/custo.ts'
 import type { AgentRequest, AgentResult } from '../tipos.ts'
+import type { OpcoesDaPasta } from './pasta-do-claude.ts'
 import type { Usage } from '../../cordel/index.ts'
 
 const NONINTERACTIVE_ENV: Record<string, string> = {
@@ -110,8 +111,8 @@ export function renderEvent(ev: StreamEvent, ferramentasEmVoo: Map<string, strin
   return ''
 }
 
-function argvStream(req: AgentRequest): string[] {
-  return claudeArgv(req, FORMATO_STREAM)
+function argvStream(req: AgentRequest, opcoes: OpcoesDaPasta): string[] {
+  return claudeArgv(req, FORMATO_STREAM, opcoes)
 }
 
 const LOG_MAX = Number(process.env.HII_LIVELOG_MAX_BYTES || 1_000_000)
@@ -127,7 +128,7 @@ function podarLog(caminho: string): void {
   }
 }
 
-export function runClaudeStream(req: AgentRequest, liveLog: string, ambiente: NodeJS.ProcessEnv = {}, argumentos: string[] = []): Promise<AgentResult> {
+export function runClaudeStream(req: AgentRequest, liveLog: string, ambiente: NodeJS.ProcessEnv = {}, opcoes: OpcoesDaPasta = {}): Promise<AgentResult> {
   const dir = dirname(liveLog)
   if (!existsSync(dir)) { try { mkdirSync(dir, { recursive: true }) } catch { void 0 } }
   podarLog(liveLog)
@@ -149,7 +150,7 @@ export function runClaudeStream(req: AgentRequest, liveLog: string, ambiente: No
     let timedOut = false
     let hard: ReturnType<typeof setTimeout> | null = null
 
-    const child = spawn('claude', [...argvStream(req), ...argumentos], { cwd: req.cwd, env: { ...process.env, ...NONINTERACTIVE_ENV, ...ambiente }, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn('claude', argvStream(req, opcoes), { cwd: req.cwd, env: { ...process.env, ...NONINTERACTIVE_ENV, ...ambiente }, stdio: ['ignore', 'pipe', 'pipe'] })
     if (child.pid) req.aoIniciar?.(child.pid)
 
     const soft = setTimeout(() => {

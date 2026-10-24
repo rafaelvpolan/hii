@@ -1,7 +1,9 @@
 import { projetarParaClaude } from '../../cordel/alicerce/pastas-por-ia.ts'
 import { OllamaProvider } from './ollama.ts'
-import { ambienteClaudeOllama, argumentosClaudeOllama, baseOllamaLocal, configuradoOllama, modeloOllama, recusaDoModeloLocal } from './backend-ollama.ts'
-import { claudeArgv, CLAUDE_MODOS } from './claude-argv.ts'
+import { ambienteClaudeOllama, baseOllamaLocal, configuradoOllama, modeloOllama, recusaDoModeloLocal } from './backend-ollama.ts'
+import { claudeArgv, CLAUDE_MODOS, FORMATO_JSON } from './claude-argv.ts'
+import { versaoDaPasta as versaoDaPastaDoClaude } from './pasta-do-claude.ts'
+import type { OpcoesDaPasta } from './pasta-do-claude.ts'
 import { claudeAutenticado, planoDoClaude, planoLocal } from '../../euclides/tesouro/planos.ts'
 export { agentsArgv, claudeArgv, toolsFor } from './claude-argv.ts'
 import { run } from '../../quilombo/git.ts'
@@ -89,6 +91,7 @@ export class ClaudeProvider implements Harness {
   capabilities(): HarnessCapabilities { return this.ollama ? { ...CLAUDE_CAPACIDADES, reportsCostUsd: false, acceptsEffort: false } : CLAUDE_CAPACIDADES }
   healthCheck(): Promise<boolean> { return cliSaudavel(this.binario, this.ollama ? baseOllamaLocal() + '/api/tags' : URL_DA_API) }
   sinaisDeFalha(): SinaisDoHarness { return CLAUDE_SINAIS }
+  versaoDaPasta(): string { return versaoDaPastaDoClaude() }
 
   async run(req: AgentRequest): Promise<AgentResult> {
     if (this.ollama) {
@@ -96,12 +99,15 @@ export class ClaudeProvider implements Harness {
       if (motivo) return { ok: false, failed: true, timedOut: false, isError: false, detail: motivo, text: '', ...COST_UNKNOWN, usage: emptyUsage() }
     }
     const ambiente = this.ollama ? ambienteClaudeOllama() : {}
+    // O ambiente do Ollama vai no mesmo --settings da pasta: dois --settings
+    // ou dois --setting-sources, o ultimo venceria em silencio.
+    const opcoes: OpcoesDaPasta = this.ollama ? { env: ambiente } : {}
     if (this.ollama) req = { ...req, model: req.model || modeloOllama('claude'), effort: undefined }
     if (req.liveLog) {
-      const res = await runClaudeStream(req, req.liveLog, ambiente, this.ollama ? argumentosClaudeOllama() : [])
+      const res = await runClaudeStream(req, req.liveLog, ambiente, opcoes)
       return this.ollama ? { ...res, ...COST_UNKNOWN } : res
     }
-    const { err, stdout, stderr } = await run('claude', [...claudeArgv(req), ...(this.ollama ? argumentosClaudeOllama() : [])], { cwd: req.cwd, env: ambiente, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
+    const { err, stdout, stderr } = await run('claude', claudeArgv(req, FORMATO_JSON, opcoes), { cwd: req.cwd, env: ambiente, timeout: req.timeoutMs, aoIniciar: req.aoIniciar })
     let reading: CostReading = COST_UNKNOWN
     let text = ''
     let isError = false

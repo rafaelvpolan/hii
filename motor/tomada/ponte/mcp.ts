@@ -1,14 +1,11 @@
 import { run } from '../../quilombo/git.ts'
-import { lerListaDeServidores, lerEscopo, disponibilidadeExterna } from './estado.ts'
+import { lerListaDeServidores, lerEscopo, disponibilidadeExterna, prefixoDe } from './estado.ts'
 import type { DisponibilidadeExterna, EscopoDaConsulta, ListaDeServidores } from './estado.ts'
 import { harnessPorNome, providerNames } from '../registro.ts'
 
-const MCP_PREFIX = 'mcp__'
-const MCP_LIST_TIMEOUT_MS = 20000
+export { prefixoDe } from './estado.ts'
 
-export function prefixoDe(servidor: string): string {
-  return `${MCP_PREFIX}${servidor.replace(/[^a-zA-Z0-9]+/g, '_')}`
-}
+const MCP_LIST_TIMEOUT_MS = 20000
 
 function normalizar(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')

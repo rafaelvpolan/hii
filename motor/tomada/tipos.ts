@@ -170,5 +170,7 @@ export interface Harness {
   // Cada harness decide se le variavel de ambiente e qual — nao ha convencao
   // central que valha para todos.
   modeloPadraoPara(papel: AgentRole): string | undefined
+  /** Versao da pasta de configuracao propria; ausente = o harness nao tem pasta. */
+  versaoDaPasta?: () => string
   run(req: AgentRequest): Promise<AgentResult>
 }
