@@ -26,6 +26,7 @@ Leia o código do caminho afetado: o README também descreve fluxos legados.
 | Gateway e execução com pipeline | `motor/oswaldo/gateway.ts`, `motor/oswaldo/executar.ts` |
 | Plano, dependências e evidências | `motor/oswaldo/orquestracao/` |
 | Provedores, capacidades e troca de IA | `motor/tomada/` |
+| Pasta e isolamento do Claude | `ia/claude/`, `motor/tomada/harness/pasta-do-claude.ts` |
 | Gates, correção e espera | `motor/ciclo/` |
 | Worktree, fecho e PR | `motor/quilombo/git.ts`, `motor/quilombo/cartorio/` |
 | Cards, persistência e contrato do alvo | `motor/cordel/` |

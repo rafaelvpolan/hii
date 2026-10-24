@@ -11,6 +11,8 @@ import { iniciar, terminar, recurso, dentro, textoPublico } from '../observabili
 import { campos, texto, ErroApi } from './contrato.ts'
 import type { Objeto } from './contrato.ts'
 import { resposta } from './idempotencia.ts'
+import { prepararComandoDeLeitura } from '../quilombo/cartorio/comando-de-leitura.ts'
+import { promptDoComandoDeLeitura } from '../quilombo/cartorio/responder-pergunta.ts'
 import type { RespostaApi } from './idempotencia.ts'
 
 interface Consulta { versao: 1; id: string; repo: string; sessao?: string; estado: 'running' | 'succeeded' | 'failed' | 'unknown'; atividade: string; resposta: string; custoUsd: number | null; dono: number; inicio: string }
@@ -56,7 +58,20 @@ export function criarConsulta(b: Objeto, executar: typeof runProvider = runProvi
   setImmediate(() => {
     void dentro(atividade, async () => {
       try {
-        const r = await executar(sessao, provider, { ...req, consultaId: id }, 'verify')
+        // Comando de leitura da pasta: prompt e tempo montados aqui, depois da
+        // intencao persistida. Parada encerra a consulta sem chamar a IA; falha
+        // de git/gh vira failed, bloqueio legitimo vira succeeded.
+        const comando = await prepararComandoDeLeitura(pergunta, req.cwd)
+        if (comando?.parada) {
+          const estado = comando.falhou ? 'failed' : 'succeeded'
+          c.estado = estado; c.resposta = textoPublico(comando.parada).slice(-65536); c.custoUsd = 0
+          terminar(atividade, estado, comando.falhou ? c.resposta : '')
+          return
+        }
+        const final = comando
+          ? { ...req, prompt: promptDoComandoDeLeitura(comando, pergunta, req.cwd), timeoutMs: comando.timeoutMs }
+          : req
+        const r = await executar(sessao, provider, { ...final, consultaId: id }, 'verify')
         c.estado = r.ok ? 'succeeded' : 'failed'
         c.resposta = textoPublico(r.text || r.detail).slice(-65536)
         c.custoUsd = r.costMeasured ? r.cost : null

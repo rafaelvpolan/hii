@@ -15,7 +15,7 @@ import { projetosConhecidos } from '../cordel/projetos-conhecidos.ts'
 import { interpretar, aplicar as aplicarIa, limpar as limparIa, ajuda as ajudaDeIa, estadoDaIa, definirModelo, definirEsforco, definirModoDeOperacao, definirGauntlet, indiceNumerico } from './escolher-ia.ts'
 import { agentRoles, isProviderName, providerNameFor } from '../tomada/registro.ts'
 import { comandoDeLoginDoProvedor, provedoresDisponiveis } from '../tomada/disponibilidade.ts'
-import { comandosDaIaAtiva } from '../tomada/mapa/comandos.ts'
+import { comandosDaIaAtiva, comandosDeLeituraDaPasta } from '../tomada/mapa/comandos.ts'
 import type { AgentRole, HarnessId } from '../tomada/tipos.ts'
 import { pendencia, responder } from './responder.ts'
 import { renderPergunta } from './render/clarify.ts'
@@ -139,6 +139,10 @@ async function aplicar(effect: Effect, state: SessionState, io: DispatchIO): Pro
     }
     case 'error': {
       const cabecaDesconhecida = id ? `/${id}` : ''
+      // Canal leitura chega pela conversa, com ou sem tarefa seguida.
+      if (cabecaDesconhecida && comandosDeLeituraDaPasta().some(c => c.comando === cabecaDesconhecida)) {
+        return aplicar({ kind: 'consultar', text: `/${effect.raw || id}` }, state, io)
+      }
       const comandoDaIa = state.seguindo && cabecaDesconhecida && readCard(state.seguindo)
         && comandosDaIaAtiva(repoPath(state.repo)).comandos.find(c => c.comando === cabecaDesconhecida)
       if (comandoDaIa) {

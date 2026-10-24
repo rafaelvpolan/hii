@@ -8,13 +8,19 @@ import { ENV_CLAUDE_HOME_DIR, ENV_KIMI_HOME_DIR } from '../../cordel/alicerce/co
 import { raizDoCodex } from '../../euclides/tesouro/planos.ts'
 import { providerNameFor } from '../registro.ts'
 import { corDoHarness } from '../registro.ts'
+import { PASTA_DO_CLAUDE } from '../harness/pasta-do-claude.ts'
 import type { HarnessId } from '../tipos.ts'
+
+export type CanalDoComando = 'leitura' | 'escrita'
 
 export interface ComandoDaIa {
   comando: string
   descricao: string
   origem?: 'ia' | 'orquestrador'
   instrucoes?: string
+  // Por onde o comando chega: escrita pela instrucao da tarefa, leitura pela
+  // conversa. So os arquivos da pasta do motor declaram canal.
+  canal?: CanalDoComando
 }
 
 export interface ComandosDaIa {
@@ -44,6 +50,11 @@ interface FrontMatter {
   nome: string
   descricao: string
   instrucoes: string
+  canal?: CanalDoComando
+}
+
+function canalDe(valor: string | undefined): CanalDoComando | undefined {
+  return valor === 'leitura' || valor === 'escrita' ? valor : undefined
 }
 
 function lerFrontMatter(caminho: string): FrontMatter | null {
@@ -57,7 +68,9 @@ function lerFrontMatter(caminho: string): FrontMatter | null {
       if (i <= 0) continue
       campos.set(linha.slice(0, i).trim(), semAspas(linha.slice(i + 1)))
     }
+    const canal = canalDe(campos.get('canal'))
     return {
+      ...(canal ? { canal } : {}),
       nome: sanitizarTextoDeRepoAlheio(campos.get('name') ?? ''),
       descricao: sanitizarTextoDeRepoAlheio(campos.get('description') ?? ''),
       instrucoes: stripAnsi(texto.slice((m.index ?? 0) + m[0].length))
@@ -70,7 +83,7 @@ function lerFrontMatter(caminho: string): FrontMatter | null {
   }
 }
 
-function comandosDeArquivos(dir: string): ComandoDaIa[] {
+function comandosDeArquivos(dir: string, lerCanal = false): ComandoDaIa[] {
   if (!existsSync(dir)) return []
   return readdirSync(dir)
     .filter(f => f.endsWith('.md'))
@@ -80,8 +93,21 @@ function comandosDeArquivos(dir: string): ComandoDaIa[] {
         comando: `/${sanitizarTextoDeRepoAlheio(f.replace(/\.md$/, ''))}`,
         descricao: fm?.descricao ?? '',
         instrucoes: fm?.instrucoes ?? '',
+        ...(lerCanal && fm?.canal ? { canal: fm.canal } : {}),
       }
     })
+}
+
+// Comandos versionados do Claude do motor. O canal so vale aqui: um repositorio
+// alheio nao pode desviar o despacho declarando canal no proprio front matter.
+function comandosDaPasta(): ComandoDaIa[] {
+  return comandosDeArquivos(join(PASTA_DO_CLAUDE, 'comandos'), true)
+    .map(c => ({ ...c, origem: 'orquestrador' as const }))
+}
+
+// Os de leitura rodam na IA de verify, entao nao seguem o catalogo do implement.
+export function comandosDeLeituraDaPasta(): ComandoDaIa[] {
+  return comandosDaPasta().filter(c => c.canal === 'leitura')
 }
 
 function comandosDeSkills(dir: string): ComandoDaIa[] {
@@ -157,6 +183,7 @@ function comandosDoOrquestrador(repoPath: string): ComandoDaIa[] {
 
 const FONTES: Partial<Record<HarnessId, Fonte[]>> = {
   claude: [
+    () => comandosDaPasta(),
     () => comandosDeArquivos(join(raizDoClaude(), 'commands')),
     repoPath => repoPath ? comandosDeArquivos(join(repoPath, '.claude', 'commands')) : [],
     repoPath => repoPath ? comandosDeSkills(join(repoPath, '.claude', 'skills')) : [],
@@ -210,13 +237,15 @@ export function comandosDaIaAtiva(repoPath: string): ComandosDaIa {
 // no prompt para harnesses que nao carregam skills do Claude/Codex por conta propria
 // (em especial o Codex executado pelo HII). Somente comandos explicitamente pedidos
 // sao expandidos, para nao despejar centenas de skills externas em toda tarefa.
+// Comando de canal leitura chega pela conversa, com o contexto que o motor anexa;
+// no prompt de escrita ele pediria um diff que nao existe.
 export function instrucoesDosComandos(texto: string, repoPath: string): string {
   const pedidos = [...new Set(texto.match(/\/[a-z0-9][a-z0-9:-]*/gi) ?? [])]
   if (!pedidos.length) return ''
   const porNome = new Map(comandosDaIaAtiva(repoPath).comandos.map(c => [c.comando.toLowerCase(), c]))
   const encontrados = pedidos
     .map(pedido => porNome.get(pedido.toLowerCase()))
-    .filter((c): c is ComandoDaIa => !!c && !!c.instrucoes)
+    .filter((c): c is ComandoDaIa => !!c && !!c.instrucoes && c.canal !== 'leitura')
   if (!encontrados.length) return ''
   return [
     `RECURSOS EXPLICITAMENTE SOLICITADOS (${encontrados.length}):`,

@@ -2,6 +2,7 @@ import { test, expect, beforeEach, afterEach } from '../apoio/runner.ts'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { ComandoDaIa } from '../../motor/tomada/mapa/comandos.ts'
 
 let home = ''
 let repoDir = ''
@@ -17,6 +18,12 @@ function skill(dir: string, nome: string, descricao: string): void {
   const alvo = join(dir, nome)
   mkdirSync(alvo, { recursive: true })
   writeFileSync(join(alvo, 'SKILL.md'), `---\nname: ${nome}\ndescription: "${descricao}"\n---\ncorpo\n`)
+}
+
+// Os comandos da pasta do Claude do motor (origem orquestrador) entram sempre no
+// catalogo do claude; as listas exatas abaixo olham so o que vem do disco da IA.
+function daIa(comandos: ComandoDaIa[]): ComandoDaIa[] {
+  return comandos.filter(c => c.origem !== 'orquestrador')
 }
 
 function comando(dir: string, nome: string, descricao: string): void {
@@ -52,7 +59,7 @@ test('claude: junta comandos do usuario, do projeto e as skills do projeto', asy
   const { comandosDaIaAtiva } = await import('../../motor/tomada/mapa/comandos.ts')
   const r = comandosDaIaAtiva(repoDir)
   expect(r.provedor).toBe('claude')
-  expect(r.comandos.map(c => c.comando).sort()).toEqual(['/bar', '/baz', '/foo'])
+  expect(daIa(r.comandos).map(c => c.comando).sort()).toEqual(['/bar', '/baz', '/foo'])
   expect(r.comandos.find(c => c.comando === '/foo')?.descricao).toBe('comando global')
 })
 
@@ -109,7 +116,7 @@ test('ollama nao contribui comandos — sem fonte confiavel no disco', async () 
 test('sem nenhum diretorio no disco, devolve lista vazia sem quebrar', async () => {
   process.env.HII_IMPLEMENT_PROVIDER = 'claude'
   const { comandosDaIaAtiva } = await import('../../motor/tomada/mapa/comandos.ts')
-  expect(comandosDaIaAtiva(join(repoDir, 'nao-existe')).comandos).toEqual([])
+  expect(daIa(comandosDaIaAtiva(join(repoDir, 'nao-existe')).comandos)).toEqual([])
 })
 
 test('cache por tempo: nao le o disco de novo a cada chamada', async () => {
@@ -117,10 +124,10 @@ test('cache por tempo: nao le o disco de novo a cada chamada', async () => {
   comando(join(home, '.claude', 'commands'), 'foo', 'primeiro')
   const { comandosDaIaAtiva } = await import('../../motor/tomada/mapa/comandos.ts')
   const primeira = comandosDaIaAtiva(repoDir)
-  expect(primeira.comandos.map(c => c.comando)).toEqual(['/foo'])
+  expect(daIa(primeira.comandos).map(c => c.comando)).toEqual(['/foo'])
   comando(join(home, '.claude', 'commands'), 'novo', 'chegou depois')
   const segunda = comandosDaIaAtiva(repoDir)
-  expect(segunda.comandos.map(c => c.comando)).toEqual(['/foo'])
+  expect(daIa(segunda.comandos).map(c => c.comando)).toEqual(['/foo'])
 })
 
 test('SEGURANCA: description de repo clonado com escape ANSI nao vaza para o terminal', async () => {

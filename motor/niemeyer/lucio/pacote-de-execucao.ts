@@ -52,14 +52,30 @@ export interface PacoteDeExecucao {
   readonly avisoDeCota: string
   readonly prompt: string
   readonly memoria: string
+  /** Versao da pasta de configuracao da IA; vazia/ausente = nenhum papel usa pasta. */
+  readonly pasta?: string
   readonly hash: string
+}
+
+function overrideDoPapel(card: Card, papel: AgentRole): string | undefined {
+  return card.fm[campoDeOverrideDoPapel(papel)] || undefined
 }
 
 function iasPorPapel(card: Card): IaDoPapel[] {
   return PAPEIS.map(papel => {
-    const override = card.fm[campoDeOverrideDoPapel(papel)] || undefined
+    const override = overrideDoPapel(card, papel)
     return { papel, provedor: providerNameFor(papel, override), modelo: (papel === 'implement' && card.fm.orq_modelo) || modelFor(papel, override) || 'padrao do provedor' }
   })
+}
+
+// Qualquer papel pode rodar com a pasta, nao so o implement: um gate com pasta
+// mudada tambem tem de pedir aval de novo.
+function pastaDosPapeis(card: Card): string {
+  for (const papel of PAPEIS) {
+    const versao = providerFor(papel, overrideDoPapel(card, papel)).versaoDaPasta?.() ?? ''
+    if (versao) return versao
+  }
+  return ''
 }
 
 function gatesDoPipeline(alvo: string, modo: string): string[] {
@@ -99,6 +115,8 @@ export function hashDoPacote(p: Omit<PacoteDeExecucao, 'hash'>): string {
     skills: p.skills, gates: p.gates, portoes: p.portoes,
     prompt: p.memoria ? p.prompt.replace(blocoDeMemoria(p.memoria), '') : p.prompt,
     limites: p.limites.split(';')[0],
+    // So quando ha pasta: sem ela o hash e o de antes e o aval ja dado vale.
+    ...(p.pasta ? { pasta: p.pasta } : {}),
   }
   return createHash('sha256').update(JSON.stringify(material)).digest('hex').slice(0, 16)
 }
@@ -123,7 +141,7 @@ export function montarPacote(card: Card): PacoteDeExecucao {
     ias: iasPorPapel(card), agentes, skills: skills.map(s => s.id),
     gates: gatesDoPipeline(alvo, modo), portoes: portoesDoContrato(alvo, modo),
     acaoExterna: acao.externo ? acao.ferramenta : '', limites: textoDeLimites(card),
-    avisoDeCota: avisoDeCotaDe(provider.name), prompt, memoria,
+    avisoDeCota: avisoDeCotaDe(provider.name), prompt, memoria, pasta: pastaDosPapeis(card),
   }
   return { ...semHash, hash: hashDoPacote(semHash) }
 }
@@ -154,6 +172,7 @@ export function renderizarPacote(p: PacoteDeExecucao): string {
     '',
     '## IA por papel',
     ...p.ias.map(i => `- ${i.papel}: ${i.provedor} (${i.modelo})`),
+    ...(p.pasta ? [`- pasta da IA ${p.pasta} · settings pessoais nao carregadas`] : []),
     '',
     '## Agentes recomendados',
     lista(p.agentes, 'nenhum agente injetado'),

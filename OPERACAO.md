@@ -147,6 +147,60 @@ O kimi tem uma peculiaridade medida contra o CLI real (0.38.0): em execução ú
 `--plan` — são flags de sessão interativa. Sem flag nenhum ele já executa e aprova
 as ferramentas. Por isso o catálogo de modos dele tem um item só.
 
+### IA Claude do motor: pasta própria e isolamento por papel
+
+O Claude que o motor chama não usa o `~/.claude` pessoal. Ele usa `ia/claude/`, que
+é versionada neste repositório e traz as regras do motor (anexadas ao prompt de
+sistema), as negações do motor, o MCP declarado e os comandos `hii`, `hii-plan`,
+`hii-refinar`, `hii-review` e `hii-review-pr`. Codex, Kimi e Ollama não mudam.
+
+O papel é recalculado a cada chamada, retentativa incluída:
+
+| Papel | Quando | O que vale |
+|---|---|---|
+| **leitura** | modo `readonly`, sempre | `--tools Read,Glob,Grep` · `--setting-sources ""` · hooks desligados · `--strict-mcp-config` sem servidor · `--disable-slash-commands`. Sem settings, hooks, `CLAUDE.md`, MCP nem comando com barra |
+| **escrita** | modo `edit` sem tool de MCP, ou só com tools de servidor declarado e com definição legível | `--tools Read,Edit,Write,Glob,Grep,Bash,Skill` (mais `Task` quando a tarefa usa agentes) · `--setting-sources project,local` · `--strict-mcp-config` com `--mcp-config` inline só com os servidores declarados que a tarefa usa · `--permission-mode acceptEdits` |
+| **conta** | modo `edit` com tool de servidor não declarado, ou declarado sem definição legível | `--setting-sources user,project,local` · hooks desligados (`disableAllHooks`) · MCP da conta · `--disable-slash-commands` · `--tools` sem `Skill`, e com `Task` só quando a tarefa usa agentes |
+
+Os três papéis rodam com `--no-session-persistence` (a sessão não é gravada em
+`~/.claude/projects`) e `--append-system-prompt-file ia/claude/regras.md`.
+
+**MCP declarado.** `ia/claude/mcp.json` lista só o nome do servidor; a definição
+(`type`, `command`, `args`, `env`, `url`) é lida do `mcpServers` da config do
+usuário: `HII_CLAUDE_CONFIG`, ou `~/.claude.json` quando a variável não existe.
+
+```bash
+cat ia/claude/mcp.json                               # {"servidores":["omc"]}
+HII_CLAUDE_CONFIG="$HOME/claude-motor.json" hii start  # definição lida deste arquivo
+```
+
+Servidor declarado sem definição no topo do `mcpServers` (vindo de plugin ou do
+escopo local), ou config ilegível, faz a chamada cair no modo conta. A tool não some,
+e o stderr avisa:
+
+```
+[hicode] Claude no modo conta (servidor omc declarado em ia/claude/mcp.json sem definicao legivel no mcpServers) — ...
+```
+
+**Versão no aval.** A versão da pasta (hash de 16 hex de `regras.md`, `settings.json`,
+`mcp.json` e `comandos/`) entra no hash do pacote de execução quando algum papel
+roda no Claude. Mudou a pasta, o card aprovado antes pede aval de novo. O pacote mostra
+`pasta da IA <versão> · settings pessoais nao carregadas`.
+
+**O que muda para quem opera:**
+
+- **Settings pessoais deixam de valer.** No Claude do motor, `model`, `env` e plugins
+  de `~/.claude/settings.json` não são carregados, e o implement sem modelo explícito
+  não herda mais o `model` pessoal. Na escrita valem as settings do projeto-alvo.
+- **Hooks do projeto-alvo desligados no modo conta.** `disableAllHooks` vale para
+  todas as fontes.
+- **`env` de servidor MCP declarado fica visível.** A definição vai inline no argv,
+  então o `env` aparece na linha de comando do processo (`ps`). Não ponha segredo ali.
+- **Limite conhecido:** ação externa com conector da conta (por exemplo, uma tool
+  `mcp__claude_ai_Notion`) roda no modo conta, com o MCP da conta pessoal.
+
+Comandos, canais e o que fica para depois estão em `ia/claude/LEIA-ME.md`.
+
 ---
 
 ## 4. O grafo de estados do card
